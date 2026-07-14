@@ -1,0 +1,51 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Minh Vuong Devtool",
+  "version": "1.0.0",
+  "identifier": "com.minhvuong.devtool",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Minh Vuong Devtool - Lọc ảnh siêu nhanh",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 1024,
+        "minHeight": 680,
+        "center": true,
+        "resizable": true,
+        "decorations": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "category": "Utility",
+    "shortDescription": "Smart photo filtering for photography studios",
+    "longDescription": "Photo Picker Pro helps photography studios quickly filter thousands of photos based on customer code lists. Works completely offline."
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/minhvuogdzz/photo-picker-pro/releases/latest/download/latest.json"
+      ],
+      "pubkey": "UPDATE_SIGNATURE_PUBLIC_KEY"
+    }
+  }
+}
