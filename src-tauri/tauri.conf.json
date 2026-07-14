@@ -45,7 +45,7 @@
       "endpoints": [
         "https://github.com/minhvuogdzz/photo-picker-pro/releases/latest/download/latest.json"
       ],
-      "pubkey": "UPDATE_SIGNATURE_PUBLIC_KEY"
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEExOUE3MUFFQUEzQjE0MkMKUldRc0ZEdXFybkdhb1IxN2JzWWwyWldhSHp2UnJIMkgraHJkNEZ5REsrQWxyWUFsY0tscFZ4VjkK"
     }
   }
 }
