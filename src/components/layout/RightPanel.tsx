@@ -85,6 +85,10 @@ export function RightPanel() {
       return;
     }
     try {
+      // Reset previous results so user can rescan without reloading
+      setMatchResult(null);
+      setCopyResult(null);
+      setScannedFiles([]);
       setPhase("scanning");
       setProgress(null);
       const unlistenScan = await listen<ProgressEvent>("scan-progress", (event) => {
@@ -102,7 +106,8 @@ export function RightPanel() {
           codes: parsedCodes,
           files: scanResult.files,
           mode: matchMode,
-          regex_pattern: matchMode === "Regex" ? regexPattern : null,
+          regexPattern: matchMode === "Regex" ? regexPattern : null,
+          folderCount: selectedInputFolders.length,
         });
         setMatchResult(result);
         setPhase("matched");

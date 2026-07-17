@@ -18,6 +18,7 @@ pub fn match_photos(
     files: Vec<PhotoFile>,
     mode: String,
     regex_pattern: Option<String>,
+    folder_count: Option<usize>,
 ) -> Result<MatchResult, String> {
     let match_mode = match mode.as_str() {
         "ExactNumber" => MatchMode::ExactNumber,
@@ -26,8 +27,10 @@ pub fn match_photos(
         _ => MatchMode::ExactNumber,
     };
 
-    // Build file index based on match mode
-    let file_index: HashMap<String, Vec<&PhotoFile>> = match match_mode {
+    let multi_folder = folder_count.unwrap_or(1) >= 2;
+
+    // Build number-based file index for ExactNumber mode
+    let number_index: HashMap<String, Vec<&PhotoFile>> = match match_mode {
         MatchMode::ExactNumber => {
             let mut index: HashMap<String, Vec<&PhotoFile>> = HashMap::new();
             for file in &files {
@@ -41,6 +44,25 @@ pub fn match_photos(
             index
         }
         _ => HashMap::new(),
+    };
+
+    // Build a stem-based index for multi-folder exact matching
+    // Maps lowercase filename stem -> list of files
+    let stem_index: HashMap<String, Vec<&PhotoFile>> = if multi_folder && matches!(match_mode, MatchMode::ExactNumber) {
+        let mut index: HashMap<String, Vec<&PhotoFile>> = HashMap::new();
+        for file in &files {
+            let stem = std::path::Path::new(&file.filename)
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("")
+                .to_lowercase();
+            if !stem.is_empty() {
+                index.entry(stem).or_default().push(file);
+            }
+        }
+        index
+    } else {
+        HashMap::new()
     };
 
     // Compile regex if needed
@@ -58,10 +80,41 @@ pub fn match_photos(
 
     for code in &codes {
         let matched_files: Vec<PhotoFile> = match match_mode {
-            MatchMode::ExactNumber => file_index
-                .get(&code.normalized)
-                .map(|fs| fs.iter().map(|f| (*f).clone()).collect())
-                .unwrap_or_default(),
+            MatchMode::ExactNumber => {
+                if multi_folder {
+                    // Multi-folder: try full stem match first
+                    // e.g. raw="ABC_01234" matches file "ABC_01234.CR2" but not "DEF_01234.CR2"
+                    let raw_stem = {
+                        let r = code.raw.trim();
+                        let without_ext = std::path::Path::new(r)
+                            .file_stem()
+                            .and_then(|s| s.to_str())
+                            .unwrap_or(r);
+                        without_ext.to_lowercase()
+                    };
+
+                    let full_matches: Vec<PhotoFile> = stem_index
+                        .get(&raw_stem)
+                        .map(|fs| fs.iter().map(|f| (*f).clone()).collect())
+                        .unwrap_or_default();
+
+                    if !full_matches.is_empty() {
+                        full_matches
+                    } else {
+                        // Fallback: number-only match (user typed just a number)
+                        number_index
+                            .get(&code.normalized)
+                            .map(|fs| fs.iter().map(|f| (*f).clone()).collect())
+                            .unwrap_or_default()
+                    }
+                } else {
+                    // Single folder: number-only match (original behavior)
+                    number_index
+                        .get(&code.normalized)
+                        .map(|fs| fs.iter().map(|f| (*f).clone()).collect())
+                        .unwrap_or_default()
+                }
+            }
 
             MatchMode::Contains => files
                 .iter()
@@ -138,11 +191,18 @@ mod tests {
         }
     }
 
+    fn make_code_with_raw(raw: &str, normalized: &str) -> CustomerCode {
+        CustomerCode {
+            raw: raw.to_string(),
+            normalized: normalized.to_string(),
+        }
+    }
+
     #[test]
     fn test_exact_match_found() {
         let files = vec![make_photo("IMG01234.jpg", "01234")];
         let codes = vec![make_code("01234")];
-        let result = match_photos(codes, files, "ExactNumber".to_string(), None).unwrap();
+        let result = match_photos(codes, files, "ExactNumber".to_string(), None, None).unwrap();
         assert_eq!(result.found_count, 1);
         assert_eq!(result.missing_count, 0);
     }
@@ -151,7 +211,7 @@ mod tests {
     fn test_exact_match_missing() {
         let files = vec![make_photo("IMG01234.jpg", "01234")];
         let codes = vec![make_code("99999")];
-        let result = match_photos(codes, files, "ExactNumber".to_string(), None).unwrap();
+        let result = match_photos(codes, files, "ExactNumber".to_string(), None, None).unwrap();
         assert_eq!(result.found_count, 0);
         assert_eq!(result.missing_count, 1);
     }
@@ -160,7 +220,7 @@ mod tests {
     fn test_exact_match_no_partial() {
         let files = vec![make_photo("IMG012345.jpg", "012345")];
         let codes = vec![make_code("01234")];
-        let result = match_photos(codes, files, "ExactNumber".to_string(), None).unwrap();
+        let result = match_photos(codes, files, "ExactNumber".to_string(), None, None).unwrap();
         assert_eq!(result.found_count, 0);
         assert_eq!(result.missing_count, 1);
     }
@@ -169,7 +229,7 @@ mod tests {
     fn test_contains_match() {
         let files = vec![make_photo("IMG012345.jpg", "012345")];
         let codes = vec![make_code("01234")];
-        let result = match_photos(codes, files, "Contains".to_string(), None).unwrap();
+        let result = match_photos(codes, files, "Contains".to_string(), None, None).unwrap();
         assert_eq!(result.found_count, 1);
     }
 
@@ -180,8 +240,52 @@ mod tests {
             make_photo("IMG01234_edit.jpg", "01234"),
         ];
         let codes = vec![make_code("01234")];
-        let result = match_photos(codes, files, "ExactNumber".to_string(), None).unwrap();
+        let result = match_photos(codes, files, "ExactNumber".to_string(), None, None).unwrap();
         assert_eq!(result.duplicate_count, 1);
         assert_eq!(result.matches[0].all_matches.len(), 2);
     }
+
+    // --- Multi-folder tests ---
+
+    #[test]
+    fn test_multi_folder_stem_match_distinguishes_prefixes() {
+        // Two files with same number but different prefixes from different folders
+        let files = vec![
+            make_photo("ABC_01234.CR2", "01234"),
+            make_photo("DEF_01234.CR2", "01234"),
+        ];
+        // User types "ABC_01234" — should only match the ABC file
+        let codes = vec![make_code_with_raw("ABC_01234", "01234")];
+        let result = match_photos(codes, files, "ExactNumber".to_string(), None, Some(2)).unwrap();
+        assert_eq!(result.found_count, 1);
+        assert_eq!(result.duplicate_count, 0);
+        assert_eq!(result.matches[0].status, MatchStatus::Found);
+        assert_eq!(result.matches[0].photo.as_ref().unwrap().filename, "ABC_01234.CR2");
+    }
+
+    #[test]
+    fn test_multi_folder_number_fallback() {
+        // Multi-folder but user only types a number — should fallback to number matching
+        let files = vec![
+            make_photo("ABC_01234.CR2", "01234"),
+            make_photo("DEF_01234.CR2", "01234"),
+        ];
+        let codes = vec![make_code("01234")];
+        let result = match_photos(codes, files, "ExactNumber".to_string(), None, Some(2)).unwrap();
+        // Both files match by number, should be Duplicate
+        assert_eq!(result.duplicate_count, 1);
+        assert_eq!(result.matches[0].all_matches.len(), 2);
+    }
+
+    #[test]
+    fn test_single_folder_ignores_prefix() {
+        // Single folder — should match by number only regardless of prefix
+        let files = vec![
+            make_photo("ABC_01234.CR2", "01234"),
+        ];
+        let codes = vec![make_code_with_raw("DEF_01234", "01234")];
+        let result = match_photos(codes, files, "ExactNumber".to_string(), None, Some(1)).unwrap();
+        assert_eq!(result.found_count, 1);
+    }
 }
+

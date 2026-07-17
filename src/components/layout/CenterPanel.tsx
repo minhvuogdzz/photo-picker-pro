@@ -117,7 +117,7 @@ export function CenterPanel() {
           value={rawCodeInput}
           onChange={(e) => setRawCodeInput(e.target.value)}
           spellCheck={false}
-          disabled={phase !== "idle" && phase !== "done"}
+          disabled={phase === "scanning" || phase === "copying"}
         />
       </div>
 
@@ -128,10 +128,10 @@ export function CenterPanel() {
             type="checkbox"
             checked={scanOptions.filter_raw}
             onChange={(e) => setScanOptions({ filter_raw: e.target.checked })}
-            disabled={phase !== "idle" && phase !== "done"}
+            disabled={phase === "scanning" || phase === "copying"}
             className="rounded border-border text-primary focus:ring-primary/50 cursor-pointer disabled:opacity-50"
           />
-          <span className={phase !== "idle" && phase !== "done" ? "opacity-50" : ""}>Lọc Raw (CR2, CR3, ARW...)</span>
+          <span className={phase === "scanning" || phase === "copying" ? "opacity-50" : ""}>Lọc Raw (CR2, CR3, ARW...)</span>
         </label>
         
         <label className="flex items-center gap-1.5 cursor-pointer">
@@ -139,10 +139,10 @@ export function CenterPanel() {
             type="checkbox"
             checked={scanOptions.filter_jpg}
             onChange={(e) => setScanOptions({ filter_jpg: e.target.checked })}
-            disabled={phase !== "idle" && phase !== "done"}
+            disabled={phase === "scanning" || phase === "copying"}
             className="rounded border-border text-primary focus:ring-primary/50 cursor-pointer disabled:opacity-50"
           />
-          <span className={phase !== "idle" && phase !== "done" ? "opacity-50" : ""}>Lọc JPG</span>
+          <span className={phase === "scanning" || phase === "copying" ? "opacity-50" : ""}>Lọc JPG</span>
         </label>
 
         <label className="flex items-center gap-1.5 cursor-pointer">
@@ -150,10 +150,10 @@ export function CenterPanel() {
             type="checkbox"
             checked={!scanOptions.recursive}
             onChange={(e) => setScanOptions({ recursive: !e.target.checked })}
-            disabled={phase !== "idle" && phase !== "done"}
+            disabled={phase === "scanning" || phase === "copying"}
             className="rounded border-border text-primary focus:ring-primary/50 cursor-pointer disabled:opacity-50"
           />
-          <span className={phase !== "idle" && phase !== "done" ? "opacity-50" : ""}>Chỉ lọc thư mục chọn</span>
+          <span className={phase === "scanning" || phase === "copying" ? "opacity-50" : ""}>Chỉ lọc thư mục chọn</span>
         </label>
 
         <label className="flex items-center gap-1.5 cursor-pointer">
@@ -161,10 +161,10 @@ export function CenterPanel() {
             type="checkbox"
             checked={scanOptions.recursive}
             onChange={(e) => setScanOptions({ recursive: e.target.checked })}
-            disabled={phase !== "idle" && phase !== "done"}
+            disabled={phase === "scanning" || phase === "copying"}
             className="rounded border-border text-primary focus:ring-primary/50 cursor-pointer disabled:opacity-50"
           />
-          <span className={phase !== "idle" && phase !== "done" ? "opacity-50" : ""}>Lọc tất cả thư mục con</span>
+          <span className={phase === "scanning" || phase === "copying" ? "opacity-50" : ""}>Lọc tất cả thư mục con</span>
         </label>
       </div>
 

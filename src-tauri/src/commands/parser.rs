@@ -41,11 +41,15 @@ pub fn parse_customer_codes(input: String) -> Result<Vec<CustomerCode>, String> 
             // Remove file extension if present
             let without_ext = remove_extension(part);
 
+            // Use the cleaned raw value (lowercase) as dedup key to preserve
+            // different prefixes with same number (e.g. ABC_01234 vs DEF_01234)
+            let dedup_key = without_ext.to_lowercase();
+
             // Extract all numeric sequences of 3+ digits
             for mat in re.find_iter(&without_ext) {
                 let normalized = mat.as_str().to_string();
-                if !seen.contains(&normalized) {
-                    seen.insert(normalized.clone());
+                if !seen.contains(&dedup_key) {
+                    seen.insert(dedup_key.clone());
                     codes.push(CustomerCode {
                         raw: part.to_string(),
                         normalized,
@@ -131,5 +135,23 @@ mod tests {
         let result = parse_customer_codes("🎉 ảnh đẹp 01234 ✨".to_string()).unwrap();
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].normalized, "01234");
+    }
+
+    #[test]
+    fn test_different_prefixes_same_number_kept() {
+        // ABC_01234 and DEF_01234 should both be kept as separate codes
+        let result = parse_customer_codes("ABC_01234\nDEF_01234".to_string()).unwrap();
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].raw, "ABC_01234");
+        assert_eq!(result[0].normalized, "01234");
+        assert_eq!(result[1].raw, "DEF_01234");
+        assert_eq!(result[1].normalized, "01234");
+    }
+
+    #[test]
+    fn test_same_prefix_same_number_deduped() {
+        // Exact same input should still be deduped
+        let result = parse_customer_codes("ABC_01234\nABC_01234".to_string()).unwrap();
+        assert_eq!(result.len(), 1);
     }
 }

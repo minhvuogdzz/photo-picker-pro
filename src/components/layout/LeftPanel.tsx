@@ -168,7 +168,7 @@ export function LeftPanel() {
               >
                 <button
                   onClick={() => toggleInputFolderSelection(folder)}
-                  disabled={phase !== "idle" && phase !== "done"}
+                  disabled={phase === "scanning" || phase === "copying"}
                   className="flex-shrink-0 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
                 >
                   {isSelected ? (
@@ -186,7 +186,7 @@ export function LeftPanel() {
                 </div>
                 <button
                   onClick={() => removeInputFolder(folder)}
-                  disabled={phase !== "idle" && phase !== "done"}
+                  disabled={phase === "scanning" || phase === "copying"}
                   className="flex-shrink-0 opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-all disabled:opacity-0"
                   title={t("remove")}
                 >
