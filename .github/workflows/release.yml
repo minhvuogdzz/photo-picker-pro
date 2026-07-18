@@ -59,3 +59,12 @@ jobs:
           includeUpdaterJson: true
           updaterJsonPreferNsis: true
           args: ${{ matrix.args }}
+
+      - name: Force upload latest.json
+        if: matrix.platform == 'macos-latest'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -f "src-tauri/target/release/bundle/macos/latest.json" ]; then
+            gh release upload ${{ github.ref_name }} src-tauri/target/release/bundle/macos/latest.json --clobber
+          fi
