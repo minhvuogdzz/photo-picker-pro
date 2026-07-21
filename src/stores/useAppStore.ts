@@ -83,7 +83,7 @@ const initialState = {
   copyResult: null as CopyResult | null,
   outputFolder: "",
   studioOutputFolder: "",
-  outputMode: "Studio" as import("@/types").OutputMode,
+  outputMode: "Folder" as import("@/types").OutputMode,
   phase: "idle" as AppPhase,
   progress: null as ProgressEvent | null,
   matchMode: "ExactNumber",
@@ -104,8 +104,8 @@ export const useAppStore = create<AppState>((set) => ({
     set((state) => {
       if (state.inputFolders.includes(folder)) return state;
       return { 
-        inputFolders: [...state.inputFolders, folder],
-        selectedInputFolders: [...state.selectedInputFolders, folder]
+        inputFolders: [folder],
+        selectedInputFolders: [folder]
       };
     }),
 

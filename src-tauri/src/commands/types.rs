@@ -92,7 +92,6 @@ pub enum FileOperation {
 pub enum OutputMode {
     Folder,
     SameAsOriginal,
-    Studio,
 }
 
 /// Options for the copy/move operation

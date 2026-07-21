@@ -174,7 +174,21 @@ fn compute_destination(
     duplicate_idx: usize,
     is_duplicate: bool,
 ) -> Result<PathBuf, String> {
-    let output = Path::new(&options.output_folder);
+    let mut output = Path::new(&options.output_folder).to_path_buf();
+
+    if options.output_mode == super::types::OutputMode::Folder {
+        // Output to a subfolder named after the input folder
+        let source = Path::new(source_path);
+        for input_folder in &options.input_folders {
+            let input = Path::new(input_folder);
+            if source.starts_with(input) {
+                if let Some(folder_name) = input.file_name() {
+                    output = output.join(folder_name);
+                }
+                break;
+            }
+        }
+    }
 
     // Apply prefix and suffix
     let stem = Path::new(filename)
@@ -224,18 +238,6 @@ fn compute_destination(
         return Ok(selects_dir.join(&new_name));
     }
 
-    if options.output_mode == super::types::OutputMode::Studio {
-        // Output to a subfolder named after the input folder
-        let source = Path::new(source_path);
-        for input_folder in &options.input_folders {
-            let input = Path::new(input_folder);
-            if source.starts_with(input) {
-                let folder_name = input.file_name().unwrap_or_default();
-                return Ok(output.join(folder_name).join(&new_name));
-            }
-        }
-        return Ok(output.join(&new_name));
-    }
 
     match options.folder_structure {
         FolderStructure::Flat => Ok(output.join(&new_name)),

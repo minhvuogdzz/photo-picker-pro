@@ -1,5 +1,6 @@
 import { useCallback, useEffect } from "react";
 import { useAppStore } from "@/stores/useAppStore";
+import { useSettingsStore } from "@/stores/useSettingsStore";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -34,9 +35,7 @@ export function RightPanel() {
   const progress = useAppStore((s) => s.progress);
   const phase = useAppStore((s) => s.phase);
   const outputFolder = useAppStore((s) => s.outputFolder);
-  const studioOutputFolder = useAppStore((s) => s.studioOutputFolder);
   const setOutputFolder = useAppStore((s) => s.setOutputFolder);
-  const setStudioOutputFolder = useAppStore((s) => s.setStudioOutputFolder);
   const copyResult = useAppStore((s) => s.copyResult);
   const outputMode = useAppStore((s) => s.outputMode);
   const setOutputMode = useAppStore((s) => s.setOutputMode);
@@ -50,19 +49,16 @@ export function RightPanel() {
   const scanOptions = useAppStore((s) => s.scanOptions);
   const selectedInputFolders = useAppStore((s) => s.selectedInputFolders);
   const { t } = useTranslation();
+  
+  const settings = useSettingsStore((s) => s.settings);
+  const updateSetting = useSettingsStore((s) => s.updateSetting);
 
-  // Auto-detect studio folder on mount if not set
+  // Set default output folder from settings on mount
   useEffect(() => {
-    if (!studioOutputFolder) {
-      invoke<string | null>("auto_detect_studio_output")
-        .then((path) => {
-          if (path) {
-            setStudioOutputFolder(path);
-          }
-        })
-        .catch(console.error);
+    if (!outputFolder && settings.default_output) {
+      setOutputFolder(settings.default_output);
     }
-  }, [studioOutputFolder, setStudioOutputFolder]);
+  }, [settings.default_output, outputFolder, setOutputFolder]);
 
   const handleSelectOutput = async () => {
     try {
@@ -73,6 +69,8 @@ export function RightPanel() {
       });
       if (selected && typeof selected === "string") {
         setOutputFolder(selected);
+        updateSetting("default_output", selected);
+        await invoke("save_settings", { settings: { ...settings, default_output: selected } });
       }
     } catch (error) {
       console.error("Failed to open output folder dialog:", error);
@@ -129,9 +127,8 @@ export function RightPanel() {
   const handleCopy = useCallback(
     async (operation: "Copy" | "Move") => {
       if (!matchResult) return;
-      if (outputMode === "Folder" && !outputFolder) return;
-      if (outputMode === "Studio" && !studioOutputFolder) {
-        alert("Không tìm thấy thư mục Studio tự động. Vui lòng chọn chế độ khác.");
+      if (outputMode === "Folder" && !outputFolder) {
+        alert("Vui lòng chọn thư mục đầu ra.");
         return;
       }
       try {
@@ -143,7 +140,7 @@ export function RightPanel() {
         const options: CopyOptions = {
           operation,
           output_mode: outputMode,
-          output_folder: outputMode === "Folder" ? outputFolder : (outputMode === "Studio" ? studioOutputFolder : ""),
+          output_folder: outputMode === "Folder" ? outputFolder : "",
           duplicate_policy: "CopyFirst",
           folder_structure: "Flat",
           prefix: null,
@@ -165,7 +162,7 @@ export function RightPanel() {
         setProgress(null);
       }
     },
-    [matchResult, outputFolder, studioOutputFolder, outputMode, inputFolders, setCopyResult, setPhase, setProgress]
+    [matchResult, outputFolder, outputMode, inputFolders, setCopyResult, setPhase, setProgress]
   );
 
   const handleCancel = useCallback(async () => {
@@ -215,7 +212,7 @@ export function RightPanel() {
   const canCopy =
     matchResult &&
     matchResult.found_count > 0 &&
-    (outputMode === "SameAsOriginal" || outputMode === "Studio" || outputFolder) &&
+    (outputMode === "SameAsOriginal" || outputFolder) &&
     !isActive;
 
   return (
@@ -369,16 +366,6 @@ export function RightPanel() {
           </span>
 
           <div className="flex flex-col gap-2">
-            <label className={`flex items-center gap-2 cursor-pointer p-2.5 rounded-xl border transition-all ${outputMode === "Studio" ? "bg-primary/10 border-primary text-primary shadow-sm" : "bg-card border-border hover:border-primary/50 text-foreground"}`}>
-              <input
-                type="checkbox"
-                checked={outputMode === "Studio"}
-                onChange={() => setOutputMode("Studio")}
-                className="rounded text-primary focus:ring-primary/50 cursor-pointer w-4 h-4"
-              />
-              <span className="text-xs font-medium">Thư mục Studio Tự động</span>
-            </label>
-            
             <label className={`flex items-center gap-2 cursor-pointer p-2.5 rounded-xl border transition-all ${outputMode === "Folder" ? "bg-primary/10 border-primary text-primary shadow-sm" : "bg-card border-border hover:border-primary/50 text-foreground"}`}>
               <input
                 type="checkbox"
@@ -400,22 +387,7 @@ export function RightPanel() {
             </label>
           </div>
 
-          {outputMode === "Studio" ? (
-            <div className="space-y-2">
-              <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
-                <p className="text-xs text-primary leading-relaxed">
-                  Tự động tạo thư mục con theo tên thư mục đầu vào.
-                </p>
-              </div>
-              {studioOutputFolder ? (
-                <p className="text-xs text-muted-foreground truncate" title={studioOutputFolder}>
-                  Path: {studioOutputFolder}
-                </p>
-              ) : (
-                <p className="text-xs text-warning">Chưa dò thấy thư mục Studio.</p>
-              )}
-            </div>
-          ) : outputMode === "SameAsOriginal" ? (
+          {outputMode === "SameAsOriginal" ? (
             <div className="p-3 bg-info/10 border border-info/20 rounded-lg">
               <p className="text-xs text-info leading-relaxed">
                 {t("same_as_original_hint")}

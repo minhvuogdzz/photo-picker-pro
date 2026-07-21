@@ -3,13 +3,29 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useSettingsStore } from "@/stores/useSettingsStore";
 import { UpdateDialog } from "@/components/updater";
 import { checkForUpdates, UpdateCheckResult, downloadAndInstallUpdate, installAndRestart } from "@/updater";
+import { invoke } from "@tauri-apps/api/core";
+import type { AppSettings } from "@/types";
 
 function App() {
   const theme = useSettingsStore((s) => s.settings.theme);
   const autoCheck = useSettingsStore((s) => s.settings.auto_check_updates);
   const autoDownload = useSettingsStore((s) => s.settings.auto_download_updates);
   
+  const setSettings = useSettingsStore((s) => s.setSettings);
   const [updateResult, setUpdateResult] = useState<UpdateCheckResult | null>(null);
+
+  // Load settings globally on app start
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const loaded = await invoke<AppSettings>("load_settings");
+        setSettings(loaded);
+      } catch (error) {
+        console.error("Failed to load settings:", error);
+      }
+    };
+    loadSettings();
+  }, [setSettings]);
 
   useEffect(() => {
     const html = document.documentElement;

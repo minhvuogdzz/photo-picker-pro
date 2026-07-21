@@ -46,17 +46,6 @@ export function SettingsPage() {
     }
   };
 
-  useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const loaded = await invoke<AppSettings>("load_settings");
-        setSettings(loaded);
-      } catch (error) {
-        console.error("Failed to load settings:", error);
-      }
-    };
-    loadSettings();
-  }, [setSettings]);
 
   const handleSave = async () => {
     try {
@@ -132,18 +121,26 @@ export function SettingsPage() {
           </select>
         </div>
 
-        {/* Default Output */}
-        <div className="panel p-4 space-y-3">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <FolderOutput size={16} />
-            {t("default_output_folder")}
+        {/* Default Output (PRO Feature) */}
+        <div 
+          className="panel p-4 space-y-3 opacity-60 cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={() => alert("Vui lòng liên hệ nhà cung cấp để sử dụng tính năng trả phí qua Zalo: 0869528304")}
+        >
+          <div className="flex items-center justify-between pointer-events-none">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <FolderOutput size={16} />
+              {t("default_output_folder")}
+            </div>
+            <span className="bg-warning/20 text-warning text-[10px] px-2 py-0.5 rounded-full font-bold tracking-wider">
+              PRO
+            </span>
           </div>
           <input
             type="text"
-            className="input-field"
-            value={settings.default_output}
-            onChange={(e) => updateSetting("default_output", e.target.value)}
-            placeholder={t("no_default_output")}
+            className="input-field cursor-pointer opacity-50 pointer-events-none"
+            value=""
+            readOnly
+            placeholder="Tính năng trả phí"
           />
         </div>
 

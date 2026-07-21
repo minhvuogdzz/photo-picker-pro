@@ -11,9 +11,6 @@ import {
   StarOff,
   Folder,
   FolderOpen,
-  X,
-  CheckSquare,
-  Square,
 } from "lucide-react";
 import { getFolderName } from "@/lib/utils";
 
@@ -21,8 +18,6 @@ export function LeftPanel() {
   const inputFolders = useAppStore((s) => s.inputFolders);
   const selectedInputFolders = useAppStore((s) => s.selectedInputFolders);
   const addInputFolder = useAppStore((s) => s.addInputFolder);
-  const removeInputFolder = useAppStore((s) => s.removeInputFolder);
-  const toggleInputFolderSelection = useAppStore((s) => s.toggleInputFolderSelection);
   const phase = useAppStore((s) => s.phase);
   const favoriteFolders = useSettingsStore((s) => s.settings.favorite_folders);
   const addFavoriteFolder = useSettingsStore((s) => s.addFavoriteFolder);
@@ -157,44 +152,21 @@ export function LeftPanel() {
             </p>
           </div>
         ) : (
-          inputFolders.map((folder, i) => {
-            const isSelected = selectedInputFolders.includes(folder);
-            return (
+          inputFolders.map((folder, i) => (
               <div
                 key={i}
-                className={`group flex items-center gap-2 p-2 rounded-md border bg-card transition-colors ${
-                  !isSelected ? "opacity-50" : ""
-                }`}
+                className="flex items-center gap-2 p-2 rounded-md border bg-card border-primary/30 shadow-sm"
               >
-                <button
-                  onClick={() => toggleInputFolderSelection(folder)}
-                  disabled={phase === "scanning" || phase === "copying"}
-                  className="flex-shrink-0 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
-                >
-                  {isSelected ? (
-                    <CheckSquare size={16} className="text-primary" />
-                  ) : (
-                    <Square size={16} />
-                  )}
-                </button>
+                <FolderOpen size={16} className="text-primary flex-shrink-0" />
                 <div
-                  className="flex-1 truncate text-xs"
+                  className="flex-1 truncate text-xs font-medium"
                   title={folder}
                   dir="rtl"
                 >
                   &lrm;{getFolderName(folder)}
                 </div>
-                <button
-                  onClick={() => removeInputFolder(folder)}
-                  disabled={phase === "scanning" || phase === "copying"}
-                  className="flex-shrink-0 opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-all disabled:opacity-0"
-                  title={t("remove")}
-                >
-                  <X size={14} />
-                </button>
               </div>
-            );
-          })
+          ))
         )}
 
         {/* Favorite folders section */}
