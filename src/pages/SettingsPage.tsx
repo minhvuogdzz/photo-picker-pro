@@ -56,8 +56,8 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 animate-fade-in">
-      <div className="max-w-2xl mx-auto space-y-6">
+    <div className="h-full overflow-y-auto p-6 animate-fade-in flex items-center justify-center">
+      <div className="max-w-2xl w-full space-y-6 py-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">{t("settings")}</h2>
           <button onClick={handleSave} className="btn-primary text-xs py-1.5">

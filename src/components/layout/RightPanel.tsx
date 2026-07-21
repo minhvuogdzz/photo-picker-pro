@@ -217,7 +217,7 @@ export function RightPanel() {
 
   return (
     <div className="panel w-72 flex flex-col min-h-0 animate-fade-in">
-      <div className="panel-header">
+      <div className="panel-header py-5 px-6">
         <span className="panel-title flex items-center gap-2">
           <HardDrive size={14} className="text-primary" />
           {t("dashboard")}

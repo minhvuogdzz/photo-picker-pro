@@ -22,19 +22,17 @@ export function TopBar() {
   ];
 
   return (
-    <div className="flex items-center justify-between px-6 py-4 glass-nav border-b border-white/10">
+    <div className="flex items-center justify-between pl-8 pr-12 py-5 glass-nav border-b border-white/10">
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-info flex items-center justify-center shadow-lg shadow-primary/30">
-            <Sparkles size={18} className="text-white" />
-          </div>
+          <img src="/logo.png" alt="Logo" className="w-9 h-9 object-contain drop-shadow-md" />
           <h1 className="text-base font-bold tracking-tight text-gradient">
-            Minh Vuong Devtool
+            MVD PHOTOSHOP ACADEMY
           </h1>
         </div>
       </div>
 
-      <nav className="flex items-center gap-1.5">
+      <nav className="flex items-center gap-4">
         {tabs.map((tab) => (
           <button
             key={tab.id}

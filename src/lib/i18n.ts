@@ -2,7 +2,7 @@ import { useSettingsStore } from "@/stores/useSettingsStore";
 
 const translations = {
   en: {
-    app_title: "Minh Vuong Devtool",
+    app_title: "MVD PHOTOSHOP ACADEMY",
     input_folders: "Input Folders",
     no_folders_added: "No folders added",
     click_add_folder: "Click Add Folder or drag and drop folders here",
@@ -68,7 +68,7 @@ const translations = {
     footer_text: "Minh Vuong Dev All right server - Nếu thấy hay hãy ủng hộ tác giả nhé.",
   },
   vi: {
-    app_title: "Minh Vuong Devtool",
+    app_title: "MVD PHOTOSHOP ACADEMY",
     input_folders: "Thư mục đầu vào",
     no_folders_added: "Chưa có thư mục",
     click_add_folder: "Bấm Thêm Thư mục hoặc kéo thả vào đây",

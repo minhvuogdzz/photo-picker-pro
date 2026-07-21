@@ -14,11 +14,9 @@ export function AboutPage() {
       <div className="max-w-md w-full text-center space-y-8">
         {/* Logo */}
         <div className="flex flex-col items-center gap-4">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-info flex items-center justify-center shadow-xl shadow-primary/20">
-            <Sparkles size={36} className="text-white" />
-          </div>
+          <img src="/logo.png" alt="Logo" className="w-24 h-24 object-contain drop-shadow-2xl" />
           <div>
-            <h1 className="text-2xl font-bold text-gradient">Minh Vuong Devtool</h1>
+            <h1 className="text-2xl font-bold text-gradient">MVD PHOTOSHOP ACADEMY</h1>
             <p className="text-sm text-muted-foreground mt-1">Version {version}</p>
           </div>
         </div>

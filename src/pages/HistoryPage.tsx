@@ -43,8 +43,8 @@ export function HistoryPage() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 animate-fade-in">
-      <div className="max-w-3xl mx-auto space-y-4">
+    <div className="h-full overflow-y-auto p-6 animate-fade-in flex items-center justify-center">
+      <div className="max-w-3xl w-full space-y-4 py-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Clock size={18} />

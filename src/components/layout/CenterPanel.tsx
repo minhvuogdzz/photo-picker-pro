@@ -58,7 +58,7 @@ export function CenterPanel() {
 
   return (
       <div className="panel flex-1 flex flex-col min-h-0 animate-fade-in">
-      <div className="panel-header">
+      <div className="panel-header py-5 px-6">
         <span className="panel-title flex items-center gap-2">
           <Code2 size={14} className="text-primary" />
           {t("customer_codes")}
