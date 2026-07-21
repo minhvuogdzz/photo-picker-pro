@@ -366,52 +366,61 @@ export function RightPanel() {
           </span>
 
           <div className="flex flex-col gap-2">
-            <label className={`flex items-center gap-2 cursor-pointer p-2.5 rounded-xl border transition-all ${outputMode === "Folder" ? "bg-primary/10 border-primary text-primary shadow-sm" : "bg-card border-border hover:border-primary/50 text-foreground"}`}>
-              <input
-                type="checkbox"
-                checked={outputMode === "Folder"}
-                onChange={() => setOutputMode("Folder")}
-                className="rounded text-primary focus:ring-primary/50 cursor-pointer w-4 h-4"
-              />
-              <span className="text-xs font-medium">{t("choose_folder")}</span>
-            </label>
+            <div className={`flex flex-col gap-2 p-2.5 rounded-xl border transition-all ${outputMode === "Folder" ? "bg-primary/5 border-primary shadow-sm" : "bg-card border-border hover:border-primary/50"}`}>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={outputMode === "Folder"}
+                  onChange={() => setOutputMode("Folder")}
+                  className="rounded text-primary focus:ring-primary/50 cursor-pointer w-4 h-4"
+                />
+                <span className={`text-xs font-medium ${outputMode === "Folder" ? "text-primary" : "text-foreground"}`}>{t("choose_folder")}</span>
+              </label>
 
-            <label className={`flex items-center gap-2 cursor-pointer p-2.5 rounded-xl border transition-all ${outputMode === "SameAsOriginal" ? "bg-primary/10 border-primary text-primary shadow-sm" : "bg-card border-border hover:border-primary/50 text-foreground"}`}>
-              <input
-                type="checkbox"
-                checked={outputMode === "SameAsOriginal"}
-                onChange={() => setOutputMode("SameAsOriginal")}
-                className="rounded text-primary focus:ring-primary/50 cursor-pointer w-4 h-4"
-              />
-              <span className="text-xs font-medium">{t("same_as_original")}</span>
-            </label>
-          </div>
-
-          {outputMode === "SameAsOriginal" ? (
-            <div className="p-3 bg-info/10 border border-info/20 rounded-lg">
-              <p className="text-xs text-info leading-relaxed">
-                {t("same_as_original_hint")}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <button
-                onClick={handleSelectOutput}
-                className="btn-outline w-full text-xs py-2.5 justify-start cursor-pointer"
-              >
-                {outputFolder ? (
-                  <span className="truncate">{getFolderName(outputFolder)}</span>
-                ) : (
-                  <span className="text-muted-foreground">{t("select_output_folder")}</span>
-                )}
-              </button>
-              {outputFolder && (
-                <p className="text-xs text-muted-foreground truncate" title={outputFolder}>
-                  {outputFolder}
-                </p>
+              {outputMode === "Folder" && (
+                <div className="pl-6 space-y-2 pb-1">
+                  <button
+                    onClick={handleSelectOutput}
+                    className="btn-outline w-full text-sm py-3 px-3 justify-start cursor-pointer flex items-center gap-2 bg-background hover:bg-accent"
+                  >
+                    <FolderOutput size={18} className="text-muted-foreground shrink-0" />
+                    {outputFolder ? (
+                      <span className="truncate flex-1 text-left font-medium">{getFolderName(outputFolder)}</span>
+                    ) : (
+                      <span className="text-muted-foreground flex-1 text-left">{t("select_output_folder")}</span>
+                    )}
+                  </button>
+                  {outputFolder && (
+                    <p className="text-[11px] text-muted-foreground truncate px-1" title={outputFolder}>
+                      {outputFolder}
+                    </p>
+                  )}
+                </div>
               )}
             </div>
-          )}
+
+            <div className={`flex flex-col gap-2 p-2.5 rounded-xl border transition-all ${outputMode === "SameAsOriginal" ? "bg-primary/5 border-primary shadow-sm" : "bg-card border-border hover:border-primary/50"}`}>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={outputMode === "SameAsOriginal"}
+                  onChange={() => setOutputMode("SameAsOriginal")}
+                  className="rounded text-primary focus:ring-primary/50 cursor-pointer w-4 h-4"
+                />
+                <span className={`text-xs font-medium ${outputMode === "SameAsOriginal" ? "text-primary" : "text-foreground"}`}>{t("same_as_original")}</span>
+              </label>
+
+              {outputMode === "SameAsOriginal" && (
+                <div className="pl-6 pb-1">
+                  <div className="p-2.5 bg-info/10 border border-info/20 rounded-lg">
+                    <p className="text-xs text-info leading-relaxed">
+                      {t("same_as_original_hint")}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Warnings */}
