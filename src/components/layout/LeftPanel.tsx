@@ -23,7 +23,7 @@ export function LeftPanel() {
   const addFavoriteFolder = useSettingsStore((s) => s.addFavoriteFolder);
   const removeFavoriteFolder = useSettingsStore((s) => s.removeFavoriteFolder);
   const { t } = useTranslation();
-  
+
   const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
@@ -31,7 +31,7 @@ export function LeftPanel() {
     let unlistenDragDrop: () => void;
     let unlistenHover: () => void;
     let unlistenCancel: () => void;
-    
+
     const handleDropPaths = (paths: string[]) => {
       setIsDragging(false);
       if (paths && paths.length > 0) {
@@ -44,7 +44,7 @@ export function LeftPanel() {
     const handleDropPayload = (event: any) => {
       setIsDragging(false);
       const payload = event.payload;
-      
+
       let paths: string[] = [];
       if (Array.isArray(payload)) {
         paths = payload;
@@ -53,7 +53,7 @@ export function LeftPanel() {
       } else if (payload && payload.type === 'drop' && Array.isArray(payload.paths)) {
         paths = payload.paths; // Tauri v2 onDragDropEvent
       }
-      
+
       handleDropPaths(paths);
     };
 
@@ -84,9 +84,9 @@ export function LeftPanel() {
         console.error("Failed to setup drag and drop", err);
       }
     };
-    
+
     setupDragDrop();
-    
+
     return () => {
       if (unlistenFileDrop) unlistenFileDrop();
       if (unlistenDragDrop) unlistenDragDrop();
@@ -137,9 +137,8 @@ export function LeftPanel() {
       </div>
 
       <div
-        className={`flex-1 overflow-y-auto panel-body space-y-2 transition-all ${
-          isDragging ? "bg-primary/5 ring-2 ring-primary ring-inset rounded-lg m-2" : ""
-        }`}
+        className={`flex-1 overflow-y-auto panel-body space-y-2 transition-all ${isDragging ? "bg-primary/5 ring-2 ring-primary ring-inset rounded-lg m-2" : ""
+          }`}
       >
         {inputFolders.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 px-4 text-center border-2 border-dashed border-border rounded-xl">
@@ -153,19 +152,19 @@ export function LeftPanel() {
           </div>
         ) : (
           inputFolders.map((folder, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-2 p-2 rounded-md border bg-card border-primary/30 shadow-sm"
+            >
+              <FolderOpen size={16} className="text-primary flex-shrink-0" />
               <div
-                key={i}
-                className="flex items-center gap-2 p-2 rounded-md border bg-card border-primary/30 shadow-sm"
+                className="flex-1 truncate text-xs font-medium"
+                title={folder}
+                dir="rtl"
               >
-                <FolderOpen size={16} className="text-primary flex-shrink-0" />
-                <div
-                  className="flex-1 truncate text-xs font-medium"
-                  title={folder}
-                  dir="rtl"
-                >
-                  &lrm;{getFolderName(folder)}
-                </div>
+                &lrm;{getFolderName(folder)}
               </div>
+            </div>
           ))
         )}
 
@@ -202,7 +201,7 @@ export function LeftPanel() {
       <div className="p-4 border-t border-border">
         <button
           onClick={handleAddFolder}
-          className="btn-outline w-full text-sm py-2.5 font-medium"
+          className="btn-outline !py-4 !flex !gap-2 !items-center !justify-center w-full text-sm py-2.5 font-medium"
         >
           <FolderPlus size={16} />
           {t("add_folder")}

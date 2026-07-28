@@ -77,9 +77,8 @@ export function SettingsPage() {
               <button
                 key={theme}
                 onClick={() => updateSetting("theme", theme)}
-                className={`btn text-xs py-1.5 px-4 capitalize cursor-pointer ${
-                  settings.theme === theme ? "btn-primary" : "btn-outline"
-                }`}
+                className={`btn text-xs py-1.5 px-4 capitalize cursor-pointer ${settings.theme === theme ? "btn-primary" : "btn-outline"
+                  }`}
               >
                 {theme === "dark" ? <Moon size={12} /> : <Sun size={12} />}
                 {theme === "dark" ? t("dark") : t("light")}
@@ -122,7 +121,7 @@ export function SettingsPage() {
         </div>
 
         {/* Default Output (PRO Feature) */}
-        <div 
+        <div
           className="panel p-4 space-y-3 opacity-60 cursor-pointer hover:opacity-80 transition-opacity"
           onClick={() => alert("Vui lòng liên hệ nhà cung cấp để sử dụng tính năng trả phí qua Zalo: 0869528304")}
         >
@@ -189,7 +188,7 @@ export function SettingsPage() {
               <DownloadCloud size={16} className="text-blue-500" />
               Cập nhật Ứng dụng
             </div>
-            <button 
+            <button
               onClick={handleManualUpdateCheck}
               disabled={isCheckingUpdate}
               className="btn-outline text-xs py-1.5 px-3 flex items-center gap-1.5"
@@ -198,7 +197,7 @@ export function SettingsPage() {
               Kiểm tra cập nhật
             </button>
           </div>
-          
+
           <div className="space-y-2 pt-2 border-t border-border">
             <label className="flex items-center justify-between cursor-pointer">
               <span className="text-sm text-slate-700 dark:text-slate-300">
@@ -211,7 +210,7 @@ export function SettingsPage() {
                 className="w-4 h-4 rounded border-border accent-blue-600 cursor-pointer"
               />
             </label>
-            
+
             <label className="flex items-center justify-between cursor-pointer">
               <span className="text-sm text-slate-700 dark:text-slate-300">
                 Tự động tải xuống khi có bản cập nhật
@@ -241,10 +240,10 @@ export function SettingsPage() {
       </div>
 
       {manualUpdateResult && (
-        <UpdateDialog 
-          updateResult={manualUpdateResult} 
-          onClose={() => setManualUpdateResult(null)} 
-          onSkip={() => setManualUpdateResult(null)} 
+        <UpdateDialog
+          updateResult={manualUpdateResult}
+          onClose={() => setManualUpdateResult(null)}
+          onSkip={() => setManualUpdateResult(null)}
         />
       )}
     </div>
