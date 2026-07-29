@@ -46,7 +46,6 @@ export function SettingsPage() {
     }
   };
 
-
   const handleSave = async () => {
     try {
       await invoke("save_settings", { settings });
@@ -181,6 +180,7 @@ export function SettingsPage() {
             </span>
           </label>
         </div>
+
         {/* Updates */}
         <div className="panel p-4 space-y-3 border-l-4 border-l-blue-500">
           <div className="flex items-center justify-between text-sm font-medium">

@@ -24,6 +24,7 @@ pub fn run() {
             commands::copy::cancel_copy,
             commands::logger::export_log,
             commands::logger::export_missing,
+            commands::system_utils::sync_subfolder_names,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

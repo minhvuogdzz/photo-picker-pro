@@ -18,6 +18,8 @@ export function LeftPanel() {
   const inputFolders = useAppStore((s) => s.inputFolders);
   const selectedInputFolders = useAppStore((s) => s.selectedInputFolders);
   const addInputFolder = useAppStore((s) => s.addInputFolder);
+  const addSyncFolders = useAppStore((s) => s.addSyncFolders);
+  const setActiveDropZone = useAppStore((s) => s.setActiveDropZone);
   const phase = useAppStore((s) => s.phase);
   const favoriteFolders = useSettingsStore((s) => s.settings.favorite_folders);
   const addFavoriteFolder = useSettingsStore((s) => s.addFavoriteFolder);
@@ -126,7 +128,7 @@ export function LeftPanel() {
 
   return (
     <div className="panel w-72 flex flex-col min-h-0 animate-fade-in relative">
-      <div className="panel-header py-5 px-6">
+      <div className="panel-header py-5 px-6 shrink-0">
         <span className="panel-title flex items-center gap-2">
           <FolderOpen size={16} className="text-primary" />
           {t("input_folders")}
@@ -137,6 +139,11 @@ export function LeftPanel() {
       </div>
 
       <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          setActiveDropZone("input");
+        }}
+        onDragLeave={() => setActiveDropZone(null)}
         className={`flex-1 overflow-y-auto panel-body space-y-2 transition-all ${isDragging ? "bg-primary/5 ring-2 ring-primary ring-inset rounded-lg m-2" : ""
           }`}
       >

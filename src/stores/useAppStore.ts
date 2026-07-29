@@ -14,6 +14,16 @@ interface AppState {
   readonly activeTab: MainTab;
   setActiveTab: (tab: MainTab) => void;
 
+  // Drag and Drop Zone
+  readonly activeDropZone: "input" | "sync" | null;
+  setActiveDropZone: (zone: "input" | "sync" | null) => void;
+
+  // Sync folders
+  readonly syncFolders: string[];
+  addSyncFolders: (folders: string[]) => void;
+  removeSyncFolder: (folder: string) => void;
+  clearSyncFolders: () => void;
+
   // Input folders
   readonly inputFolders: string[];
   readonly selectedInputFolders: string[];
@@ -74,6 +84,8 @@ interface AppState {
 
 const initialState = {
   activeTab: "home" as MainTab,
+  activeDropZone: null as "input" | "sync" | null,
+  syncFolders: [] as string[],
   inputFolders: [] as string[],
   selectedInputFolders: [] as string[],
   rawCodeInput: "",
@@ -99,6 +111,17 @@ export const useAppStore = create<AppState>((set) => ({
   ...initialState,
 
   setActiveTab: (tab) => set({ activeTab: tab }),
+
+  setActiveDropZone: (zone) => set({ activeDropZone: zone }),
+
+  addSyncFolders: (folders) =>
+    set((state) => {
+      const newFolders = folders.filter((p) => !state.syncFolders.includes(p));
+      return { syncFolders: [...state.syncFolders, ...newFolders] };
+    }),
+  removeSyncFolder: (folder) =>
+    set((state) => ({ syncFolders: state.syncFolders.filter((f) => f !== folder) })),
+  clearSyncFolders: () => set({ syncFolders: [] }),
 
   addInputFolder: (folder) =>
     set((state) => {
