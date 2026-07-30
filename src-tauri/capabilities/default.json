@@ -22,6 +22,8 @@
     "fs:allow-copy-file",
     "core:event:default",
     "core:event:allow-listen",
-    "core:event:allow-emit"
+    "core:event:allow-emit",
+    "updater:default",
+    "process:default"
   ]
 }
