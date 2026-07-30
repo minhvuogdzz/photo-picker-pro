@@ -9,7 +9,7 @@
 const USE_MOCK = false;
 
 /** Backend API base URL — update when NestJS backend is deployed */
-const API_BASE_URL = "http://localhost:3000";
+const API_BASE_URL = "https://photo-picker-backend.vercel.app";
 
 interface ApiResponse<T> {
   readonly data: T;
