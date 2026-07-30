@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "MVD PHOTOSHOP ACADEMY",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "identifier": "com.minhvuong.devtool",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -29,6 +29,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "createUpdaterArtifacts": "v1Compatible",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -45,7 +46,7 @@
       "endpoints": [
         "https://github.com/minhvuogdzz/photo-picker-pro/releases/latest/download/latest.json"
       ],
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEExOUE3MUFFQUEzQjE0MkMKUldRc0ZEdXFybkdhb1IxN2JzWWwyWldhSHp2UnJIMkgraHJkNEZ5REsrQWxyWUFsY0tscFZ4VjkK"
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDI3QzZDQ0U1NjNCM0U4OTIKUldTUzZMTmo1Y3pHSjJnY2JYTVR3QUVWZit3cFp4QWZhQ1BIbU1FT09kUkZzcnd0Z1paREZYNm4K"
     }
   }
 }
