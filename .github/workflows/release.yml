@@ -43,12 +43,20 @@ jobs:
       - name: install frontend dependencies
         run: npm install
 
+      - name: Clean secrets
+        env:
+          RAW_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+        shell: bash
+        run: |
+          CLEANED_KEY=$(echo "$RAW_KEY" | tr -d ' \n\r')
+          echo "CLEANED_TAURI_PRIVATE_KEY=$CLEANED_KEY" >> $GITHUB_ENV
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_PRIVATE_KEY: ${{ env.CLEANED_TAURI_PRIVATE_KEY }}
           TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ env.CLEANED_TAURI_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
         with:
           tagName: v__VERSION__
