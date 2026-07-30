@@ -14,7 +14,7 @@ export function AppLayout() {
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background p-4 gap-4">
       {/* TopBar Wrapper */}
-      <div className="rounded-2xl overflow-hidden shadow-lg border border-border/40 shrink-0">
+      <div className="rounded-2xl shadow-lg border border-border/40 shrink-0 relative z-50">
         <TopBar />
       </div>
 

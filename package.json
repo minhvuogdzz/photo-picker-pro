@@ -1,7 +1,7 @@
 {
   "name": "photo-picker-pro",
   "private": true,
-  "version": "1.0.10",
+  "version": "1.2",
   "type": "module",
   "scripts": {
     "dev": "vite",

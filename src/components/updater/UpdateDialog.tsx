@@ -4,11 +4,12 @@ import { UpdateCheckResult, downloadAndInstallUpdate, installAndRestart } from '
 
 interface UpdateDialogProps {
   updateResult: UpdateCheckResult;
+  autoStartDownload?: boolean;
   onClose: () => void;
   onSkip: () => void;
 }
 
-export const UpdateDialog: React.FC<UpdateDialogProps> = ({ updateResult, onClose, onSkip }) => {
+export const UpdateDialog: React.FC<UpdateDialogProps> = ({ updateResult, autoStartDownload, onClose, onSkip }) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState({
     downloaded: 0,
@@ -27,6 +28,9 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({ updateResult, onClos
   const { version, date, notes, rawUpdate } = updateResult;
 
   const handleUpdate = async () => {
+    // Prevent multiple triggers
+    if (isDownloading || isReadyToRestart) return;
+    
     setIsDownloading(true);
     setError(null);
     
@@ -59,6 +63,12 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({ updateResult, onClos
       setError("Không thể khởi động lại ứng dụng. Vui lòng tắt và mở lại thủ công.");
     }
   };
+
+  React.useEffect(() => {
+    if (autoStartDownload && !isDownloading && !isReadyToRestart && !error) {
+      handleUpdate();
+    }
+  }, [autoStartDownload]);
 
   const renderSection = (title: string, items: string[], icon: React.ReactNode, colorClass: string) => {
     if (!items || items.length === 0) return null;

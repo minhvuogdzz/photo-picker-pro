@@ -10,6 +10,11 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .manage(std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)))
         .invoke_handler(tauri::generate_handler![
+            commands::auth::save_auth_session,
+            commands::auth::load_auth_session,
+            commands::auth::clear_auth_session,
+            commands::auth::get_device_fingerprint,
+            commands::auth::is_offline_period_valid,
             commands::config::load_settings,
             commands::config::save_settings,
             commands::config::load_history,

@@ -1,9 +1,8 @@
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 import { useAppStore } from "@/stores/useAppStore";
 import { useSettingsStore } from "@/stores/useSettingsStore";
-import { open, save } from "@tauri-apps/plugin-dialog";
+import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import {
   CheckCircle,
   XCircle,
@@ -15,21 +14,14 @@ import {
   Zap,
   ScanSearch,
   Ban,
-  FileDown
 } from "lucide-react";
 import { formatDuration, getFolderName } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
-import type {
-  ScanResult,
-  MatchResult,
-  CopyResult,
-  ProgressEvent,
-  CopyOptions,
-} from "@/types";
+import { useScanAndMatch } from "@/features/scanner/hooks/useScanAndMatch";
+import { useCopyOperation } from "@/features/copy/hooks/useCopyOperation";
+import { useExport } from "@/features/export/hooks/useExport";
 
 export function RightPanel() {
-  const inputFolders = useAppStore((s) => s.inputFolders);
-  const parsedCodes = useAppStore((s) => s.parsedCodes);
   const matchResult = useAppStore((s) => s.matchResult);
   const scannedFiles = useAppStore((s) => s.scannedFiles);
   const progress = useAppStore((s) => s.progress);
@@ -39,19 +31,15 @@ export function RightPanel() {
   const copyResult = useAppStore((s) => s.copyResult);
   const outputMode = useAppStore((s) => s.outputMode);
   const setOutputMode = useAppStore((s) => s.setOutputMode);
-  const matchMode = useAppStore((s) => s.matchMode);
-  const regexPattern = useAppStore((s) => s.regexPattern);
-  const setScannedFiles = useAppStore((s) => s.setScannedFiles);
-  const setMatchResult = useAppStore((s) => s.setMatchResult);
-  const setCopyResult = useAppStore((s) => s.setCopyResult);
-  const setPhase = useAppStore((s) => s.setPhase);
-  const setProgress = useAppStore((s) => s.setProgress);
-  const scanOptions = useAppStore((s) => s.scanOptions);
   const selectedInputFolders = useAppStore((s) => s.selectedInputFolders);
   const { t } = useTranslation();
   
   const settings = useSettingsStore((s) => s.settings);
   const updateSetting = useSettingsStore((s) => s.updateSetting);
+
+  const { handleScanAndMatch, handleCancelScan } = useScanAndMatch();
+  const { handleCopy, handleCancelCopy } = useCopyOperation();
+  const { handleExport } = useExport();
 
   // Set default output folder from settings on mount
   useEffect(() => {
@@ -77,135 +65,10 @@ export function RightPanel() {
     }
   };
 
-  const handleScanAndMatch = useCallback(async () => {
-    if (selectedInputFolders.length === 0) {
-      alert("Vui lòng chọn ít nhất 1 thư mục đầu vào!");
-      return;
-    }
-    try {
-      // Reset previous results so user can rescan without reloading
-      setMatchResult(null);
-      setCopyResult(null);
-      setScannedFiles([]);
-      setPhase("scanning");
-      setProgress(null);
-      const unlistenScan = await listen<ProgressEvent>("scan-progress", (event) => {
-        setProgress(event.payload);
-      });
-      const scanResult = await invoke<ScanResult>("scan_folders", {
-        paths: selectedInputFolders,
-        options: scanOptions,
-      });
-      unlistenScan();
-      setScannedFiles([...scanResult.files]);
-      if (parsedCodes.length > 0) {
-        setPhase("matching");
-        const result = await invoke<MatchResult>("match_photos", {
-          codes: parsedCodes,
-          files: scanResult.files,
-          mode: matchMode,
-          regexPattern: matchMode === "Regex" ? regexPattern : null,
-          folderCount: selectedInputFolders.length,
-        });
-        setMatchResult(result);
-        setPhase("matched");
-      } else {
-        setPhase("scanned");
-      }
-      setProgress(null);
-    } catch (error) {
-      console.error("Scan/Match error:", error);
-      alert("Lỗi trong quá trình quét/lọc: " + (typeof error === 'string' ? error : JSON.stringify(error)));
-      setPhase("idle");
-      setProgress(null);
-    }
-  }, [
-    inputFolders, selectedInputFolders, parsedCodes, matchMode, regexPattern, scanOptions,
-    setScannedFiles, setMatchResult, setPhase, setProgress,
-  ]);
-
-  const handleCopy = useCallback(
-    async (operation: "Copy" | "Move") => {
-      if (!matchResult) return;
-      if (outputMode === "Folder" && !outputFolder) {
-        alert("Vui lòng chọn thư mục đầu ra.");
-        return;
-      }
-      try {
-        setPhase("copying");
-        setProgress(null);
-        const unlistenCopy = await listen<ProgressEvent>("copy-progress", (event) => {
-          setProgress(event.payload);
-        });
-        const options: CopyOptions = {
-          operation,
-          output_mode: outputMode,
-          output_folder: outputMode === "Folder" ? outputFolder : "",
-          duplicate_policy: "CopyFirst",
-          folder_structure: "Flat",
-          prefix: null,
-          suffix: null,
-          input_folders: inputFolders,
-        };
-        const result = await invoke<CopyResult>("copy_files", {
-          matches: matchResult.matches,
-          options,
-        });
-        unlistenCopy();
-        setCopyResult(result);
-        setPhase("done");
-        setProgress(null);
-      } catch (error) {
-        console.error("Copy error:", error);
-        alert("Lỗi chép file: " + (typeof error === 'string' ? error : JSON.stringify(error)));
-        setPhase("matched");
-        setProgress(null);
-      }
-    },
-    [matchResult, outputFolder, outputMode, inputFolders, setCopyResult, setPhase, setProgress]
-  );
-
-  const handleCancel = useCallback(async () => {
-    try {
-      if (phase === "scanning") {
-        await invoke("cancel_scan");
-      } else if (phase === "copying") {
-        await invoke("cancel_copy");
-      }
-      setPhase("idle");
-      setProgress(null);
-    } catch (error) {
-      console.error("Cancel error:", error);
-    }
-  }, [phase, setPhase, setProgress]);
-
-  const handleExport = useCallback(
-    async (format: string) => {
-      if (!matchResult) return;
-      try {
-        const extension = format === "csv" ? "csv" : format === "json" ? "json" : "txt";
-        const path = await save({
-          defaultPath: `photo_picker_report.${extension}`,
-          filters: [
-            {
-              name: `${format.toUpperCase()} File`,
-              extensions: [extension],
-            },
-          ],
-        });
-        if (path) {
-          await invoke("export_log", {
-            result: matchResult,
-            format,
-            outputPath: path,
-          });
-        }
-      } catch (error) {
-        console.error("Export error:", error);
-      }
-    },
-    [matchResult]
-  );
+  const handleCancel = () => {
+    if (phase === "scanning") handleCancelScan();
+    else if (phase === "copying") handleCancelCopy();
+  };
 
   const isActive = phase === "scanning" || phase === "copying";
   const canScan = selectedInputFolders.length > 0 && !isActive;

@@ -66,6 +66,21 @@ const translations = {
     same_as_original_hint: "Photos will be saved to a Selects subfolder inside their original location.",
     remove: "Remove",
     footer_text: "Minh Vuong Dev All right server - Nếu thấy hay hãy ủng hộ tác giả nhé.",
+    // Auth
+    login: "Login",
+    login_subtitle: "Sign in to continue",
+    login_footer: "Dùng thử 7 ngày miễn phí · Offline First",
+    logging_in: "Signing in...",
+    logout: "Logout",
+    password: "Password",
+    forgot_password: "Forgot password?",
+    login_again: "Login Again",
+    session_expired_device_title: "Session Ended",
+    session_expired_device_desc: "Your session has been ended because your account was logged in on another device.",
+    subscription_expired_title: "Subscription Expired",
+    subscription_expired_desc: "Your subscription has expired. Please renew to continue using the app.",
+    offline_expired_title: "Internet Required",
+    offline_expired_desc: "You have been offline for more than 7 days. Please connect to the internet to verify your subscription.",
   },
   vi: {
     app_title: "MVD PHOTOSHOP ACADEMY",
@@ -132,6 +147,21 @@ const translations = {
     same_as_original_hint: "Ảnh sẽ được lưu vào thư mục con Selects nằm ngay trong thư mục chứa ảnh gốc.",
     remove: "Xoá",
     footer_text: "Minh Vuong Dev All right server - Nếu thấy hay hãy ủng hộ tác giả nhé.",
+    // Auth
+    login: "Đăng nhập",
+    login_subtitle: "Đăng nhập để tiếp tục",
+    login_footer: "Dùng thử 7 ngày miễn phí · Offline First",
+    logging_in: "Đang đăng nhập...",
+    logout: "Đăng xuất",
+    password: "Mật khẩu",
+    forgot_password: "Quên mật khẩu?",
+    login_again: "Đăng nhập lại",
+    session_expired_device_title: "Phiên đã kết thúc",
+    session_expired_device_desc: "Phiên của bạn đã kết thúc vì tài khoản được đăng nhập trên thiết bị khác.",
+    subscription_expired_title: "Hết hạn sử dụng",
+    subscription_expired_desc: "Gói đăng ký của bạn đã hết hạn. Vui lòng gia hạn để tiếp tục sử dụng.",
+    offline_expired_title: "Cần kết nối Internet",
+    offline_expired_desc: "Bạn đã ngoại tuyến hơn 7 ngày. Vui lòng kết nối Internet để xác minh đăng ký.",
   }
 };
 
