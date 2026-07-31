@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from "react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { logout } from "@/services/authApi";
 import { useTranslation } from "@/lib/i18n";
@@ -22,13 +23,14 @@ export function SessionExpiredDialog({
   const setSessionExpiredByOtherDevice = useAuthStore((s) => s.setSessionExpiredByOtherDevice);
   const setSubscriptionExpired = useAuthStore((s) => s.setSubscriptionExpired);
   const setAccountSuspended = useAuthStore((s) => s.setAccountSuspended);
+  const setOfflineGracePeriodExpired = useAuthStore((s) => s.setOfflineGracePeriodExpired);
   const { t } = useTranslation();
   const [countdown, setCountdown] = useState(3);
 
   useEffect(() => {
     if (reason === 'suspended' || reason === 'subscription') {
       const timer = setInterval(() => {
-        setCountdown((prev) => {
+        setCountdown((prev: number) => {
           if (prev <= 1) {
             clearInterval(timer);
             handleLoginAgain();
