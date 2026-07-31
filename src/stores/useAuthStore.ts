@@ -14,6 +14,8 @@ interface AuthState {
   readonly subscriptionExpired: boolean;
   /** Whether offline grace period (7 days) has expired */
   readonly offlineGracePeriodExpired: boolean;
+  /** Whether account was suspended by admin */
+  readonly accountSuspended: boolean;
 
   setSession: (session: AuthSession | null) => void;
   setLoading: (loading: boolean) => void;
@@ -21,6 +23,7 @@ interface AuthState {
   setSessionExpiredByOtherDevice: (expired: boolean) => void;
   setSubscriptionExpired: (expired: boolean) => void;
   setOfflineGracePeriodExpired: (expired: boolean) => void;
+  setAccountSuspended: (suspended: boolean) => void;
   logout: () => void;
 }
 
@@ -31,6 +34,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   sessionExpiredByOtherDevice: false,
   subscriptionExpired: false,
   offlineGracePeriodExpired: false,
+  accountSuspended: false,
 
   setSession: (session) =>
     set({
@@ -38,6 +42,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       sessionExpiredByOtherDevice: false,
       subscriptionExpired: false,
       offlineGracePeriodExpired: false,
+      accountSuspended: false,
     }),
 
   setLoading: (loading) => set({ isLoading: loading }),
@@ -48,6 +53,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ subscriptionExpired: expired }),
   setOfflineGracePeriodExpired: (expired) =>
     set({ offlineGracePeriodExpired: expired }),
+  setAccountSuspended: (suspended) =>
+    set({ accountSuspended: suspended }),
 
   logout: () =>
     set({
@@ -55,5 +62,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       sessionExpiredByOtherDevice: false,
       subscriptionExpired: false,
       offlineGracePeriodExpired: false,
+      accountSuspended: false,
     }),
 }));

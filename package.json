@@ -1,7 +1,7 @@
 {
   "name": "photo-picker-pro",
   "private": true,
-  "version": "1.2.4",
+  "version": "1.2.5",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -20,6 +20,7 @@
     "lucide-react": "^1.24.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "socket.io-client": "^4.8.3",
     "tailwind-merge": "^3.6.0",
     "zustand": "^5.0.14"
   },

@@ -36,6 +36,7 @@ export interface LoginRequest {
   readonly email: string;
   readonly password: string;
   readonly deviceFingerprint: string;
+  readonly force?: boolean;
 }
 
 /** Login response from server */

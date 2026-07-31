@@ -21,6 +21,18 @@ function AppContent() {
 
   const [updateResult, setUpdateResult] = useState<UpdateCheckResult | null>(null);
 
+  // Connect socket
+  useEffect(() => {
+    if (session) {
+      import('@/services/socketService').then(({ socketService }) => {
+        socketService.connect(session);
+      });
+    } else {
+      import('@/services/socketService').then(({ socketService }) => {
+        socketService.disconnect();
+      });
+    }
+  }, [session]);
 
   // Periodic subscription validation (every 4 hours)
   useEffect(() => {

@@ -24,16 +24,23 @@ export function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const [showConflictDialog, setShowConflictDialog] = useState(false);
+
+  const handleLogin = async (e?: React.FormEvent, force: boolean = false) => {
+    if (e) e.preventDefault();
     setError(null);
     setIsSubmitting(true);
     try {
       const deviceFingerprint = await getDeviceFingerprint();
-      const session = await login({ email, password, deviceFingerprint }, autoLogin);
+      const session = await login({ email, password, deviceFingerprint, force }, autoLogin);
       setSession(session);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      const errMsg = err instanceof Error ? err.message : String(err);
+      if (errMsg.includes('đang được đăng nhập ở thiết bị khác')) {
+        setShowConflictDialog(true);
+      } else {
+        setError(errMsg);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -337,6 +344,35 @@ export function LoginPage() {
         )}
 
       </div>
+      
+      {showConflictDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+          <div className="panel w-full max-w-sm p-6 space-y-6 text-center animate-fade-in shadow-2xl">
+            <h2 className="text-lg font-bold text-foreground">Tài khoản đang được sử dụng</h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Tài khoản này đang được đăng nhập ở thiết bị khác. Bạn có muốn kick thiết bị kia ra và đăng nhập ở đây không?
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className="btn-outline flex-1 py-2 text-sm font-bold"
+                onClick={() => setShowConflictDialog(false)}
+                disabled={isSubmitting}
+              >
+                Bỏ qua
+              </button>
+              <button
+                type="button"
+                className="btn-primary flex-1 py-2 text-sm font-bold"
+                onClick={() => handleLogin(undefined, true)}
+                disabled={isSubmitting}
+              >
+                Xác nhận kick ra
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

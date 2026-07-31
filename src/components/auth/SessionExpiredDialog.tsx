@@ -4,7 +4,7 @@ import { useTranslation } from "@/lib/i18n";
 import { AlertTriangle, LogIn, MonitorX, WifiOff, XCircle } from "lucide-react";
 
 interface SessionExpiredDialogProps {
-  readonly reason: "device" | "subscription" | "offline" | "error";
+  readonly reason: "device" | "subscription" | "offline" | "error" | "suspended";
   readonly errorMessage?: string;
 }
 
@@ -21,8 +21,25 @@ export function SessionExpiredDialog({
   const session = useAuthStore((s) => s.session);
   const setSessionExpiredByOtherDevice = useAuthStore((s) => s.setSessionExpiredByOtherDevice);
   const setSubscriptionExpired = useAuthStore((s) => s.setSubscriptionExpired);
-  const setOfflineGracePeriodExpired = useAuthStore((s) => s.setOfflineGracePeriodExpired);
+  const setAccountSuspended = useAuthStore((s) => s.setAccountSuspended);
   const { t } = useTranslation();
+  const [countdown, setCountdown] = useState(3);
+
+  useEffect(() => {
+    if (reason === 'suspended' || reason === 'subscription') {
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            handleLoginAgain();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [reason]);
 
   const handleLoginAgain = async () => {
     try {
@@ -34,6 +51,13 @@ export function SessionExpiredDialog({
     setSessionExpiredByOtherDevice(false);
     setSubscriptionExpired(false);
     setOfflineGracePeriodExpired(false);
+    setAccountSuspended(false);
+  };
+
+  const handleChangePassword = async () => {
+    await handleLoginAgain();
+    // Use a hash router or set a state to open forgot password on login screen
+    window.location.hash = "forgot-password";
   };
 
   const config = {
@@ -57,7 +81,51 @@ export function SessionExpiredDialog({
       title: "Lỗi khởi tạo",
       description: errorMessage || "Đã xảy ra lỗi không mong muốn.",
     },
+    suspended: {
+      icon: <XCircle size={40} className="text-destructive" />,
+      title: "Tài khoản bị khoá",
+      description: "Tài khoản của bạn đã bị khoá.",
+    },
   }[reason];
+
+  const renderButtons = () => {
+    if (reason === "device") {
+      return (
+        <div className="flex gap-2 w-full">
+          <button
+            onClick={handleChangePassword}
+            className="btn-outline flex-1 py-3 text-sm font-bold"
+          >
+            Đổi mật khẩu
+          </button>
+          <button
+            onClick={handleLoginAgain}
+            className="btn-primary flex-1 py-3 text-sm font-bold"
+          >
+            Để sau
+          </button>
+        </div>
+      );
+    }
+    
+    if (reason === "suspended" || reason === "subscription") {
+      return (
+        <div className="text-sm font-bold text-muted-foreground w-full py-3 text-center">
+          Tự động rời đi sau {countdown}s...
+        </div>
+      );
+    }
+
+    return (
+      <button
+        onClick={handleLoginAgain}
+        className="btn-primary w-full py-3 text-sm font-bold"
+      >
+        <LogIn size={16} />
+        {t("login_again")}
+      </button>
+    );
+  };
 
   return (
     <div className="h-screen flex items-center justify-center bg-background p-4">
@@ -69,13 +137,7 @@ export function SessionExpiredDialog({
             {config.description}
           </p>
         </div>
-        <button
-          onClick={handleLoginAgain}
-          className="btn-primary w-full py-3 text-sm font-bold"
-        >
-          <LogIn size={16} />
-          {t("login_again")}
-        </button>
+        {renderButtons()}
       </div>
     </div>
   );

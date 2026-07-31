@@ -96,6 +96,8 @@ export function AuthGuard({ children }: AuthGuardProps) {
     initializeAuth();
   }, [initializeAuth]);
 
+  const accountSuspended = useAuthStore((s) => s.accountSuspended);
+
   // Loading state
   if (isLoading) {
     return (
@@ -111,6 +113,11 @@ export function AuthGuard({ children }: AuthGuardProps) {
   // Session expired by another device
   if (sessionExpiredByOtherDevice) {
     return <SessionExpiredDialog reason="device" />;
+  }
+
+  // Account suspended
+  if (accountSuspended) {
+    return <SessionExpiredDialog reason="suspended" />;
   }
 
   // Subscription expired
