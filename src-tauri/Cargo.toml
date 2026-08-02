@@ -1,6 +1,6 @@
 [package]
 name = "photo-picker-pro"
-version = "1.2.4"
+version = "1.2.9"
 description = "Photo Picker Pro - Smart photo filtering for photography studios"
 authors = ["Photo Picker Pro"]
 edition = "2021"
