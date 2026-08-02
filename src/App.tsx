@@ -19,8 +19,6 @@ function AppContent() {
   const setSubscriptionExpired = useAuthStore((s) => s.setSubscriptionExpired);
   const setOffline = useAuthStore((s) => s.setOffline);
 
-  const [updateResult, setUpdateResult] = useState<UpdateCheckResult | null>(null);
-
   // Connect socket
   useEffect(() => {
     if (session) {
@@ -61,43 +59,18 @@ function AppContent() {
     return () => clearInterval(interval);
   }, [session, setSession, setSubscriptionExpired, setOffline]);
 
-  // Auto update check
-  useEffect(() => {
-    if (!autoCheck) return;
-
-    const performCheck = async () => {
-      try {
-        const result = await checkForUpdates();
-        if (result.hasUpdate && result.rawUpdate) {
-          setUpdateResult(result);
-        }
-      } catch (err) {
-        console.error("Auto check for updates failed:", err);
-      }
-    };
-
-    const timer = setTimeout(performCheck, 3000);
-    return () => clearTimeout(timer);
-  }, [autoCheck, autoDownload]);
-
   return (
-    <>
-      <AppLayout />
-      {updateResult && (
-        <UpdateDialog
-          updateResult={updateResult}
-          autoStartDownload={autoDownload}
-          onClose={() => setUpdateResult(null)}
-          onSkip={() => setUpdateResult(null)}
-        />
-      )}
-    </>
+    <AppLayout />
   );
 }
 
 function App() {
   const theme = useSettingsStore((s) => s.settings.theme);
   const setSettings = useSettingsStore((s) => s.setSettings);
+  const autoCheck = useSettingsStore((s) => s.settings.auto_check_updates);
+  const autoDownload = useSettingsStore((s) => s.settings.auto_download_updates);
+  
+  const [updateResult, setUpdateResult] = useState<UpdateCheckResult | null>(null);
 
   // Load settings on app start (globally)
   useEffect(() => {
@@ -122,10 +95,39 @@ function App() {
     }
   }, [theme]);
 
+  // Auto update check
+  useEffect(() => {
+    if (!autoCheck) return;
+
+    const performCheck = async () => {
+      try {
+        const result = await checkForUpdates();
+        if (result.hasUpdate && result.rawUpdate) {
+          setUpdateResult(result);
+        }
+      } catch (err) {
+        console.error("Auto check for updates failed:", err);
+      }
+    };
+
+    const timer = setTimeout(performCheck, 3000);
+    return () => clearTimeout(timer);
+  }, [autoCheck, autoDownload]);
+
   return (
-    <AuthGuard>
-      <AppContent />
-    </AuthGuard>
+    <>
+      <AuthGuard>
+        <AppContent />
+      </AuthGuard>
+      {updateResult && (
+        <UpdateDialog
+          updateResult={updateResult}
+          autoStartDownload={autoDownload}
+          onClose={() => setUpdateResult(null)}
+          onSkip={() => setUpdateResult(null)}
+        />
+      )}
+    </>
   );
 }
 
