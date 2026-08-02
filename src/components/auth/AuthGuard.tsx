@@ -9,7 +9,11 @@ import {
 import { isOnline } from "@/services/apiClient";
 import { LoginPage } from "@/pages/LoginPage";
 import { SessionExpiredDialog } from "./SessionExpiredDialog";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle, Info } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { useAppStore } from "@/stores/useAppStore";
+import { exit } from '@tauri-apps/api/process';
 
 interface AuthGuardProps {
   readonly children: React.ReactNode;
@@ -33,6 +37,10 @@ export function AuthGuard({ children }: AuthGuardProps) {
   const setOffline = useAuthStore((s) => s.setOffline);
   const setSubscriptionExpired = useAuthStore((s) => s.setSubscriptionExpired);
   const setOfflineGracePeriodExpired = useAuthStore((s) => s.setOfflineGracePeriodExpired);
+  const copyrightWarningMessage = useAuthStore((s) => s.copyrightWarningMessage);
+  const expiringSoonMessage = useAuthStore((s) => s.expiringSoonMessage);
+  const setExpiringSoonMessage = useAuthStore((s) => s.setExpiringSoonMessage);
+  const setActiveTab = useAppStore((s) => s.setActiveTab);
 
   const [initError, setInitError] = useState<string | null>(null);
 
@@ -120,10 +128,10 @@ export function AuthGuard({ children }: AuthGuardProps) {
     return <SessionExpiredDialog reason="suspended" />;
   }
 
-  // Subscription expired
-  if (subscriptionExpired) {
-    return <SessionExpiredDialog reason="subscription" />;
-  }
+  // Subscription expired (Do not block entirely, AppLayout handles UI disabling)
+  // if (subscriptionExpired) {
+  //   return <SessionExpiredDialog reason="subscription" />;
+  // }
 
   // Offline grace period expired
   if (offlineGracePeriodExpired) {
@@ -141,5 +149,64 @@ export function AuthGuard({ children }: AuthGuardProps) {
   }
 
   // Authenticated → render app
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      
+      {/* Copyright/Crack Warning Dialog (Blocking) */}
+      <Dialog open={!!copyrightWarningMessage} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-md" hideCloseButton>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Cảnh báo bản quyền
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-foreground/80">{copyrightWarningMessage}</p>
+          </div>
+          <DialogFooter className="flex gap-2 sm:justify-end">
+            <Button variant="outline" onClick={() => window.open('https://mvd-photoshop.com/terms', '_blank')}>
+              Tìm hiểu thêm
+            </Button>
+            <Button variant="destructive" onClick={async () => {
+              try {
+                await exit(0);
+              } catch {
+                window.close();
+              }
+            }}>
+              Thoát ứng dụng (Quit)
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Expiring Soon Warning Dialog (Dismissable) */}
+      <Dialog open={!!expiringSoonMessage} onOpenChange={(open) => !open && setExpiringSoonMessage(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-warning">
+              <Info className="h-5 w-5" />
+              Thông báo gia hạn
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-foreground/80">{expiringSoonMessage}</p>
+          </div>
+          <DialogFooter className="flex gap-2 sm:justify-end">
+            <Button variant="outline" onClick={() => setExpiringSoonMessage(null)}>
+              Đóng
+            </Button>
+            <Button variant="default" onClick={() => {
+              setExpiringSoonMessage(null);
+              setActiveTab('settings');
+            }}>
+              Đổi quyền lợi (Nhập Key)
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 }

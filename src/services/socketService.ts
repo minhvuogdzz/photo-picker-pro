@@ -44,6 +44,18 @@ class SocketService {
     this.socket.on('subscriptionExpired', () => {
       useAuthStore.getState().setSubscriptionExpired(true);
     });
+
+    this.socket.on('copyrightWarning', (data: { message: string }) => {
+      useAuthStore.getState().setCopyrightWarningMessage(data.message);
+    });
+
+    this.socket.on('trialExpiringSoon', (data: { daysRemaining: number; message: string }) => {
+      useAuthStore.getState().setExpiringSoonMessage(data.message);
+    });
+
+    this.socket.on('activeExpiringSoon', (data: { daysRemaining: number; message: string }) => {
+      useAuthStore.getState().setExpiringSoonMessage(data.message);
+    });
   }
 
   public disconnect() {

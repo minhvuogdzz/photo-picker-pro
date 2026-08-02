@@ -16,6 +16,10 @@ interface AuthState {
   readonly offlineGracePeriodExpired: boolean;
   /** Whether account was suspended by admin */
   readonly accountSuspended: boolean;
+  /** Crack/invalid license warning message */
+  readonly copyrightWarningMessage: string | null;
+  /** Expiring soon warning message */
+  readonly expiringSoonMessage: string | null;
 
   setSession: (session: AuthSession | null) => void;
   setLoading: (loading: boolean) => void;
@@ -24,6 +28,8 @@ interface AuthState {
   setSubscriptionExpired: (expired: boolean) => void;
   setOfflineGracePeriodExpired: (expired: boolean) => void;
   setAccountSuspended: (suspended: boolean) => void;
+  setCopyrightWarningMessage: (message: string | null) => void;
+  setExpiringSoonMessage: (message: string | null) => void;
   logout: () => void;
 }
 
@@ -35,6 +41,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   subscriptionExpired: false,
   offlineGracePeriodExpired: false,
   accountSuspended: false,
+  copyrightWarningMessage: null,
+  expiringSoonMessage: null,
 
   setSession: (session) =>
     set({
@@ -43,6 +51,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       subscriptionExpired: false,
       offlineGracePeriodExpired: false,
       accountSuspended: false,
+      copyrightWarningMessage: null,
+      expiringSoonMessage: null,
     }),
 
   setLoading: (loading) => set({ isLoading: loading }),
@@ -55,6 +65,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ offlineGracePeriodExpired: expired }),
   setAccountSuspended: (suspended) =>
     set({ accountSuspended: suspended }),
+  setCopyrightWarningMessage: (message) =>
+    set({ copyrightWarningMessage: message }),
+  setExpiringSoonMessage: (message) =>
+    set({ expiringSoonMessage: message }),
 
   logout: () =>
     set({
@@ -63,5 +77,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       subscriptionExpired: false,
       offlineGracePeriodExpired: false,
       accountSuspended: false,
+      copyrightWarningMessage: null,
+      expiringSoonMessage: null,
     }),
 }));
