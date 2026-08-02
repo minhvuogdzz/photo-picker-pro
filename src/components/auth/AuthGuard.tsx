@@ -10,10 +10,8 @@ import { isOnline } from "@/services/apiClient";
 import { LoginPage } from "@/pages/LoginPage";
 import { SessionExpiredDialog } from "./SessionExpiredDialog";
 import { Loader2, AlertTriangle, Info } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/stores/useAppStore";
-import { exit } from '@tauri-apps/api/process';
+import { exit } from '@tauri-apps/plugin-process';
 
 interface AuthGuardProps {
   readonly children: React.ReactNode;
@@ -154,59 +152,75 @@ export function AuthGuard({ children }: AuthGuardProps) {
       {children}
       
       {/* Copyright/Crack Warning Dialog (Blocking) */}
-      <Dialog open={!!copyrightWarningMessage} onOpenChange={() => {}}>
-        <DialogContent className="sm:max-w-md" hideCloseButton>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-5 w-5" />
-              Cảnh báo bản quyền
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-foreground/80">{copyrightWarningMessage}</p>
+      {!!copyrightWarningMessage && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="panel w-full max-w-sm p-8 space-y-6 text-center animate-scale-in">
+            <div className="flex justify-center">
+              <AlertTriangle size={40} className="text-destructive" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-lg font-bold text-foreground">Cảnh báo bản quyền</h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {copyrightWarningMessage}
+              </p>
+            </div>
+            <div className="flex gap-2 w-full pt-2">
+              <button
+                onClick={() => window.open('https://mvd-photoshop.com/terms', '_blank')}
+                className="btn-outline flex-1 py-3 text-sm font-bold"
+              >
+                Tìm hiểu thêm
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await exit(0);
+                  } catch {
+                    window.close();
+                  }
+                }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl flex-1 py-3 text-sm font-bold transition-colors"
+              >
+                Thoát (Quit)
+              </button>
+            </div>
           </div>
-          <DialogFooter className="flex gap-2 sm:justify-end">
-            <Button variant="outline" onClick={() => window.open('https://mvd-photoshop.com/terms', '_blank')}>
-              Tìm hiểu thêm
-            </Button>
-            <Button variant="destructive" onClick={async () => {
-              try {
-                await exit(0);
-              } catch {
-                window.close();
-              }
-            }}>
-              Thoát ứng dụng (Quit)
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
 
       {/* Expiring Soon Warning Dialog (Dismissable) */}
-      <Dialog open={!!expiringSoonMessage} onOpenChange={(open) => !open && setExpiringSoonMessage(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-warning">
-              <Info className="h-5 w-5" />
-              Thông báo gia hạn
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-foreground/80">{expiringSoonMessage}</p>
+      {!!expiringSoonMessage && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="panel w-full max-w-sm p-8 space-y-6 text-center animate-scale-in">
+            <div className="flex justify-center">
+              <Info size={40} className="text-warning" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-lg font-bold text-foreground">Thông báo gia hạn</h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {expiringSoonMessage}
+              </p>
+            </div>
+            <div className="flex gap-2 w-full pt-2">
+              <button
+                onClick={() => setExpiringSoonMessage(null)}
+                className="btn-outline flex-1 py-3 text-sm font-bold"
+              >
+                Đóng
+              </button>
+              <button
+                onClick={() => {
+                  setExpiringSoonMessage(null);
+                  setActiveTab('settings');
+                }}
+                className="btn-primary flex-1 py-3 text-sm font-bold"
+              >
+                Đổi quyền lợi
+              </button>
+            </div>
           </div>
-          <DialogFooter className="flex gap-2 sm:justify-end">
-            <Button variant="outline" onClick={() => setExpiringSoonMessage(null)}>
-              Đóng
-            </Button>
-            <Button variant="default" onClick={() => {
-              setExpiringSoonMessage(null);
-              setActiveTab('settings');
-            }}>
-              Đổi quyền lợi (Nhập Key)
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </>
   );
 }
