@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
-import { AppLayout } from "@/components/layout/AppLayout";
-import { AuthGuard } from "@/components/auth/AuthGuard";
-import { useSettingsStore } from "@/stores/useSettingsStore";
-import { useAuthStore } from "@/stores/useAuthStore";
-import { UpdateDialog } from "@/components/updater";
-import { checkForUpdates, UpdateCheckResult, downloadAndInstallUpdate } from "@/updater";
+import { AppLayout } from "@/layouts/MainLayout";
+import { AuthGuard } from "@/core/auth/AuthGuard";
+import { useSettingsStore } from "@/core/stores/useSettingsStore";
+import { useAuthStore } from "@/core/stores/useAuthStore";
+import { UpdateDialog } from "@/core/updater_ui";
+import { checkForUpdates, UpdateCheckResult, downloadAndInstallUpdate } from "@/core/updater";
 import { invoke } from "@tauri-apps/api/core";
-import { validateSubscription, SUBSCRIPTION_CHECK_INTERVAL } from "@/services/authApi";
-import { isOnline } from "@/services/apiClient";
-import type { AppSettings } from "@/types";
+import { validateSubscription, SUBSCRIPTION_CHECK_INTERVAL } from "@/core/services/authApi";
+import { isOnline } from "@/core/services/apiClient";
+import type { AppSettings } from "@/core/types";
 
 function AppContent() {
   const autoCheck = useSettingsStore((s) => s.settings.auto_check_updates);
@@ -22,11 +22,11 @@ function AppContent() {
   // Connect socket
   useEffect(() => {
     if (session) {
-      import('@/services/socketService').then(({ socketService }) => {
+      import('@/core/services/socketService').then(({ socketService }) => {
         socketService.connect(session);
       });
     } else {
-      import('@/services/socketService').then(({ socketService }) => {
+      import('@/core/services/socketService').then(({ socketService }) => {
         socketService.disconnect();
       });
     }

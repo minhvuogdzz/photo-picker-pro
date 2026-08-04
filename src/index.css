@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -485,6 +486,10 @@ body {
   animation: pulseSoft 2s ease-in-out infinite;
 }
 
+.animate-app-enter {
+  animation: appEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -498,4 +503,66 @@ body {
 @keyframes pulseSoft {
   0%, 100% { opacity: 1; filter: drop-shadow(0 0 8px oklch(0.65 0.25 275 / 0.3)); }
   50% { opacity: 0.7; filter: drop-shadow(0 0 2px oklch(0.65 0.25 275 / 0.1)); }
+}
+
+@keyframes appEnter {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+    filter: blur(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+/* Welcome Screen Liquid Glass */
+.multi-gradient-bg {
+  background: linear-gradient(
+    45deg, 
+    #ff2a85, #8a2387, #e94057, #f27121, #00c9ff
+  );
+  background-size: 150% 150%;
+  animation: bg-hue 30s infinite alternate cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+@keyframes bg-hue {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+.tahoe-glass-text {
+  font-family: 'Nunito', var(--font-sans);
+  font-weight: 900;
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.8);
+  background: linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.5) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 15px 25px rgba(0,0,0,0.5));
+}
+
+@keyframes fade-in-out {
+  0% { 
+    opacity: 0; 
+    filter: blur(24px); 
+    transform: scale(1.2) translateY(40px) perspective(1000px) rotateX(-20deg); 
+  }
+  20% { 
+    opacity: 1; 
+    filter: blur(0); 
+    transform: scale(1) translateY(0) perspective(1000px) rotateX(0deg); 
+  }
+  80% { 
+    opacity: 1; 
+    filter: blur(0); 
+    transform: scale(0.95) translateY(-10px) perspective(1000px) rotateX(5deg); 
+  }
+  100% { 
+    opacity: 0; 
+    filter: blur(24px); 
+    transform: scale(0.8) translateY(-50px) perspective(1000px) rotateX(20deg); 
+  }
 }
