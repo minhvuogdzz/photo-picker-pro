@@ -79,13 +79,13 @@ export function LauncherPage() {
                 });
                 setActiveModule(mod.id);
               }}
-              className={`group cursor-pointer rounded-3xl p-6 transition-all duration-300 ease-out relative overflow-hidden bg-white/5 backdrop-blur-2xl border border-white/10 hover:bg-white/10 ${styles.hoverBorder}`}
-              style={{ animationDelay: `${index * 100}ms` }}
+              className={`group cursor-pointer rounded-3xl p-6 transition-[box-shadow,background-color,border-color] duration-300 ease-out relative overflow-hidden bg-white/5 backdrop-blur-2xl border border-white/10 hover:bg-white/10 ${styles.hoverBorder}`}
+              style={{ animationDelay: `${index * 100}ms`, willChange: 'box-shadow, background-color' }}
             >
               {/* Glow effect on hover */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${styles.bgGlow} opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out`} />
+              <div className={`absolute inset-0 bg-gradient-to-br ${styles.bgGlow} opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out pointer-events-none`} style={{ willChange: 'opacity' }} />
               
-              <div className={`w-12 h-12 bg-gradient-to-br ${styles.iconBg} rounded-2xl flex items-center justify-center mb-5 shadow-sm border group-hover:scale-110 transition-transform duration-300 ease-out`}>
+              <div className={`w-12 h-12 bg-gradient-to-br ${styles.iconBg} rounded-2xl flex items-center justify-center mb-5 shadow-sm border group-hover:scale-110 transition-transform duration-300 ease-out`} style={{ willChange: 'transform' }}>
                 <Icon size={24} className={`${styles.iconColor} drop-shadow-md`} />
               </div>
               
@@ -123,7 +123,7 @@ export function LauncherPage() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Phiên bản</p>
-              <p className="text-sm font-semibold">1.3.4 (Cập nhật mới nhất)</p>
+              <p className="text-sm font-semibold">1.3.5 (Cập nhật mới nhất)</p>
             </div>
           </div>
         </div>
