@@ -21,6 +21,9 @@ interface AppState {
   setHasSeenWelcome: (val: boolean) => void;
 
   // App Transition
+  readonly sidebarCollapsed: boolean;
+  setSidebarCollapsed: (val: boolean) => void;
+
   readonly lastClickPos: { x: number; y: number } | null;
   setLastClickPos: (pos: { x: number; y: number } | null) => void;
 
@@ -95,6 +98,7 @@ interface AppState {
 const initialState = {
   activeTab: "home" as MainTab,
   activeModule: "launcher",
+  sidebarCollapsed: false,
   hasSeenWelcome: false,
   lastClickPos: null as { x: number; y: number } | null,
   activeDropZone: null as "input" | "sync" | null,
@@ -125,6 +129,7 @@ export const useAppStore = create<AppState>((set) => ({
 
   setActiveTab: (tab) => set({ activeTab: tab }),
   setActiveModule: (module) => set({ activeModule: module }),
+  setSidebarCollapsed: (val) => set({ sidebarCollapsed: val }),
   setHasSeenWelcome: (val) => set({ hasSeenWelcome: val }),
   setLastClickPos: (pos) => set({ lastClickPos: pos }),
 

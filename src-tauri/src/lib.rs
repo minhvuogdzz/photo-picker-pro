@@ -30,6 +30,7 @@ pub fn run() {
             commands::logger::export_log,
             commands::logger::export_missing,
             commands::system_utils::sync_subfolder_names,
+            commands::converter::run_convert_batch,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

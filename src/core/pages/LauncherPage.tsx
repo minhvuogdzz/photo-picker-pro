@@ -16,21 +16,13 @@ export function LauncherPage() {
           hoverText: 'group-hover:text-blue-400',
           hoverBorder: 'hover:border-blue-400/50 hover:shadow-[0_0_25px_rgba(59,130,246,0.4)]',
         };
-      case 'retouch':
+      case 'mvd-convert':
         return {
-          bgGlow: 'from-purple-500/20 via-purple-400/5 to-transparent',
-          iconBg: 'from-purple-500/20 to-fuchsia-500/5 border-purple-500/30',
-          iconColor: 'text-purple-400',
-          hoverText: 'group-hover:text-purple-400',
-          hoverBorder: 'hover:border-purple-400/50 hover:shadow-[0_0_25px_rgba(168,85,247,0.4)]',
-        };
-      case 'client-gallery':
-        return {
-          bgGlow: 'from-orange-500/20 via-orange-400/5 to-transparent',
-          iconBg: 'from-orange-500/20 to-amber-500/5 border-orange-500/30',
-          iconColor: 'text-orange-400',
-          hoverText: 'group-hover:text-orange-400',
-          hoverBorder: 'hover:border-orange-400/50 hover:shadow-[0_0_25px_rgba(249,115,22,0.4)]',
+          bgGlow: 'from-emerald-500/20 via-emerald-400/5 to-transparent',
+          iconBg: 'from-emerald-500/20 to-teal-500/5 border-emerald-500/30',
+          iconColor: 'text-emerald-400',
+          hoverText: 'group-hover:text-emerald-400',
+          hoverBorder: 'hover:border-emerald-400/50 hover:shadow-[0_0_25px_rgba(16,185,129,0.4)]',
         };
       default:
         return {
@@ -79,7 +71,7 @@ export function LauncherPage() {
                 });
                 setActiveModule(mod.id);
               }}
-              className={`group cursor-pointer rounded-3xl p-6 transition-[box-shadow,background-color,border-color] duration-300 ease-out relative overflow-hidden bg-white/5 backdrop-blur-2xl border border-white/10 hover:bg-white/10 ${styles.hoverBorder}`}
+              className={`group cursor-pointer rounded-3xl p-6 transition-[box-shadow,background-color,border-color] duration-300 ease-out relative overflow-hidden bg-black/5 dark:bg-white/5 backdrop-blur-2xl border border-border/50 hover:bg-black/10 dark:hover:bg-white/10 ${styles.hoverBorder}`}
               style={{ animationDelay: `${index * 100}ms`, willChange: 'box-shadow, background-color' }}
             >
               {/* Glow effect on hover */}
@@ -89,11 +81,10 @@ export function LauncherPage() {
                 <Icon size={24} className={`${styles.iconColor} drop-shadow-md`} />
               </div>
               
-              <h3 className={`text-lg font-bold mb-2 text-white/90 ${styles.hoverText} transition-colors`}>{mod.name}</h3>
-              <p className="text-xs text-white/60 mb-6 line-clamp-3 leading-relaxed">
+              <h3 className={`text-lg font-bold mb-2 text-foreground/90 ${styles.hoverText} transition-colors`}>{mod.name}</h3>
+              <p className="text-xs text-muted-foreground mb-6 line-clamp-3 leading-relaxed">
                 {mod.id === "photo-picker" && "Phần mềm lọc ảnh tự động, đồng nhất tên các thư mục và kết nối với Sheet."}
-                {mod.id === "retouch" && "Hệ thống AI xử lý hậu kỳ, blend màu, nhặt mụn tự động (Coming soon)."}
-                {mod.id === "client-gallery" && "Gửi ảnh cho khách hàng chọn lọc nhanh chóng (Coming soon)."}
+                {mod.id === "mvd-convert" && "Chuyển đổi mọi định dạng ảnh, hỗ trợ siêu tốc từ định dạng RAW sang JPG/PNG."}
               </p>
               
               <div className={`flex items-center gap-1.5 text-xs font-semibold ${styles.iconColor} opacity-70 group-hover:opacity-100 transition-opacity duration-300 ease-out`}>
@@ -123,13 +114,13 @@ export function LauncherPage() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Phiên bản</p>
-              <p className="text-sm font-semibold">1.3.5 (Cập nhật mới nhất)</p>
+              <p className="text-sm font-semibold">1.3.6 (Cập nhật mới nhất)</p>
             </div>
           </div>
         </div>
 
         {/* Copyright Section */}
-        <div className="mt-12 text-center text-white/40 text-xs font-medium tracking-wide">
+        <div className="mt-12 text-center text-muted-foreground/60 text-xs font-medium tracking-wide">
           <p>© {new Date().getFullYear()} MVD Photoshop Academy All rights reserved.</p>
           <p className="mt-1 opacity-70">Nếu thấy hay hãy mua bản quyền ủng hộ tác giả nhé.</p>
         </div>

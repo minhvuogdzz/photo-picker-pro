@@ -1,5 +1,5 @@
 import { ElementType } from "react";
-import { Wand2, Share2 } from "lucide-react";
+import { Wand2, Share2, FileImage } from "lucide-react";
 import { PhotoPickerIcon } from "@/core/components/PhotoPickerIcon";
 
 export interface AppModule {
@@ -17,15 +17,9 @@ export const modules: AppModule[] = [
     path: "/photo-picker",
   },
   {
-    id: "retouch",
-    name: "Hậu kỳ",
-    icon: Wand2,
-    path: "/retouch",
-  },
-  {
-    id: "client-gallery",
-    name: "Gửi ảnh (Gallery)",
-    icon: Share2,
-    path: "/client-gallery",
+    id: "mvd-convert",
+    name: "MVD Convert",
+    icon: FileImage,
+    path: "/mvd-convert",
   },
 ];

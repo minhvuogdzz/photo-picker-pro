@@ -8,8 +8,7 @@ import { TopBar } from "./TopBar";
 import { AlertCircle } from "lucide-react";
 import { EcosystemSidebar } from "./EcosystemSidebar";
 import PhotoPickerModule from "@/modules/photo-picker";
-import RetouchApp from "@/modules/retouch";
-import GalleryApp from "@/modules/client-gallery";
+import MvdConvertApp from "@/modules/mvd-convert/MvdConvertApp";
 
 export function AppLayout() {
   const activeTab = useAppStore((s) => s.activeTab);
@@ -57,8 +56,7 @@ export function AppLayout() {
             {activeModule === "launcher" && <LauncherPage />}
             {activeModule === "system" && <SystemModule />}
             {activeModule === "photo-picker" && <PhotoPickerModule />}
-            {activeModule === "retouch" && <RetouchApp />}
-            {activeModule === "client-gallery" && <GalleryApp />}
+            {activeModule === "mvd-convert" && <MvdConvertApp />}
           </div>
         </div>
       </div>

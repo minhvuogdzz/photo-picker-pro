@@ -17,11 +17,21 @@ use super::types::CustomerCode;
 pub fn parse_customer_codes(input: String) -> Result<Vec<CustomerCode>, String> {
     let re = Regex::new(r"\d{3,}").map_err(|e| e.to_string())?;
 
+    // Normalize weird unicode zeros to standard ASCII '0'
+    let normalized_input = input
+        .replace('０', "0") // U+FF10 Fullwidth
+        .replace('𝟶', "0") // U+1D7F6 Monospace (often looks like dotted zero)
+        .replace('𝟎', "0") // U+1D7CE Bold
+        .replace('𝟘', "0") // U+1D7D8 Double-struck
+        .replace('𝟢', "0") // U+1D7E2 Sans-serif
+        .replace('𝟬', "0") // U+1D7EC Sans-serif Bold
+        .replace('〇', "0"); // U+3007 Ideographic
+
     let mut codes: Vec<CustomerCode> = Vec::new();
     let mut seen = std::collections::HashSet::new();
 
     // Split input by common delimiters and newlines
-    for line in input.lines() {
+    for line in normalized_input.lines() {
         let trimmed = line.trim();
         if trimmed.is_empty() {
             continue;
