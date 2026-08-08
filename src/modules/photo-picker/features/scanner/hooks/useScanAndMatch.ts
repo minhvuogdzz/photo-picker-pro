@@ -45,6 +45,11 @@ export function useScanAndMatch() {
       
       if (parsedCodes.length > 0) {
         setPhase("matching");
+        
+        const unlistenMatch = await listen<ProgressEvent>("match-progress", (event) => {
+          setProgress(event.payload);
+        });
+
         const result = await invoke<MatchResult>("match_photos", {
           codes: parsedCodes,
           files: scanResult.files,
@@ -53,6 +58,7 @@ export function useScanAndMatch() {
           folderCount: selectedInputFolders.length,
         });
         
+        unlistenMatch();
         setMatchResult(result);
         setPhase("matched");
       } else {

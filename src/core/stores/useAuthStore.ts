@@ -48,7 +48,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({
       session,
       sessionExpiredByOtherDevice: false,
-      subscriptionExpired: false,
+      subscriptionExpired: session ? !["ACTIVE", "TRIAL", "LIFETIME"].includes(session.subscription.status) : false,
       offlineGracePeriodExpired: false,
       accountSuspended: false,
       copyrightWarningMessage: null,

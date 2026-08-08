@@ -37,9 +37,9 @@ pub fn parse_customer_codes(input: String) -> Result<Vec<CustomerCode>, String> 
             continue;
         }
 
-        // Split by common separators: comma, semicolon, tab, pipe, space
+        // Split by common separators: comma, semicolon, tab, pipe, space, dot
         let parts: Vec<&str> = trimmed
-            .split(|c: char| c == ',' || c == ';' || c == '\t' || c == '|')
+            .split(|c: char| c == ',' || c == ';' || c == '\t' || c == '|' || c == ' ' || c == '.')
             .collect();
 
         for part in parts {
@@ -163,5 +163,18 @@ mod tests {
         // Exact same input should still be deduped
         let result = parse_customer_codes("ABC_01234\nABC_01234".to_string()).unwrap();
         assert_eq!(result.len(), 1);
+    }
+
+    #[test]
+    fn test_space_and_dot_separated() {
+        let result = parse_customer_codes("ABC123 ABC234".to_string()).unwrap();
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].normalized, "123");
+        assert_eq!(result[1].normalized, "234");
+        
+        let result2 = parse_customer_codes("ABC123. ABC234".to_string()).unwrap();
+        assert_eq!(result2.len(), 2);
+        assert_eq!(result2[0].normalized, "123");
+        assert_eq!(result2[1].normalized, "234");
     }
 }

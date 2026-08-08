@@ -123,8 +123,9 @@ pub async fn copy_files(
             }
         }
 
-        // Emit progress
-        if (idx + 1) % 10 == 0 || idx + 1 == total {
+        // Emit progress (smooth 1% increments or per-file if small batch)
+        let emit_interval = std::cmp::max(1, total / 100);
+        if (idx + 1) % emit_interval == 0 || idx + 1 == total {
             let elapsed = start.elapsed().as_secs_f64();
             let speed = (idx + 1) as f64 / elapsed;
             let remaining = (total - idx - 1) as f64 / speed;

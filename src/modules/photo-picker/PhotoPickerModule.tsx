@@ -5,6 +5,7 @@ import { RightPanel } from "./components/RightPanel";
 import { BottomBar } from "./components/BottomBar";
 import { SettingsPage } from "./pages/PhotoPickerSettings";
 import { HistoryPage } from "./pages/HistoryPage";
+import { MatchProgressPopup } from "./components/MatchProgressPopup";
 
 export function PhotoPickerModule() {
   const activeTab = useAppStore((s) => s.activeTab);
@@ -34,6 +35,9 @@ export function PhotoPickerModule() {
           <div className="rounded-2xl overflow-hidden shadow-xl border border-border/40 shrink-0">
             <BottomBar />
           </div>
+          
+          {/* Progress Popup Overlay */}
+          <MatchProgressPopup />
         </>
       )}
     </div>

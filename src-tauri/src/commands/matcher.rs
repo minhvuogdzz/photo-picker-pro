@@ -2,8 +2,10 @@ use std::collections::HashMap;
 
 use regex::Regex;
 
+use tauri::{AppHandle, Emitter};
+
 use super::types::{
-    CustomerCode, MatchMode, MatchResult, MatchStatus, MatchedPhoto, PhotoFile,
+    CustomerCode, MatchMode, MatchResult, MatchStatus, MatchedPhoto, PhotoFile, ProgressEvent,
 };
 
 /// Matches customer codes against scanned photo files.
@@ -14,12 +16,29 @@ use super::types::{
 /// - **Regex**: User-provided regex pattern is used for matching
 #[tauri::command]
 pub fn match_photos(
+    app: AppHandle,
     codes: Vec<CustomerCode>,
     files: Vec<PhotoFile>,
     mode: String,
     regex_pattern: Option<String>,
     folder_count: Option<usize>,
 ) -> Result<MatchResult, String> {
+    match_photos_impl(codes, files, mode, regex_pattern, folder_count, move |event| {
+        let _ = app.emit("match-progress", event);
+    })
+}
+
+pub fn match_photos_impl<F>(
+    codes: Vec<CustomerCode>,
+    files: Vec<PhotoFile>,
+    mode: String,
+    regex_pattern: Option<String>,
+    folder_count: Option<usize>,
+    mut progress_callback: F,
+) -> Result<MatchResult, String>
+where
+    F: FnMut(ProgressEvent),
+{
     let match_mode = match mode.as_str() {
         "ExactNumber" => MatchMode::ExactNumber,
         "Contains" => MatchMode::Contains,
@@ -77,8 +96,30 @@ pub fn match_photos(
     let mut found_count: usize = 0;
     let mut missing_count: usize = 0;
     let mut duplicate_count: usize = 0;
+    let total_codes = codes.len();
 
-    for code in &codes {
+    // Initial progress event
+    progress_callback(ProgressEvent {
+        current: 0,
+        total: total_codes,
+        percentage: 0.0,
+        message: "Chuẩn bị lọc ảnh...".to_string(),
+        eta_seconds: None,
+        speed: None,
+    });
+
+    for (i, code) in codes.iter().enumerate() {
+        // Emit progress every few codes to prevent event spam, but enough to keep UI updated
+        if total_codes > 0 && i % std::cmp::max(1, total_codes / 100) == 0 {
+            progress_callback(ProgressEvent {
+                current: i,
+                total: total_codes,
+                percentage: (i as f64 / total_codes as f64) * 100.0,
+                message: format!("Đang lọc mã {}...", code.normalized),
+                eta_seconds: None,
+                speed: None,
+            });
+        }
         let matched_files: Vec<PhotoFile> = match match_mode {
             MatchMode::ExactNumber => {
                 if multi_folder {
@@ -160,6 +201,16 @@ pub fn match_photos(
         });
     }
 
+    // Final progress event
+    progress_callback(ProgressEvent {
+        current: total_codes,
+        total: total_codes,
+        percentage: 100.0,
+        message: "Hoàn tất lọc ảnh!".to_string(),
+        eta_seconds: None,
+        speed: None,
+    });
+
     Ok(MatchResult {
         matches,
         found_count,
@@ -202,7 +253,7 @@ mod tests {
     fn test_exact_match_found() {
         let files = vec![make_photo("IMG01234.jpg", "01234")];
         let codes = vec![make_code("01234")];
-        let result = match_photos(codes, files, "ExactNumber".to_string(), None, None).unwrap();
+        let result = match_photos_impl(codes, files, "ExactNumber".to_string(), None, None, |_| {}).unwrap();
         assert_eq!(result.found_count, 1);
         assert_eq!(result.missing_count, 0);
     }
@@ -211,7 +262,7 @@ mod tests {
     fn test_exact_match_missing() {
         let files = vec![make_photo("IMG01234.jpg", "01234")];
         let codes = vec![make_code("99999")];
-        let result = match_photos(codes, files, "ExactNumber".to_string(), None, None).unwrap();
+        let result = match_photos_impl(codes, files, "ExactNumber".to_string(), None, None, |_| {}).unwrap();
         assert_eq!(result.found_count, 0);
         assert_eq!(result.missing_count, 1);
     }
@@ -220,7 +271,7 @@ mod tests {
     fn test_exact_match_no_partial() {
         let files = vec![make_photo("IMG012345.jpg", "012345")];
         let codes = vec![make_code("01234")];
-        let result = match_photos(codes, files, "ExactNumber".to_string(), None, None).unwrap();
+        let result = match_photos_impl(codes, files, "ExactNumber".to_string(), None, None, |_| {}).unwrap();
         assert_eq!(result.found_count, 0);
         assert_eq!(result.missing_count, 1);
     }
@@ -229,7 +280,7 @@ mod tests {
     fn test_contains_match() {
         let files = vec![make_photo("IMG012345.jpg", "012345")];
         let codes = vec![make_code("01234")];
-        let result = match_photos(codes, files, "Contains".to_string(), None, None).unwrap();
+        let result = match_photos_impl(codes, files, "Contains".to_string(), None, None, |_| {}).unwrap();
         assert_eq!(result.found_count, 1);
     }
 
@@ -240,7 +291,7 @@ mod tests {
             make_photo("IMG01234_edit.jpg", "01234"),
         ];
         let codes = vec![make_code("01234")];
-        let result = match_photos(codes, files, "ExactNumber".to_string(), None, None).unwrap();
+        let result = match_photos_impl(codes, files, "ExactNumber".to_string(), None, None, |_| {}).unwrap();
         assert_eq!(result.duplicate_count, 1);
         assert_eq!(result.matches[0].all_matches.len(), 2);
     }
@@ -256,7 +307,7 @@ mod tests {
         ];
         // User types "ABC_01234" — should only match the ABC file
         let codes = vec![make_code_with_raw("ABC_01234", "01234")];
-        let result = match_photos(codes, files, "ExactNumber".to_string(), None, Some(2)).unwrap();
+        let result = match_photos_impl(codes, files, "ExactNumber".to_string(), None, Some(2), |_| {}).unwrap();
         assert_eq!(result.found_count, 1);
         assert_eq!(result.duplicate_count, 0);
         assert_eq!(result.matches[0].status, MatchStatus::Found);
@@ -271,7 +322,7 @@ mod tests {
             make_photo("DEF_01234.CR2", "01234"),
         ];
         let codes = vec![make_code("01234")];
-        let result = match_photos(codes, files, "ExactNumber".to_string(), None, Some(2)).unwrap();
+        let result = match_photos_impl(codes, files, "ExactNumber".to_string(), None, Some(2), |_| {}).unwrap();
         // Both files match by number, should be Duplicate
         assert_eq!(result.duplicate_count, 1);
         assert_eq!(result.matches[0].all_matches.len(), 2);
@@ -284,7 +335,7 @@ mod tests {
             make_photo("ABC_01234.CR2", "01234"),
         ];
         let codes = vec![make_code_with_raw("DEF_01234", "01234")];
-        let result = match_photos(codes, files, "ExactNumber".to_string(), None, Some(1)).unwrap();
+        let result = match_photos_impl(codes, files, "ExactNumber".to_string(), None, Some(1), |_| {}).unwrap();
         assert_eq!(result.found_count, 1);
     }
 }

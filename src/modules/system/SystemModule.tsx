@@ -18,11 +18,13 @@ import {
   ExternalLink,
   Camera,
   Sparkles,
+  FileText,
 } from "lucide-react";
 import { UpdateDialog } from "@/core/updater_ui";
 import { checkForUpdates, UpdateCheckResult } from "@/core/updater";
 import { apiRequest } from "@/core/services/apiClient";
 import { X, Image as ImageIcon, Send } from "lucide-react";
+import { TermsDialog } from "@/core/components/TermsDialog";
 
 type Tab = "general" | "about";
 
@@ -44,6 +46,9 @@ export function SystemModule() {
   const [feedbackContent, setFeedbackContent] = useState("");
   const [feedbackImage, setFeedbackImage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Terms Dialog State
+  const [showTermsDialog, setShowTermsDialog] = useState(false);
 
   useEffect(() => {
     getVersion().then(setVersion).catch(console.error);
@@ -54,12 +59,12 @@ export function SystemModule() {
     try {
       const result = await checkForUpdates();
       if (!result.hasUpdate) {
-        alert("Bạn đang sử dụng phiên bản mới nhất!");
+        alert(t("latest_version"));
       } else {
         setManualUpdateResult(result);
       }
     } catch (err) {
-      alert("Không thể kiểm tra cập nhật lúc này. Lỗi: " + String(err));
+      alert(t("update_check_failed") + String(err));
     } finally {
       setIsCheckingUpdate(false);
     }
@@ -68,7 +73,7 @@ export function SystemModule() {
   const handleSave = async () => {
     try {
       await invoke("save_settings", { settings });
-      alert("Lưu cài đặt thành công!");
+      alert(t("settings_saved"));
     } catch (error) {
       console.error("Failed to save settings:", error);
     }
@@ -120,7 +125,7 @@ export function SystemModule() {
 
   const handleSubmitFeedback = async () => {
     if (!feedbackContent) {
-      alert("Vui lòng điền Nội dung phản hồi.");
+      alert(t("feedback_content_required"));
       return;
     }
     
@@ -135,12 +140,12 @@ export function SystemModule() {
           imageBase64: feedbackImage
         }
       });
-      alert("Cảm ơn bạn đã gửi phản hồi!");
+      alert(t("feedback_success"));
       setShowFeedbackModal(false);
       setFeedbackContent("");
       setFeedbackImage(null);
     } catch (error) {
-      alert("Lỗi gửi phản hồi: " + String(error));
+      alert(t("feedback_error") + String(error));
     } finally {
       setIsSubmitting(false);
     }
@@ -153,8 +158,8 @@ export function SystemModule() {
         <div className="flex items-center gap-3 px-2 py-4 mb-4 border-b border-border/50">
           <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
           <div>
-            <h2 className="text-sm font-bold tracking-tight">Hệ thống</h2>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Tuỳ chọn chung</p>
+            <h2 className="text-sm font-bold tracking-tight">{t("system")}</h2>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{t("general_options")}</p>
           </div>
         </div>
 
@@ -165,7 +170,7 @@ export function SystemModule() {
           }`}
         >
           <Settings2 size={16} />
-          Cài đặt chung
+          {t("general_settings")}
         </button>
 
         <button
@@ -175,7 +180,7 @@ export function SystemModule() {
           }`}
         >
           <Info size={16} />
-          Thông tin phiên bản
+          {t("version_info")}
         </button>
       </div>
 
@@ -185,15 +190,15 @@ export function SystemModule() {
           {activeTab === "general" && (
             <div className="max-w-2xl w-full space-y-10 animate-slide-up">
               <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold tracking-tight">Cài đặt chung</h1>
+                <h1 className="text-2xl font-bold tracking-tight">{t("general_settings")}</h1>
                 <button onClick={handleSave} className="btn-primary py-2.5 px-6 font-bold rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all flex items-center gap-2">
-                  <Save size={16} /> Lưu thay đổi
+                  <Save size={16} /> {t("save_changes")}
                 </button>
               </div>
               
               {/* Theme */}
               <div className="space-y-4">
-                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Giao diện (Theme)</h3>
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{t("theme_section")}</h3>
                 <div className="flex gap-4">
                   {["dark", "light"].map((theme) => (
                     <button
@@ -206,7 +211,7 @@ export function SystemModule() {
                       }`}
                     >
                       {theme === "dark" ? <Moon size={18} /> : <Sun size={18} />}
-                      <span className="font-medium text-sm">{theme === "dark" ? "Chế độ Tối" : "Chế độ Sáng"}</span>
+                      <span className="font-medium text-sm">{theme === "dark" ? t("dark_mode") : t("light_mode")}</span>
                     </button>
                   ))}
                 </div>
@@ -214,7 +219,7 @@ export function SystemModule() {
 
               {/* Language */}
               <div className="space-y-4">
-                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Ngôn ngữ (Language)</h3>
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{t("language_section")}</h3>
                 <div className="relative w-full">
                   <select
                     className="w-full appearance-none bg-black/5 dark:bg-black/20 border border-border/50 text-foreground py-4 px-6 rounded-2xl font-medium outline-none focus:border-primary/50 transition-colors cursor-pointer"
@@ -231,22 +236,22 @@ export function SystemModule() {
               {/* Updates */}
               <div className="space-y-4 pt-4 border-t border-border/50">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Cập nhật phần mềm</h3>
+                  <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{t("software_updates")}</h3>
                   <button
                     onClick={handleManualUpdateCheck}
                     disabled={isCheckingUpdate}
                     className="btn-outline border-white/10 hover:border-primary/50 text-xs py-2 px-4 rounded-xl flex items-center gap-2 transition-colors"
                   >
                     {isCheckingUpdate ? <Loader2 size={14} className="animate-spin text-primary" /> : <RefreshCw size={14} className="text-primary" />}
-                    Kiểm tra cập nhật
+                    {t("check_for_updates")}
                   </button>
                 </div>
 
                 <div className="bg-black/5 dark:bg-black/20 rounded-2xl p-6 border border-border/50 space-y-6 w-full">
                   <label className="flex items-center justify-between cursor-pointer group">
                     <div className="space-y-1 pr-6">
-                      <span className="block text-sm font-medium group-hover:text-primary transition-colors">Kiểm tra tự động</span>
-                      <span className="block text-xs text-muted-foreground leading-relaxed">Hệ thống sẽ tự động tìm kiếm các bản vá lỗi và tính năng mới khi khởi động ứng dụng.</span>
+                      <span className="block text-sm font-medium group-hover:text-primary transition-colors">{t("auto_check_label")}</span>
+                      <span className="block text-xs text-muted-foreground leading-relaxed">{t("auto_check_desc")}</span>
                     </div>
                     <div className={`shrink-0 w-12 h-6 rounded-full p-1 transition-colors ${settings.auto_check_updates ? 'bg-primary' : 'bg-black/20 dark:bg-white/10'}`}>
                       <div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform ${settings.auto_check_updates ? 'translate-x-6' : 'translate-x-0'}`} />
@@ -263,8 +268,8 @@ export function SystemModule() {
 
                   <label className="flex items-center justify-between cursor-pointer group">
                     <div className="space-y-1 pr-6">
-                      <span className="block text-sm font-medium group-hover:text-primary transition-colors">Tải xuống tự động</span>
-                      <span className="block text-xs text-muted-foreground leading-relaxed">Các bản cập nhật mới sẽ được tự động tải xuống dưới nền để sẵn sàng cài đặt.</span>
+                      <span className="block text-sm font-medium group-hover:text-primary transition-colors">{t("auto_download_label")}</span>
+                      <span className="block text-xs text-muted-foreground leading-relaxed">{t("auto_download_desc")}</span>
                     </div>
                     <div className={`shrink-0 w-12 h-6 rounded-full p-1 transition-colors ${settings.auto_download_updates ? 'bg-primary' : 'bg-black/20 dark:bg-white/10'}`}>
                       <div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform ${settings.auto_download_updates ? 'translate-x-6' : 'translate-x-0'}`} />
@@ -282,18 +287,18 @@ export function SystemModule() {
               {/* Feedback */}
               <div className="space-y-4 pt-4 border-t border-border/50">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Hỗ trợ & Góp ý</h3>
+                  <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{t("support_feedback")}</h3>
                 </div>
                 <div className="bg-black/5 dark:bg-black/20 rounded-2xl p-6 border border-border/50 flex items-center justify-between">
                   <div>
-                    <h4 className="text-sm font-medium text-foreground">Báo cáo lỗi phần mềm hoặc Góp ý</h4>
-                    <p className="text-xs text-muted-foreground mt-1">Giúp chúng tôi cải thiện trải nghiệm tốt hơn cho bạn.</p>
+                    <h4 className="text-sm font-medium text-foreground">{t("report_bugs")}</h4>
+                    <p className="text-xs text-muted-foreground mt-1">{t("report_bugs_desc")}</p>
                   </div>
                   <button
                     onClick={() => setShowFeedbackModal(true)}
                     className="btn-primary py-2 px-5 font-bold rounded-xl shadow-md text-xs"
                   >
-                    Gửi phản hồi
+                    {t("send_feedback")}
                   </button>
                 </div>
               </div>
@@ -313,30 +318,26 @@ export function SystemModule() {
               </div>
               
               <div className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-500/10 text-emerald-500 text-xs font-semibold rounded-xl border border-emerald-500/20 shadow-sm">
-                <ShieldCheck size={16} /> Bản quyền hợp lệ
+                <ShieldCheck size={16} /> {t("valid_license")}
               </div>
 
-              {/* Thông tin phần mềm gộp từ Photo Picker */}
+              {/* Thông tin phần mềm */}
               <div className="w-full bg-black/5 dark:bg-black/20 rounded-2xl p-6 border border-border/50 text-left space-y-5">
                 <div className="text-sm text-foreground/80 leading-relaxed space-y-3">
                   <p>
-                    <strong>MVD Photoshop Academy Ecosystem</strong> là hệ sinh thái phần mềm toàn diện được thiết kế chuyên biệt dành cho các nhiếp ảnh gia, thợ ảnh sự kiện và các Studio ảnh cưới chuyên nghiệp. Chúng tôi cung cấp các giải pháp tối ưu giúp tự động hóa quy trình làm việc, từ khâu quản lý, chọn lọc đến xử lý hậu kỳ.
+                    <strong>MVD Photoshop Academy Ecosystem</strong> {t("software_description_1").replace("MVD Photoshop Academy Ecosystem ", "")}
                   </p>
-                  <p>
-                    Với các công cụ mạnh mẽ như <strong>Photo Picker Pro</strong> (Lọc ảnh thông minh bằng AI), hệ sinh thái MVD cam kết mang lại hiệu suất vượt trội, tiết kiệm lên đến 80% thời gian xử lý thủ công, đồng thời đảm bảo tính bảo mật dữ liệu tuyệt đối (100% Offline - Không có dữ liệu nào rời khỏi máy tính của bạn nếu bạn không cho phép).
-                  </p>
-                  <p>
-                    Phần mềm liên tục được cập nhật các thuật toán AI mới nhất và lắng nghe ý kiến phản hồi từ cộng đồng nhiếp ảnh để ngày càng hoàn thiện hơn, xứng đáng là trợ thủ đắc lực không thể thiếu của mọi Photographer.
-                  </p>
+                  <p>{t("software_description_2")}</p>
+                  <p>{t("software_description_3")}</p>
                 </div>
                 <div className="space-y-2 text-xs text-muted-foreground bg-black/5 dark:bg-black/20 p-4 rounded-xl border border-border/50">
                   <p className="flex items-center gap-2">
                     <Camera size={14} className="text-primary" />
-                    Thiết kế tối ưu cho Wedding Studios, Event Photographers & Freelancers
+                    {t("designed_for")}
                   </p>
                   <p className="flex items-center gap-2">
                     <Sparkles size={14} className="text-primary" />
-                    Hiệu suất cao, xử lý hàng nghìn ảnh chỉ trong chớp mắt
+                    {t("high_performance")}
                   </p>
                 </div>
                 
@@ -344,20 +345,20 @@ export function SystemModule() {
                 
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-sm">
                   <div className="flex gap-2">
-                    <span className="text-muted-foreground">Bản quyền thuộc về:</span>
+                    <span className="text-muted-foreground">{t("copyright_owner")}:</span>
                     <span className="font-bold">MVD Photoshop Academy</span>
                   </div>
                   <div className="hidden sm:block w-px h-4 bg-border/50" />
                   <div className="flex gap-2">
-                    <span className="text-muted-foreground">Nhà phát hành:</span>
+                    <span className="text-muted-foreground">{t("publisher")}:</span>
                     <span className="font-bold text-foreground">Minh Vuong Dev</span>
                   </div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-sm pt-2 border-t border-border/50">
                   <div className="flex gap-2 w-full justify-between sm:justify-start">
-                    <span className="text-muted-foreground">Cấp phép cho:</span>
-                    <span className="font-bold text-primary">{session?.name || "Người dùng"}</span>
+                    <span className="text-muted-foreground">{t("licensed_to")}:</span>
+                    <span className="font-bold text-primary">{session?.name || t("user")}</span>
                   </div>
                 </div>
               </div>
@@ -377,9 +378,18 @@ export function SystemModule() {
                   rel="noreferrer"
                   className="flex-1 bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 text-foreground py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold transition-all hover:-translate-y-0.5 border border-border/50"
                 >
-                  Cộng đồng <ExternalLink size={16} />
+                  {t("community")} <ExternalLink size={16} />
                 </a>
               </div>
+
+              {/* Điều khoản và Dịch vụ */}
+              <button
+                onClick={() => setShowTermsDialog(true)}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors font-medium mt-2"
+              >
+                <FileText size={16} />
+                {t("terms_and_services")}
+              </button>
             </div>
           )}
         </div>
@@ -393,12 +403,17 @@ export function SystemModule() {
         />
       )}
 
+      {/* Terms Dialog */}
+      {showTermsDialog && (
+        <TermsDialog onClose={() => setShowTermsDialog(false)} />
+      )}
+
       {/* Feedback Modal */}
       {showFeedbackModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
           <div className="bg-background rounded-3xl w-full max-w-lg border border-border shadow-2xl flex flex-col overflow-hidden animate-scale-in">
             <div className="flex justify-between items-center px-6 py-4 border-b border-border bg-card/50">
-              <h3 className="text-lg font-bold">Báo cáo lỗi / Góp ý</h3>
+              <h3 className="text-lg font-bold">{t("feedback_title")}</h3>
               <button 
                 onClick={() => setShowFeedbackModal(false)}
                 className="w-8 h-8 rounded-full hover:bg-black/10 dark:hover:bg-white/10 flex items-center justify-center text-muted-foreground transition-colors"
@@ -410,7 +425,7 @@ export function SystemModule() {
             <div className="p-6 space-y-4 overflow-y-auto max-h-[70vh] custom-scrollbar">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground uppercase">Họ tên (Không bắt buộc)</label>
+                  <label className="text-xs font-bold text-muted-foreground uppercase">{t("feedback_name")}</label>
                   <input 
                     type="text" 
                     value={feedbackName} 
@@ -420,31 +435,31 @@ export function SystemModule() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground uppercase">Số điện thoại (Không bắt buộc)</label>
+                  <label className="text-xs font-bold text-muted-foreground uppercase">{t("feedback_phone")}</label>
                   <input 
                     type="tel" 
                     value={feedbackPhone} 
                     onChange={e => setFeedbackPhone(e.target.value)} 
-                    placeholder="Để chúng tôi liên hệ hỗ trợ"
+                    placeholder={t("feedback_phone_hint")}
                     className="w-full bg-black/5 dark:bg-white/5 border border-border rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary transition-colors"
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground uppercase">Nội dung chi tiết *</label>
+                <label className="text-xs font-bold text-muted-foreground uppercase">{t("feedback_content")}</label>
                 <textarea 
                   value={feedbackContent} 
                   onChange={e => setFeedbackContent(e.target.value)} 
                   onPaste={handlePasteImage}
-                  placeholder="Vui lòng báo lỗi và dán hình ảnh vào đây..."
+                  placeholder={t("feedback_placeholder")}
                   className="w-full h-32 bg-black/5 dark:bg-white/5 border border-border rounded-xl px-4 py-3 text-sm outline-none focus:border-primary transition-colors resize-none"
                 />
               </div>
 
               {feedbackImage && (
                 <div className="space-y-1.5 relative">
-                  <label className="text-xs font-bold text-emerald-500 uppercase flex items-center gap-1"><ImageIcon size={14} /> Ảnh đính kèm</label>
+                  <label className="text-xs font-bold text-emerald-500 uppercase flex items-center gap-1"><ImageIcon size={14} /> {t("feedback_attachment")}</label>
                   <div className="relative inline-block border border-border rounded-xl overflow-hidden shadow-md">
                     <img src={feedbackImage} alt="Attachment" className="max-h-40 object-contain" />
                     <button 
@@ -458,7 +473,7 @@ export function SystemModule() {
               )}
               
               <div className="text-xs text-muted-foreground">
-                Phản hồi của bạn sẽ giúp chúng tôi cải thiện hệ thống tốt hơn.
+                {t("feedback_footer")}
               </div>
             </div>
             
@@ -469,7 +484,7 @@ export function SystemModule() {
                 className={`btn-primary px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
                 {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                Gửi phản hồi
+                {t("feedback_submit")}
               </button>
             </div>
           </div>
@@ -478,3 +493,4 @@ export function SystemModule() {
     </div>
   );
 }
+
