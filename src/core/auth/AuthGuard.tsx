@@ -60,6 +60,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
           const updated = await validateSubscription(savedSession);
           if (!isSubscriptionActive(updated.subscription.status)) {
             setSubscriptionExpired(true);
+            setSession(updated); // Allow session so user can access settings
             setLoading(false);
             return;
           }
@@ -70,9 +71,25 @@ export function AuthGuard({ children }: AuthGuardProps) {
             setLoading(false);
             return;
           }
+          if (message === "SUBSCRIPTION_INVALID") {
+            setSubscriptionExpired(true);
+            setSession({
+              ...savedSession,
+              subscription: {
+                ...savedSession.subscription,
+                status: "EXPIRED",
+                daysRemaining: 0
+              }
+            });
+            setLoading(false);
+            return;
+          }
           // Server unreachable — fallback to offline mode
           setOffline(true);
           if (isSubscriptionActive(savedSession.subscription.status)) {
+            setSession(savedSession);
+          } else {
+            setSubscriptionExpired(true);
             setSession(savedSession);
           }
         }
