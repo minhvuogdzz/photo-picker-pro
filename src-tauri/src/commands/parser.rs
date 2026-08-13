@@ -28,7 +28,7 @@ pub fn parse_customer_codes(input: String) -> Result<Vec<CustomerCode>, String> 
         .replace('〇', "0"); // U+3007 Ideographic
 
     let mut codes: Vec<CustomerCode> = Vec::new();
-    let mut seen = std::collections::HashSet::new();
+
 
     // Split input by common delimiters and newlines
     for line in normalized_input.lines() {

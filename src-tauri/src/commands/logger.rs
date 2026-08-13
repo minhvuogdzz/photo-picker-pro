@@ -44,7 +44,7 @@ pub fn export_missing(result: MatchResult, output_path: String) -> Result<String
     let missing: Vec<&str> = result
         .matches
         .iter()
-        .filter(|m| m.status == MatchStatus::Missing)
+        .filter(|m| m.status == MatchStatus::Missing || m.status == MatchStatus::InputDuplicate)
         .map(|m| m.code.as_str())
         .collect();
 
@@ -92,10 +92,12 @@ fn generate_txt(result: &MatchResult) -> String {
     }
 
     lines.push(format!("\n{}", "-".repeat(40)));
-    lines.push("MISSING:".to_string());
+    lines.push("MISSING/ERRORS:".to_string());
     for m in &result.matches {
         if m.status == MatchStatus::Missing {
-            lines.push(format!("  {}", m.code));
+            lines.push(format!("  {} [MISSING]", m.code));
+        } else if m.status == MatchStatus::InputDuplicate {
+            lines.push(format!("  {} [INPUT_DUPLICATE]", m.code));
         }
     }
 
@@ -111,6 +113,7 @@ fn generate_csv(result: &MatchResult) -> String {
             MatchStatus::Found => "FOUND",
             MatchStatus::Missing => "MISSING",
             MatchStatus::Duplicate => "DUPLICATE",
+            MatchStatus::InputDuplicate => "INPUT_DUPLICATE",
         };
 
         if let Some(ref photo) = m.photo {
