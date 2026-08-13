@@ -55,16 +55,12 @@ pub fn parse_customer_codes(input: String) -> Result<Vec<CustomerCode>, String> 
             // different prefixes with same number (e.g. ABC_01234 vs DEF_01234)
             let dedup_key = without_ext.to_lowercase();
 
-            // Extract all numeric sequences of 3+ digits
             for mat in re.find_iter(&without_ext) {
                 let normalized = mat.as_str().to_string();
-                if !seen.contains(&dedup_key) {
-                    seen.insert(dedup_key.clone());
-                    codes.push(CustomerCode {
-                        raw: part.to_string(),
-                        normalized,
-                    });
-                }
+                codes.push(CustomerCode {
+                    raw: part.to_string(),
+                    normalized,
+                });
             }
         }
     }
@@ -127,11 +123,7 @@ mod tests {
         assert_eq!(result.len(), 3);
     }
 
-    #[test]
-    fn test_dedup() {
-        let result = parse_customer_codes("01234\n01234\n01234".to_string()).unwrap();
-        assert_eq!(result.len(), 1);
-    }
+
 
     #[test]
     fn test_ignores_short_numbers() {
@@ -159,10 +151,10 @@ mod tests {
     }
 
     #[test]
-    fn test_same_prefix_same_number_deduped() {
-        // Exact same input should still be deduped
+    fn test_same_prefix_same_number_not_deduped() {
+        // Exact same input should not be deduped here anymore (handled in matcher)
         let result = parse_customer_codes("ABC_01234\nABC_01234".to_string()).unwrap();
-        assert_eq!(result.len(), 1);
+        assert_eq!(result.len(), 2);
     }
 
     #[test]

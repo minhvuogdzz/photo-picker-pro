@@ -41,6 +41,7 @@ pub enum MatchStatus {
     Found,
     Missing,
     Duplicate,
+    InputDuplicate,
 }
 
 /// A matched photo result linking a customer code to a photo file

@@ -97,6 +97,7 @@ where
     let mut missing_count: usize = 0;
     let mut duplicate_count: usize = 0;
     let total_codes = codes.len();
+    let mut seen_input_codes = std::collections::HashSet::new();
 
     // Initial progress event
     progress_callback(ProgressEvent {
@@ -120,6 +121,23 @@ where
                 speed: None,
             });
         }
+        let dedup_key = if multi_folder {
+            code.raw.trim().to_lowercase()
+        } else {
+            code.normalized.clone()
+        };
+
+        if !seen_input_codes.insert(dedup_key) {
+            duplicate_count += 1;
+            matches.push(MatchedPhoto {
+                code: code.normalized.clone(),
+                photo: None,
+                status: MatchStatus::InputDuplicate,
+                all_matches: Vec::new(),
+            });
+            continue;
+        }
+
         let matched_files: Vec<PhotoFile> = match match_mode {
             MatchMode::ExactNumber => {
                 if multi_folder {

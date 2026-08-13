@@ -331,14 +331,14 @@ export function LeftPanel() {
               Không có lỗi
             </div>
           ) : (
-            matchResult.matches.filter(m => m.status === "Missing" || m.status === "Duplicate").map((match, idx) => (
+            matchResult.matches.filter(m => m.status === "Missing" || m.status === "Duplicate" || m.status === "InputDuplicate").map((match, idx) => (
               <div key={idx} className={`flex flex-col gap-1 p-2.5 rounded-xl border bg-background/60 shadow-sm transition-colors ${match.status === "Missing" ? "border-destructive/30 hover:bg-destructive/5" : "border-warning/30 hover:bg-warning/5"}`}>
                 <div className="flex justify-between items-center">
                   <span className={`font-mono text-[11px] font-bold tracking-wide ${match.status === "Missing" ? "text-destructive" : "text-warning"}`}>
                     {match.code}
                   </span>
                   <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold shadow-sm ${match.status === "Missing" ? "bg-destructive/20 text-destructive" : "bg-warning/20 text-warning"}`}>
-                    {match.status === "Missing" ? "Thiếu" : `Trùng (${match.all_matches.length})`}
+                    {match.status === "Missing" ? "Thiếu" : (match.status === "InputDuplicate" ? "Trùng mã nhập" : `Trùng (${match.all_matches.length})`)}
                   </span>
                 </div>
                 {match.status === "Duplicate" && match.photo && (
