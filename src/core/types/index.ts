@@ -18,7 +18,7 @@ export interface CustomerCode {
 export type MatchMode = "ExactNumber" | "Contains" | "Regex";
 
 /** The status of a matched photo */
-export type MatchStatus = "Found" | "Missing" | "Duplicate";
+export type MatchStatus = "Found" | "Missing" | "Duplicate" | "InputDuplicate";
 
 /** A matched photo result */
 export interface MatchedPhoto {
