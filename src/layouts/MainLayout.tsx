@@ -9,6 +9,7 @@ import { AlertCircle } from "lucide-react";
 import { EcosystemSidebar } from "./EcosystemSidebar";
 import PhotoPickerModule from "@/modules/photo-picker";
 import MvdConvertApp from "@/modules/mvd-convert/MvdConvertApp";
+import PsPluginApp from "@/modules/ps-plugin/PsPluginApp";
 
 export function AppLayout() {
   const activeTab = useAppStore((s) => s.activeTab);
@@ -57,6 +58,7 @@ export function AppLayout() {
             {activeModule === "system" && <SystemModule />}
             {activeModule === "photo-picker" && <PhotoPickerModule />}
             {activeModule === "mvd-convert" && <MvdConvertApp />}
+            {activeModule === "ps-plugin" && <PsPluginApp />}
           </div>
         </div>
       </div>

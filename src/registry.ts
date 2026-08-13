@@ -1,5 +1,5 @@
 import { ElementType } from "react";
-import { Wand2, Share2, FileImage } from "lucide-react";
+import { Wand2, Share2, FileImage, Eraser } from "lucide-react";
 import { PhotoPickerIcon } from "@/core/components/PhotoPickerIcon";
 
 export interface AppModule {
@@ -21,5 +21,11 @@ export const modules: AppModule[] = [
     name: "MVD Convert",
     icon: FileImage,
     path: "/mvd-convert",
+  },
+  {
+    id: "ps-plugin",
+    name: "Cleanup Agent",
+    icon: Eraser,
+    path: "/ps-plugin",
   },
 ];

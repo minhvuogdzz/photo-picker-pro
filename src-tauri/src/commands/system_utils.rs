@@ -1,5 +1,6 @@
 use std::fs;
 use std::path::Path;
+use std::process::Command;
 
 /// Sync subfolder names to match the parent folder name.
 /// mode: "all" = rename all subfolders, "last" = rename only the deepest subfolder
@@ -89,5 +90,55 @@ pub fn sync_subfolder_names(folder_path: String, mode: String) -> Result<String,
             }
         }
         _ => Err("Chế độ không hợp lệ. Dùng 'all' hoặc 'last'".to_string()),
+    }
+}
+
+#[tauri::command]
+pub fn launch_photoshop() -> Result<String, String> {
+    #[cfg(target_os = "macos")]
+    {
+        // Try using bundle identifier first
+        let status = Command::new("open")
+            .args(["-b", "com.adobe.Photoshop"])
+            .status();
+        
+        if let Ok(st) = &status {
+            if st.success() {
+                return Ok("Mở Photoshop thành công".to_string());
+            }
+        }
+        
+        // Fallback to app name
+        let status2 = Command::new("open")
+            .args(["-a", "Adobe Photoshop"])
+            .status();
+
+        if let Ok(st) = status2 {
+            if st.success() {
+                return Ok("Mở Photoshop thành công".to_string());
+            }
+        }
+
+        Err("Không thể mở Photoshop. Vui lòng kiểm tra xem bạn đã cài đặt chưa.".to_string())
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        let status = Command::new("cmd")
+            .args(["/C", "start", "photoshop"])
+            .status();
+        
+        if let Ok(st) = status {
+            if st.success() {
+                return Ok("Mở Photoshop thành công".to_string());
+            }
+        }
+        
+        Err("Không thể mở Photoshop. Vui lòng kiểm tra xem bạn đã cài đặt chưa.".to_string())
+    }
+    
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    {
+        Err("Hệ điều hành không được hỗ trợ.".to_string())
     }
 }

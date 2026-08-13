@@ -185,15 +185,20 @@ export function CenterPanel() {
         )}
 
         {/* Code Input Textarea */}
-        <div className="flex-1 px-4 py-3 min-h-0">
-          <textarea
-            className="w-full h-full input-field resize-none font-mono text-xs leading-relaxed"
-            placeholder={t("paste_codes_here")}
-            value={rawCodeInput}
-            onChange={(e) => setRawCodeInput(e.target.value)}
-            spellCheck={false}
-            disabled={phase === "scanning" || phase === "copying"}
-          />
+        <div className="flex-1 px-5 py-4 min-h-0 flex flex-col">
+          <div className="relative flex-1 group">
+            {/* Glow effect on hover/focus */}
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/30 to-info/30 rounded-2xl blur opacity-0 group-hover:opacity-40 transition duration-500"></div>
+            <textarea
+              className="relative w-full h-full resize-none font-mono text-[13px] leading-loose p-5 bg-card/80 backdrop-blur-xl border border-border/50 text-foreground/90 rounded-2xl shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all placeholder:text-muted-foreground/40"
+              placeholder={`${t("paste_codes_here")}\n(Mỗi mã một dòng hoặc cách nhau bởi dấu phẩy, khoảng trắng)`}
+              value={rawCodeInput}
+              onChange={(e) => setRawCodeInput(e.target.value)}
+              spellCheck={false}
+              disabled={phase === "scanning" || phase === "copying"}
+              style={{ scrollbarWidth: 'thin' }}
+            />
+          </div>
         </div>
 
         {/* Scan Options */}
@@ -243,57 +248,7 @@ export function CenterPanel() {
           </label>
         </div>
 
-        {/* Preview Results Table (when matched) */}
-        {matchResult && matchResult.matches.length > 0 && (
-          <div className="border-t border-border/50 max-h-[40%] min-h-0 overflow-hidden flex flex-col">
-            <div className="px-4 py-2 flex items-center justify-between bg-muted/20">
-              <span className="text-xs font-medium text-muted-foreground">
-                Match Results
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {matchResult.matches.length} entries
-              </span>
-            </div>
-            <div className="overflow-y-auto flex-1">
-              <table className="w-full">
-                <thead className="sticky top-0 bg-card z-10">
-                  <tr>
-                    <th className="table-header">Code</th>
-                    <th className="table-header">File</th>
-                    <th className="table-header">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {matchResult.matches.map((match, idx) => (
-                    <tr key={`${match.code}-${idx}`} className="table-row">
-                      <td className="table-cell font-mono text-xs">
-                        {match.code}
-                      </td>
-                      <td className="table-cell text-xs truncate max-w-[200px]" title={match.photo?.full_path}>
-                        {match.photo?.filename || "—"}
-                      </td>
-                      <td className="table-cell">
-                        <span
-                          className={
-                            match.status === "Found"
-                              ? "badge-success"
-                              : match.status === "Missing"
-                                ? "badge-destructive"
-                                : "badge-warning"
-                          }
-                        >
-                          {match.status === "Found" ? t("found") : match.status === "Missing" ? t("missing") : t("duplicate")}
-                          {match.status === "Duplicate" &&
-                            ` (${match.all_matches.length})`}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+
       </div>
 
       {/* === DIVIDER === */}

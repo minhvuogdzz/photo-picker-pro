@@ -143,17 +143,23 @@ where
                         full_matches
                     } else {
                         // Fallback: number-only match (user typed just a number)
-                        number_index
-                            .get(&code.normalized)
-                            .map(|fs| fs.iter().map(|f| (*f).clone()).collect())
-                            .unwrap_or_default()
+                        let mut fallback_matched = Vec::new();
+                        for (file_num, files_with_num) in &number_index {
+                            if file_num.ends_with(&code.normalized) {
+                                fallback_matched.extend(files_with_num.iter().map(|f| (*f).clone()));
+                            }
+                        }
+                        fallback_matched
                     }
                 } else {
-                    // Single folder: number-only match (original behavior)
-                    number_index
-                        .get(&code.normalized)
-                        .map(|fs| fs.iter().map(|f| (*f).clone()).collect())
-                        .unwrap_or_default()
+                    // Single folder: number-only suffix match
+                    let mut matched = Vec::new();
+                    for (file_num, files_with_num) in &number_index {
+                        if file_num.ends_with(&code.normalized) {
+                            matched.extend(files_with_num.iter().map(|f| (*f).clone()));
+                        }
+                    }
+                    matched
                 }
             }
 
