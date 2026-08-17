@@ -65,9 +65,9 @@ where
         _ => HashMap::new(),
     };
 
-    // Build a stem-based index for multi-folder exact matching
+    // Build a stem-based index for exact matching
     // Maps lowercase filename stem -> list of files
-    let stem_index: HashMap<String, Vec<&PhotoFile>> = if multi_folder && matches!(match_mode, MatchMode::ExactNumber) {
+    let stem_index: HashMap<String, Vec<&PhotoFile>> = if matches!(match_mode, MatchMode::ExactNumber) {
         let mut index: HashMap<String, Vec<&PhotoFile>> = HashMap::new();
         for file in &files {
             let stem = std::path::Path::new(&file.filename)
@@ -121,11 +121,8 @@ where
                 speed: None,
             });
         }
-        let dedup_key = if multi_folder {
-            code.raw.trim().to_lowercase()
-        } else {
-            code.normalized.clone()
-        };
+        // Always use the raw code for deduplication to preserve distinct prefixed queries
+        let dedup_key = code.raw.trim().to_lowercase();
 
         if !seen_input_codes.insert(dedup_key) {
             duplicate_count += 1;
@@ -140,25 +137,29 @@ where
 
         let matched_files: Vec<PhotoFile> = match match_mode {
             MatchMode::ExactNumber => {
-                if multi_folder {
-                    // Multi-folder: try full stem match first
-                    // e.g. raw="ABC_01234" matches file "ABC_01234.CR2" but not "DEF_01234.CR2"
-                    let raw_stem = {
-                        let r = code.raw.trim();
-                        let without_ext = std::path::Path::new(r)
-                            .file_stem()
-                            .and_then(|s| s.to_str())
-                            .unwrap_or(r);
-                        without_ext.to_lowercase()
-                    };
+                // Try full stem match first
+                // e.g. raw="ABC_01234" matches file "ABC_01234.CR2"
+                let raw_stem = {
+                    let r = code.raw.trim();
+                    let without_ext = std::path::Path::new(r)
+                        .file_stem()
+                        .and_then(|s| s.to_str())
+                        .unwrap_or(r);
+                    without_ext.to_lowercase()
+                };
 
-                    let full_matches: Vec<PhotoFile> = stem_index
-                        .get(&raw_stem)
-                        .map(|fs| fs.iter().map(|f| (*f).clone()).collect())
-                        .unwrap_or_default();
+                let full_matches: Vec<PhotoFile> = stem_index
+                    .get(&raw_stem)
+                    .map(|fs| fs.iter().map(|f| (*f).clone()).collect())
+                    .unwrap_or_default();
 
-                    if !full_matches.is_empty() {
-                        full_matches
+                if !full_matches.is_empty() {
+                    full_matches
+                } else {
+                    let has_letters = code.raw.trim().to_lowercase() != code.normalized;
+                    if has_letters {
+                        // Strict exact stem match only. No fallback for prefixed codes.
+                        Vec::new()
                     } else {
                         // Fallback: number-only match (user typed just a number)
                         let mut fallback_matched = Vec::new();
@@ -169,15 +170,6 @@ where
                         }
                         fallback_matched
                     }
-                } else {
-                    // Single folder: number-only suffix match
-                    let mut matched = Vec::new();
-                    for (file_num, files_with_num) in &number_index {
-                        if file_num.ends_with(&code.normalized) {
-                            matched.extend(files_with_num.iter().map(|f| (*f).clone()));
-                        }
-                    }
-                    matched
                 }
             }
 
@@ -353,14 +345,16 @@ mod tests {
     }
 
     #[test]
-    fn test_single_folder_ignores_prefix() {
-        // Single folder — should match by number only regardless of prefix
+    fn test_strict_prefix_matching() {
+        // If user inputs a prefix, it must exactly match the file stem, regardless of folder count
         let files = vec![
             make_photo("ABC_01234.CR2", "01234"),
         ];
         let codes = vec![make_code_with_raw("DEF_01234", "01234")];
         let result = match_photos_impl(codes, files, "ExactNumber".to_string(), None, Some(1), |_| {}).unwrap();
-        assert_eq!(result.found_count, 1);
+        // Since user specified DEF_01234, it should NOT fallback to match ABC_01234
+        assert_eq!(result.found_count, 0);
+        assert_eq!(result.missing_count, 1);
     }
 }
 
