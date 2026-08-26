@@ -1,6 +1,6 @@
 import { useAppStore } from "@/core/stores/useAppStore";
 import { invoke } from "@tauri-apps/api/core";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Code2,
   Hash,
@@ -17,6 +17,51 @@ import { useTranslation } from "@/core/lib/i18n";
 import { getFolderName } from "@/core/lib/utils";
 import { open } from "@tauri-apps/plugin-dialog";
 import { listen } from "@tauri-apps/api/event";
+
+/**
+ * Auto-format pasted codes: split by common delimiters, strip stray
+ * punctuation around each token, keep one code per line.
+ *
+ * Rules:
+ *  - Split on commas, semicolons, tabs, pipes, and newlines
+ *  - Trim leading/trailing quotes `"` `'` and whitespace from each token
+ *  - Strip a trailing dot/period unless it's part of a file extension
+ *  - Discard empty tokens
+ */
+function formatPastedCodes(text: string): string {
+  // 1. Normalize all quote types (curly/smart quotes → straight) then strip them
+  let normalized = text.replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
+                       .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'");
+  // Remove all remaining quote characters entirely
+  normalized = normalized.replace(/["']/g, "");
+
+  // 2. Split dash-joined codes: e.g. "HYTU3068.CR3-HYTU3124.CR3"
+  //    Pattern: .ext followed by dash(es) followed by a letter → insert newline
+  normalized = normalized.replace(/(\.\w{2,4})-+(?=[A-Za-z])/g, "$1\n");
+
+  // 3. Split by common separators: comma, semicolon, tab, pipe, newline
+  const tokens = normalized.split(/[,;\t|]+|\r?\n/);
+
+  const cleaned: string[] = [];
+  for (const raw of tokens) {
+    let t = raw.trim();
+
+    // Strip trailing stray punctuation
+    t = t.replace(/[,;]+$/, "");
+    // Remove trailing dot only if NOT a valid extension
+    if (/\.$/.test(t) && !/\.\w{2,4}$/.test(t)) {
+      t = t.replace(/\.$/, "");
+    }
+    // Remove trailing dash
+    t = t.replace(/-+$/, "");
+
+    if (t.length > 0) {
+      cleaned.push(t);
+    }
+  }
+
+  return cleaned.join("\n");
+}
 
 export function CenterPanel() {
   const rawCodeInput = useAppStore((s) => s.rawCodeInput);
@@ -39,6 +84,8 @@ export function CenterPanel() {
   const setActiveDropZone = useAppStore((s) => s.setActiveDropZone);
   const activeDropZone = useAppStore((s) => s.activeDropZone);
   const { t } = useTranslation();
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Sync folder states
   const [isSyncing, setIsSyncing] = useState(false);
@@ -72,6 +119,25 @@ export function CenterPanel() {
     }, 300);
     return () => clearTimeout(timer);
   }, [rawCodeInput, parseInput]);
+
+  // Handle paste event — auto-format codes
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      const pastedText = e.clipboardData.getData("text/plain");
+      if (!pastedText) return;
+
+      // Prevent default paste behavior so we can format
+      e.preventDefault();
+
+      const formatted = formatPastedCodes(pastedText);
+
+      // If there's already text, append with a newline separator
+      const current = rawCodeInput.trim();
+      const newValue = current ? current + "\n" + formatted : formatted;
+      setRawCodeInput(newValue);
+    },
+    [rawCodeInput, setRawCodeInput]
+  );
 
   // Add folders for sync uses global store now
 
@@ -124,43 +190,43 @@ export function CenterPanel() {
   };
 
   const modes = [
-    { id: "ExactNumber", label: "Exact", icon: <Hash size={12} /> },
-    { id: "Contains", label: "Contains", icon: <Search size={12} /> },
-    { id: "Regex", label: "Regex", icon: <Regex size={12} /> },
+    { id: "ExactNumber", label: "Exact", icon: <Hash size={11} /> },
+    { id: "Contains", label: "Contains", icon: <Search size={11} /> },
+    { id: "Regex", label: "Regex", icon: <Regex size={11} /> },
   ];
 
   return (
     <div className="panel flex-1 flex flex-col min-h-0 animate-fade-in">
       {/* === TOP HALF: Customer Codes === */}
       <div className="flex-1 flex flex-col min-h-0">
-        <div className="panel-header py-5 px-6">
-          <span className="panel-title flex items-center gap-2">
-            <Code2 size={14} className="text-primary" />
+        <div className="panel-header py-3 px-4">
+          <span className="panel-title flex items-center gap-2 text-xs">
+            <Code2 size={13} className="text-muted-foreground" />
             {t("customer_codes")}
           </span>
           <div className="flex items-center gap-2">
             {isParsingDebounced && (
-              <span className="text-xs text-muted-foreground animate-pulse-soft">
+              <span className="text-[10px] text-muted-foreground animate-pulse">
                 Parsing...
               </span>
             )}
-            <span className="badge-info">
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted/50 text-muted-foreground border border-border/40">
               {parsedCodes.length} {t("codes_count")}
             </span>
           </div>
         </div>
 
         {/* Match Mode Selector */}
-        <div className="px-4 pt-3 flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">{t("mode")}:</span>
-          <div className="flex gap-1 bg-muted/50 rounded-lg p-0.5">
+        <div className="px-4 pt-2 flex items-center gap-2">
+          <span className="text-[10px] text-muted-foreground">{t("mode")}:</span>
+          <div className="flex gap-0.5 bg-muted/40 rounded-md p-0.5">
             {modes.map((mode) => (
               <button
                 key={mode.id}
                 onClick={() => setMatchMode(mode.id)}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs transition-all cursor-pointer ${
+                className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-all cursor-pointer ${
                   matchMode === mode.id
-                    ? "bg-primary text-primary-foreground shadow-sm"
+                    ? "bg-primary text-primary-foreground shadow-sm font-medium"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -176,7 +242,7 @@ export function CenterPanel() {
           <div className="px-4 pt-2">
             <input
               type="text"
-              className="input-field text-xs font-mono"
+              className="input-field text-[11px] font-mono py-1.5"
               placeholder="Enter regex pattern..."
               value={regexPattern}
               onChange={(e) => setRegexPattern(e.target.value)}
@@ -185,33 +251,31 @@ export function CenterPanel() {
         )}
 
         {/* Code Input Textarea */}
-        <div className="flex-1 px-5 py-4 min-h-0 flex flex-col">
-          <div className="relative flex-1 group">
-            {/* Glow effect on hover/focus */}
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/30 to-info/30 rounded-2xl blur opacity-0 group-hover:opacity-40 transition duration-500"></div>
-            <textarea
-              className="relative w-full h-full resize-none font-mono text-[13px] leading-loose p-5 bg-card/80 backdrop-blur-xl border border-border/50 text-foreground/90 rounded-2xl shadow-inner focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all placeholder:text-muted-foreground/40"
-              placeholder={`${t("paste_codes_here")}\n(Mỗi mã một dòng hoặc cách nhau bởi dấu phẩy, khoảng trắng)`}
-              value={rawCodeInput}
-              onChange={(e) => setRawCodeInput(e.target.value)}
-              spellCheck={false}
-              disabled={phase === "scanning" || phase === "copying"}
-              style={{ scrollbarWidth: 'thin' }}
-            />
-          </div>
+        <div className="flex-1 px-4 py-3 min-h-0 flex flex-col">
+          <textarea
+            ref={textareaRef}
+            className="w-full h-full resize-none font-mono text-[12px] leading-relaxed p-3 bg-muted/20 border border-border/50 text-foreground rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-all placeholder:text-muted-foreground/40"
+            placeholder={t("paste_codes_here")}
+            value={rawCodeInput}
+            onChange={(e) => setRawCodeInput(e.target.value)}
+            onPaste={handlePaste}
+            spellCheck={false}
+            disabled={phase === "scanning" || phase === "copying"}
+            style={{ scrollbarWidth: 'thin' }}
+          />
         </div>
 
         {/* Scan Options */}
-        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs pb-3">
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-[11px] pb-2.5 px-4">
           <label className="flex items-center gap-1.5 cursor-pointer">
             <input
               type="checkbox"
               checked={scanOptions.filter_raw}
               onChange={(e) => setScanOptions({ filter_raw: e.target.checked })}
               disabled={phase === "scanning" || phase === "copying"}
-              className="rounded border-border text-primary focus:ring-primary/50 cursor-pointer disabled:opacity-50"
+              className="rounded border-border text-primary focus:ring-primary/50 cursor-pointer disabled:opacity-50 w-3 h-3"
             />
-            <span className={phase === "scanning" || phase === "copying" ? "opacity-50" : ""}>Lọc Raw (CR2, CR3, ARW...)</span>
+            <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>Lọc Raw</span>
           </label>
           
           <label className="flex items-center gap-1.5 cursor-pointer">
@@ -220,9 +284,9 @@ export function CenterPanel() {
               checked={scanOptions.filter_jpg}
               onChange={(e) => setScanOptions({ filter_jpg: e.target.checked })}
               disabled={phase === "scanning" || phase === "copying"}
-              className="rounded border-border text-primary focus:ring-primary/50 cursor-pointer disabled:opacity-50"
+              className="rounded border-border text-primary focus:ring-primary/50 cursor-pointer disabled:opacity-50 w-3 h-3"
             />
-            <span className={phase === "scanning" || phase === "copying" ? "opacity-50" : ""}>Lọc JPG</span>
+            <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>Lọc JPG</span>
           </label>
 
           <label className="flex items-center gap-1.5 cursor-pointer">
@@ -231,9 +295,9 @@ export function CenterPanel() {
               checked={!scanOptions.recursive}
               onChange={(e) => setScanOptions({ recursive: !e.target.checked })}
               disabled={phase === "scanning" || phase === "copying"}
-              className="rounded border-border text-primary focus:ring-primary/50 cursor-pointer disabled:opacity-50"
+              className="rounded border-border text-primary focus:ring-primary/50 cursor-pointer disabled:opacity-50 w-3 h-3"
             />
-            <span className={phase === "scanning" || phase === "copying" ? "opacity-50" : ""}>Chỉ lọc thư mục chọn</span>
+            <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>Chỉ thư mục chọn</span>
           </label>
 
           <label className="flex items-center gap-1.5 cursor-pointer">
@@ -242,9 +306,9 @@ export function CenterPanel() {
               checked={scanOptions.recursive}
               onChange={(e) => setScanOptions({ recursive: e.target.checked })}
               disabled={phase === "scanning" || phase === "copying"}
-              className="rounded border-border text-primary focus:ring-primary/50 cursor-pointer disabled:opacity-50"
+              className="rounded border-border text-primary focus:ring-primary/50 cursor-pointer disabled:opacity-50 w-3 h-3"
             />
-            <span className={phase === "scanning" || phase === "copying" ? "opacity-50" : ""}>Lọc tất cả thư mục con</span>
+            <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>Lọc tất cả thư mục con</span>
           </label>
         </div>
 
@@ -252,47 +316,47 @@ export function CenterPanel() {
       </div>
 
       {/* === DIVIDER === */}
-      <div className="border-t-2 border-border/60" />
+      <div className="border-t border-border/50" />
 
       {/* === BOTTOM HALF: Sync Folder Names === */}
-      <div className="flex flex-col" style={{ height: "220px", minHeight: "180px" }}>
+      <div className="flex flex-col" style={{ height: "200px", minHeight: "160px" }}>
         <div className="px-4 py-2 flex items-center justify-between shrink-0">
-          <span className="flex items-center gap-2 text-xs font-semibold">
-            <FolderSync size={14} className="text-emerald-500" />
+          <span className="flex items-center gap-2 text-[11px] font-medium text-foreground">
+            <FolderSync size={13} className="text-emerald-500" />
             Đồng bộ tên thư mục con
             {syncFolders.length > 0 && (
-              <span className="badge badge-info text-[10px]">{syncFolders.length}</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-muted/50 text-muted-foreground border border-border/40">{syncFolders.length}</span>
             )}
           </span>
           <div className="flex items-center gap-1.5">
             {syncFolders.length > 0 && (
               <button
                 onClick={clearSyncFolders}
-                className="text-xs text-muted-foreground hover:text-red-500 transition-colors flex items-center gap-1 cursor-pointer"
+                className="text-[10px] text-muted-foreground hover:text-red-500 transition-colors flex items-center gap-1 cursor-pointer"
               >
-                <Trash2 size={12} />
+                <Trash2 size={10} />
                 Xoá hết
               </button>
             )}
             <button
               onClick={handleAddSyncFolders}
-              className="text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1 cursor-pointer font-medium"
+              className="text-[10px] text-primary hover:text-primary/80 transition-colors flex items-center gap-1 cursor-pointer font-medium"
             >
-              <FolderOpen size={12} />
+              <FolderOpen size={10} />
               Thêm
             </button>
           </div>
         </div>
 
         <div
-          className={`flex-1 mx-4 mb-2 overflow-y-auto rounded-lg border-2 border-dashed transition-all ${
-            syncFolders.length === 0 ? "border-border/60" : "border-border/30"
+          className={`flex-1 mx-4 mb-2 overflow-y-auto rounded-lg border border-dashed transition-all ${
+            syncFolders.length === 0 ? "border-border/50" : "border-border/30"
           }`}
         >
           {syncFolders.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center px-4">
-              <FolderSync size={24} className="text-muted-foreground/40 mb-2" />
-              <p className="text-xs text-muted-foreground">
+              <FolderSync size={20} className="text-muted-foreground/30 mb-1.5" />
+              <p className="text-[10px] text-muted-foreground">
                 Bấm <strong>Thêm</strong> để chọn nhiều thư mục cùng lúc
               </p>
             </div>
@@ -301,17 +365,17 @@ export function CenterPanel() {
               {syncFolders.map((folder, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-card border border-border/40 group"
+                  className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-card border border-border/30 group"
                 >
-                  <FolderOpen size={13} className="text-emerald-500 shrink-0" />
-                  <span className="flex-1 text-xs truncate" title={folder}>
+                  <FolderOpen size={12} className="text-emerald-500 shrink-0" />
+                  <span className="flex-1 text-[11px] truncate" title={folder}>
                     {getFolderName(folder)}
                   </span>
                   <button
                     onClick={() => removeSyncFolder(folder)}
                     className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-500 transition-all cursor-pointer"
                   >
-                    <X size={12} />
+                    <X size={11} />
                   </button>
                 </div>
               ))}
@@ -321,27 +385,27 @@ export function CenterPanel() {
 
         {/* Sync result message */}
         {syncResult && (
-          <div className="mx-4 mb-2 text-xs text-muted-foreground bg-muted/30 rounded-md px-3 py-1.5 whitespace-pre-line">
+          <div className="mx-4 mb-2 text-[10px] text-muted-foreground bg-muted/20 rounded-md px-2.5 py-1.5 whitespace-pre-line">
             {syncResult}
           </div>
         )}
 
         {/* Action buttons */}
-        <div className="px-4 pb-3 flex gap-2 shrink-0">
+        <div className="px-4 pb-2.5 flex gap-2 shrink-0">
           <button
             onClick={() => handleSyncAll("all")}
             disabled={isSyncing || syncFolders.length === 0}
-            className="btn-primary text-xs py-1.5 px-3 flex-1 flex items-center justify-center gap-1.5 disabled:opacity-40"
+            className="btn-primary text-[11px] py-1.5 px-3 flex-1 flex items-center justify-center gap-1.5 disabled:opacity-40 rounded-lg"
           >
-            {isSyncing ? <Loader2 size={13} className="animate-spin" /> : <FolderSync size={13} />}
+            {isSyncing ? <Loader2 size={12} className="animate-spin" /> : <FolderSync size={12} />}
             Đồng bộ tất cả
           </button>
           <button
             onClick={() => handleSyncAll("last")}
             disabled={isSyncing || syncFolders.length === 0}
-            className="btn-outline text-xs py-1.5 px-3 flex-1 flex items-center justify-center gap-1.5 disabled:opacity-40"
+            className="btn-outline text-[11px] py-1.5 px-3 flex-1 flex items-center justify-center gap-1.5 disabled:opacity-40 rounded-lg"
           >
-            {isSyncing ? <Loader2 size={13} className="animate-spin" /> : <FolderOpen size={13} />}
+            {isSyncing ? <Loader2 size={12} className="animate-spin" /> : <FolderOpen size={12} />}
             Chỉ thư mục cuối
           </button>
         </div>

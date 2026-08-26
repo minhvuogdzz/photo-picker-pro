@@ -16,6 +16,10 @@ import {
   ChevronRight,
   ChevronLeft,
   Menu,
+  Copy,
+  XCircle,
+  Clipboard,
+  ClipboardCheck,
 } from "lucide-react";
 import { getFolderName } from "@/core/lib/utils";
 
@@ -34,6 +38,8 @@ export function LeftPanel() {
 
   const [isDragging, setIsDragging] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const [copiedDuplicates, setCopiedDuplicates] = useState(false);
+  const [copiedMissing, setCopiedMissing] = useState(false);
 
   useEffect(() => {
     let unlistenFileDrop: () => void;
@@ -133,48 +139,89 @@ export function LeftPanel() {
     }
   };
 
+  // Collect duplicate and missing codes for the error section
+  const duplicateCodes = matchResult
+    ? matchResult.matches
+        .filter((m) => m.status === "InputDuplicate")
+        .map((m) => m.code)
+    : [];
+
+  const missingCodes = matchResult
+    ? matchResult.matches
+        .filter((m) => m.status === "Missing")
+        .map((m) => m.code)
+    : [];
+
+  const fileDuplicates = matchResult
+    ? matchResult.matches.filter((m) => m.status === "Duplicate")
+    : [];
+
+  const handleCopyDuplicateCodes = async () => {
+    if (duplicateCodes.length === 0) return;
+    const text = `Trùng mã: ${duplicateCodes.join(", ")}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedDuplicates(true);
+      setTimeout(() => setCopiedDuplicates(false), 2000);
+    } catch {
+      // fallback
+    }
+  };
+
+  const handleCopyMissingCodes = async () => {
+    if (missingCodes.length === 0) return;
+    const text = `Thiếu mã: ${missingCodes.join(", ")}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedMissing(true);
+      setTimeout(() => setCopiedMissing(false), 2000);
+    } catch {
+      // fallback
+    }
+  };
+
   if (isCollapsed) {
     return (
-      <div className="w-14 flex flex-col items-center py-5 bg-card/60 backdrop-blur-xl border border-border/40 shadow-lg rounded-2xl transition-all duration-300">
+      <div className="w-12 flex flex-col items-center py-4 bg-card/60 backdrop-blur-md border border-border/30 shadow-sm rounded-xl transition-all duration-300">
         <button 
           onClick={() => setIsCollapsed(false)}
-          className="p-2 hover:bg-primary/10 text-primary rounded-xl transition-all mb-6 cursor-pointer hover:scale-110"
+          className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-all mb-4 cursor-pointer"
           title="Mở bảng điều khiển"
         >
-          <Menu size={20} />
+          <Menu size={16} />
         </button>
         
-        <div className="flex flex-col gap-6 w-full items-center">
+        <div className="flex flex-col gap-4 w-full items-center">
           <div className="relative group cursor-pointer" onClick={() => setIsCollapsed(false)} title={t("input_folders")}>
-            <div className="p-2.5 bg-primary/10 text-primary rounded-xl group-hover:bg-primary/20 transition-all">
-              <FolderOpen size={18} />
+            <div className="p-2 text-muted-foreground group-hover:text-foreground rounded-lg transition-all">
+              <FolderOpen size={16} />
             </div>
             {inputFolders.length > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 px-1 bg-primary text-[9px] font-bold text-primary-foreground rounded-full flex items-center justify-center shadow-sm">
+              <span className="absolute -top-1 -right-1 min-w-3.5 h-3.5 px-0.5 bg-foreground/80 text-[8px] font-semibold text-background rounded-full flex items-center justify-center">
                 {inputFolders.length}
               </span>
             )}
           </div>
           
-          <div className="w-6 h-px bg-border/50"></div>
+          <div className="w-5 h-px bg-border/40"></div>
           
           <div className="relative group cursor-pointer" onClick={() => setIsCollapsed(false)} title="Đã tìm thấy">
-            <div className="p-2.5 bg-success/10 text-success rounded-xl group-hover:bg-success/20 transition-all">
-              <CheckCircle size={18} />
+            <div className="p-2 text-emerald-600/60 dark:text-emerald-400/60 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 rounded-lg transition-all">
+              <CheckCircle size={16} />
             </div>
             {matchResult && matchResult.found_count > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 px-1 bg-success text-[9px] font-bold text-success-foreground rounded-full flex items-center justify-center shadow-sm">
+              <span className="absolute -top-1 -right-1 min-w-3.5 h-3.5 px-0.5 bg-emerald-600 dark:bg-emerald-500 text-[8px] font-semibold text-white rounded-full flex items-center justify-center">
                 {matchResult.found_count}
               </span>
             )}
           </div>
 
           <div className="relative group cursor-pointer" onClick={() => setIsCollapsed(false)} title="Các file lỗi">
-            <div className="p-2.5 bg-destructive/10 text-destructive rounded-xl group-hover:bg-destructive/20 transition-all">
-              <AlertTriangle size={18} />
+            <div className="p-2 text-red-500/60 group-hover:text-red-500 rounded-lg transition-all">
+              <AlertTriangle size={16} />
             </div>
             {matchResult && (matchResult.missing_count > 0 || matchResult.duplicate_count > 0) && (
-              <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 px-1 bg-destructive text-[9px] font-bold text-destructive-foreground rounded-full flex items-center justify-center shadow-sm">
+              <span className="absolute -top-1 -right-1 min-w-3.5 h-3.5 px-0.5 bg-red-500 text-[8px] font-semibold text-white rounded-full flex items-center justify-center">
                 {matchResult.missing_count + matchResult.duplicate_count}
               </span>
             )}
@@ -185,30 +232,32 @@ export function LeftPanel() {
   }
 
   return (
-    <div className="w-[320px] shrink-0 flex flex-col min-h-0 animate-fade-in gap-4 relative transition-all duration-300">
-      <button 
-        onClick={() => setIsCollapsed(true)}
-        className="absolute -right-4 top-4 z-10 p-1.5 bg-card border border-border shadow-md rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all cursor-pointer hover:scale-110"
-        title="Thu gọn"
-      >
-        <ChevronLeft size={16} />
-      </button>
+    <div className="w-[300px] shrink-0 flex flex-col min-h-0 animate-fade-in gap-3 transition-all duration-300">
 
       {/* SECTION 1: Input Folders */}
-      <div className="flex flex-col flex-shrink-0 max-h-[40%] bg-card/80 backdrop-blur-md border border-border/40 shadow-lg rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-primary/30">
-        <div className="py-3 px-4 pr-10 flex justify-between items-center bg-muted/30 border-b border-border/30">
-          <span className="flex items-center gap-2 text-xs font-bold tracking-wide text-foreground uppercase">
-            <FolderOpen size={14} className="text-primary" />
+      <div className="flex flex-col flex-shrink-0 max-h-[35%] bg-card/80 backdrop-blur-md border border-border/30 shadow-sm rounded-xl overflow-hidden transition-all duration-300">
+        <div className="py-2.5 px-3 flex justify-between items-center border-b border-border/30">
+          <span className="flex items-center gap-2 text-[11px] font-semibold tracking-wide text-foreground uppercase">
+            <FolderOpen size={13} className="text-muted-foreground" />
             {t("input_folders")}
-            <span className="bg-primary/10 border border-primary/20 text-primary px-2 py-0.5 rounded-full text-[10px] ml-1 shadow-sm">{inputFolders.length}</span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-muted/50 text-muted-foreground border border-border/30">{inputFolders.length}</span>
           </span>
-          <button 
-            onClick={handleAddFolder} 
-            className="text-primary/70 hover:text-primary hover:bg-primary/10 transition-all p-1.5 rounded-lg cursor-pointer" 
-            title={t("add_folder")}
-          >
-            <FolderPlus size={16} />
-          </button>
+          <div className="flex items-center gap-1">
+            <button 
+              onClick={handleAddFolder} 
+              className="text-muted-foreground hover:text-foreground transition-all p-1 rounded-md hover:bg-muted/50 cursor-pointer" 
+              title={t("add_folder")}
+            >
+              <FolderPlus size={14} />
+            </button>
+            <button 
+              onClick={() => setIsCollapsed(true)}
+              className="text-muted-foreground hover:text-foreground transition-all p-1 rounded-md hover:bg-muted/50 cursor-pointer"
+              title="Thu gọn"
+            >
+              <ChevronLeft size={14} />
+            </button>
+          </div>
         </div>
 
         <div
@@ -217,20 +266,18 @@ export function LeftPanel() {
             setActiveDropZone("input");
           }}
           onDragLeave={() => setActiveDropZone(null)}
-          className={`flex-1 overflow-y-auto p-3 space-y-2 transition-all ${
-            isDragging ? "bg-primary/5 ring-2 ring-primary/50 ring-inset" : ""
+          className={`flex-1 overflow-y-auto p-2.5 space-y-1.5 transition-all ${
+            isDragging ? "bg-primary/5 ring-1 ring-primary/30 ring-inset" : ""
           }`}
           style={{
             scrollbarWidth: 'thin',
           }}
         >
           {inputFolders.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-6 px-4 text-center border-2 border-dashed border-border/50 rounded-xl bg-muted/10 transition-colors hover:border-primary/40 hover:bg-primary/5">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3 shadow-inner">
-                <FolderPlus size={20} className="text-primary" />
-              </div>
-              <p className="text-xs font-semibold text-foreground/80">{t("no_folders_added")}</p>
-              <p className="text-[10px] mt-1.5 text-muted-foreground max-w-[180px] leading-relaxed">
+            <div className="flex flex-col items-center justify-center py-5 px-3 text-center border border-dashed border-border/40 rounded-lg">
+              <FolderPlus size={18} className="text-muted-foreground/40 mb-2" />
+              <p className="text-[11px] text-foreground/60">{t("no_folders_added")}</p>
+              <p className="text-[10px] mt-1 text-muted-foreground max-w-[160px] leading-relaxed">
                 Bấm nút thêm ở góc trên hoặc kéo thả thư mục vào đây
               </p>
             </div>
@@ -238,13 +285,11 @@ export function LeftPanel() {
             inputFolders.map((folder, i) => (
               <div
                 key={i}
-                className="flex items-center gap-2.5 p-2.5 rounded-xl border bg-background/50 border-border/50 shadow-sm hover:border-primary/40 transition-colors group"
+                className="flex items-center gap-2 p-2 rounded-lg border bg-background/50 border-border/30 hover:border-border/60 transition-colors group"
               >
-                <div className="p-1.5 rounded-md bg-primary/10 text-primary shadow-inner">
-                  <FolderOpen size={14} className="group-hover:scale-110 transition-transform" />
-                </div>
+                <FolderOpen size={13} className="text-muted-foreground shrink-0" />
                 <div
-                  className="flex-1 truncate text-xs font-medium text-foreground/90"
+                  className="flex-1 truncate text-[11px] text-foreground/80"
                   title={folder}
                   dir="rtl"
                 >
@@ -257,24 +302,24 @@ export function LeftPanel() {
           {/* Favorite folders section */}
           {favoriteFolders.length > 0 && (
             <>
-              <div className="pt-3 pb-1.5">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
-                  <Star size={10} className="text-warning" />
+              <div className="pt-2 pb-1">
+                <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                  <Star size={9} className="text-amber-400" />
                   {t("favorites")}
                 </span>
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 {favoriteFolders
                   .filter((f) => !inputFolders.includes(f))
                   .map((folder) => (
                     <button
                       key={folder}
                       onClick={() => addInputFolder(folder)}
-                      className="w-full text-left opacity-70 hover:opacity-100 cursor-pointer border border-transparent hover:border-warning/30 hover:bg-warning/5 rounded-xl p-2 flex items-center gap-2.5 transition-all group"
+                      className="w-full text-left opacity-60 hover:opacity-100 cursor-pointer border border-transparent hover:border-border/40 hover:bg-muted/30 rounded-lg p-2 flex items-center gap-2 transition-all group"
                       title={`Click to add: ${folder}`}
                     >
-                      <Star size={14} className="text-warning fill-warning/20 group-hover:fill-warning shrink-0 transition-colors" />
-                      <span className="flex-1 text-xs truncate font-medium">
+                      <Star size={12} className="text-amber-400 shrink-0" />
+                      <span className="flex-1 text-[11px] truncate">
                         {getFolderName(folder)}
                       </span>
                     </button>
@@ -286,26 +331,26 @@ export function LeftPanel() {
       </div>
 
       {/* SECTION 2: Found Files */}
-      <div className="flex flex-col flex-1 min-h-[160px] bg-gradient-to-br from-success/5 via-success/10 to-success/5 border border-success/20 shadow-lg rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-success/10 hover:border-success/40">
-        <div className="py-3 px-4 flex justify-between items-center border-b border-success/20 bg-success/10 backdrop-blur-md">
-          <span className="flex items-center gap-2 text-xs font-bold tracking-wide text-success uppercase">
-            <CheckCircle size={14} className="drop-shadow-sm" />
+      <div className="flex flex-col flex-1 min-h-[140px] bg-card/80 border border-border/30 shadow-sm rounded-xl overflow-hidden transition-all duration-300">
+        <div className="py-2.5 px-3 flex justify-between items-center border-b border-border/30">
+          <span className="flex items-center gap-2 text-[11px] font-semibold tracking-wide text-foreground uppercase">
+            <CheckCircle size={13} className="text-emerald-600 dark:text-emerald-400" />
             Đã tìm thấy
-            <span className="bg-success text-success-foreground px-2 py-0.5 rounded-full text-[10px] ml-1 shadow-sm font-bold">
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
               {matchResult?.found_count ?? 0}
             </span>
           </span>
         </div>
-        <div className="flex-1 overflow-y-auto p-3 space-y-2" style={{ scrollbarWidth: 'thin' }}>
+        <div className="flex-1 overflow-y-auto p-2.5 space-y-1" style={{ scrollbarWidth: 'thin' }}>
           {(!matchResult || matchResult.found_count === 0) ? (
-            <div className="flex h-full items-center justify-center text-xs text-success/40 font-medium">
+            <div className="flex h-full items-center justify-center text-[11px] text-muted-foreground/40">
               Chưa có file nào
             </div>
           ) : (
             matchResult.matches.filter(m => m.status === "Found").map((match, idx) => (
-              <div key={idx} className="flex flex-col gap-1 p-2.5 rounded-xl border border-success/30 bg-background/60 shadow-sm hover:bg-success/5 transition-colors">
-                <span className="font-mono text-[11px] text-success font-bold tracking-wide">{match.code}</span>
-                <span className="text-[10px] text-foreground/70 truncate" title={match.photo?.filename}>
+              <div key={idx} className="flex flex-col gap-0.5 p-2 rounded-lg border border-border/30 bg-background/50 hover:bg-muted/20 transition-colors">
+                <span className="font-mono text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">{match.code}</span>
+                <span className="text-[10px] text-muted-foreground truncate" title={match.photo?.filename}>
                   {match.photo?.filename}
                 </span>
               </div>
@@ -314,40 +359,87 @@ export function LeftPanel() {
         </div>
       </div>
 
-      {/* SECTION 3: Error Files */}
-      <div className="flex flex-col flex-1 min-h-[160px] bg-gradient-to-br from-destructive/5 via-destructive/10 to-destructive/5 border border-destructive/20 shadow-lg rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-destructive/10 hover:border-destructive/40">
-        <div className="py-3 px-4 flex justify-between items-center border-b border-destructive/20 bg-destructive/10 backdrop-blur-md">
-          <span className="flex items-center gap-2 text-xs font-bold tracking-wide text-destructive uppercase">
-            <AlertTriangle size={14} className="drop-shadow-sm" />
+      {/* SECTION 3: Error Files — with copy buttons for duplicate & missing */}
+      <div className="flex flex-col flex-1 min-h-[140px] bg-card/80 border border-border/30 shadow-sm rounded-xl overflow-hidden transition-all duration-300">
+        <div className="py-2.5 px-3 flex justify-between items-center border-b border-border/30">
+          <span className="flex items-center gap-2 text-[11px] font-semibold tracking-wide text-foreground uppercase">
+            <AlertTriangle size={13} className="text-red-500" />
             Các file lỗi
-            <span className="bg-destructive text-destructive-foreground px-2 py-0.5 rounded-full text-[10px] ml-1 shadow-sm font-bold">
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-500 border border-red-500/20">
               {(matchResult?.missing_count ?? 0) + (matchResult?.duplicate_count ?? 0)}
             </span>
           </span>
         </div>
-        <div className="flex-1 overflow-y-auto p-3 space-y-2" style={{ scrollbarWidth: 'thin' }}>
+        <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5" style={{ scrollbarWidth: 'thin' }}>
           {(!matchResult || (matchResult.missing_count === 0 && matchResult.duplicate_count === 0)) ? (
-            <div className="flex h-full items-center justify-center text-xs text-destructive/40 font-medium">
+            <div className="flex h-full items-center justify-center text-[11px] text-muted-foreground/40">
               Không có lỗi
             </div>
           ) : (
-            matchResult.matches.filter(m => m.status === "Missing" || m.status === "Duplicate" || m.status === "InputDuplicate").map((match, idx) => (
-              <div key={idx} className={`flex flex-col gap-1 p-2.5 rounded-xl border bg-background/60 shadow-sm transition-colors ${match.status === "Missing" ? "border-destructive/30 hover:bg-destructive/5" : "border-warning/30 hover:bg-warning/5"}`}>
-                <div className="flex justify-between items-center">
-                  <span className={`font-mono text-[11px] font-bold tracking-wide ${match.status === "Missing" ? "text-destructive" : "text-warning"}`}>
-                    {match.code}
-                  </span>
-                  <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold shadow-sm ${match.status === "Missing" ? "bg-destructive/20 text-destructive" : "bg-warning/20 text-warning"}`}>
-                    {match.status === "Missing" ? "Thiếu" : (match.status === "InputDuplicate" ? "Trùng mã nhập" : `Trùng (${match.all_matches.length})`)}
-                  </span>
+            <>
+              {/* Duplicate codes summary with copy button */}
+              {duplicateCodes.length > 0 && (
+                <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-2 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                      <Copy size={10} />
+                      Trùng mã ({duplicateCodes.length})
+                    </span>
+                    <button
+                      onClick={handleCopyDuplicateCodes}
+                      className="flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 transition-colors cursor-pointer"
+                    >
+                      {copiedDuplicates ? <ClipboardCheck size={9} /> : <Clipboard size={9} />}
+                      {copiedDuplicates ? "Đã sao chép" : "Sao chép"}
+                    </button>
+                  </div>
+                  <p className="text-[9px] text-amber-700/70 dark:text-amber-300/60 font-mono leading-relaxed break-all">
+                    {duplicateCodes.join(", ")}
+                  </p>
                 </div>
-                {match.status === "Duplicate" && match.photo && (
-                  <span className="text-[10px] text-foreground/70 truncate mt-0.5" title={match.photo.filename}>
-                    {match.photo.filename}
-                  </span>
-                )}
-              </div>
-            ))
+              )}
+
+              {/* Missing codes summary with copy button */}
+              {missingCodes.length > 0 && (
+                <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-2 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-medium text-red-600 dark:text-red-400 flex items-center gap-1">
+                      <XCircle size={10} />
+                      Thiếu mã ({missingCodes.length})
+                    </span>
+                    <button
+                      onClick={handleCopyMissingCodes}
+                      className="flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 transition-colors cursor-pointer"
+                    >
+                      {copiedMissing ? <ClipboardCheck size={9} /> : <Clipboard size={9} />}
+                      {copiedMissing ? "Đã sao chép" : "Sao chép"}
+                    </button>
+                  </div>
+                  <p className="text-[9px] text-red-700/70 dark:text-red-300/60 font-mono leading-relaxed break-all">
+                    {missingCodes.join(", ")}
+                  </p>
+                </div>
+              )}
+
+              {/* Individual error items */}
+              {matchResult.matches.filter(m => m.status === "Missing" || m.status === "Duplicate" || m.status === "InputDuplicate").map((match, idx) => (
+                <div key={idx} className={`flex flex-col gap-0.5 p-2 rounded-lg border bg-background/50 transition-colors ${match.status === "Missing" ? "border-red-500/20 hover:bg-red-500/5" : "border-amber-500/20 hover:bg-amber-500/5"}`}>
+                  <div className="flex justify-between items-center">
+                    <span className={`font-mono text-[11px] font-medium ${match.status === "Missing" ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}`}>
+                      {match.code}
+                    </span>
+                    <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-medium ${match.status === "Missing" ? "bg-red-500/10 text-red-500" : "bg-amber-500/10 text-amber-500"}`}>
+                      {match.status === "Missing" ? "Thiếu" : (match.status === "InputDuplicate" ? "Trùng mã" : `Trùng (${match.all_matches.length})`)}
+                    </span>
+                  </div>
+                  {match.status === "Duplicate" && match.photo && (
+                    <span className="text-[10px] text-muted-foreground truncate" title={match.photo.filename}>
+                      {match.photo.filename}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </>
           )}
         </div>
       </div>

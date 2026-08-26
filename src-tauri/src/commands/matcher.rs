@@ -127,7 +127,7 @@ where
         if !seen_input_codes.insert(dedup_key) {
             duplicate_count += 1;
             matches.push(MatchedPhoto {
-                code: code.normalized.clone(),
+                code: code.raw.trim().to_string(),
                 photo: None,
                 status: MatchStatus::InputDuplicate,
                 all_matches: Vec::new(),
@@ -210,7 +210,7 @@ where
         let primary_photo = matched_files.first().cloned();
 
         matches.push(MatchedPhoto {
-            code: code.normalized.clone(),
+            code: code.raw.trim().to_string(),
             photo: primary_photo,
             status,
             all_matches: matched_files,
