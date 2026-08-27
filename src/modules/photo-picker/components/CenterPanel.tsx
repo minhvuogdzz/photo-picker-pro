@@ -258,14 +258,13 @@ export function CenterPanel() {
           <textarea
             ref={textareaRef}
             className="w-full h-full resize-none font-mono text-[12px] leading-relaxed p-3 bg-muted/20 border border-border/50 text-foreground rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-all placeholder:text-muted-foreground/40"
-            style={{ fontFeatureSettings: '"zero" 1, "ss01" 1' }}
+            style={{ fontFeatureSettings: '"zero" 1, "ss01" 1', scrollbarWidth: 'thin' }}
             placeholder={t("paste_codes_here")}
             value={rawCodeInput}
             onChange={(e) => setRawCodeInput(e.target.value)}
             onPaste={handlePaste}
             spellCheck={false}
             disabled={phase === "scanning" || phase === "copying"}
-            style={{ scrollbarWidth: 'thin' }}
           />
         </div>
 
