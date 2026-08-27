@@ -143,12 +143,12 @@ where
             MatchMode::ExactNumber => {
                 // Try full stem match first
                 // e.g. raw="ABC_01234" matches file "ABC_01234.CR2"
+                let cleaned_raw = super::parser::clean_token(&code.raw);
                 let raw_stem = {
-                    let r = code.raw.trim();
-                    let without_ext = std::path::Path::new(r)
+                    let without_ext = std::path::Path::new(&cleaned_raw)
                         .file_stem()
                         .and_then(|s| s.to_str())
-                        .unwrap_or(r);
+                        .unwrap_or(&cleaned_raw);
                     without_ext.to_lowercase()
                 };
 
@@ -160,7 +160,7 @@ where
                 if !full_matches.is_empty() {
                     full_matches
                 } else {
-                    let has_letters = code.raw.trim().to_lowercase() != code.normalized;
+                    let has_letters = cleaned_raw.to_lowercase() != code.normalized;
                     if has_letters {
                         // Strict exact stem match only. No fallback for prefixed codes.
                         Vec::new()
@@ -421,5 +421,21 @@ mod tests {
         assert_eq!(result.duplicate_count, 1);
         assert_eq!(result.matches[0].all_matches.len(), 2);
     }
-}
 
+    #[test]
+    fn test_plus_prefixed_exact_matches() {
+        let files = vec![
+            make_photo("ABC01234.CR2", "01234"),
+            make_photo("DEF05678.JPG", "05678"),
+        ];
+        let codes = vec![
+            make_code_with_raw("+ABC01234", "01234"),
+            make_code_with_raw("+5678", "5678"),
+        ];
+        let result = match_photos_impl(codes, files, "ExactNumber".to_string(), None, None, |_| {}).unwrap();
+        assert_eq!(result.found_count, 2);
+        assert_eq!(result.missing_count, 0);
+        assert_eq!(result.matches[0].photo.as_ref().unwrap().filename, "ABC01234.CR2");
+        assert_eq!(result.matches[1].photo.as_ref().unwrap().filename, "DEF05678.JPG");
+    }
+}
