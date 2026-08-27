@@ -84,10 +84,14 @@ where
         HashMap::new()
     };
 
-    // Compile regex if needed
+    // Compile regex if needed (skip pre-compile when pattern has {code} placeholder)
     let compiled_regex = if let MatchMode::Regex = match_mode {
         let pattern = regex_pattern.as_deref().unwrap_or(".*");
-        Some(Regex::new(pattern).map_err(|e| format!("Invalid regex: {}", e))?)
+        if pattern.contains("{code}") {
+            None // Will be compiled per-code in the matching loop
+        } else {
+            Some(Regex::new(pattern).map_err(|e| format!("Invalid regex: {}", e))?)
+        }
     } else {
         None
     };
@@ -183,7 +187,19 @@ where
                 .collect(),
 
             MatchMode::Regex => {
-                if let Some(ref re) = compiled_regex {
+                let pattern_str = regex_pattern.as_deref().unwrap_or(".*");
+                if pattern_str.contains("{code}") {
+                    // Replace {code} placeholder with the current code's normalized value
+                    let actual_pattern = pattern_str.replace("{code}", &code.normalized);
+                    match Regex::new(&actual_pattern) {
+                        Ok(re) => files
+                            .iter()
+                            .filter(|f| re.is_match(&f.filename))
+                            .cloned()
+                            .collect(),
+                        Err(_) => Vec::new(),
+                    }
+                } else if let Some(ref re) = compiled_regex {
                     files
                         .iter()
                         .filter(|f| re.is_match(&f.filename))
@@ -355,6 +371,55 @@ mod tests {
         // Since user specified DEF_01234, it should NOT fallback to match ABC_01234
         assert_eq!(result.found_count, 0);
         assert_eq!(result.missing_count, 1);
+    }
+
+    // --- Regex {code} placeholder tests ---
+
+    #[test]
+    fn test_regex_code_placeholder_matches_prefix() {
+        // Pattern ^abc{code} with code 01234 should only match abc01234, not bcd01234
+        let files = vec![
+            make_photo("abc01234.jpg", "01234"),
+            make_photo("bcd01234.jpg", "01234"),
+        ];
+        let codes = vec![make_code("01234")];
+        let result = match_photos_impl(
+            codes, files, "Regex".to_string(),
+            Some("^abc{code}".to_string()), None, |_| {},
+        ).unwrap();
+        assert_eq!(result.found_count, 1);
+        assert_eq!(result.matches[0].photo.as_ref().unwrap().filename, "abc01234.jpg");
+    }
+
+    #[test]
+    fn test_regex_code_placeholder_no_match() {
+        // Pattern ^xyz{code} should not match abc01234
+        let files = vec![make_photo("abc01234.jpg", "01234")];
+        let codes = vec![make_code("01234")];
+        let result = match_photos_impl(
+            codes, files, "Regex".to_string(),
+            Some("^xyz{code}".to_string()), None, |_| {},
+        ).unwrap();
+        assert_eq!(result.found_count, 0);
+        assert_eq!(result.missing_count, 1);
+    }
+
+    #[test]
+    fn test_regex_without_placeholder_matches_all() {
+        // Pattern without {code} should work as before — match all files matching the pattern
+        let files = vec![
+            make_photo("abc01234.jpg", "01234"),
+            make_photo("bcd01234.jpg", "01234"),
+        ];
+        let codes = vec![make_code("01234")];
+        let result = match_photos_impl(
+            codes, files, "Regex".to_string(),
+            Some("01234".to_string()), None, |_| {},
+        ).unwrap();
+        // Both files match the pattern, so it should be Duplicate
+        assert_eq!(result.found_count, 1);
+        assert_eq!(result.duplicate_count, 1);
+        assert_eq!(result.matches[0].all_matches.len(), 2);
     }
 }
 

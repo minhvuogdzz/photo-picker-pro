@@ -243,10 +243,13 @@ export function CenterPanel() {
             <input
               type="text"
               className="input-field text-[11px] font-mono py-1.5"
-              placeholder="Enter regex pattern..."
+              placeholder={t("regex_placeholder")}
               value={regexPattern}
               onChange={(e) => setRegexPattern(e.target.value)}
             />
+            <p className="text-[9px] text-muted-foreground/70 mt-1 leading-relaxed">
+              {t("regex_hint")}
+            </p>
           </div>
         )}
 
@@ -255,6 +258,7 @@ export function CenterPanel() {
           <textarea
             ref={textareaRef}
             className="w-full h-full resize-none font-mono text-[12px] leading-relaxed p-3 bg-muted/20 border border-border/50 text-foreground rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-all placeholder:text-muted-foreground/40"
+            style={{ fontFeatureSettings: '"zero" 1, "ss01" 1' }}
             placeholder={t("paste_codes_here")}
             value={rawCodeInput}
             onChange={(e) => setRawCodeInput(e.target.value)}

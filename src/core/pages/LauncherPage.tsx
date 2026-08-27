@@ -1,10 +1,17 @@
+import { useState, useEffect } from "react";
 import { useAppStore } from "@/core/stores/useAppStore";
 import { modules } from "@/registry";
 import { LayoutGrid, ArrowRight, Zap, Cloud, Shield } from "lucide-react";
+import { getVersion } from "@tauri-apps/api/app";
 
 export function LauncherPage() {
   const setActiveModule = useAppStore((s) => s.setActiveModule);
   const setLastClickPos = useAppStore((s) => s.setLastClickPos);
+  const [version, setVersion] = useState("");
+
+  useEffect(() => {
+    getVersion().then(setVersion).catch(console.error);
+  }, []);
 
   const getCardStyle = (id: string) => {
     switch (id) {
@@ -114,7 +121,7 @@ export function LauncherPage() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Phiên bản</p>
-              <p className="text-sm font-semibold">1.3.6 (Cập nhật mới nhất)</p>
+              <p className="text-sm font-semibold">{version}</p>
             </div>
           </div>
         </div>
