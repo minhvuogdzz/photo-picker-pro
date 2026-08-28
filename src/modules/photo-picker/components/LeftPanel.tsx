@@ -40,6 +40,7 @@ export function LeftPanel() {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [copiedDuplicates, setCopiedDuplicates] = useState(false);
   const [copiedMissing, setCopiedMissing] = useState(false);
+  const [copiedAll, setCopiedAll] = useState(false);
 
   useEffect(() => {
     let unlistenFileDrop: () => void;
@@ -138,8 +139,6 @@ export function LeftPanel() {
       addFavoriteFolder(folder);
     }
   };
-
-  // Collect duplicate and missing codes for the error section
   const duplicateCodes = matchResult
     ? matchResult.matches
         .filter((m) => m.status === "InputDuplicate")
@@ -156,9 +155,45 @@ export function LeftPanel() {
     ? matchResult.matches.filter((m) => m.status === "Duplicate")
     : [];
 
+  const currentFolderNames = (selectedInputFolders.length > 0 ? selectedInputFolders : inputFolders)
+    .map(getFolderName)
+    .filter(Boolean)
+    .join(", ");
+
+  const formatErrorText = (options?: { includeMissing?: boolean; includeDuplicates?: boolean }) => {
+    const { includeMissing = true, includeDuplicates = true } = options || {};
+    const parts: string[] = [];
+
+    if (currentFolderNames) {
+      parts.push(currentFolderNames);
+    }
+
+    if (includeMissing && missingCodes.length > 0) {
+      parts.push(`sai mã: ${missingCodes.join(", ")}`);
+    }
+
+    if (includeDuplicates && duplicateCodes.length > 0) {
+      parts.push(`trùng mã: ${duplicateCodes.join(", ")}`);
+    }
+
+    return parts.join(" ");
+  };
+
+  const handleCopyAllErrors = async () => {
+    const text = formatErrorText({ includeMissing: true, includeDuplicates: true });
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedAll(true);
+      setTimeout(() => setCopiedAll(false), 2000);
+    } catch {
+      // fallback
+    }
+  };
+
   const handleCopyDuplicateCodes = async () => {
     if (duplicateCodes.length === 0) return;
-    const text = `Trùng mã: ${duplicateCodes.join(", ")}`;
+    const text = formatErrorText({ includeMissing: false, includeDuplicates: true });
     try {
       await navigator.clipboard.writeText(text);
       setCopiedDuplicates(true);
@@ -170,7 +205,7 @@ export function LeftPanel() {
 
   const handleCopyMissingCodes = async () => {
     if (missingCodes.length === 0) return;
-    const text = `Thiếu mã: ${missingCodes.join(", ")}`;
+    const text = formatErrorText({ includeMissing: true, includeDuplicates: false });
     try {
       await navigator.clipboard.writeText(text);
       setCopiedMissing(true);
@@ -377,6 +412,28 @@ export function LeftPanel() {
             </div>
           ) : (
             <>
+              {/* Combined error summary if both missing & duplicates exist */}
+              {duplicateCodes.length > 0 && missingCodes.length > 0 && (
+                <div className="rounded-lg border border-primary/30 bg-primary/5 p-2 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-medium text-primary flex items-center gap-1">
+                      <Copy size={10} />
+                      Gộp tất cả lỗi ({missingCodes.length + duplicateCodes.length})
+                    </span>
+                    <button
+                      onClick={handleCopyAllErrors}
+                      className="flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer font-medium"
+                    >
+                      {copiedAll ? <ClipboardCheck size={9} /> : <Clipboard size={9} />}
+                      {copiedAll ? "Đã sao chép" : "Sao chép tất cả"}
+                    </button>
+                  </div>
+                  <p className="text-[9px] text-foreground/85 font-mono leading-relaxed break-all bg-background/50 p-1.5 rounded border border-border/30">
+                    {formatErrorText({ includeMissing: true, includeDuplicates: true })}
+                  </p>
+                </div>
+              )}
+
               {/* Duplicate codes summary with copy button */}
               {duplicateCodes.length > 0 && (
                 <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-2 space-y-1">
@@ -393,19 +450,19 @@ export function LeftPanel() {
                       {copiedDuplicates ? "Đã sao chép" : "Sao chép"}
                     </button>
                   </div>
-                  <p className="text-[9px] text-amber-700/70 dark:text-amber-300/60 font-mono leading-relaxed break-all">
-                    {duplicateCodes.join(", ")}
+                  <p className="text-[9px] text-amber-700/80 dark:text-amber-300/70 font-mono leading-relaxed break-all">
+                    {formatErrorText({ includeMissing: false, includeDuplicates: true })}
                   </p>
                 </div>
               )}
 
-              {/* Missing codes summary with copy button */}
+              {/* Missing/Wrong codes summary with copy button */}
               {missingCodes.length > 0 && (
                 <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-2 space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-medium text-red-600 dark:text-red-400 flex items-center gap-1">
                       <XCircle size={10} />
-                      Thiếu mã ({missingCodes.length})
+                      Sai mã ({missingCodes.length})
                     </span>
                     <button
                       onClick={handleCopyMissingCodes}
@@ -415,8 +472,8 @@ export function LeftPanel() {
                       {copiedMissing ? "Đã sao chép" : "Sao chép"}
                     </button>
                   </div>
-                  <p className="text-[9px] text-red-700/70 dark:text-red-300/60 font-mono leading-relaxed break-all">
-                    {missingCodes.join(", ")}
+                  <p className="text-[9px] text-red-700/80 dark:text-red-300/70 font-mono leading-relaxed break-all">
+                    {formatErrorText({ includeMissing: true, includeDuplicates: false })}
                   </p>
                 </div>
               )}
@@ -429,7 +486,7 @@ export function LeftPanel() {
                       {match.code}
                     </span>
                     <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-medium ${match.status === "Missing" ? "bg-red-500/10 text-red-500" : "bg-amber-500/10 text-amber-500"}`}>
-                      {match.status === "Missing" ? "Thiếu" : (match.status === "InputDuplicate" ? "Trùng mã" : `Trùng (${match.all_matches.length})`)}
+                      {match.status === "Missing" ? "Sai mã" : (match.status === "InputDuplicate" ? "Trùng mã" : `Trùng (${match.all_matches.length})`)}
                     </span>
                   </div>
                   {match.status === "Duplicate" && match.photo && (
