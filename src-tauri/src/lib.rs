@@ -31,6 +31,7 @@ pub fn run() {
             commands::logger::export_missing,
             commands::system_utils::sync_subfolder_names,
             commands::system_utils::launch_photoshop,
+            commands::system_utils::save_file_bytes,
             commands::converter::run_convert_batch,
         ])
         .run(tauri::generate_context!())

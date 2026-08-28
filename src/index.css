@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap');
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --color-background: var(--color-background);
@@ -46,24 +47,24 @@
 @layer base {
   :root {
     /* Default Light Theme */
-    --color-background: oklch(0.98 0.01 260);
-    --color-foreground: oklch(0.15 0.01 260);
-    --color-card: oklch(1 0 0 / 0.8);
-    --color-card-foreground: oklch(0.15 0.01 260);
-    --color-popover: oklch(1 0 0);
-    --color-popover-foreground: oklch(0.15 0.01 260);
+    --color-background: oklch(0.96 0.005 260);
+    --color-foreground: oklch(0.18 0.01 260);
+    --color-card: oklch(0.99 0.002 260 / 0.9);
+    --color-card-foreground: oklch(0.18 0.01 260);
+    --color-popover: oklch(0.99 0.002 260);
+    --color-popover-foreground: oklch(0.18 0.01 260);
     
     --color-primary: oklch(0.55 0.25 275);
     --color-primary-foreground: oklch(0.985 0 0);
     
-    --color-secondary: oklch(0.9 0.02 260);
+    --color-secondary: oklch(0.91 0.01 260);
     --color-secondary-foreground: oklch(0.2 0.01 260);
     
-    --color-muted: oklch(0.95 0.01 260);
-    --color-muted-foreground: oklch(0.55 0.01 260);
+    --color-muted: oklch(0.92 0.01 260);
+    --color-muted-foreground: oklch(0.48 0.01 260);
     
-    --color-accent: oklch(0.92 0.02 260);
-    --color-accent-foreground: oklch(0.15 0.01 260);
+    --color-accent: oklch(0.91 0.015 260);
+    --color-accent-foreground: oklch(0.18 0.01 260);
     
     --color-destructive: oklch(0.6 0.2 25);
     --color-destructive-foreground: oklch(0.985 0 0);
@@ -71,30 +72,30 @@
     --color-warning: oklch(0.65 0.2 70);
     --color-info: oklch(0.55 0.2 230);
     
-    --color-border: oklch(0.85 0.02 260);
-    --color-input: oklch(0.98 0 0);
+    --color-border: oklch(0.85 0.01 260 / 0.7);
+    --color-input: oklch(0.99 0.002 260);
     --color-ring: oklch(0.55 0.25 275);
   }
 
   .dark {
     /* Dark Theme */
-    --color-background: oklch(0.15 0.02 260);
+    --color-background: oklch(0.13 0.015 260);
     --color-foreground: oklch(0.985 0 0);
-    --color-card: oklch(0.18 0.02 260 / 0.7);
+    --color-card: oklch(0.17 0.018 260 / 0.85);
     --color-card-foreground: oklch(0.985 0 0);
-    --color-popover: oklch(0.18 0.02 260);
+    --color-popover: oklch(0.17 0.018 260);
     --color-popover-foreground: oklch(0.985 0 0);
     
     --color-primary: oklch(0.65 0.25 275);
     --color-primary-foreground: oklch(0.985 0 0);
     
-    --color-secondary: oklch(0.25 0.05 275);
+    --color-secondary: oklch(0.23 0.03 275);
     --color-secondary-foreground: oklch(0.985 0 0);
     
-    --color-muted: oklch(0.22 0.03 275);
-    --color-muted-foreground: oklch(0.7 0.05 275);
+    --color-muted: oklch(0.20 0.02 275);
+    --color-muted-foreground: oklch(0.65 0.03 275);
     
-    --color-accent: oklch(0.25 0.05 275);
+    --color-accent: oklch(0.23 0.03 275);
     --color-accent-foreground: oklch(0.985 0 0);
     
     --color-destructive: oklch(0.6 0.2 25);
@@ -103,8 +104,8 @@
     --color-warning: oklch(0.75 0.2 70);
     --color-info: oklch(0.65 0.2 230);
     
-    --color-border: oklch(0.28 0.03 275 / 0.5);
-    --color-input: oklch(0.2 0.03 275 / 0.8);
+    --color-border: oklch(0.28 0.02 275 / 0.5);
+    --color-input: oklch(0.16 0.02 275 / 0.8);
     --color-ring: oklch(0.65 0.25 275);
   }
 }
@@ -534,6 +535,41 @@ body {
   filter: drop-shadow(0 15px 25px rgba(0,0,0,0.5));
 }
 
+/* Creative Studio UI Enhancements */
+.creative-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.2);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.creative-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.35);
+}
+
+.creative-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+@keyframes subtleFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+}
+
+.animate-subtle-float {
+  animation: subtleFloat 4s ease-in-out infinite;
+}
+
 @keyframes fade-in-out {
   0% { 
     opacity: 0; 
@@ -556,3 +592,4 @@ body {
     transform: scale(0.8) translateY(-50px) perspective(1000px) rotateX(20deg); 
   }
 }
+

@@ -8,6 +8,7 @@ import { checkForUpdates, UpdateCheckResult, downloadAndInstallUpdate } from "@/
 import { invoke } from "@tauri-apps/api/core";
 import { validateSubscription, SUBSCRIPTION_CHECK_INTERVAL } from "@/core/services/authApi";
 import { isOnline } from "@/core/services/apiClient";
+import { socketService } from "@/core/services/socketService";
 import type { AppSettings } from "@/core/types";
 
 function AppContent() {
@@ -22,15 +23,12 @@ function AppContent() {
   // Connect socket
   useEffect(() => {
     if (session) {
-      import('@/core/services/socketService').then(({ socketService }) => {
-        socketService.connect(session);
-      });
+      socketService.connect(session);
     } else {
-      import('@/core/services/socketService').then(({ socketService }) => {
-        socketService.disconnect();
-      });
+      socketService.disconnect();
     }
   }, [session]);
+
 
   // Periodic subscription validation (every 4 hours)
   useEffect(() => {

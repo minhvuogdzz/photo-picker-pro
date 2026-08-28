@@ -7,16 +7,15 @@ import {
   Camera,
   Settings,
   Clock,
-  Info,
   LogOut,
   User,
   Key,
   Menu,
-  LogOut as ArrowLeftIcon // Alias LogOut to use it as exit, or just import ArrowLeft
+  ArrowLeft,
 } from "lucide-react";
-import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { LicenseManager } from "@/core/license/LicenseManager";
+import { SmartSearchBar } from "./SmartSearchBar";
 import type { MainTab } from "@/core/types";
 
 export function TopBar() {
@@ -36,9 +35,9 @@ export function TopBar() {
 
   if (activeModule === "photo-picker") {
     tabs = [
-      { id: "home", label: t("home"), icon: <Camera size={18} /> },
-      { id: "history", label: t("history"), icon: <Clock size={18} /> },
-      { id: "settings", label: t("settings"), icon: <Settings size={18} /> },
+      { id: "home", label: t("home"), icon: <Camera size={14} /> },
+      { id: "history", label: t("history"), icon: <Clock size={14} /> },
+      { id: "settings", label: t("settings"), icon: <Settings size={14} /> },
     ];
   }
 
@@ -53,12 +52,12 @@ export function TopBar() {
   };
 
   return (
-    <div className="flex items-center justify-between pl-4 pr-6 py-4">
-      {/* Left: Logo + Brand + Back Button */}
+    <div className="flex items-center justify-between px-3.5 py-2">
+      {/* Left: Logo + Full Brand Name + Back Button */}
       <div className="flex items-center gap-2">
         {activeModule !== "launcher" && (
           <button 
-            className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-black/10 dark:hover:bg-white/10 text-muted-foreground hover:text-foreground transition-all cursor-pointer mr-2"
+            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/10 text-muted-foreground hover:text-foreground transition-all cursor-pointer mr-1 border border-border/40"
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               setLastClickPos({ 
@@ -67,14 +66,14 @@ export function TopBar() {
               });
               setActiveModule("launcher");
             }}
-            title="Thoát ra Launcher"
+            title="Quay lại Launcher"
           >
-            <ArrowLeft size={20} />
+            <ArrowLeft size={15} />
           </button>
         )}
         
         <div 
-          className={`flex items-center gap-3 ${activeModule === "launcher" ? 'ml-4' : ''} cursor-pointer hover:opacity-80 transition-opacity`}
+          className={`flex items-center gap-2.5 ${activeModule === "launcher" ? 'ml-0.5' : ''} cursor-pointer hover:opacity-90 transition-opacity group`}
           onClick={(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
             setLastClickPos({ 
@@ -84,54 +83,69 @@ export function TopBar() {
             setActiveModule("launcher");
           }}
         >
-          <img src="/logo.png" alt="Logo" className="w-9 h-9 object-contain drop-shadow-lg" />
-          <h1 className="text-base font-extrabold tracking-widest text-foreground drop-shadow-md uppercase">
+          <img src="/logo.png" alt="Logo" className="w-6 h-6 object-contain drop-shadow-sm transition-transform group-hover:scale-105" />
+          <h1 className="text-xs font-extrabold tracking-wider text-foreground uppercase whitespace-nowrap">
             MVD PHOTOSHOP ACADEMY
           </h1>
         </div>
       </div>
 
-      {/* Center: Navigation Tabs */}
-      <nav className="flex items-center gap-4 relative">
-        {(activeModule !== "launcher" && activeModule !== "system") && tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`text-sm font-medium py-2 px-4 rounded-xl flex items-center gap-2 transition-all ${activeTab === tab.id
-              ? "bg-black/10 dark:bg-white/10 text-foreground shadow-sm ring-1 ring-border"
-              : "text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5"
-              }`}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
-      </nav>
+      {/* Center: Smart Search Bar & Navigation Tabs */}
+      <div className="flex items-center gap-3">
+        {/* Smart Search Bar */}
+        <SmartSearchBar />
 
-      {/* Right: Subscription Badge + User Menu */}
-      <div className="flex items-center gap-3 !mr-4">
+        {/* Module Sub-tabs */}
+        {(activeModule !== "launcher" && activeModule !== "system" && activeModule !== "resources") && tabs.length > 0 && (
+          <nav className="flex items-center gap-1 p-0.5 bg-black/20 dark:bg-white/5 rounded-lg border border-border/40">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`text-xs font-medium py-1 px-2.5 rounded-md flex items-center gap-1.5 transition-all cursor-pointer ${
+                  activeTab === tab.id
+                    ? "bg-white/15 text-foreground shadow-sm font-semibold"
+                    : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                }`}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        )}
+      </div>
+
+      {/* Right: Subscription Badge + License + User Menu + System Hamburger */}
+      <div className="flex items-center gap-2">
         <div className="relative">
           <button
             onClick={() => setShowLicenseManager(!showLicenseManager)}
-            className="text-xs py-1.5 px-3 bg-black/5 dark:bg-white/5 border border-border/50 text-foreground hover:bg-black/10 dark:hover:bg-white/10 transition-colors shadow-sm font-semibold flex items-center gap-1.5 rounded-lg"
+            className="text-[11px] py-1 px-2.5 bg-muted/60 hover:bg-muted active:scale-95 border border-border text-foreground transition-all shadow-sm font-semibold flex items-center gap-1.5 rounded-xl cursor-pointer"
           >
-            <Key size={14} />
-            Đổi Quyền Lợi
+            <Key size={12} className="text-amber-500" />
+            <span className="hidden md:inline">Đổi Quyền Lợi</span>
           </button>
-          {showLicenseManager && <LicenseManager onClose={() => setShowLicenseManager(false)} />}
+          {showLicenseManager && (
+            <LicenseManager
+              onClose={() => setShowLicenseManager(false)}
+              variant="dropdown"
+            />
+          )}
         </div>
+        
         <SubscriptionBadge />
 
         {/* User Avatar / Menu */}
         <div className="relative">
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/10 dark:hover:bg-white/10 transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-white/10 transition-all cursor-pointer"
           >
-            <div className="w-7 h-7 rounded-full bg-black/10 dark:bg-white/10 border border-border/50 flex items-center justify-center shadow-sm">
-              <User size={14} className="text-foreground" />
+            <div className="w-5 h-5 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center shadow-sm text-primary">
+              <User size={12} />
             </div>
-            <span className="text-xs font-medium text-foreground/90 max-w-[100px] truncate">
+            <span className="text-xs font-medium text-foreground/90 max-w-[90px] truncate hidden sm:inline">
               {session?.name || "User"}
             </span>
           </button>
@@ -139,26 +153,23 @@ export function TopBar() {
           {/* Dropdown Menu */}
           {showUserMenu && (
             <>
-              {/* Backdrop */}
               <div
                 className="fixed inset-0 z-40"
                 onClick={() => setShowUserMenu(false)}
               />
-              <div className="absolute right-0 top-full mt-2 w-52 panel p-2 z-50 animate-slide-up shadow-xl">
-                {/* User Info */}
+              <div className="absolute right-0 top-full mt-2 w-48 panel p-2 z-50 animate-slide-up shadow-xl border border-border/80 rounded-xl bg-[#16181d]">
                 <div className="px-3 py-2 border-b border-border/50 mb-1">
-                  <p className="text-sm font-medium truncate">{session?.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">
+                  <p className="text-xs font-semibold truncate text-foreground">{session?.name}</p>
+                  <p className="text-[11px] text-muted-foreground truncate">
                     {session?.email}
                   </p>
                 </div>
 
-                {/* Logout */}
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-lg transition-colors cursor-pointer"
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 rounded-lg transition-colors cursor-pointer"
                 >
-                  <LogOut size={14} />
+                  <LogOut size={13} />
                   {t("logout")}
                 </button>
               </div>
@@ -170,11 +181,12 @@ export function TopBar() {
         <div className="relative">
           <button
             onClick={() => setActiveModule("system")}
-            className={`flex items-center justify-center w-8 h-8 rounded-xl hover:bg-black/10 dark:hover:bg-white/10 transition-all cursor-pointer ${
-              activeModule === "system" ? "bg-black/20 dark:bg-white/20 text-foreground shadow-inner" : "text-muted-foreground hover:text-foreground"
+            title="Cài đặt hệ thống"
+            className={`flex items-center justify-center w-7 h-7 rounded-lg hover:bg-white/10 transition-all cursor-pointer ${
+              activeModule === "system" ? "bg-white/20 text-foreground shadow-inner" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Menu size={18} />
+            <Menu size={15} />
           </button>
         </div>
       </div>

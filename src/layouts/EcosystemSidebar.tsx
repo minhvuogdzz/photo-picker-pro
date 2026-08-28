@@ -1,7 +1,7 @@
 import { useAppStore } from "@/core/stores/useAppStore";
 import { modules } from "@/registry";
 import { SafeLink } from "@/SafeLink";
-import { Sparkles, Crown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 
 export function EcosystemSidebar() {
   const activeModule = useAppStore((s) => s.activeModule);
@@ -11,38 +11,38 @@ export function EcosystemSidebar() {
 
   return (
     <div 
-      className={`${isCollapsed ? 'w-[80px]' : 'w-[260px]'} shrink-0 glass-panel rounded-2xl border border-white/10 flex flex-col overflow-hidden shadow-lg transition-all duration-300 ease-in-out relative`}
+      className={`${isCollapsed ? 'w-[72px]' : 'w-[230px]'} shrink-0 bg-card/85 backdrop-blur-2xl rounded-2xl border border-border flex flex-col overflow-hidden shadow-lg transition-all duration-300 ease-in-out relative text-foreground`}
     >
       {/* Toggle Button */}
       <button 
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className={`absolute top-5 z-50 w-7 h-7 bg-white/10 hover:bg-white/20 text-white/80 hover:text-white rounded-full flex items-center justify-center transition-all duration-300 ease-in-out border border-white/10 shadow-sm ${
-          isCollapsed ? 'right-[26px]' : 'right-4'
+        className={`absolute top-4 z-50 w-6 h-6 bg-muted/80 hover:bg-muted active:scale-95 text-muted-foreground hover:text-foreground rounded-full flex items-center justify-center transition-all duration-200 border border-border shadow-sm cursor-pointer ${
+          isCollapsed ? 'right-[23px]' : 'right-3'
         }`}
         title={isCollapsed ? "Mở rộng" : "Thu gọn"}
       >
-        {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+        {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
       </button>
 
-      {/* FIXED WIDTH INNER WRAPPER: PREVENTS LAYOUT REFLOWS/JUMPS */}
-      <div className="w-[260px] flex flex-col h-full shrink-0">
+      {/* FIXED WIDTH INNER WRAPPER */}
+      <div className="w-[230px] flex flex-col h-full shrink-0">
         
         {/* Ecosystem Banner / Info */}
-        <div className="pt-5 pb-5 pl-[20px] pr-4 bg-gradient-to-br from-primary/20 to-primary/5 border-b border-white/10 relative overflow-hidden group flex items-center shrink-0 h-[80px]">
+        <div className="py-4 pl-4 pr-3 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent border-b border-border relative overflow-hidden group flex items-center shrink-0 h-[68px]">
           <div className="absolute right-0 top-0 text-primary/10 transition-transform group-hover:scale-110 group-hover:rotate-12 duration-500 pointer-events-none">
-            <Sparkles size={80} />
+            <Sparkles size={60} />
           </div>
           
           <div className={`flex flex-col relative z-10 transition-opacity duration-200 ${isCollapsed ? 'opacity-0 delay-0' : 'opacity-100 delay-100'}`}>
-            <h2 className="font-bold text-[16px] leading-tight text-foreground tracking-tight whitespace-nowrap">Ecosystem</h2>
-            <p className="text-[11px] text-muted-foreground mt-0.5 font-medium whitespace-nowrap">MVD Academy</p>
+            <h2 className="font-extrabold text-xs leading-tight text-foreground tracking-wider uppercase">Ecosystem</h2>
+            <p className="text-[10px] text-muted-foreground mt-0.5 font-semibold">MVD Photoshop Academy</p>
           </div>
         </div>
 
         {/* App List */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 flex flex-col gap-2">
-          <div className={`text-[10px] font-bold text-muted-foreground uppercase tracking-wider pl-3 py-1 mt-1 mb-1 whitespace-nowrap transition-opacity duration-200 ${isCollapsed ? 'opacity-0 delay-0' : 'opacity-100 delay-100'}`}>
-            Ứng dụng của bạn
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 flex flex-col gap-1.5 custom-scrollbar">
+          <div className={`text-[9px] font-bold text-muted-foreground uppercase tracking-widest pl-2.5 py-1 mt-0.5 whitespace-nowrap transition-opacity duration-200 ${isCollapsed ? 'opacity-0 delay-0' : 'opacity-100 delay-100'}`}>
+            Không gian làm việc
           </div>
           
           {modules.map((mod) => {
@@ -61,36 +61,43 @@ export function EcosystemSidebar() {
                   });
                   setActiveModule(mod.id);
                 }}
-                className={`flex items-center pl-[16px] pr-4 py-3 gap-3 rounded-xl transition-all duration-300 relative overflow-hidden group shrink-0 ${
+                className={`flex items-center pl-3 pr-3 py-2.5 gap-2.5 rounded-xl transition-all duration-200 relative overflow-hidden group shrink-0 ${
                   isActive 
-                    ? "bg-primary/15 text-primary shadow-inner border border-primary/20" 
-                    : "text-muted-foreground hover:bg-accent/40 hover:text-foreground border border-transparent"
+                    ? "bg-primary/15 text-primary shadow-sm border border-primary/30" 
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground border border-transparent"
                 }`}
                 title={isCollapsed ? mod.name : undefined}
               >
                 {isActive && (
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full shadow-[0_0_10px_rgba(var(--primary),0.8)]" />
+                  <div className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary rounded-r-full shadow-[0_0_8px_rgba(var(--primary),0.8)]" />
                 )}
                 
-                <div className={`shrink-0 w-9 h-9 inline-flex items-center justify-center rounded-lg transition-colors ${isActive ? 'bg-primary/20' : 'bg-transparent group-hover:bg-accent/60'}`}>
-                  <Icon size={18} className={isActive ? "drop-shadow-md" : ""} />
+                <div className={`shrink-0 w-7 h-7 inline-flex items-center justify-center rounded-lg transition-colors ${isActive ? 'bg-primary/20 text-primary' : 'bg-transparent group-hover:bg-muted'}`}>
+                  <Icon size={15} className={isActive ? "drop-shadow-sm" : ""} />
                 </div>
                 
-                <span className={`font-medium text-sm whitespace-nowrap transition-opacity duration-200 ${isActive ? "font-semibold" : ""} ${isCollapsed ? 'opacity-0 delay-0' : 'opacity-100 delay-100'}`}>
-                  {mod.name}
-                </span>
+                <div className={`flex flex-col min-w-0 transition-opacity duration-200 ${isCollapsed ? 'opacity-0 delay-0' : 'opacity-100 delay-100'}`}>
+                  <span className={`text-xs whitespace-nowrap leading-none ${isActive ? "font-bold text-foreground" : "font-semibold"}`}>
+                    {mod.shortName || mod.name}
+                  </span>
+                  {mod.badge && (
+                    <span className="text-[8px] font-bold text-muted-foreground/80 mt-1 uppercase tracking-wider">
+                      {mod.badge}
+                    </span>
+                  )}
+                </div>
 
                 {/* Glowing hover effect */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full" />
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-gradient-to-r from-transparent via-primary/5 to-transparent -translate-x-full group-hover:translate-x-full" />
               </SafeLink>
             );
           })}
         </div>
         
-        {/* Footer info (optional) */}
-        <div className="p-4 border-t border-white/5 bg-black/10 shrink-0">
-          <p className={`text-[10px] text-center text-muted-foreground/60 font-medium whitespace-nowrap transition-opacity duration-200 ${isCollapsed ? 'opacity-0 delay-0' : 'opacity-100 delay-100'}`}>
-            MVD Super App v1.0.0
+        {/* Footer info */}
+        <div className="p-3 border-t border-border bg-muted/20 shrink-0">
+          <p className={`text-[9px] text-center text-muted-foreground/70 font-medium whitespace-nowrap transition-opacity duration-200 ${isCollapsed ? 'opacity-0 delay-0' : 'opacity-100 delay-100'}`}>
+            MVD Pro v1.0.0
           </p>
         </div>
 

@@ -142,3 +142,14 @@ pub fn launch_photoshop() -> Result<String, String> {
         Err("Hệ điều hành không được hỗ trợ.".to_string())
     }
 }
+
+#[tauri::command]
+pub fn save_file_bytes(file_path: String, bytes: Vec<u8>) -> Result<String, String> {
+    let path = Path::new(&file_path);
+    if let Some(parent) = path.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    fs::write(path, bytes).map_err(|e| format!("Không thể ghi tệp vào đĩa: {}", e))?;
+    Ok("Đã lưu tệp thành công".to_string())
+}
+

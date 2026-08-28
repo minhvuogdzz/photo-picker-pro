@@ -14,9 +14,11 @@ export interface AuthSession {
 export interface SubscriptionInfo {
   readonly status: SubscriptionStatus;
   readonly plan: SubscriptionPlan;
+  readonly isPremium?: boolean;
   readonly expiresAt: string | null;
   readonly daysRemaining: number | null;
 }
+
 
 /** Possible subscription states */
 export type SubscriptionStatus =

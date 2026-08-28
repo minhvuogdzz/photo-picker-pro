@@ -62,6 +62,31 @@ class SocketService {
     this.socket.on('activeExpiringSoon', (data: { daysRemaining: number; message: string }) => {
       useAuthStore.getState().setExpiringSoonMessage(data.message);
     });
+
+    this.socket.on('subscriptionUpdated', (data: any) => {
+      const currentSession = useAuthStore.getState().session;
+      if (currentSession) {
+        useAuthStore.getState().setSession({
+          ...currentSession,
+          subscription: {
+            ...currentSession.subscription,
+            status: data.status ?? currentSession.subscription.status,
+            plan: data.plan ?? currentSession.subscription.plan,
+            isPremium: data.isPremium !== undefined ? data.isPremium : currentSession.subscription.isPremium,
+            expiresAt: data.expiresAt ?? currentSession.subscription.expiresAt,
+          },
+        });
+      }
+    });
+  }
+
+
+  public on(event: string, callback: (...args: any[]) => void) {
+    this.socket?.on(event, callback);
+  }
+
+  public off(event: string, callback: (...args: any[]) => void) {
+    this.socket?.off(event, callback);
   }
 
   public disconnect() {
@@ -72,5 +97,6 @@ class SocketService {
     this.isConnecting = false;
   }
 }
+
 
 export const socketService = new SocketService();
