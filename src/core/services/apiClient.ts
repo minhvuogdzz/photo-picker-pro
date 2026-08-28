@@ -33,9 +33,21 @@ function createHeaders(accessToken?: string): HeadersInit {
   return headers;
 }
 
+export class ApiErrorResponse extends Error {
+  readonly statusCode: number;
+  readonly errorCode?: string;
+
+  constructor(message: string, statusCode: number, errorCode?: string) {
+    super(message);
+    this.name = "ApiErrorResponse";
+    this.statusCode = statusCode;
+    this.errorCode = errorCode;
+  }
+}
+
 /**
  * Makes an authenticated API request.
- * Automatically injects the access token and handles 401 errors.
+ * Automatically injects the access token and handles 401/403/409 errors.
  */
 export async function apiRequest<T>(
   endpoint: string,
@@ -59,26 +71,30 @@ export async function apiRequest<T>(
   });
 
   if (!response.ok) {
-    const error: ApiError = await response.json().catch(() => ({
-      message: `HTTP ${response.status}: ${response.statusText}`,
-      statusCode: response.status,
-    }));
+    const rawError = await response.json().catch(() => null);
+    const message = rawError?.message || `HTTP ${response.status}: ${response.statusText}`;
+    const statusCode = rawError?.statusCode || response.status;
+    const errorCode = rawError?.errorCode || rawError?.error;
 
     if (response.status === 401 && endpoint !== "/auth/login") {
-      throw new Error("SESSION_EXPIRED");
+      throw new ApiErrorResponse("SESSION_EXPIRED", 401);
     }
     if (response.status === 403 && endpoint !== "/auth/login") {
-      throw new Error("SUBSCRIPTION_INVALID");
+      throw new ApiErrorResponse("SUBSCRIPTION_INVALID", 403);
     }
 
-    throw new Error(error.message);
+    throw new ApiErrorResponse(
+      Array.isArray(message) ? message.join(", ") : message,
+      statusCode,
+      errorCode
+    );
   }
 
   const result: ApiResponse<T> = await response.json();
   
   if (result && typeof result === 'object' && 'success' in result) {
     if (!result.success) {
-      throw new Error(result.message || `HTTP ${response.status}: Lỗi không xác định`);
+      throw new ApiErrorResponse(result.message || `HTTP ${response.status}: Lỗi không xác định`, response.status);
     }
     return result.data as T;
   }

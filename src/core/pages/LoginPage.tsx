@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuthStore } from "@/core/stores/useAuthStore";
 import { useTranslation } from "@/core/lib/i18n";
 import { login, getDeviceFingerprint, requestPasswordReset, verifyResetCode, resetPassword, register, verifyRegister } from "@/core/services/authApi";
-import { Mail, Lock, Loader2, Eye, EyeOff, Camera, ArrowLeft, CheckCircle2, User } from "lucide-react";
+import { ApiErrorResponse } from "@/core/services/apiClient";
+import { Mail, Lock, Loader2, Eye, EyeOff, Camera, ArrowLeft, CheckCircle2, User, RefreshCw } from "lucide-react";
 import { FragmentedImageSlider } from "@/core/components/FragmentedImageSlider";
 import { TermsDialog } from "@/core/components/TermsDialog";
 
@@ -26,8 +27,60 @@ export function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Resend OTP countdown (60s)
+  const [resendCooldown, setResendCooldown] = useState(0);
+
   const [showConflictDialog, setShowConflictDialog] = useState(false);
   const [showTermsDialog, setShowTermsDialog] = useState(false);
+
+  // Sync mode with URL hash if redirected from SessionExpiredDialog or external links
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace("#", "");
+      if (hash === "forgot-password" || hash === "forgot") {
+        setMode("forgot");
+        setError(null);
+      } else if (hash === "register") {
+        setMode("register");
+        setError(null);
+      } else if (hash === "login") {
+        setMode("login");
+        setError(null);
+      }
+    };
+
+    handleHashChange();
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
+  // Countdown timer effect for OTP resend
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
+  const switchMode = (nextMode: AuthMode) => {
+    setMode(nextMode);
+    setError(null);
+    if (nextMode === "login") {
+      setPassword("");
+      setCode("");
+      setNewPassword("");
+      if (window.location.hash) {
+        window.history.replaceState(null, "", window.location.pathname);
+      }
+    } else if (nextMode === "register") {
+      setCode("");
+      setPassword("");
+    } else if (nextMode === "forgot") {
+      setCode("");
+      setNewPassword("");
+    }
+  };
 
   const handleLogin = async (e?: React.FormEvent, force: boolean = false) => {
     if (e) e.preventDefault();
@@ -39,7 +92,11 @@ export function LoginPage() {
       setSession(session);
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
-      if (errMsg.includes('đang được đăng nhập ở thiết bị khác')) {
+      const isConflict = (err instanceof ApiErrorResponse && (err.statusCode === 409 || err.errorCode === 'DEVICE_CONFLICT')) ||
+        (err as any)?.statusCode === 409 ||
+        errMsg.includes('đang được đăng nhập ở thiết bị khác');
+
+      if (isConflict) {
         setShowConflictDialog(true);
       } else {
         setError(errMsg);
@@ -55,7 +112,22 @@ export function LoginPage() {
     setIsSubmitting(true);
     try {
       await register(email);
-      setMode("register-verify");
+      setResendCooldown(60);
+      switchMode("register-verify");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResendRegisterOtp = async () => {
+    if (resendCooldown > 0 || isSubmitting) return;
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      await register(email);
+      setResendCooldown(60);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -84,7 +156,22 @@ export function LoginPage() {
     setIsSubmitting(true);
     try {
       await requestPasswordReset(email);
-      setMode("verify");
+      setResendCooldown(60);
+      switchMode("verify");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResendForgotPasswordOtp = async () => {
+    if (resendCooldown > 0 || isSubmitting) return;
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      await requestPasswordReset(email);
+      setResendCooldown(60);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -99,7 +186,7 @@ export function LoginPage() {
     try {
       const valid = await verifyResetCode(email, code);
       if (valid) {
-        setMode("reset");
+        switchMode("reset");
       } else {
         setError("Mã xác nhận không đúng hoặc đã hết hạn.");
       }
@@ -116,7 +203,7 @@ export function LoginPage() {
     setIsSubmitting(true);
     try {
       await resetPassword(email, code, newPassword);
-      setMode("success");
+      switchMode("success");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -146,11 +233,10 @@ export function LoginPage() {
            <div className="w-full max-w-md mx-auto space-y-8 animate-fade-in">
         {mode !== "login" && mode !== "success" && (
           <button 
-            onClick={() => {
-              setMode("login");
-              setError(null);
-            }} 
-            className="absolute top-6 left-6 text-muted-foreground hover:text-foreground"
+            type="button"
+            onClick={() => switchMode("login")} 
+            className="absolute top-6 left-6 text-muted-foreground hover:text-foreground p-1 transition-colors"
+            title="Quay lại đăng nhập"
           >
             <ArrowLeft size={20} />
           </button>
@@ -207,27 +293,34 @@ export function LoginPage() {
             {error && <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 animate-slide-up"><p className="text-xs text-destructive font-medium">{error}</p></div>}
 
             <div className="space-y-3 pb-1 animate-slide-up">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={autoLogin} onChange={(e) => setAutoLogin(e.target.checked)} className="w-4 h-4 rounded border-border text-primary focus:ring-primary bg-input" disabled={isSubmitting} />
-                <span className="text-xs text-muted-foreground font-medium">Tự động đăng nhập</span>
-              </label>
-              
-              <label className="flex items-center gap-2 cursor-pointer">
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input type="checkbox" checked={autoLogin} onChange={(e) => setAutoLogin(e.target.checked)} className="w-4 h-4 rounded border-border text-primary focus:ring-primary bg-input" disabled={isSubmitting} />
+                  <span className="text-xs text-muted-foreground font-medium">Tự động đăng nhập</span>
+                </label>
+
+                <button type="button" className="text-xs text-muted-foreground hover:text-primary transition-colors font-medium" onClick={() => switchMode("forgot")}>
+                  {t("forgot_password")}
+                </button>
+              </div>
+
+              <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input type="checkbox" checked={agreeTerms} onChange={(e) => setAgreeTerms(e.target.checked)} className="w-4 h-4 rounded border-border text-primary focus:ring-primary bg-input" disabled={isSubmitting} />
-                <span className="text-xs text-muted-foreground font-medium">Tôi đồng ý với các <a href="#" className="text-primary hover:underline" onClick={(e) => { e.preventDefault(); setShowTermsDialog(true); }}>điều khoản và dịch vụ</a></span>
+                <span className="text-xs text-muted-foreground font-medium">Tôi đồng ý với các <a href="#" className="text-primary hover:underline" onClick={(e) => { e.preventDefault(); setShowTermsDialog(true); }}>Điều khoản & Dịch vụ</a></span>
               </label>
             </div>
 
-            <button type="submit" disabled={isSubmitting || !email || !password || !agreeTerms} className="btn-base btn-primary w-full py-3.5 text-sm font-bold">
+            <button type="submit" disabled={isSubmitting || !email || !password || !agreeTerms} className="btn-base btn-primary w-full py-3.5 text-sm font-bold shadow-lg shadow-primary/20">
               {isSubmitting ? <><Loader2 size={18} className="animate-spin inline mr-2" />{t("logging_in")}</> : t("login")}
             </button>
-            <div className="flex justify-between items-center text-center">
-              <button type="button" className="text-xs text-primary hover:text-primary/80 transition-colors font-medium" onClick={() => setMode("register")}>
-                Đăng ký tài khoản
-              </button>
-              <button type="button" className="text-xs text-muted-foreground hover:text-primary transition-colors font-medium" onClick={() => setMode("forgot")}>
-                {t("forgot_password")}
-              </button>
+
+            <div className="flex justify-center items-center text-center pt-2">
+              <p className="text-xs text-muted-foreground">
+                Chưa có tài khoản?{" "}
+                <button type="button" className="text-primary hover:underline font-semibold ml-1" onClick={() => switchMode("register")}>
+                  Đăng ký ngay
+                </button>
+              </p>
             </div>
           </form>
         )}
@@ -235,7 +328,7 @@ export function LoginPage() {
         {mode === "register" && (
           <form onSubmit={handleRegister} className="space-y-5 animate-slide-up">
             <p className="text-sm text-muted-foreground text-center">
-              Nhập email của bạn để nhận mã xác nhận và đăng ký.
+              Nhập email của bạn để nhận mã xác nhận và đăng ký tài khoản.
             </p>
             <div className="space-y-2">
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email</label>
@@ -244,9 +337,17 @@ export function LoginPage() {
                 <input type="email" className="input-field pl-10" placeholder="email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus disabled={isSubmitting} />
               </div>
             </div>
+
+            <div className="pt-1">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" checked={agreeTerms} onChange={(e) => setAgreeTerms(e.target.checked)} className="w-4 h-4 rounded border-border text-primary focus:ring-primary bg-input" disabled={isSubmitting} />
+                <span className="text-xs text-muted-foreground font-medium">Tôi đồng ý với <a href="#" className="text-primary hover:underline" onClick={(e) => { e.preventDefault(); setShowTermsDialog(true); }}>Điều khoản & Dịch vụ</a></span>
+              </label>
+            </div>
+
             {error && <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 animate-slide-up"><p className="text-xs text-destructive font-medium">{error}</p></div>}
-            <button type="submit" disabled={isSubmitting || !email} className="btn-base btn-primary w-full py-3.5 text-sm font-bold">
-              {isSubmitting ? <><Loader2 size={18} className="animate-spin inline mr-2" />Đang gửi...</> : "Tiếp tục"}
+            <button type="submit" disabled={isSubmitting || !email || !agreeTerms} className="btn-base btn-primary w-full py-3.5 text-sm font-bold shadow-lg shadow-primary/20">
+              {isSubmitting ? <><Loader2 size={18} className="animate-spin inline mr-2" />Đang gửi mã...</> : "Tiếp tục"}
             </button>
           </form>
         )}
@@ -254,7 +355,7 @@ export function LoginPage() {
         {mode === "register-verify" && (
           <form onSubmit={handleVerifyRegister} className="space-y-5 animate-slide-up">
             <p className="text-sm text-muted-foreground text-center">
-              Mã xác nhận đã được gửi tới <b>{email}</b>.
+              Mã xác nhận 6 chữ số đã được gửi tới <b>{email}</b>.
             </p>
             <div className="space-y-2">
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Mã OTP</label>
@@ -283,9 +384,21 @@ export function LoginPage() {
               </div>
             </div>
 
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={handleResendRegisterOtp}
+                disabled={resendCooldown > 0 || isSubmitting}
+                className="text-xs text-primary hover:underline disabled:text-muted-foreground flex items-center gap-1 font-medium"
+              >
+                <RefreshCw size={12} className={isSubmitting ? "animate-spin" : ""} />
+                {resendCooldown > 0 ? `Gửi lại mã (${resendCooldown}s)` : "Gửi lại mã OTP"}
+              </button>
+            </div>
+
             {error && <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 animate-slide-up"><p className="text-xs text-destructive font-medium">{error}</p></div>}
             
-            <button type="submit" disabled={isSubmitting || code.length !== 6 || !name || password.length < 6} className="btn-base btn-primary w-full py-3.5 text-sm font-bold">
+            <button type="submit" disabled={isSubmitting || code.length !== 6 || !name || password.length < 6} className="btn-base btn-primary w-full py-3.5 text-sm font-bold shadow-lg shadow-primary/20">
               {isSubmitting ? <><Loader2 size={18} className="animate-spin inline mr-2" />Đang đăng ký...</> : "Đăng ký & Đăng nhập"}
             </button>
           </form>
@@ -294,17 +407,18 @@ export function LoginPage() {
         {mode === "forgot" && (
           <form onSubmit={handleForgotPassword} className="space-y-5 animate-slide-up">
             <p className="text-sm text-muted-foreground text-center">
-              Nhập email của bạn để nhận mã xác nhận gồm 6 chữ số.
+              Nhập email của bạn để nhận mã xác nhận gồm 6 chữ số khôi phục mật khẩu.
             </p>
             <div className="space-y-2">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email</label>
               <div className="relative">
                 <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input type="email" className="input-field pl-10" placeholder="email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus disabled={isSubmitting} />
               </div>
             </div>
             {error && <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 animate-slide-up"><p className="text-xs text-destructive font-medium">{error}</p></div>}
-            <button type="submit" disabled={isSubmitting || !email} className="btn-base btn-primary w-full py-3.5 text-sm font-bold">
-              {isSubmitting ? <><Loader2 size={18} className="animate-spin inline mr-2" />Đang gửi...</> : "Gửi mã xác nhận"}
+            <button type="submit" disabled={isSubmitting || !email} className="btn-base btn-primary w-full py-3.5 text-sm font-bold shadow-lg shadow-primary/20">
+              {isSubmitting ? <><Loader2 size={18} className="animate-spin inline mr-2" />Đang gửi mã...</> : "Gửi mã xác nhận"}
             </button>
           </form>
         )}
@@ -315,13 +429,27 @@ export function LoginPage() {
               Mã xác nhận đã được gửi tới <b>{email}</b>. Vui lòng kiểm tra hộp thư (và thư mục rác).
             </p>
             <div className="space-y-2">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Mã xác nhận OTP</label>
               <div className="relative">
                 <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input type="text" maxLength={6} className="input-field pl-10 text-center tracking-[0.5em] font-mono text-lg" placeholder="000000" value={code} onChange={(e) => setCode(e.target.value)} required autoFocus disabled={isSubmitting} />
               </div>
             </div>
+
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={handleResendForgotPasswordOtp}
+                disabled={resendCooldown > 0 || isSubmitting}
+                className="text-xs text-primary hover:underline disabled:text-muted-foreground flex items-center gap-1 font-medium"
+              >
+                <RefreshCw size={12} className={isSubmitting ? "animate-spin" : ""} />
+                {resendCooldown > 0 ? `Gửi lại mã (${resendCooldown}s)` : "Gửi lại mã xác nhận"}
+              </button>
+            </div>
+
             {error && <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 animate-slide-up"><p className="text-xs text-destructive font-medium">{error}</p></div>}
-            <button type="submit" disabled={isSubmitting || code.length !== 6} className="btn-base btn-primary w-full py-3.5 text-sm font-bold">
+            <button type="submit" disabled={isSubmitting || code.length !== 6} className="btn-base btn-primary w-full py-3.5 text-sm font-bold shadow-lg shadow-primary/20">
               {isSubmitting ? <><Loader2 size={18} className="animate-spin inline mr-2" />Đang kiểm tra...</> : "Xác nhận"}
             </button>
           </form>
@@ -340,7 +468,7 @@ export function LoginPage() {
               </div>
             </div>
             {error && <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 animate-slide-up"><p className="text-xs text-destructive font-medium">{error}</p></div>}
-            <button type="submit" disabled={isSubmitting || newPassword.length < 6} className="btn-base btn-primary w-full py-3.5 text-sm font-bold">
+            <button type="submit" disabled={isSubmitting || newPassword.length < 6} className="btn-base btn-primary w-full py-3.5 text-sm font-bold shadow-lg shadow-primary/20">
               {isSubmitting ? <><Loader2 size={18} className="animate-spin inline mr-2" />Đang đổi mật khẩu...</> : "Lưu mật khẩu mới"}
             </button>
           </form>
@@ -352,7 +480,7 @@ export function LoginPage() {
               <CheckCircle2 size={48} />
             </div>
             <p className="text-sm font-medium">Mật khẩu của bạn đã được thay đổi thành công!</p>
-            <button type="button" onClick={() => { setMode("login"); setPassword(""); setCode(""); }} className="btn-base btn-primary w-full py-3.5 text-sm font-bold">
+            <button type="button" onClick={() => switchMode("login")} className="btn-base btn-primary w-full py-3.5 text-sm font-bold shadow-lg shadow-primary/20">
               Quay lại đăng nhập
             </button>
           </div>

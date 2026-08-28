@@ -18,11 +18,17 @@ class SocketService {
     
     this.socket = io(baseUrl, {
       transports: ['websocket'],
+      auth: {
+        token: session.accessToken,
+      },
     });
 
     this.socket.on('connect', () => {
       this.isConnecting = false;
-      this.socket?.emit('register', { userId: session.userId });
+      this.socket?.emit('register', {
+        userId: session.userId,
+        token: session.accessToken,
+      });
     });
 
     this.socket.on('disconnect', () => {

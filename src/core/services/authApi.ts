@@ -108,6 +108,7 @@ export async function login(request: LoginRequest, autoLogin: boolean = true): P
     if (autoLogin) {
       await invoke("save_auth_session", { session: toLocalSession(session) });
     } else {
+      await invoke("clear_auth_session").catch(() => {});
       sessionStorage.setItem("temp_auth_session", JSON.stringify(session));
       sessionStorage.setItem("auto_login", "false");
     }
@@ -123,6 +124,7 @@ export async function login(request: LoginRequest, autoLogin: boolean = true): P
   if (autoLogin) {
     await invoke("save_auth_session", { session: toLocalSession(session) });
   } else {
+    await invoke("clear_auth_session").catch(() => {});
     sessionStorage.setItem("temp_auth_session", JSON.stringify(session));
     sessionStorage.setItem("auto_login", "false");
   }

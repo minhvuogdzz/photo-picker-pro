@@ -1,49 +1,83 @@
-import React, { useState, useEffect } from 'react';
-
-const IMAGES = [
-  '/image/2.jpg',
-  '/image/3L3A9392.jpg',
-  '/image/3L3A9417.jpg',
-  '/image/3L3A9504.jpg',
-  '/image/3L3A9514.jpg',
-  '/image/IMG_0369.jpg',
-  '/image/IMG_0373.jpg',
-  '/image/IMG_0379.jpg',
-  '/image/IMG_0609.jpg',
-  '/image/IMG_0987.jpg',
-  '/image/IMG_1401.jpg',
-  '/image/IMG_5076.jpg',
-  '/image/IMG_5088.jpg',
-  '/image/MVD_21811.jpg',
-  '/image/MVD_21864.jpg',
-  '/image/MVD_21869.jpg',
-  '/image/d.jpg',
-  '/image/e.jpg'
-];
+import { useState, useEffect } from 'react';
+import { API_BASE_URL } from '@/core/services/apiClient';
 
 export function FragmentedImageSlider() {
+  const [images, setImages] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Preload images ngầm để tránh trình duyệt bị khựng khi decode ảnh nặng
+  // Fetch dynamic showcase images from Cloudinary backend & Poll every 3s for realtime Admin sync
   useEffect(() => {
-    IMAGES.forEach(src => {
+    let isMounted = true;
+
+    const fetchShowcase = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/showcase`);
+        if (!res.ok) return;
+        const json = await res.json();
+        if (json && json.success && Array.isArray(json.data) && isMounted) {
+          const activeUrls = json.data
+            .map((item: { url: string }) => item.url)
+            .filter(Boolean);
+          
+          setImages(activeUrls);
+        }
+      } catch {
+        // Silently handle offline
+      }
+    };
+
+    fetchShowcase();
+    const interval = setInterval(fetchShowcase, 3000); // Tự động cập nhật tức thì khi Admin thêm/ẩn/xoá ảnh
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
+  // Điều chỉnh index nếu danh sách ảnh thay đổi
+  useEffect(() => {
+    if (currentIndex >= images.length && images.length > 0) {
+      setCurrentIndex(0);
+    }
+  }, [images.length, currentIndex]);
+
+  // Preload images ngầm để tránh giật lag khi chuyển slide
+  useEffect(() => {
+    images.forEach(src => {
       const img = new Image();
       img.src = src;
     });
-  }, []);
+  }, [images]);
 
   // Chuyển ảnh mỗi 4 giây
   useEffect(() => {
+    if (images.length <= 1) return;
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % IMAGES.length);
+      setCurrentIndex((prev) => (prev + 1) % images.length);
     }, 4000); 
 
     return () => clearInterval(interval);
-  }, []);
+  }, [images.length]);
+
+  // Nếu chưa có ảnh nào hoặc Admin ẩn toàn bộ ảnh trong album
+  if (images.length === 0) {
+    return (
+      <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-slate-950 via-zinc-900 to-black flex items-center justify-center">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.08),transparent_70%)]" />
+        <div className="text-center px-6 z-10 opacity-30 select-none">
+          <div className="w-12 h-12 rounded-full border border-white/20 mx-auto mb-3 flex items-center justify-center">
+            <span className="text-xl">✨</span>
+          </div>
+          <p className="text-xs tracking-widest uppercase text-white/60">Photo Picker Pro</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full h-full overflow-hidden bg-black/20">
-      {IMAGES.map((src, index) => {
+      {images.map((src, index) => {
         const isActive = index === currentIndex;
         
         return (
@@ -55,10 +89,10 @@ export function FragmentedImageSlider() {
               opacity: isActive ? 1 : 0,
               transform: isActive ? 'scale(1.08)' : 'scale(1)',
               transition: isActive 
-                ? 'opacity 1.2s ease-out, transform 4.5s linear' // Khi hiện: Fade in mượt mà, scale từ từ
-                : 'opacity 1.2s ease-in-out, transform 1.2s ease-in-out', // Khi ẩn: Fade out nhanh hơn
+                ? 'opacity 1.2s ease-out, transform 4.5s linear'
+                : 'opacity 1.2s ease-in-out, transform 1.2s ease-in-out',
               zIndex: isActive ? 10 : 0,
-              willChange: isActive ? 'transform, opacity' : 'auto', // Chỉ ép GPU xử lý layer đang chạy
+              willChange: isActive ? 'transform, opacity' : 'auto',
             }}
             alt=""
           />
