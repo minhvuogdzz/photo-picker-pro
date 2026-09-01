@@ -28,6 +28,7 @@ function toLocalSession(session: AuthSession): LocalSession {
     refresh_token: session.refreshToken,
     user_id: session.userId,
     email: session.email,
+    username: session.username || (session.email.includes("@") ? session.email.split("@")[0] : session.email),
     name: session.name,
     subscription_status: session.subscription.status,
     subscription_plan: session.subscription.plan,
@@ -53,6 +54,7 @@ function fromLocalSession(local: LocalSession): AuthSession {
     refreshToken: local.refresh_token,
     userId: local.user_id,
     email: local.email,
+    username: local.username || (local.email.includes("@") ? local.email.split("@")[0] : local.email),
     name: local.name,
     subscription: {
       status: local.subscription_status as AuthSession["subscription"]["status"],
@@ -280,20 +282,20 @@ export async function resetPassword(
 }
 
 /** Đăng ký tài khoản (Gửi mã OTP) */
-export async function register(email: string): Promise<void> {
+export async function register(email: string, username?: string): Promise<void> {
   if (USE_MOCK) {
     await new Promise((r) => setTimeout(r, 500));
     return;
   }
   await apiRequest("/auth/register", {
     method: "POST",
-    body: { email },
+    body: { email, username },
   });
 }
 
 /** Xác nhận OTP và tạo tài khoản, trả về session */
 export async function verifyRegister(
-  request: LoginRequest & { name: string; code: string }
+  request: LoginRequest & { name: string; code: string; username?: string }
 ): Promise<AuthSession> {
   if (USE_MOCK) {
     throw new Error("Mock mode không hỗ trợ Đăng ký");
@@ -304,6 +306,66 @@ export async function verifyRegister(
   });
   await invoke("save_auth_session", { session: toLocalSession(session) });
   return session;
+}
+
+/** Cập nhật thông tin tài khoản (Tên tài khoản, Tên hiển thị) */
+export async function updateProfile(
+  data: { username?: string; name?: string },
+  accessToken?: string
+): Promise<{ userId: string; email: string; username: string; name: string }> {
+  if (USE_MOCK) {
+    return {
+      userId: "mock_user",
+      email: "user@example.com",
+      username: data.username || "user",
+      name: data.name || "User",
+    };
+  }
+  return apiRequest<{ userId: string; email: string; username: string; name: string }>("/auth/profile", {
+    method: "POST",
+    body: data,
+    accessToken,
+  });
+}
+
+/** Đổi mật khẩu tài khoản */
+export async function changePassword(
+  data: { currentPassword: string; newPassword: string },
+  accessToken?: string
+): Promise<{ success: boolean; message: string }> {
+  if (USE_MOCK) {
+    return { success: true, message: "Đổi mật khẩu thành công" };
+  }
+  return apiRequest<{ success: boolean; message: string }>("/auth/change-password", {
+    method: "POST",
+    body: data,
+    accessToken,
+  });
+}
+
+/** Đăng xuất tất cả thiết bị khác */
+export async function logoutOtherDevices(
+  accessToken?: string
+): Promise<{ success: boolean; message: string }> {
+  if (USE_MOCK) {
+    return { success: true, message: "Đã đăng xuất khỏi các thiết bị khác" };
+  }
+  return apiRequest<{ success: boolean; message: string }>("/auth/logout-others", {
+    method: "POST",
+    accessToken,
+  });
+}
+
+/** Kiểm tra username khả dụng */
+export async function checkUsername(
+  username: string
+): Promise<{ available: boolean; message?: string }> {
+  if (USE_MOCK) {
+    return { available: true };
+  }
+  return apiRequest<{ available: boolean; message?: string }>(`/auth/check-username?username=${encodeURIComponent(username)}`, {
+    method: "GET",
+  });
 }
 
 /** Checks if a subscription status allows app usage */

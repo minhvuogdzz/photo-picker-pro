@@ -4,6 +4,7 @@ export interface AuthSession {
   readonly refreshToken: string;
   readonly userId: string;
   readonly email: string;
+  readonly username?: string;
   readonly name: string;
   readonly subscription: SubscriptionInfo;
   readonly deviceId: string;
@@ -70,6 +71,7 @@ export interface LocalSession {
   readonly refresh_token: string;
   readonly user_id: string;
   readonly email: string;
+  readonly username?: string;
   readonly name: string;
   readonly subscription_status: string;
   readonly subscription_plan: string;
@@ -77,3 +79,16 @@ export interface LocalSession {
   readonly device_id: string;
   readonly last_sync_at: string;
 }
+
+/** Update user profile request */
+export interface UpdateProfileRequest {
+  readonly username?: string;
+  readonly name?: string;
+}
+
+/** Change password request */
+export interface ChangePasswordRequest {
+  readonly currentPassword: string;
+  readonly newPassword: string;
+}
+

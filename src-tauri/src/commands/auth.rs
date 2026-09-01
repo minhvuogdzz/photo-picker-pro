@@ -17,6 +17,8 @@ pub struct LocalSession {
     pub expires_at: Option<String>,
     pub device_id: String,
     pub last_sync_at: String,
+    #[serde(default)]
+    pub username: Option<String>,
 }
 
 /// Returns the app config directory path (platform-specific)

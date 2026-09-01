@@ -12,9 +12,11 @@ import {
   Key,
   Menu,
   ArrowLeft,
+  Shield,
 } from "lucide-react";
 import { useState } from "react";
 import { LicenseManager } from "@/core/license/LicenseManager";
+import { AccountSecurityModal } from "@/core/components/AccountSecurityModal";
 import { SmartSearchBar } from "./SmartSearchBar";
 import type { MainTab } from "@/core/types";
 
@@ -29,6 +31,7 @@ export function TopBar() {
 
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLicenseManager, setShowLicenseManager] = useState(false);
+  const [showAccountModal, setShowAccountModal] = useState(false);
   const activeModule = useAppStore((s) => s.activeModule);
 
   let tabs: { id: MainTab; label: string; icon: React.ReactNode }[] = [];
@@ -157,25 +160,58 @@ export function TopBar() {
                 className="fixed inset-0 z-40"
                 onClick={() => setShowUserMenu(false)}
               />
-              <div className="absolute right-0 top-full mt-2 w-48 panel p-2 z-50 animate-slide-up shadow-xl border border-border/80 rounded-xl bg-[#16181d]">
+              <div className="absolute right-0 top-full mt-2 w-56 panel p-2 z-50 animate-slide-up shadow-xl border border-border/80 rounded-xl bg-[#16181d]">
                 <div className="px-3 py-2 border-b border-border/50 mb-1">
                   <p className="text-xs font-semibold truncate text-foreground">{session?.name}</p>
+                  <p className="text-[11px] font-mono text-primary font-bold truncate">
+                    @{session?.username || session?.email.split("@")[0]}
+                  </p>
                   <p className="text-[11px] text-muted-foreground truncate">
                     {session?.email}
                   </p>
                 </div>
 
                 <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 rounded-lg transition-colors cursor-pointer"
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    setShowAccountModal(true);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
                 >
-                  <LogOut size={13} />
+                  <Shield size={14} className="text-primary" />
+                  Tài khoản & Bảo mật
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    setShowLicenseManager(true);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+                >
+                  <Key size={14} className="text-amber-500" />
+                  Đổi Quyền Lợi / Key
+                </button>
+
+                <div className="my-1 border-t border-border/40" />
+
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-destructive hover:bg-destructive/10 rounded-lg transition-colors cursor-pointer"
+                >
+                  <LogOut size={14} />
                   {t("logout")}
                 </button>
               </div>
             </>
           )}
         </div>
+
+        {/* Account & Security Modal */}
+        <AccountSecurityModal
+          isOpen={showAccountModal}
+          onClose={() => setShowAccountModal(false)}
+        />
 
         {/* System Menu (Hamburger) */}
         <div className="relative">

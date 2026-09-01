@@ -15,6 +15,7 @@ export function LoginPage() {
 
   const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
@@ -109,9 +110,19 @@ export function LoginPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    const cleanUsername = username.trim().toLowerCase();
+    if (!cleanUsername) {
+      setError("Vui lòng nhập tên tài khoản của bạn (Username)");
+      return;
+    }
+    if (!/^[a-z0-9_.-]{3,30}$/.test(cleanUsername)) {
+      setError("Tên tài khoản phải từ 3 đến 30 ký tự, viết liền không dấu (chỉ gồm chữ, số, ., _, -)");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      await register(email);
+      await register(email, cleanUsername);
       setResendCooldown(60);
       switchMode("register-verify");
     } catch (err) {
@@ -126,7 +137,7 @@ export function LoginPage() {
     setError(null);
     setIsSubmitting(true);
     try {
-      await register(email);
+      await register(email, username.trim().toLowerCase());
       setResendCooldown(60);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -141,7 +152,14 @@ export function LoginPage() {
     setIsSubmitting(true);
     try {
       const deviceFingerprint = await getDeviceFingerprint();
-      const session = await verifyRegister({ email, password, name, code, deviceFingerprint });
+      const session = await verifyRegister({ 
+        email, 
+        username: username.trim().toLowerCase(), 
+        password, 
+        name, 
+        code, 
+        deviceFingerprint 
+      });
       setSession(session);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -272,10 +290,10 @@ export function LoginPage() {
         {mode === "login" && (
           <form onSubmit={handleLogin} className="space-y-5 animate-slide-up">
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email / Tài khoản</label>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tên tài khoản hoặc Email</label>
               <div className="relative">
-                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input type="text" className="input-field pl-10" placeholder="email@example.com hoặc admin" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus disabled={isSubmitting} />
+                <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input type="text" className="input-field pl-10" placeholder="username hoặc email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus disabled={isSubmitting} />
               </div>
             </div>
 
@@ -328,13 +346,36 @@ export function LoginPage() {
         {mode === "register" && (
           <form onSubmit={handleRegister} className="space-y-5 animate-slide-up">
             <p className="text-sm text-muted-foreground text-center">
-              Nhập email của bạn để nhận mã xác nhận và đăng ký tài khoản.
+              Nhập tên tài khoản và email để nhận mã xác nhận kích hoạt tài khoản.
             </p>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tên tài khoản / Your Username</label>
+              <div className="relative">
+                <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input 
+                  type="text" 
+                  className="input-field pl-10" 
+                  placeholder="vd: hoanghan03, nguyenvana..." 
+                  value={username} 
+                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, ''))} 
+                  required 
+                  minLength={3}
+                  maxLength={30}
+                  autoFocus
+                  disabled={isSubmitting} 
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Từ 3-30 ký tự, viết liền không dấu (dùng để đăng nhập thay email).
+              </p>
+            </div>
+
             <div className="space-y-2">
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email</label>
               <div className="relative">
                 <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input type="email" className="input-field pl-10" placeholder="email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus disabled={isSubmitting} />
+                <input type="email" className="input-field pl-10" placeholder="email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isSubmitting} />
               </div>
             </div>
 
@@ -346,7 +387,7 @@ export function LoginPage() {
             </div>
 
             {error && <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 animate-slide-up"><p className="text-xs text-destructive font-medium">{error}</p></div>}
-            <button type="submit" disabled={isSubmitting || !email || !agreeTerms} className="btn-base btn-primary w-full py-3.5 text-sm font-bold shadow-lg shadow-primary/20">
+            <button type="submit" disabled={isSubmitting || !email || !username || !agreeTerms} className="btn-base btn-primary w-full py-3.5 text-sm font-bold shadow-lg shadow-primary/20">
               {isSubmitting ? <><Loader2 size={18} className="animate-spin inline mr-2" />Đang gửi mã...</> : "Tiếp tục"}
             </button>
           </form>
@@ -355,7 +396,7 @@ export function LoginPage() {
         {mode === "register-verify" && (
           <form onSubmit={handleVerifyRegister} className="space-y-5 animate-slide-up">
             <p className="text-sm text-muted-foreground text-center">
-              Mã xác nhận 6 chữ số đã được gửi tới <b>{email}</b>.
+              Mã xác nhận 6 chữ số đã gửi tới <b>{email}</b> cho tài khoản <b>@{username}</b>.
             </p>
             <div className="space-y-2">
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Mã OTP</label>
