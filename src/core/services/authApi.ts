@@ -18,8 +18,8 @@ import type {
 /** Trial duration in days */
 const TRIAL_DAYS = 7;
 
-/** Subscription validation interval in milliseconds (10 seconds for real-time sync) */
-export const SUBSCRIPTION_CHECK_INTERVAL = 10 * 1000;
+/** Subscription validation interval in milliseconds (5 minutes for background sync) */
+export const SUBSCRIPTION_CHECK_INTERVAL = 5 * 60 * 1000;
 
 /** Converts AuthSession to LocalSession for Rust storage */
 function toLocalSession(session: AuthSession): LocalSession {

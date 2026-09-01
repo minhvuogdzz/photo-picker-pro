@@ -21,6 +21,10 @@ class SocketService {
       auth: {
         token: session.accessToken,
       },
+      reconnectionAttempts: 3,
+      reconnectionDelay: 10000,
+      reconnectionDelayMax: 30000,
+      timeout: 10000,
     });
 
     this.socket.on('connect', () => {

@@ -27,7 +27,8 @@ export function FragmentedImageSlider() {
     };
 
     fetchShowcase();
-    const interval = setInterval(fetchShowcase, 3000); // Tự động cập nhật tức thì khi Admin thêm/ẩn/xoá ảnh
+    // Tự động làm mới sau mỗi 15 phút (thay vì 3 giây) để tiết kiệm tài nguyên mạng và server
+    const interval = setInterval(fetchShowcase, 15 * 60 * 1000);
 
     return () => {
       isMounted = false;
