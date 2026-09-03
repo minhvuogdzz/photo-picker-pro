@@ -22,7 +22,7 @@ const TRIAL_DAYS = 7;
 export const SUBSCRIPTION_CHECK_INTERVAL = 5 * 60 * 1000;
 
 /** Converts AuthSession to LocalSession for Rust storage */
-function toLocalSession(session: AuthSession): LocalSession {
+export function toLocalSession(session: AuthSession): LocalSession {
   return {
     access_token: session.accessToken,
     refresh_token: session.refreshToken,
@@ -129,6 +129,26 @@ export async function login(request: LoginRequest, autoLogin: boolean = true): P
     await invoke("clear_auth_session").catch(() => {});
     sessionStorage.setItem("temp_auth_session", JSON.stringify(session));
     sessionStorage.setItem("auto_login", "false");
+  }
+  return session;
+}
+
+/** Refreshes access token using refresh token */
+export async function refreshAuthToken(refreshToken: string): Promise<AuthSession> {
+  if (USE_MOCK) {
+    throw new Error("MOCK_MODE");
+  }
+
+  const session = await apiRequest<AuthSession>("/auth/refresh", {
+    method: "POST",
+    body: { refreshToken },
+  });
+
+  const autoLogin = sessionStorage.getItem("auto_login") !== "false";
+  if (autoLogin) {
+    await invoke("save_auth_session", { session: toLocalSession(session) });
+  } else {
+    sessionStorage.setItem("temp_auth_session", JSON.stringify(session));
   }
   return session;
 }

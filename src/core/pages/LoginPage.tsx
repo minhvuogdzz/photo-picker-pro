@@ -14,15 +14,19 @@ export function LoginPage() {
   const { t } = useTranslation();
 
   const [mode, setMode] = useState<AuthMode>("login");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => localStorage.getItem("saved_login_account") || "");
   const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [password, setPassword] = useState(() => {
+    const rememberPass = localStorage.getItem("saved_remember_password") !== "false";
+    return rememberPass ? (localStorage.getItem("saved_login_password") || "") : "";
+  });
+  const [rememberPassword, setRememberPassword] = useState(() => localStorage.getItem("saved_remember_password") !== "false");
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   
-  const [autoLogin, setAutoLogin] = useState(true);
-  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [autoLogin, setAutoLogin] = useState(() => localStorage.getItem("saved_auto_login") !== "false");
+  const [agreeTerms, setAgreeTerms] = useState(() => localStorage.getItem("saved_agree_terms") === "true");
   
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -90,6 +94,18 @@ export function LoginPage() {
     try {
       const deviceFingerprint = await getDeviceFingerprint();
       const session = await login({ email, password, deviceFingerprint, force }, autoLogin);
+
+      // Lưu thông tin tài khoản và cấu hình đã nhập
+      localStorage.setItem("saved_login_account", email);
+      localStorage.setItem("saved_remember_password", rememberPassword ? "true" : "false");
+      if (rememberPassword) {
+        localStorage.setItem("saved_login_password", password);
+      } else {
+        localStorage.removeItem("saved_login_password");
+      }
+      localStorage.setItem("saved_agree_terms", agreeTerms ? "true" : "false");
+      localStorage.setItem("saved_auto_login", autoLogin ? "true" : "false");
+
       setSession(session);
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
@@ -312,18 +328,55 @@ export function LoginPage() {
 
             <div className="space-y-3 pb-1 animate-slide-up">
               <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input type="checkbox" checked={autoLogin} onChange={(e) => setAutoLogin(e.target.checked)} className="w-4 h-4 rounded border-border text-primary focus:ring-primary bg-input" disabled={isSubmitting} />
-                  <span className="text-xs text-muted-foreground font-medium">Tự động đăng nhập</span>
-                </label>
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input 
+                      type="checkbox" 
+                      checked={autoLogin} 
+                      onChange={(e) => {
+                        setAutoLogin(e.target.checked);
+                        localStorage.setItem("saved_auto_login", e.target.checked ? "true" : "false");
+                      }} 
+                      className="w-4 h-4 rounded border-border text-primary focus:ring-primary bg-input cursor-pointer" 
+                      disabled={isSubmitting} 
+                    />
+                    <span className="text-xs text-muted-foreground font-medium">Tự động đăng nhập</span>
+                  </label>
 
-                <button type="button" className="text-xs text-muted-foreground hover:text-primary transition-colors font-medium" onClick={() => switchMode("forgot")}>
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input 
+                      type="checkbox" 
+                      checked={rememberPassword} 
+                      onChange={(e) => {
+                        setRememberPassword(e.target.checked);
+                        localStorage.setItem("saved_remember_password", e.target.checked ? "true" : "false");
+                        if (!e.target.checked) {
+                          localStorage.removeItem("saved_login_password");
+                        }
+                      }} 
+                      className="w-4 h-4 rounded border-border text-primary focus:ring-primary bg-input cursor-pointer" 
+                      disabled={isSubmitting} 
+                    />
+                    <span className="text-xs text-muted-foreground font-medium">Lưu mật khẩu</span>
+                  </label>
+                </div>
+
+                <button type="button" className="text-xs text-muted-foreground hover:text-primary transition-colors font-medium cursor-pointer" onClick={() => switchMode("forgot")}>
                   {t("forgot_password")}
                 </button>
               </div>
 
               <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input type="checkbox" checked={agreeTerms} onChange={(e) => setAgreeTerms(e.target.checked)} className="w-4 h-4 rounded border-border text-primary focus:ring-primary bg-input" disabled={isSubmitting} />
+                <input 
+                  type="checkbox" 
+                  checked={agreeTerms} 
+                  onChange={(e) => {
+                    setAgreeTerms(e.target.checked);
+                    localStorage.setItem("saved_agree_terms", e.target.checked ? "true" : "false");
+                  }} 
+                  className="w-4 h-4 rounded border-border text-primary focus:ring-primary bg-input cursor-pointer" 
+                  disabled={isSubmitting} 
+                />
                 <span className="text-xs text-muted-foreground font-medium">Tôi đồng ý với các <a href="#" className="text-primary hover:underline" onClick={(e) => { e.preventDefault(); setShowTermsDialog(true); }}>Điều khoản & Dịch vụ</a></span>
               </label>
             </div>

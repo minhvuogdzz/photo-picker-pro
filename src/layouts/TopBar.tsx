@@ -13,14 +13,18 @@ import {
   Menu,
   ArrowLeft,
   Shield,
+  RefreshCw,
 } from "lucide-react";
 import { useState } from "react";
+import { useUpdaterStore } from "@/core/stores/useUpdaterStore";
 import { LicenseManager } from "@/core/license/LicenseManager";
 import { AccountSecurityModal } from "@/core/components/AccountSecurityModal";
 import { SmartSearchBar } from "./SmartSearchBar";
 import type { MainTab } from "@/core/types";
 
 export function TopBar() {
+  const updateResult = useUpdaterStore((s) => s.updateResult);
+  const openModal = useUpdaterStore((s) => s.openModal);
   const activeTab = useAppStore((s) => s.activeTab);
   const setActiveTab = useAppStore((s) => s.setActiveTab);
   const setActiveModule = useAppStore((s) => s.setActiveModule);
@@ -91,6 +95,22 @@ export function TopBar() {
             MVD PHOTOSHOP ACADEMY
           </h1>
         </div>
+
+        {/* Badge phiên bản mới nổi bật cạnh Logo/Tiêu đề */}
+        {updateResult?.hasUpdate && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              openModal();
+            }}
+            className="text-[11px] py-1 px-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 active:scale-95 text-white font-bold flex items-center gap-1.5 rounded-xl cursor-pointer shadow-md shadow-blue-500/30 border border-blue-400/40 shrink-0 ml-1 transition-all group hover:border-blue-300/60"
+            title={`Có bản cập nhật mới v${updateResult.version}. Nhấn để cập nhật ngay!`}
+          >
+            <RefreshCw size={12} className="text-white shrink-0 group-hover:rotate-180 transition-transform duration-500" />
+            <span className="text-white font-bold tracking-tight">v{updateResult.version}</span>
+            <span className="hidden sm:inline text-[10px] font-medium text-blue-100 opacity-90">• Cập nhật</span>
+          </button>
+        )}
       </div>
 
       {/* Center: Smart Search Bar & Navigation Tabs */}

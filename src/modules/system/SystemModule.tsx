@@ -16,7 +16,6 @@ import {
   ShieldCheck,
   ExternalLink,
   Camera,
-  Sparkles,
   FileText,
   X,
   Send,
@@ -26,8 +25,7 @@ import {
   Lock,
   Cpu,
 } from "lucide-react";
-import { UpdateDialog } from "@/core/updater_ui";
-import { checkForUpdates, UpdateCheckResult } from "@/core/updater";
+import { useUpdaterStore } from "@/core/stores/useUpdaterStore";
 import { apiRequest } from "@/core/services/apiClient";
 import { TermsDialog } from "@/core/components/TermsDialog";
 
@@ -40,8 +38,8 @@ export function SystemModule() {
   const { t } = useTranslation();
 
   const [activeTab, setActiveTab] = useState<Tab>("general");
-  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
-  const [manualUpdateResult, setManualUpdateResult] = useState<UpdateCheckResult | null>(null);
+  const isCheckingUpdate = useUpdaterStore((s) => s.isChecking);
+  const checkForUpdatesStore = useUpdaterStore((s) => s.checkForUpdates);
   const [version, setVersion] = useState("2.0.0");
   
   // Feedback Modal State
@@ -60,18 +58,13 @@ export function SystemModule() {
   }, []);
 
   const handleManualUpdateCheck = async () => {
-    setIsCheckingUpdate(true);
     try {
-      const result = await checkForUpdates();
-      if (!result.hasUpdate) {
+      const result = await checkForUpdatesStore({ isManual: true });
+      if (result && !result.hasUpdate) {
         alert(t("latest_version"));
-      } else {
-        setManualUpdateResult(result);
       }
     } catch (err) {
       alert(t("update_check_failed") + String(err));
-    } finally {
-      setIsCheckingUpdate(false);
     }
   };
 
@@ -259,14 +252,16 @@ export function SystemModule() {
               <div className="space-y-3 pt-3 border-t border-border">
                 <div className="flex items-center justify-between">
                   <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t("software_updates")}</h3>
-                  <button
-                    onClick={handleManualUpdateCheck}
-                    disabled={isCheckingUpdate}
-                    className="border border-border hover:border-foreground/20 bg-card/60 hover:bg-muted text-muted-foreground hover:text-foreground text-[11px] font-semibold py-1.5 px-3 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
-                  >
-                    {isCheckingUpdate ? <Loader2 size={12} className="animate-spin text-primary" /> : <RefreshCw size={12} />}
-                    {t("check_for_updates")}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleManualUpdateCheck}
+                      disabled={isCheckingUpdate}
+                      className="border border-border hover:border-foreground/20 bg-card/60 hover:bg-muted text-muted-foreground hover:text-foreground text-[11px] font-semibold py-1.5 px-3 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                    >
+                      {isCheckingUpdate ? <Loader2 size={12} className="animate-spin text-primary" /> : <RefreshCw size={12} />}
+                      {t("check_for_updates")}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="bg-card/60 rounded-2xl p-4 border border-border space-y-4 w-full shadow-sm">
@@ -486,14 +481,6 @@ export function SystemModule() {
           )}
         </div>
       </div>
-
-      {manualUpdateResult && (
-        <UpdateDialog
-          updateResult={manualUpdateResult}
-          onClose={() => setManualUpdateResult(null)}
-          onSkip={() => setManualUpdateResult(null)}
-        />
-      )}
 
       {showTermsDialog && (
         <TermsDialog onClose={() => setShowTermsDialog(false)} />

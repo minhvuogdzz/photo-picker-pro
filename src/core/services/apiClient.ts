@@ -5,6 +5,10 @@
  * When no backend is configured (USE_MOCK = true), falls through to mock service.
  */
 
+import { useAuthStore } from "@/core/stores/useAuthStore";
+import { invoke } from "@tauri-apps/api/core";
+import type { AuthSession } from "@/core/types/auth";
+
 /** Set to true to use local mock API (no backend required) */
 const USE_MOCK = false;
 
@@ -45,9 +49,84 @@ export class ApiErrorResponse extends Error {
   }
 }
 
+function toLocalSession(session: AuthSession) {
+  return {
+    access_token: session.accessToken,
+    refresh_token: session.refreshToken,
+    user_id: session.userId,
+    email: session.email,
+    username: session.username || (session.email.includes("@") ? session.email.split("@")[0] : session.email),
+    name: session.name,
+    subscription_status: session.subscription.status,
+    subscription_plan: session.subscription.plan,
+    expires_at: session.subscription.expiresAt,
+    device_id: session.deviceId,
+    last_sync_at: session.lastSyncAt,
+  };
+}
+
+let isRefreshing = false;
+let refreshPromise: Promise<string | null> | null = null;
+
+async function refreshAccessToken(): Promise<string | null> {
+  const currentSession = useAuthStore.getState().session;
+  if (!currentSession?.refreshToken) {
+    return null;
+  }
+
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise;
+  }
+
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken: currentSession.refreshToken }),
+      });
+
+      if (!res.ok) {
+        return null;
+      }
+
+      const json = await res.json();
+      if (!json.success || !json.data?.accessToken) {
+        return null;
+      }
+
+      const updatedSession: AuthSession = {
+        ...currentSession,
+        ...json.data,
+      };
+
+      // Update zustand store
+      useAuthStore.getState().setSession(updatedSession);
+
+      // Persist to storage
+      const autoLogin = sessionStorage.getItem("auto_login") !== "false";
+      if (autoLogin) {
+        await invoke("save_auth_session", { session: toLocalSession(updatedSession) }).catch(() => {});
+      } else {
+        sessionStorage.setItem("temp_auth_session", JSON.stringify(updatedSession));
+      }
+
+      return json.data.accessToken as string;
+    } catch {
+      return null;
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
 /**
  * Makes an authenticated API request.
- * Automatically injects the access token and handles 401/403/409 errors.
+ * Automatically injects the access token and handles 401/403/409 errors with silent token refresh.
  */
 export async function apiRequest<T>(
   endpoint: string,
@@ -76,7 +155,15 @@ export async function apiRequest<T>(
     const statusCode = rawError?.statusCode || response.status;
     const errorCode = rawError?.errorCode || rawError?.error;
 
-    if (response.status === 401 && endpoint !== "/auth/login") {
+    if (response.status === 401 && endpoint !== "/auth/login" && endpoint !== "/auth/refresh") {
+      const newToken = await refreshAccessToken();
+      if (newToken) {
+        // Automatically retry original request with newly refreshed access token
+        return apiRequest<T>(endpoint, {
+          ...options,
+          accessToken: newToken,
+        });
+      }
       throw new ApiErrorResponse("SESSION_EXPIRED", 401);
     }
     if (response.status === 403 && endpoint !== "/auth/login") {
