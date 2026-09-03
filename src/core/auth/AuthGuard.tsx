@@ -9,6 +9,9 @@ import {
 import { isOnline } from "@/core/services/apiClient";
 import { LoginPage } from "@/core/pages/LoginPage";
 import { SessionExpiredDialog } from "./SessionExpiredDialog";
+import { MaintenanceScreen } from "@/core/components/MaintenanceScreen";
+import { availabilityService } from "@/core/services/availabilityService";
+import { useAvailabilityStore } from "@/core/stores/useAvailabilityStore";
 import { Loader2, AlertTriangle, Info } from "lucide-react";
 import { useAppStore } from "@/core/stores/useAppStore";
 import { exit } from '@tauri-apps/plugin-process';
@@ -21,12 +24,15 @@ interface AuthGuardProps {
  * Wraps the entire app. Handles:
  * - Initial session loading from disk
  * - Online/offline subscription validation
+ * - Backend availability & maintenance screen rendering
  * - Rendering LoginPage when not authenticated
  * - Showing SessionExpiredDialog when kicked by another device
  */
 export function AuthGuard({ children }: AuthGuardProps) {
   const session = useAuthStore((s) => s.session);
   const isLoading = useAuthStore((s) => s.isLoading);
+  const availabilityState = useAvailabilityStore((s) => s.state);
+  const offlineBypass = useAvailabilityStore((s) => s.offlineBypass);
   const sessionExpiredByOtherDevice = useAuthStore((s) => s.sessionExpiredByOtherDevice);
   const subscriptionExpired = useAuthStore((s) => s.subscriptionExpired);
   const offlineGracePeriodExpired = useAuthStore((s) => s.offlineGracePeriodExpired);
@@ -119,6 +125,14 @@ export function AuthGuard({ children }: AuthGuardProps) {
     initializeAuth();
   }, [initializeAuth]);
 
+  // Initialize availability service on app mount
+  useEffect(() => {
+    availabilityService.initialize();
+    return () => {
+      availabilityService.destroy();
+    };
+  }, []);
+
   const accountSuspended = useAuthStore((s) => s.accountSuspended);
 
   // Loading state
@@ -131,6 +145,16 @@ export function AuthGuard({ children }: AuthGuardProps) {
         </div>
       </div>
     );
+  }
+
+  // Backend under maintenance or confirmed unavailable (unless user chose offline bypass)
+  const isMaintenanceActive =
+    (availabilityState === "MAINTENANCE_CONFIRMED" ||
+      availabilityState === "BACKEND_UNAVAILABLE") &&
+    !offlineBypass;
+
+  if (isMaintenanceActive) {
+    return <MaintenanceScreen />;
   }
 
   // Session expired by another device

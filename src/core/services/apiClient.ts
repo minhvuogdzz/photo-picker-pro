@@ -128,6 +128,11 @@ async function refreshAccessToken(): Promise<string | null> {
  * Makes an authenticated API request.
  * Automatically injects the access token and handles 401/403/409 errors with silent token refresh.
  */
+let availabilityReporter: ((statusCode?: number) => void) | null = null;
+export function setAvailabilityReporter(fn: (statusCode?: number) => void) {
+  availabilityReporter = fn;
+}
+
 export async function apiRequest<T>(
   endpoint: string,
   options: {
@@ -143,17 +148,29 @@ export async function apiRequest<T>(
   const { method = "GET", body, accessToken } = options;
   const url = `${API_BASE_URL}${endpoint}`;
 
-  const response = await fetch(url, {
-    method,
-    headers: createHeaders(accessToken),
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method,
+      headers: createHeaders(accessToken),
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch (netErr: any) {
+    // Network failure (server unreachable, DNS error, Vercel pause)
+    availabilityReporter?.(0);
+    throw netErr;
+  }
 
   if (!response.ok) {
     const rawError = await response.json().catch(() => null);
     const message = rawError?.message || `HTTP ${response.status}: ${response.statusText}`;
     const statusCode = rawError?.statusCode || response.status;
     const errorCode = rawError?.errorCode || rawError?.error;
+
+    // Report server errors (500, 502, 503, 504, 429) to availability circuit breaker
+    if (response.status >= 500 || response.status === 429) {
+      availabilityReporter?.(response.status);
+    }
 
     if (response.status === 401 && endpoint !== "/auth/login" && endpoint !== "/auth/refresh") {
       const newToken = await refreshAccessToken();

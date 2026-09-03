@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { AppLayout } from "@/layouts/MainLayout";
 import { AuthGuard } from "@/core/auth/AuthGuard";
 import { useSettingsStore } from "@/core/stores/useSettingsStore";
@@ -6,7 +6,7 @@ import { useAuthStore } from "@/core/stores/useAuthStore";
 import { UpdateDialog } from "@/core/updater_ui";
 import { useUpdaterStore } from "@/core/stores/useUpdaterStore";
 import { invoke } from "@tauri-apps/api/core";
-import { validateSubscription, SUBSCRIPTION_CHECK_INTERVAL } from "@/core/services/authApi";
+import { validateSubscription, getNextSubscriptionCheckDelay } from "@/core/services/authApi";
 import { isOnline } from "@/core/services/apiClient";
 import { socketService } from "@/core/services/socketService";
 import type { AppSettings } from "@/core/types";
@@ -17,44 +17,105 @@ function AppContent() {
   const setSubscriptionExpired = useAuthStore((s) => s.setSubscriptionExpired);
   const setOffline = useAuthStore((s) => s.setOffline);
 
-  // Connect socket
+  const sessionUserId = session?.userId;
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
+
+  // Connect socket only when login user identity changes (not on every session object re-creation)
   useEffect(() => {
-    if (session) {
-      socketService.connect(session);
+    if (sessionUserId && sessionRef.current) {
+      socketService.connect(sessionRef.current);
     } else {
       socketService.disconnect();
     }
-  }, [session]);
+  }, [sessionUserId]);
 
-
-  // Periodic subscription validation (every 4 hours)
+  // Smart subscription validation: schedules next check at exact expiry moment or every 4 hours
   useEffect(() => {
-    if (!session) return;
+    if (!sessionUserId) return;
 
-    const validate = async () => {
+    let timer: NodeJS.Timeout | null = null;
+    let isMounted = true;
+    let failureCount = 0;
+    let hasValidatedExpiry = false;
+
+    const scheduleNextCheck = () => {
+      if (!isMounted) return;
+      const currentSession = sessionRef.current;
+      if (!currentSession) return;
+
+      const delay = getNextSubscriptionCheckDelay(
+        currentSession,
+        failureCount,
+        hasValidatedExpiry
+      );
+
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+
+      // If null, no periodic timer is needed (LIFETIME, or already confirmed EXPIRED/SUSPENDED)
+      if (delay === null) {
+        return;
+      }
+
+      timer = setTimeout(async () => {
+        const success = await runValidation();
+        if (success) {
+          failureCount = 0;
+        } else {
+          failureCount += 1;
+        }
+        scheduleNextCheck();
+      }, delay);
+    };
+
+    const runValidation = async (): Promise<boolean> => {
+      const currentSession = sessionRef.current;
+      if (!currentSession) return false;
+
       if (!isOnline()) {
         setOffline(true);
-        return;
+        return false;
       }
       setOffline(false);
 
       try {
-        const updated = await validateSubscription(session);
-        setSession(updated);
+        const updated = await validateSubscription(currentSession);
+        if (isMounted) {
+          setSession(updated);
+          if (updated.subscription.status === "EXPIRED") {
+            hasValidatedExpiry = true;
+            setSubscriptionExpired(true);
+          }
+        }
+        return true;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         if (message === "SUBSCRIPTION_INVALID") {
+          hasValidatedExpiry = true;
           setSubscriptionExpired(true);
+          return true; // Confirmed invalid, stop loop
         } else if (message === "SESSION_EXPIRED") {
           useAuthStore.getState().setSessionExpiredByOtherDevice(true);
+          return true; // Confirmed expired session, stop loop
         }
-        // Other errors: silently continue (offline mode)
+        // Network or server error -> failureCount increments and backoff applies
+        return false;
       }
     };
 
-    const interval = setInterval(validate, SUBSCRIPTION_CHECK_INTERVAL);
-    return () => clearInterval(interval);
-  }, [session, setSession, setSubscriptionExpired, setOffline]);
+    scheduleNextCheck();
+
+    return () => {
+      isMounted = false;
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+    };
+  }, [sessionUserId, setSession, setSubscriptionExpired, setOffline]);
 
   return (
     <AppLayout />

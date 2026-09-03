@@ -18,8 +18,30 @@ import type {
 /** Trial duration in days */
 const TRIAL_DAYS = 7;
 
-/** Subscription validation interval in milliseconds (5 minutes for background sync) */
-export const SUBSCRIPTION_CHECK_INTERVAL = 5 * 60 * 1000;
+export {
+  SUBSCRIPTION_CHECK_INTERVAL,
+  getNextSubscriptionCheckDelay,
+  canSessionWorkOfflineSync,
+} from "./subscriptionPolicy";
+import { canSessionWorkOfflineSync } from "./subscriptionPolicy";
+
+/**
+ * Rigorously checks whether a session is permitted to work in Offline Mode.
+ * Must satisfy ALL licensing conditions:
+ * 1. Session must exist.
+ * 2. Subscription status must be in ['ACTIVE', 'TRIAL', 'LIFETIME'].
+ * 3. For ACTIVE and TRIAL: expiresAt must be in the future.
+ * 4. lastSyncAt must be within the 7-day offline grace period.
+ */
+export async function canSessionWorkOffline(session: AuthSession | null): Promise<boolean> {
+  if (!session) return false;
+
+  return canSessionWorkOfflineSync(session, (lastSync) => {
+    // Synchronous fallback or invocation wrapper
+    const diff = Date.now() - new Date(lastSync).getTime();
+    return diff >= 0 && diff < 7 * 24 * 60 * 60 * 1000;
+  });
+}
 
 /** Converts AuthSession to LocalSession for Rust storage */
 export function toLocalSession(session: AuthSession): LocalSession {

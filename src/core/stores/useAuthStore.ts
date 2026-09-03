@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { AuthSession } from "@/core/types/auth";
+import { useAvailabilityStore } from "./useAvailabilityStore";
 
 interface AuthState {
   /** Current authenticated session, null if not logged in */
@@ -44,7 +45,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   copyrightWarningMessage: null,
   expiringSoonMessage: null,
 
-  setSession: (session) =>
+  setSession: (session) => {
+    useAvailabilityStore.getState().setOfflineBypass(false);
     set({
       session,
       sessionExpiredByOtherDevice: false,
@@ -53,7 +55,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       accountSuspended: false,
       copyrightWarningMessage: null,
       expiringSoonMessage: null,
-    }),
+    });
+  },
 
   setLoading: (loading) => set({ isLoading: loading }),
   setOffline: (offline) => set({ isOffline: offline }),
@@ -70,7 +73,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   setExpiringSoonMessage: (message) =>
     set({ expiringSoonMessage: message }),
 
-  logout: () =>
+  logout: () => {
+    useAvailabilityStore.getState().setOfflineBypass(false);
     set({
       session: null,
       sessionExpiredByOtherDevice: false,
@@ -79,5 +83,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       accountSuspended: false,
       copyrightWarningMessage: null,
       expiringSoonMessage: null,
-    }),
+    });
+  },
 }));

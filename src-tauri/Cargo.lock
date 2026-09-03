@@ -2969,7 +2969,7 @@ dependencies = [
 
 [[package]]
 name = "photo-picker-pro"
-version = "2.0.2"
+version = "2.0.4"
 dependencies = [
  "chrono",
  "dirs 5.0.1",

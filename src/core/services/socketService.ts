@@ -7,9 +7,16 @@ import { API_BASE_URL } from './apiClient';
 class SocketService {
   private socket: Socket | null = null;
   private isConnecting: boolean = false;
+  private isUnavailable: boolean = false;
+  private lastConnectedUserId: string | null = null;
 
   public connect(session: AuthSession) {
-    if (this.socket?.connected || this.isConnecting) return;
+    if (this.lastConnectedUserId !== session.userId) {
+      this.isUnavailable = false;
+      this.lastConnectedUserId = session.userId;
+    }
+
+    if (this.socket?.connected || this.isConnecting || this.isUnavailable) return;
     this.isConnecting = true;
 
     // Connect to the same host as API_BASE_URL but we need the base url, API_BASE_URL might have /api
@@ -21,14 +28,15 @@ class SocketService {
       auth: {
         token: session.accessToken,
       },
-      reconnectionAttempts: 3,
-      reconnectionDelay: 10000,
-      reconnectionDelayMax: 30000,
-      timeout: 10000,
+      reconnectionAttempts: 2,
+      reconnectionDelay: 15000,
+      reconnectionDelayMax: 60000,
+      timeout: 5000,
     });
 
     this.socket.on('connect', () => {
       this.isConnecting = false;
+      this.isUnavailable = false;
       this.socket?.emit('register', {
         userId: session.userId,
         token: session.accessToken,
@@ -36,6 +44,18 @@ class SocketService {
     });
 
     this.socket.on('disconnect', () => {
+      this.isConnecting = false;
+    });
+
+    this.socket.io.on('reconnect_failed', () => {
+      // Backend does not support websockets on current deployment (e.g. serverless)
+      // Stop reconnecting to protect network and avoid storming backend with 404s
+      this.isConnecting = false;
+      this.isUnavailable = true;
+      this.disconnect();
+    });
+
+    this.socket.on('connect_error', () => {
       this.isConnecting = false;
     });
 

@@ -1,44 +1,110 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { API_BASE_URL } from '@/core/services/apiClient';
 
+// Module-level cache to provide instantaneous rendering and throttle requests across mounts
+let cachedShowcaseImages: string[] = [];
+let lastShowcaseFetchTime = 0;
+const SHOWCASE_FOCUS_COOLDOWN_MS = 30 * 1000; // 30 seconds cooldown between focus revalidations
+const SHOWCASE_POLL_INTERVAL_MS = 2 * 60 * 1000; // 2 minutes periodic revalidation while on login screen
+
 export function FragmentedImageSlider() {
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<string[]>(() => cachedShowcaseImages);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const isMountedRef = useRef(true);
+  const isFetchingRef = useRef(false);
 
-  // Fetch dynamic showcase images from Cloudinary backend & Poll every 3s for realtime Admin sync
-  useEffect(() => {
-    let isMounted = true;
+  // Fetch dynamic showcase images from backend using Edge CDN caching
+  const fetchShowcase = useCallback(async (isForced: boolean = false) => {
+    // Inflight deduplication: don't start a duplicate fetch if one is already running
+    if (isFetchingRef.current) return;
 
-    const fetchShowcase = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/showcase`);
-        if (!res.ok) return;
-        const json = await res.json();
-        if (json && json.success && Array.isArray(json.data) && isMounted) {
-          const activeUrls = json.data
-            .map((item: { url: string }) => item.url)
-            .filter(Boolean);
-          
-          setImages(activeUrls);
+    // Cooldown check for automatic/event-based fetches
+    const now = Date.now();
+    if (!isForced && lastShowcaseFetchTime > 0 && now - lastShowcaseFetchTime < SHOWCASE_FOCUS_COOLDOWN_MS) {
+      return;
+    }
+
+    isFetchingRef.current = true;
+    try {
+      // Clean static URL without timestamp or no-store headers, allowing Vercel Edge CDN
+      // to serve cached responses instantly without waking up serverless functions.
+      const res = await fetch(`${API_BASE_URL}/showcase`);
+      if (!res.ok) return;
+
+      const json = await res.json();
+      if (json && json.success && Array.isArray(json.data)) {
+        lastShowcaseFetchTime = Date.now();
+        const activeUrls: string[] = json.data
+          .map((item: { url: string }) => item.url)
+          .filter(Boolean);
+
+        cachedShowcaseImages = activeUrls;
+
+        if (isMountedRef.current) {
+          setImages((prev) => {
+            if (
+              prev.length === activeUrls.length &&
+              prev.every((u, i) => u === activeUrls[i])
+            ) {
+              return prev;
+            }
+            return activeUrls;
+          });
         }
-      } catch {
-        // Silently handle offline
       }
+    } catch {
+      // Silently handle offline; cached images will remain visible
+    } finally {
+      isFetchingRef.current = false;
+    }
+  }, []);
+
+  // Fetch on mount, window focus (with cooldown), and periodic sync (15m)
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    // Fetch on initial mount if cache is empty or stale (> 5m)
+    if (cachedShowcaseImages.length === 0 || Date.now() - lastShowcaseFetchTime > SHOWCASE_FOCUS_COOLDOWN_MS) {
+      fetchShowcase(true);
+    }
+
+    let focusDebounceTimer: NodeJS.Timeout | null = null;
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState !== 'visible') return;
+
+      // Debounce focus and visibilitychange (which fire simultaneously on window focus)
+      if (focusDebounceTimer) clearTimeout(focusDebounceTimer);
+      focusDebounceTimer = setTimeout(() => {
+        if (isMountedRef.current && document.visibilityState === 'visible') {
+          fetchShowcase(false);
+        }
+      }, 300);
     };
 
-    fetchShowcase();
-    // Tự động làm mới sau mỗi 15 phút (thay vì 3 giây) để tiết kiệm tài nguyên mạng và server
-    const interval = setInterval(fetchShowcase, 15 * 60 * 1000);
+    window.addEventListener('focus', handleVisibilityOrFocus);
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+
+    // Periodic sync: 15 minutes instead of 60 seconds
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchShowcase(true);
+      }
+    }, SHOWCASE_POLL_INTERVAL_MS);
 
     return () => {
-      isMounted = false;
+      isMountedRef.current = false;
+      if (focusDebounceTimer) clearTimeout(focusDebounceTimer);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
       clearInterval(interval);
     };
-  }, []);
+  }, [fetchShowcase]);
 
   // Điều chỉnh index nếu danh sách ảnh thay đổi
   useEffect(() => {
-    if (currentIndex >= images.length && images.length > 0) {
+    if (images.length === 0) {
+      setCurrentIndex(0);
+    } else if (currentIndex >= images.length) {
       setCurrentIndex(0);
     }
   }, [images.length, currentIndex]);
