@@ -6,7 +6,7 @@ import { useAuthStore } from "@/core/stores/useAuthStore";
 import { UpdateDialog } from "@/core/updater_ui";
 import { useUpdaterStore } from "@/core/stores/useUpdaterStore";
 import { invoke } from "@tauri-apps/api/core";
-import { validateSubscription, getNextSubscriptionCheckDelay } from "@/core/services/authApi";
+import { logout, validateSubscription, getNextSubscriptionCheckDelay } from "@/core/services/authApi";
 import { isOnline } from "@/core/services/apiClient";
 import { socketService } from "@/core/services/socketService";
 import type { AppSettings } from "@/core/types";
@@ -30,7 +30,8 @@ function AppContent() {
     }
   }, [sessionUserId]);
 
-  // Smart subscription validation: schedules next check at exact expiry moment or every 4 hours
+  // Enforce account/device validity continuously. WebSocket handles the immediate
+  // path; a short HTTP heartbeat protects deployments where WebSocket is unavailable.
   useEffect(() => {
     if (!sessionUserId) return;
 
@@ -44,20 +45,19 @@ function AppContent() {
       const currentSession = sessionRef.current;
       if (!currentSession) return;
 
-      const delay = getNextSubscriptionCheckDelay(
+      const policyDelay = getNextSubscriptionCheckDelay(
         currentSession,
         failureCount,
         hasValidatedExpiry
       );
+      const enforcementDelay = socketService.isConnected() ? 30_000 : 5_000;
+      const delay = failureCount > 0
+        ? (policyDelay ?? enforcementDelay)
+        : Math.min(policyDelay ?? enforcementDelay, enforcementDelay);
 
       if (timer) {
         clearTimeout(timer);
         timer = null;
-      }
-
-      // If null, no periodic timer is needed (LIFETIME, or already confirmed EXPIRED/SUSPENDED)
-      if (delay === null) {
-        return;
       }
 
       timer = setTimeout(async () => {
@@ -94,10 +94,12 @@ function AppContent() {
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         if (message === "SUBSCRIPTION_INVALID") {
+          await logout();
           hasValidatedExpiry = true;
           setSubscriptionExpired(true);
           return true; // Confirmed invalid, stop loop
         } else if (message === "SESSION_EXPIRED") {
+          await logout();
           useAuthStore.getState().setSessionExpiredByOtherDevice(true);
           return true; // Confirmed expired session, stop loop
         }

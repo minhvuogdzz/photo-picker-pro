@@ -195,6 +195,8 @@ export async function loadSession(): Promise<AuthSession | null> {
 export async function logout(accessToken?: string): Promise<void> {
   sessionStorage.removeItem("temp_auth_session");
   sessionStorage.removeItem("auto_login");
+  await invoke("clear_auth_session").catch(() => {});
+
   // Try to notify server (best effort)
   if (!USE_MOCK && accessToken) {
     try {
@@ -206,7 +208,6 @@ export async function logout(accessToken?: string): Promise<void> {
       // Ignore server errors on logout
     }
   }
-  await invoke("clear_auth_session");
 }
 
 /**

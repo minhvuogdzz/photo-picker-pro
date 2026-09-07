@@ -2,6 +2,7 @@ import { useEffect, useCallback, useState } from "react";
 import { useAuthStore } from "@/core/stores/useAuthStore";
 import {
   loadSession,
+  logout,
   validateSubscription,
   checkOfflinePeriod,
   isSubscriptionActive,
@@ -74,10 +75,12 @@ export function AuthGuard({ children }: AuthGuardProps) {
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
           if (message === "SESSION_EXPIRED") {
+            await logout();
             setLoading(false);
             return;
           }
           if (message === "SUBSCRIPTION_INVALID") {
+            await logout();
             setSubscriptionExpired(true);
             setSession({
               ...savedSession,
@@ -167,10 +170,10 @@ export function AuthGuard({ children }: AuthGuardProps) {
     return <SessionExpiredDialog reason="suspended" />;
   }
 
-  // Subscription expired (Do not block entirely, AppLayout handles UI disabling)
-  // if (subscriptionExpired) {
-  //   return <SessionExpiredDialog reason="subscription" />;
-  // }
+  // Expired/cancelled/inactive subscriptions are blocked immediately.
+  if (subscriptionExpired) {
+    return <SessionExpiredDialog reason="subscription" />;
+  }
 
   // Offline grace period expired
   if (offlineGracePeriodExpired) {

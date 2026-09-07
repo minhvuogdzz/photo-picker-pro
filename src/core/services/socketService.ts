@@ -10,6 +10,19 @@ class SocketService {
   private isUnavailable: boolean = false;
   private lastConnectedUserId: string | null = null;
 
+  private invalidateLocalSession(reason: 'device' | 'suspended' | 'subscription') {
+    const store = useAuthStore.getState();
+    if (reason === 'device') store.setSessionExpiredByOtherDevice(true);
+    if (reason === 'suspended') store.setAccountSuspended(true);
+    if (reason === 'subscription') store.setSubscriptionExpired(true);
+    void logout().catch(() => undefined);
+    this.disconnect();
+  }
+
+  public isConnected(): boolean {
+    return this.socket?.connected === true;
+  }
+
   public connect(session: AuthSession) {
     if (this.lastConnectedUserId !== session.userId) {
       this.isUnavailable = false;
@@ -28,8 +41,9 @@ class SocketService {
       auth: {
         token: session.accessToken,
       },
-      reconnectionAttempts: 2,
-      reconnectionDelay: 15000,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 2000,
       reconnectionDelayMax: 60000,
       timeout: 5000,
     });
@@ -47,32 +61,25 @@ class SocketService {
       this.isConnecting = false;
     });
 
-    this.socket.io.on('reconnect_failed', () => {
-      // Backend does not support websockets on current deployment (e.g. serverless)
-      // Stop reconnecting to protect network and avoid storming backend with 404s
-      this.isConnecting = false;
-      this.isUnavailable = true;
-      this.disconnect();
-    });
-
     this.socket.on('connect_error', () => {
       this.isConnecting = false;
+      this.isUnavailable = true;
     });
 
     // Listen to real-time sync events
     this.socket.on('forceLogout', (data: { deviceId: string }) => {
       // If we are the device being kicked or it's 'all'
       if (data.deviceId === session.deviceId || data.deviceId === 'all') {
-        useAuthStore.getState().setSessionExpiredByOtherDevice(true);
+        this.invalidateLocalSession('device');
       }
     });
 
     this.socket.on('accountSuspended', () => {
-      useAuthStore.getState().setAccountSuspended(true);
+      this.invalidateLocalSession('suspended');
     });
 
     this.socket.on('subscriptionExpired', () => {
-      useAuthStore.getState().setSubscriptionExpired(true);
+      this.invalidateLocalSession('subscription');
     });
 
     this.socket.on('copyrightWarning', (data: { message: string }) => {
