@@ -10,6 +10,7 @@ import PhotoPickerModule from "@/modules/photo-picker";
 import MvdConvertApp from "@/modules/mvd-convert/MvdConvertApp";
 import PsPluginApp from "@/modules/ps-plugin/PsPluginApp";
 import ResourcesApp from "@/modules/resources/ResourcesApp";
+import ContactTheSheetApp from "@/modules/contact-the-sheet";
 
 export function AppLayout() {
   const activeTab = useAppStore((s) => s.activeTab);
@@ -57,6 +58,7 @@ export function AppLayout() {
             {activeModule === "mvd-convert" && <MvdConvertApp />}
             {activeModule === "ps-plugin" && <PsPluginApp />}
             {activeModule === "resources" && <ResourcesApp />}
+            {activeModule === "contact-the-sheet" && <ContactTheSheetApp />}
           </div>
         </div>
       </div>

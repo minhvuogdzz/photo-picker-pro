@@ -1,0 +1,177 @@
+{
+  "spreadsheetId": "1ssZ-H80SmMo6IwznpciXN_0qv30M2baqSHGSgbOYSvY",
+  "properties": {
+    "title": "Bảng tính không có tiêu đề (Sample Test)",
+    "locale": "vi_VN",
+    "timeZone": "Asia/Saigon"
+  },
+  "sheets": [
+    {
+      "properties": {
+        "sheetId": 0,
+        "title": "Trang tính1",
+        "index": 0,
+        "gridProperties": {
+          "rowCount": 6806,
+          "columnCount": 26
+        }
+      },
+      "data": [
+        {
+          "startRow": 0,
+          "startColumn": 0,
+          "rowData": [
+            {
+              "values": [
+                { "formattedValue": "BẢNG TIẾP NHẬN VÀ BÀN GIAO KHÁCH HÀNG STUDIO THÁNG 9", "userEnteredValue": { "stringValue": "BẢNG TIẾP NHẬN VÀ BÀN GIAO KHÁCH HÀNG STUDIO THÁNG 9" } }
+              ]
+            },
+            {
+              "values": [
+                { "formattedValue": "Lưu ý: Không tự ý chỉnh sửa cột công thức và mã khách hàng", "userEnteredValue": { "stringValue": "Lưu ý: Không tự ý chỉnh sửa cột công thức và mã khách hàng" } }
+              ]
+            },
+            {
+              "values": [
+                { "formattedValue": "Ngày", "userEnteredValue": { "stringValue": "Ngày" } },
+                { "formattedValue": "Giờ", "userEnteredValue": { "stringValue": "Giờ" } },
+                { "formattedValue": "Tên khách", "userEnteredValue": { "stringValue": "Tên khách" } },
+                { "formattedValue": "Concept", "userEnteredValue": { "stringValue": "Concept" } },
+                { "formattedValue": "Lưu ý", "userEnteredValue": { "stringValue": "Lưu ý" } },
+                { "formattedValue": "Cơ sở", "userEnteredValue": { "stringValue": "Cơ sở" } },
+                { "formattedValue": "Trạng Thái 1", "userEnteredValue": { "stringValue": "Trạng Thái 1" } },
+                { "formattedValue": "Tên file", "userEnteredValue": { "stringValue": "Tên file" } },
+                { "formattedValue": "Mã ảnh chọn (1)", "userEnteredValue": { "stringValue": "Mã ảnh chọn (1)" } },
+                { "formattedValue": "Mã ảnh chọn (2)", "userEnteredValue": { "stringValue": "Mã ảnh chọn (2)" } },
+                { "formattedValue": "Yêu cầu edit", "userEnteredValue": { "stringValue": "Yêu cầu edit" } },
+                { "formattedValue": "Hẹn trả ảnh", "userEnteredValue": { "stringValue": "Hẹn trả ảnh" } },
+                { "formattedValue": "Trạng Thái Lọc", "userEnteredValue": { "stringValue": "Trạng Thái Lọc" }, "dataValidation": { "condition": { "type": "ONE_OF_LIST", "values": [{ "userEnteredValue": "Chưa lọc" }, { "userEnteredValue": "Đã lọc" }, { "userEnteredValue": "Đã lọc 2" }] } } },
+                { "formattedValue": "Tên Edit", "userEnteredValue": { "stringValue": "Tên Edit" }, "dataValidation": { "condition": { "type": "ONE_OF_LIST", "values": [{ "userEnteredValue": "Vương" }, { "userEnteredValue": "Hân" }, { "userEnteredValue": "Ngân" }] } } },
+                { "formattedValue": "Link Edit", "userEnteredValue": { "stringValue": "Link Edit" } },
+                { "formattedValue": "Fix", "userEnteredValue": { "stringValue": "Fix" } },
+                { "formattedValue": "Link Fix", "userEnteredValue": { "stringValue": "Link Fix" } },
+                { "formattedValue": "Time mã", "userEnteredValue": { "stringValue": "Time mã" } },
+                { "formattedValue": "Time edit", "userEnteredValue": { "stringValue": "Time edit" } }
+              ]
+            },
+            {
+              "values": [
+                { "formattedValue": "07/09", "userEnteredValue": { "formulaValue": "=IMPORTRANGE(\"sheet_src\", \"Sheet1!A4\")" } },
+                { "formattedValue": "12:00", "userEnteredValue": { "formulaValue": "=IMPORTRANGE(\"sheet_src\", \"Sheet1!B4\")" } },
+                { "formattedValue": "Xuka", "userEnteredValue": { "stringValue": "Xuka" } },
+                { "formattedValue": "Ngoại cảnh", "userEnteredValue": { "stringValue": "Ngoại cảnh" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "CS1", "userEnteredValue": { "stringValue": "CS1" } },
+                { "formattedValue": "Đã chụp", "userEnteredValue": { "stringValue": "Đã chụp" } },
+                { "formattedValue": "7-9 12h _xuka_11 1cc", "userEnteredValue": { "formulaValue": "=IMPORTRANGE(\"sheet_src\", \"Sheet1!H4\")" } },
+                { "formattedValue": "0123, 0124", "userEnteredValue": { "stringValue": "0123, 0124" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "Tone trong sáng", "userEnteredValue": { "stringValue": "Tone trong sáng" } },
+                { "formattedValue": "10/09", "userEnteredValue": { "stringValue": "10/09" } },
+                { "formattedValue": "Chưa lọc", "userEnteredValue": { "stringValue": "Chưa lọc" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "08/09 09:00", "userEnteredValue": { "stringValue": "08/09 09:00" } },
+                { "formattedValue": "", "userEnteredValue": { "formulaValue": "=IF(ISBLANK(O4), \"\", NOW())" } }
+              ]
+            },
+            {
+              "values": [
+                { "formattedValue": "08/09", "userEnteredValue": { "stringValue": "08/09" } },
+                { "formattedValue": "14:00", "userEnteredValue": { "stringValue": "14:00" } },
+                { "formattedValue": "Nobita", "userEnteredValue": { "stringValue": "Nobita" } },
+                { "formattedValue": "Studio", "userEnteredValue": { "stringValue": "Studio" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "CS2", "userEnteredValue": { "stringValue": "CS2" } },
+                { "formattedValue": "Đã chụp", "userEnteredValue": { "stringValue": "Đã chụp" } },
+                { "formattedValue": "8-9 14h _nobita_02 2cc", "userEnteredValue": { "stringValue": "8-9 14h _nobita_02 2cc" } },
+                { "formattedValue": "0456", "userEnteredValue": { "stringValue": "0456" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "12/09", "userEnteredValue": { "stringValue": "12/09" } },
+                { "formattedValue": "Đã lọc", "userEnteredValue": { "stringValue": "Đã lọc" } },
+                { "formattedValue": "Hân", "userEnteredValue": { "stringValue": "Hân" } },
+                { "formattedValue": "https://drive.google.com/drive/folders/old_nobita_link\n\nko sửa mí mắt đc nhé\n\nhttps://drive.google.com/drive/folders/extra_link", "userEnteredValue": { "stringValue": "https://drive.google.com/drive/folders/old_nobita_link\n\nko sửa mí mắt đc nhé\n\nhttps://drive.google.com/drive/folders/extra_link" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "09/09 15:30", "userEnteredValue": { "formulaValue": "=IF(ISBLANK(O5), \"\", NOW())" } }
+              ]
+            },
+            {
+              "values": [
+                { "formattedValue": "09/09", "userEnteredValue": { "stringValue": "09/09" } },
+                { "formattedValue": "16:00", "userEnteredValue": { "stringValue": "16:00" } },
+                { "formattedValue": "Chaien", "userEnteredValue": { "stringValue": "Chaien" } },
+                { "formattedValue": "Studio", "userEnteredValue": { "stringValue": "Studio" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "CS1", "userEnteredValue": { "stringValue": "CS1" } },
+                { "formattedValue": "Đã chụp", "userEnteredValue": { "stringValue": "Đã chụp" } },
+                { "formattedValue": "#REF!", "userEnteredValue": { "formulaValue": "=IMPORTRANGE(\"unauthorized_source\", \"Sheet1!H6\")" }, "isError": true },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "Chưa lọc", "userEnteredValue": { "stringValue": "Chưa lọc" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "", "userEnteredValue": { "formulaValue": "=IF(ISBLANK(O6), \"\", NOW())" } }
+              ]
+            },
+            {
+              "values": [
+                { "formattedValue": "10/09", "userEnteredValue": { "stringValue": "10/09" } },
+                { "formattedValue": "10:00", "userEnteredValue": { "stringValue": "10:00" } },
+                { "formattedValue": "Doraemon", "userEnteredValue": { "stringValue": "Doraemon" } },
+                { "formattedValue": "Concept A", "userEnteredValue": { "stringValue": "Concept A" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "CS1", "userEnteredValue": { "stringValue": "CS1" } },
+                { "formattedValue": "Đã chụp", "userEnteredValue": { "stringValue": "Đã chụp" } },
+                { "formattedValue": "10-9 10h _mon_01", "userEnteredValue": { "stringValue": "10-9 10h _mon_01" } },
+                { "formattedValue": "1111", "userEnteredValue": { "stringValue": "1111" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "15/09", "userEnteredValue": { "stringValue": "15/09" } },
+                { "formattedValue": "Chưa lọc", "userEnteredValue": { "stringValue": "Chưa lọc" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "", "userEnteredValue": { "formulaValue": "=IF(ISBLANK(O7), \"\", NOW())" } }
+              ]
+            },
+            {
+              "values": [
+                { "formattedValue": "10/09", "userEnteredValue": { "stringValue": "10/09" } },
+                { "formattedValue": "10:00", "userEnteredValue": { "stringValue": "10:00" } },
+                { "formattedValue": "Doraemon", "userEnteredValue": { "stringValue": "Doraemon" } },
+                { "formattedValue": "Concept B", "userEnteredValue": { "stringValue": "Concept B" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "CS1", "userEnteredValue": { "stringValue": "CS1" } },
+                { "formattedValue": "Đã chụp", "userEnteredValue": { "stringValue": "Đã chụp" } },
+                { "formattedValue": "10-9 10h _mon_02", "userEnteredValue": { "stringValue": "10-9 10h _mon_02" } },
+                { "formattedValue": "2222", "userEnteredValue": { "stringValue": "2222" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "15/09", "userEnteredValue": { "stringValue": "15/09" } },
+                { "formattedValue": "Chưa lọc", "userEnteredValue": { "stringValue": "Chưa lọc" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "", "userEnteredValue": { "stringValue": "" } },
+                { "formattedValue": "", "userEnteredValue": { "formulaValue": "=IF(ISBLANK(O8), \"\", NOW())" } }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

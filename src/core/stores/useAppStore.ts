@@ -91,15 +91,39 @@ interface AppState {
   readonly regexPattern: string;
   setRegexPattern: (pattern: string) => void;
 
+  // Google Sheets Auto-Update on Filter Complete
+  readonly sheetFilterContext: SheetFilterContext | null;
+  setSheetFilterContext: (ctx: SheetFilterContext | null) => void;
+  readonly sheetUpdateStatus: SheetUpdateStatus | null;
+  setSheetUpdateStatus: (status: SheetUpdateStatus | null) => void;
+
   // Reset
   resetAll: () => void;
 }
 
+export interface SheetFilterContext {
+  profileId: string;
+  spreadsheetId: string;
+  tabTitle: string;
+  matchedRow: number;
+  jobName: string;
+  folderName: string;
+  statusColumnLetter?: string;
+  statusValue?: string;
+  autoUpdateOnFilterComplete?: boolean;
+}
+
+export interface SheetUpdateStatus {
+  state: "idle" | "updating" | "success" | "error";
+  message?: string;
+  updatedAt?: string;
+}
+
 const initialState = {
   activeTab: "home" as MainTab,
-  activeModule: "launcher",
+  activeModule: "contact-the-sheet",
   sidebarCollapsed: false,
-  hasSeenWelcome: false,
+  hasSeenWelcome: true,
   lastClickPos: null as { x: number; y: number } | null,
   activeDropZone: null as "input" | "sync" | null,
   syncFolders: [] as string[],
@@ -122,6 +146,8 @@ const initialState = {
     filter_jpg: false,
     recursive: false,
   },
+  sheetFilterContext: null as SheetFilterContext | null,
+  sheetUpdateStatus: null as SheetUpdateStatus | null,
 };
 
 export const useAppStore = create<AppState>((set) => ({
@@ -183,6 +209,8 @@ export const useAppStore = create<AppState>((set) => ({
   setScanOptions: (options) => set((state) => ({ scanOptions: { ...state.scanOptions, ...options } })),
   setMatchMode: (mode) => set({ matchMode: mode }),
   setRegexPattern: (pattern) => set({ regexPattern: pattern }),
+  setSheetFilterContext: (ctx) => set({ sheetFilterContext: ctx }),
+  setSheetUpdateStatus: (status) => set({ sheetUpdateStatus: status }),
 
   resetAll: () => set(initialState),
 }));

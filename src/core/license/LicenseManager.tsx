@@ -25,17 +25,17 @@ export function LicenseManager({
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  const session = useAuthStore((s) => s.session);
+  const setSession = useAuthStore((s) => s.setSession);
+
   // Activate state
   const [key, setKey] = useState("");
 
   // Request state
-  const [name, setName] = useState("");
+  const [name, setName] = useState(session?.name || "");
   const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(session?.email || "");
   const [isPremium, setIsPremium] = useState(initialIsPremium);
-
-  const session = useAuthStore((s) => s.session);
-  const setSession = useAuthStore((s) => s.setSession);
 
   // Close on Escape key
   useEffect(() => {
@@ -258,7 +258,7 @@ export function LicenseManager({
                 <span className="text-[11px] font-bold text-amber-500">Đăng ký VIP Premium</span>
               </div>
               <p className="text-[9px] text-muted-foreground leading-snug">
-                Mở khóa trọn bộ <strong>Kho Tài Nguyên Creative</strong> & đặc quyền VIP.
+                Mở khóa trọn bộ <strong>Google Sheet Lọc ảnh</strong>, <strong>Contact The Sheet</strong> & <strong>Kho Tài Nguyên VIP</strong>.
               </p>
             </div>
           </label>

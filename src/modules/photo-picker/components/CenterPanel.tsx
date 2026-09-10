@@ -11,12 +11,15 @@ import {
   Trash2,
   Loader2,
   X,
+  FileSpreadsheet,
+  Settings2,
 } from "lucide-react";
 import type { CustomerCode } from "@/core/types";
 import { useTranslation } from "@/core/lib/i18n";
 import { getFolderName } from "@/core/lib/utils";
 import { open } from "@tauri-apps/plugin-dialog";
 import { listen } from "@tauri-apps/api/event";
+import { SheetCodeExtractorModal } from "./SheetCodeExtractorModal";
 
 const VALID_EXTENSIONS_SET = new Set([
   "jpg", "jpeg", "png", "gif", "bmp", "tiff", "tif", "webp",
@@ -156,6 +159,10 @@ export function CenterPanel() {
   // Sync folder states
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
+
+  // Sheet Code Extractor Modal state
+  const [isSheetModalOpen, setIsSheetModalOpen] = useState(false);
+  const [sheetModalInitialTab, setSheetModalInitialTab] = useState<"extract" | "config">("extract");
 
   // Debounced parsing
   const parseInput = useCallback(
@@ -302,11 +309,44 @@ export function CenterPanel() {
     <div className="panel flex-1 flex flex-col min-h-0 animate-fade-in">
       {/* === TOP HALF: Customer Codes === */}
       <div className="flex-1 flex flex-col min-h-0">
-        <div className="panel-header py-3 px-4">
-          <span className="panel-title flex items-center gap-2 text-xs">
-            <Code2 size={13} className="text-muted-foreground" />
-            {t("customer_codes")}
-          </span>
+        <div className="panel-header py-3 px-4 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span className="panel-title flex items-center gap-2 text-xs">
+              <Code2 size={13} className="text-muted-foreground" />
+              {t("customer_codes")}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setSheetModalInitialTab("extract");
+                setIsSheetModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:border-emerald-500/50 transition-all cursor-pointer group shadow-2xs"
+              title="Truy xuất mã chọn của khách từ Google Sheet"
+            >
+              <FileSpreadsheet
+                size={12}
+                className="text-emerald-500 group-hover:scale-110 transition-transform"
+              />
+              <span>Truy xuất trang tính</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSheetModalInitialTab("config");
+                setIsSheetModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/60 hover:border-border transition-all cursor-pointer group shadow-2xs"
+              title="Cấu hình cột và Tab Google Sheet cho ứng dụng Lọc ảnh"
+            >
+              <Settings2
+                size={12}
+                className="text-muted-foreground group-hover:rotate-45 transition-transform"
+              />
+              <span>Cấu hình Sheet</span>
+            </button>
+          </div>
           <div className="flex items-center gap-2">
             {isParsingDebounced && (
               <span className="text-[10px] text-muted-foreground animate-pulse">
@@ -516,6 +556,13 @@ export function CenterPanel() {
           </button>
         </div>
       </div>
+
+      {/* Sheet Code Extractor Modal */}
+      <SheetCodeExtractorModal
+        isOpen={isSheetModalOpen}
+        onClose={() => setIsSheetModalOpen(false)}
+        initialTab={sheetModalInitialTab}
+      />
     </div>
   );
 }

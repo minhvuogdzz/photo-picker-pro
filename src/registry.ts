@@ -1,5 +1,5 @@
 import { ElementType } from "react";
-import { FileImage, Eraser, Layers, Sparkles, FolderArchive, Palette } from "lucide-react";
+import { FileImage, Eraser, Layers, Sparkles, FolderArchive, Palette, FileSpreadsheet } from "lucide-react";
 import { PhotoPickerIcon } from "@/core/components/PhotoPickerIcon";
 
 export interface AppModule {
@@ -13,6 +13,7 @@ export interface AppModule {
   tags: string[];
   isPinned?: boolean;
   badge?: string;
+  isPremium?: boolean;
   accentColor: {
     primary: string;
     border: string;
@@ -22,28 +23,6 @@ export interface AppModule {
 }
 
 export const modules: AppModule[] = [
-  {
-    id: "resources",
-    name: "Kho Tài Nguyên Creative",
-    shortName: "Tài nguyên",
-    icon: Layers,
-    path: "/resources",
-    description: "Kho tàng tài nguyên tuyển chọn dành cho Photographer & Retoucher: Presets Lightroom, Actions Photoshop, Brushes, LUTs màu và tài liệu chuyên sâu.",
-    category: "resources",
-    tags: [
-      "tài nguyên", "presets", "actions", "brushes", "luts", 
-      "photoshop", "lightroom", "overlay", "texture", "tài liệu", 
-      "giáo trình", "retouch", "blend màu"
-    ],
-    isPinned: true,
-    badge: "Featured Hub",
-    accentColor: {
-      primary: "text-amber-400",
-      border: "hover:border-amber-400/50 hover:shadow-[0_0_30px_rgba(251,191,36,0.3)]",
-      bgGlow: "from-amber-500/20 via-orange-500/10 to-transparent",
-      iconBg: "from-amber-500/20 to-orange-500/10 border-amber-500/30",
-    }
-  },
   {
     id: "photo-picker",
     name: "Photo Picker Pro",
@@ -65,6 +44,50 @@ export const modules: AppModule[] = [
     }
   },
   {
+    id: "contact-the-sheet",
+    name: "Contact the Sheet",
+    shortName: "Contact Sheet",
+    icon: FileSpreadsheet,
+    path: "/contact-the-sheet",
+    description: "Tự động hóa đối soát Google Sheet & Google Drive, nhận diện job khách hàng, bảo vệ công thức và cập nhật link trả ảnh hàng loạt.",
+    category: "workflow",
+    tags: [
+      "contact the sheet", "google sheet", "google drive", "đối soát", 
+      "link edit", "tên edit", "tự động hóa", "studio", "workflow"
+    ],
+    badge: "VIP Studio Ops",
+    isPremium: true,
+    accentColor: {
+      primary: "text-teal-400",
+      border: "hover:border-teal-400/50 hover:shadow-[0_0_30px_rgba(20,184,166,0.35)]",
+      bgGlow: "from-teal-500/20 via-emerald-500/10 to-transparent",
+      iconBg: "from-teal-500/20 to-emerald-500/10 border-teal-500/30",
+    }
+  },
+  {
+    id: "resources",
+    name: "Kho Tài Nguyên Creative",
+    shortName: "Tài nguyên",
+    icon: Layers,
+    path: "/resources",
+    description: "Kho tàng tài nguyên tuyển chọn dành cho Photographer & Retoucher: Presets Lightroom, Actions Photoshop, Brushes, LUTs màu và tài liệu chuyên sâu.",
+    category: "resources",
+    tags: [
+      "tài nguyên", "presets", "actions", "brushes", "luts", 
+      "photoshop", "lightroom", "overlay", "texture", "tài liệu", 
+      "giáo trình", "retouch", "blend màu"
+    ],
+    isPinned: true,
+    badge: "Featured Hub",
+    isPremium: true,
+    accentColor: {
+      primary: "text-amber-400",
+      border: "hover:border-amber-400/50 hover:shadow-[0_0_30px_rgba(251,191,36,0.3)]",
+      bgGlow: "from-amber-500/20 via-orange-500/10 to-transparent",
+      iconBg: "from-amber-500/20 to-orange-500/10 border-amber-500/30",
+    }
+  },
+  {
     id: "mvd-convert",
     name: "MVD Convert",
     shortName: "Convert",
@@ -79,7 +102,7 @@ export const modules: AppModule[] = [
     badge: "Fast engine",
     accentColor: {
       primary: "text-emerald-400",
-      border: "hover:border-emerald-400/50 hover:shadow-[0_0_30px_rgba(16,185,129,0.35)]",
+      border: "hover:border-emerald-400/50 hover:shadow-[0_0_30px_rgba(160,185,129,0.35)]",
       bgGlow: "from-emerald-500/20 via-teal-500/10 to-transparent",
       iconBg: "from-emerald-500/20 to-teal-500/10 border-emerald-500/30",
     }

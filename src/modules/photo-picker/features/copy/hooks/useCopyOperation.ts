@@ -3,11 +3,13 @@ import { useAppStore } from "@/core/stores/useAppStore";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { CopyResult, ProgressEvent, CopyOptions } from "@/core/types";
+import { sheetFilterAutomationService } from "@/modules/contact-the-sheet/services/sheetFilterAutomationService";
 
 export function useCopyOperation() {
   const matchResult = useAppStore((s) => s.matchResult);
   const outputMode = useAppStore((s) => s.outputMode);
   const outputFolder = useAppStore((s) => s.outputFolder);
+  const selectedInputFolders = useAppStore((s) => s.selectedInputFolders);
   const inputFolders = useAppStore((s) => s.inputFolders);
   const setCopyResult = useAppStore((s) => s.setCopyResult);
   const setPhase = useAppStore((s) => s.setPhase);
@@ -20,6 +22,9 @@ export function useCopyOperation() {
         alert("Vui lòng chọn thư mục đầu ra.");
         return;
       }
+
+      const effectiveFolders = selectedInputFolders.length > 0 ? selectedInputFolders : inputFolders;
+
       try {
         setPhase("copying");
         setProgress(null);
@@ -36,7 +41,7 @@ export function useCopyOperation() {
           folder_structure: "Flat",
           prefix: null,
           suffix: null,
-          input_folders: inputFolders,
+          input_folders: effectiveFolders,
         };
         
         const result = await invoke<CopyResult>("copy_files", {
@@ -48,6 +53,13 @@ export function useCopyOperation() {
         setCopyResult(result);
         setPhase("done");
         setProgress(null);
+
+        // Auto-update Google Sheet status field upon filtering completion
+        sheetFilterAutomationService
+          .updateStatusOnFilterComplete(effectiveFolders, result)
+          .catch((err) => {
+            console.error("[useCopyOperation] Status auto-update error:", err);
+          });
       } catch (error) {
         console.error("Copy error:", error);
         alert("Lỗi chép file: " + (typeof error === 'string' ? error : JSON.stringify(error)));

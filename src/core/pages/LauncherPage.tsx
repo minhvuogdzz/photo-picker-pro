@@ -208,11 +208,16 @@ export function LauncherPage() {
                       <Icon size={22} className={`${accent.primary} drop-shadow-sm`} />
                     </div>
 
-                    {mod.badge && (
+                    {mod.isPremium ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center gap-1 shadow-sm">
+                        <Crown size={11} className="fill-amber-400/30 text-amber-400" />
+                        <span>VIP Premium</span>
+                      </span>
+                    ) : mod.badge ? (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border group-hover:border-primary/30 group-hover:text-foreground transition-colors">
                         {mod.badge}
                       </span>
-                    )}
+                    ) : null}
                   </div>
 
                   {/* App Title */}

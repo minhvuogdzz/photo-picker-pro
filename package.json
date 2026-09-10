@@ -1,13 +1,13 @@
 {
   "name": "photo-picker-pro",
   "private": true,
-  "version": "2.0.5",
+  "version": "2.0.6",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "node --experimental-strip-types --test tests/**/*.test.ts",
+    "test": "node --experimental-strip-types --test tests/*.test.ts tests/**/*.test.ts",
     "tauri": "tauri"
   },
   "dependencies": {

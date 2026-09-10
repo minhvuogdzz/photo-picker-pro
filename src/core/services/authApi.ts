@@ -18,6 +18,10 @@ import type {
 /** Trial duration in days */
 const TRIAL_DAYS = 7;
 
+function isTauri(): boolean {
+  return typeof window !== "undefined" && typeof (window as any).__TAURI_INTERNALS__ !== "undefined";
+}
+
 export {
   SUBSCRIPTION_CHECK_INTERVAL,
   getNextSubscriptionCheckDelay,
@@ -146,9 +150,14 @@ export async function login(request: LoginRequest, autoLogin: boolean = true): P
   });
   
   if (autoLogin) {
-    await invoke("save_auth_session", { session: toLocalSession(session) });
+    localStorage.setItem("saved_auth_session", JSON.stringify(session));
+    if (isTauri()) {
+      await invoke("save_auth_session", { session: toLocalSession(session) }).catch(() => {});
+    }
   } else {
-    await invoke("clear_auth_session").catch(() => {});
+    if (isTauri()) {
+      await invoke("clear_auth_session").catch(() => {});
+    }
     sessionStorage.setItem("temp_auth_session", JSON.stringify(session));
     sessionStorage.setItem("auto_login", "false");
   }
@@ -186,9 +195,33 @@ export async function loadSession(): Promise<AuthSession | null> {
     }
   }
 
-  const local = await invoke<LocalSession | null>("load_auth_session");
-  if (!local) return null;
-  return fromLocalSession(local);
+  try {
+    const local = await invoke<LocalSession | null>("load_auth_session");
+    if (local) return fromLocalSession(local);
+  } catch {
+    // In browser or non-tauri environment
+  }
+
+  if (import.meta.env.DEV) {
+    return {
+      accessToken: "mock_dev_token",
+      refreshToken: "mock_dev_refresh",
+      userId: "user_duongminhvuong",
+      email: "duongminhvuong@mvd.vn",
+      name: "Dương Minh Vương",
+      subscription: {
+        plan: "LIFETIME",
+        status: "ACTIVE",
+        isPremium: true,
+        daysRemaining: 99999,
+        expiresAt: "2099-12-31T23:59:59.000Z",
+      },
+      deviceId: "dev_browser_mac",
+      lastSyncAt: new Date().toISOString(),
+    };
+  }
+
+  return null;
 }
 
 /** Clears session from disk and server */
@@ -269,12 +302,31 @@ export async function validateSubscription(
 
 /** Checks if offline grace period (7 days) is still valid */
 export async function checkOfflinePeriod(lastSyncAt: string): Promise<boolean> {
-  return invoke<boolean>("is_offline_period_valid", { lastSyncAt });
+  if (isTauri()) {
+    try {
+      return await invoke<boolean>("is_offline_period_valid", { lastSyncAt });
+    } catch {
+      // fallback
+    }
+  }
+  return true;
 }
 
 /** Gets the device fingerprint */
 export async function getDeviceFingerprint(): Promise<string> {
-  return invoke<string>("get_device_fingerprint");
+  if (isTauri()) {
+    try {
+      return await invoke<string>("get_device_fingerprint");
+    } catch {
+      // fallback
+    }
+  }
+  let fp = localStorage.getItem("device_fingerprint");
+  if (!fp) {
+    fp = "web_" + Math.random().toString(36).substring(2, 12) + "_" + Date.now().toString(36);
+    localStorage.setItem("device_fingerprint", fp);
+  }
+  return fp;
 }
 
 /** Requests password reset email (mock: always succeeds) */

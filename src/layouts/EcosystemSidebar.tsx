@@ -1,7 +1,7 @@
 import { useAppStore } from "@/core/stores/useAppStore";
 import { modules } from "@/registry";
 import { SafeLink } from "@/SafeLink";
-import { Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import { Sparkles, ChevronLeft, ChevronRight, Crown } from "lucide-react";
 
 export function EcosystemSidebar() {
   const activeModule = useAppStore((s) => s.activeModule);
@@ -80,11 +80,16 @@ export function EcosystemSidebar() {
                   <span className={`text-xs whitespace-nowrap leading-none ${isActive ? "font-bold text-foreground" : "font-semibold"}`}>
                     {mod.shortName || mod.name}
                   </span>
-                  {mod.badge && (
+                  {mod.isPremium ? (
+                    <span className="text-[8px] font-bold text-amber-400 mt-1 uppercase tracking-wider flex items-center gap-1">
+                      <Crown size={9} className="fill-amber-400/40 text-amber-400" />
+                      <span>{mod.badge || "VIP Premium"}</span>
+                    </span>
+                  ) : mod.badge ? (
                     <span className="text-[8px] font-bold text-muted-foreground/80 mt-1 uppercase tracking-wider">
                       {mod.badge}
                     </span>
-                  )}
+                  ) : null}
                 </div>
 
                 {/* Glowing hover effect */}

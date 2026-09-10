@@ -33,6 +33,12 @@ pub fn run() {
             commands::system_utils::launch_photoshop,
             commands::system_utils::save_file_bytes,
             commands::converter::run_convert_batch,
+            commands::sheet_auth::start_google_oauth_loopback,
+            commands::sheet_auth::wait_for_google_oauth_code,
+            commands::sheet_auth::save_google_secure_token,
+            commands::sheet_auth::get_google_secure_token,
+            commands::sheet_auth::delete_google_secure_token,
+            commands::sheet_fs::scan_folder_topology,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

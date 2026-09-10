@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { AuthSession } from "@/core/types/auth";
-import { useAvailabilityStore } from "./useAvailabilityStore";
+import { useAvailabilityStore } from "./useAvailabilityStore.ts";
 
 interface AuthState {
   /** Current authenticated session, null if not logged in */

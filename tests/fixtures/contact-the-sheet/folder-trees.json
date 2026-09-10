@@ -1,0 +1,120 @@
+[
+  {
+    "name": "case_deepest_repeat",
+    "description": "Deepest nested folder with repeated names",
+    "inputRoot": "/Volumes/Drive/10-9",
+    "topology": [
+      {
+        "folder_path": "/Volumes/Drive/10-9",
+        "folder_name": "10-9",
+        "depth": 0,
+        "finished_image_count": 0,
+        "raw_image_count": 0,
+        "subfolder_names": ["7-9 12h _xuka_11 1cc"],
+        "representative_extensions": []
+      },
+      {
+        "folder_path": "/Volumes/Drive/10-9/7-9 12h _xuka_11 1cc",
+        "folder_name": "7-9 12h _xuka_11 1cc",
+        "depth": 1,
+        "finished_image_count": 0,
+        "raw_image_count": 0,
+        "subfolder_names": ["7-9 12h _xuka_11 1cc"],
+        "representative_extensions": []
+      },
+      {
+        "folder_path": "/Volumes/Drive/10-9/7-9 12h _xuka_11 1cc/7-9 12h _xuka_11 1cc",
+        "folder_name": "7-9 12h _xuka_11 1cc",
+        "depth": 2,
+        "finished_image_count": 0,
+        "raw_image_count": 0,
+        "subfolder_names": ["7-9 12h _xuka_11 1cc"],
+        "representative_extensions": []
+      },
+      {
+        "folder_path": "/Volumes/Drive/10-9/7-9 12h _xuka_11 1cc/7-9 12h _xuka_11 1cc/7-9 12h _xuka_11 1cc",
+        "folder_name": "7-9 12h _xuka_11 1cc",
+        "depth": 3,
+        "finished_image_count": 24,
+        "raw_image_count": 0,
+        "subfolder_names": [],
+        "representative_extensions": ["jpg"]
+      }
+    ],
+    "expectedFinalFolderPath": "/Volumes/Drive/10-9/7-9 12h _xuka_11 1cc/7-9 12h _xuka_11 1cc/7-9 12h _xuka_11 1cc",
+    "expectedFinalFolderName": "7-9 12h _xuka_11 1cc",
+    "expectedImageCount": 24
+  },
+  {
+    "name": "case_jpg_raw_siblings",
+    "description": "Job folder containing RAW and JPG child folders",
+    "inputRoot": "/Volumes/Drive/10-9/8-9 14h _nobita_02 2cc",
+    "topology": [
+      {
+        "folder_path": "/Volumes/Drive/10-9/8-9 14h _nobita_02 2cc",
+        "folder_name": "8-9 14h _nobita_02 2cc",
+        "depth": 0,
+        "finished_image_count": 0,
+        "raw_image_count": 0,
+        "subfolder_names": ["RAW", "JPG"],
+        "representative_extensions": []
+      },
+      {
+        "folder_path": "/Volumes/Drive/10-9/8-9 14h _nobita_02 2cc/RAW",
+        "folder_name": "RAW",
+        "depth": 1,
+        "finished_image_count": 0,
+        "raw_image_count": 150,
+        "subfolder_names": [],
+        "representative_extensions": ["cr3"]
+      },
+      {
+        "folder_path": "/Volumes/Drive/10-9/8-9 14h _nobita_02 2cc/JPG",
+        "folder_name": "JPG",
+        "depth": 1,
+        "finished_image_count": 30,
+        "raw_image_count": 0,
+        "subfolder_names": [],
+        "representative_extensions": ["jpg"]
+      }
+    ],
+    "expectedFinalFolderPath": "/Volumes/Drive/10-9/8-9 14h _nobita_02 2cc/JPG",
+    "expectedFinalFolderName": "JPG",
+    "expectedImageCount": 30
+  },
+  {
+    "name": "case_ambiguous_two_finals",
+    "description": "Two competing final folders with same priority",
+    "inputRoot": "/Volumes/Drive/10-9/AmbiguousJob",
+    "topology": [
+      {
+        "folder_path": "/Volumes/Drive/10-9/AmbiguousJob",
+        "folder_name": "AmbiguousJob",
+        "depth": 0,
+        "finished_image_count": 0,
+        "raw_image_count": 0,
+        "subfolder_names": ["Final A", "Final B"],
+        "representative_extensions": []
+      },
+      {
+        "folder_path": "/Volumes/Drive/10-9/AmbiguousJob/Final A",
+        "folder_name": "Final A",
+        "depth": 1,
+        "finished_image_count": 15,
+        "raw_image_count": 0,
+        "subfolder_names": [],
+        "representative_extensions": ["jpg"]
+      },
+      {
+        "folder_path": "/Volumes/Drive/10-9/AmbiguousJob/Final B",
+        "folder_name": "Final B",
+        "depth": 1,
+        "finished_image_count": 15,
+        "raw_image_count": 0,
+        "subfolder_names": [],
+        "representative_extensions": ["jpg"]
+      }
+    ],
+    "expectedAmbiguity": true
+  }
+]

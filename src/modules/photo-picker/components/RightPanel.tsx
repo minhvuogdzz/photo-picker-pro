@@ -16,12 +16,15 @@ import {
   Ban,
   Clipboard,
   ClipboardCheck,
+  FileSpreadsheet,
+  Loader2,
 } from "lucide-react";
 import { formatDuration, getFolderName } from "@/core/lib/utils";
 import { useTranslation } from "@/core/lib/i18n";
 import { useScanAndMatch } from "@/modules/photo-picker/features/scanner/hooks/useScanAndMatch";
 import { useCopyOperation } from "@/modules/photo-picker/features/copy/hooks/useCopyOperation";
 import { useExport } from "@/modules/photo-picker/features/export/hooks/useExport";
+import { sheetFilterAutomationService } from "@/modules/contact-the-sheet/services/sheetFilterAutomationService";
 
 export function RightPanel() {
   const matchResult = useAppStore((s) => s.matchResult);
@@ -35,6 +38,7 @@ export function RightPanel() {
   const setOutputMode = useAppStore((s) => s.setOutputMode);
   const selectedInputFolders = useAppStore((s) => s.selectedInputFolders);
   const inputFolders = useAppStore((s) => s.inputFolders);
+  const sheetUpdateStatus = useAppStore((s) => s.sheetUpdateStatus);
   const { t } = useTranslation();
   
   const settings = useSettingsStore((s) => s.settings);
@@ -370,6 +374,53 @@ export function RightPanel() {
                   </p>
                 ))}
               </div>
+            )}
+          </div>
+        )}
+
+        {/* Google Sheets Status Auto-Update Card */}
+        {phase === "done" && sheetUpdateStatus && sheetUpdateStatus.state !== "idle" && (
+          <div
+            className={`rounded-lg border p-2.5 space-y-1.5 animate-slide-up ${
+              sheetUpdateStatus.state === "success"
+                ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400"
+                : sheetUpdateStatus.state === "updating"
+                ? "border-primary/30 bg-primary/5 text-primary"
+                : "border-amber-500/30 bg-amber-500/5 text-amber-600 dark:text-amber-400"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold flex items-center gap-1.5">
+                <FileSpreadsheet size={13} />
+                <span>Google Sheets Trạng Thái</span>
+              </span>
+              {sheetUpdateStatus.state === "updating" && (
+                <span className="flex items-center gap-1 text-[10px] text-muted-foreground animate-pulse">
+                  <Loader2 size={10} className="animate-spin" />
+                  Đang đồng bộ...
+                </span>
+              )}
+              {sheetUpdateStatus.state === "success" && (
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/15 border border-emerald-500/30 font-mono">
+                  ĐÃ ĐỔI TRẠNG THÁI
+                </span>
+              )}
+            </div>
+
+            <p className="text-[10px] leading-relaxed break-words font-medium">
+              {sheetUpdateStatus.message}
+            </p>
+
+            {sheetUpdateStatus.state === "error" && (
+              <button
+                onClick={() => {
+                  const effectiveFolders = selectedInputFolders.length > 0 ? selectedInputFolders : inputFolders;
+                  sheetFilterAutomationService.updateStatusOnFilterComplete(effectiveFolders, copyResult);
+                }}
+                className="mt-1 text-[10px] px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 font-medium transition-colors cursor-pointer"
+              >
+                Thử lại cập nhật Google Sheet
+              </button>
             )}
           </div>
         )}
