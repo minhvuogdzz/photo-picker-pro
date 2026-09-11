@@ -182,13 +182,23 @@ export function WorkspaceWizard() {
       setWizardStep(2);
     } catch (err: any) {
       console.error("Survey tab error:", err);
-      alert(err?.message || String(err));
+      const msg = err?.message || String(err);
+      if (msg.includes("GOOGLE_REFRESH_TOKEN_NOT_FOUND") || msg.includes("GOOGLE_NOT_CONNECTED")) {
+        alert("Phiên làm việc Google đã hết hạn hoặc chưa kết nối. Vui lòng bấm nút 'Kết nối Google' để đăng nhập lại.");
+      } else {
+        alert(msg);
+      }
     } finally {
       setIsAnalyzing(false);
     }
   };
 
   const handleAnalyzeSheet = async () => {
+    if (googleConnection.status !== "CONNECTED" && !googleCredentialManager.isConnected()) {
+      alert("Vui lòng bấm nút 'Kết nối Google' để đăng nhập tài khoản trước khi khảo sát bảng tính.");
+      return;
+    }
+
     setIsAnalyzing(true);
     try {
       const spreadsheetId = sheetDiscoveryService.parseSpreadsheetId(sheetUrl);
@@ -204,7 +214,12 @@ export function WorkspaceWizard() {
       await handleSurveyTab(targetTab);
     } catch (err: any) {
       console.error("Analyze sheet error:", err);
-      alert(err?.message || String(err));
+      const msg = err?.message || String(err);
+      if (msg.includes("GOOGLE_REFRESH_TOKEN_NOT_FOUND") || msg.includes("GOOGLE_NOT_CONNECTED")) {
+        alert("Phiên làm việc Google đã hết hạn hoặc chưa kết nối. Vui lòng bấm nút 'Kết nối Google' để đăng nhập lại.");
+      } else {
+        alert(msg);
+      }
     } finally {
       setIsAnalyzing(false);
     }

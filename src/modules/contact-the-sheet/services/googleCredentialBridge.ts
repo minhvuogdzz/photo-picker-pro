@@ -126,11 +126,23 @@ class GoogleCredentialManager {
         hasSheetsAccess: true,
         hasDriveAccess: true,
       });
+
+      // Silently restore refresh token from native storage if missing in memory
+      if (!this.inMemoryRefreshToken) {
+        invoke<string | null>("get_google_secure_token", { accountEmail: savedEmail })
+          .then((token) => {
+            if (token) {
+              this.inMemoryRefreshToken = token;
+              setSafeStorage("mvd_google_refresh_token", token);
+            }
+          })
+          .catch((err) => console.warn("Background refresh token load:", err));
+      }
     }
   }
 
   /**
-   * Returns a valid access token. Automatically refreshes using OS Keychain refresh token if expired.
+   * Returns a valid access token. Automatically refreshes using OS Keychain/secure file storage refresh token if expired.
    */
   public async getValidAccessToken(forceRefresh: boolean = false): Promise<string> {
     const now = Date.now();
@@ -148,7 +160,7 @@ class GoogleCredentialManager {
   }
 
   /**
-   * Refreshes the Google access token using the securely stored refresh token from Keychain.
+   * Refreshes the Google access token using the securely stored refresh token.
    */
   public async refreshAccessToken(accountEmail: string): Promise<string> {
     useContactSheetStore.getState().setGoogleConnection({ status: "TOKEN_REFRESHING" });
@@ -157,7 +169,7 @@ class GoogleCredentialManager {
     try {
       refreshToken = await invoke<string | null>("get_google_secure_token", { accountEmail });
     } catch (err) {
-      console.warn("Failed to retrieve token from OS Keychain, trying memory fallback:", err);
+      console.warn("Failed to retrieve token from native storage, trying fallback:", err);
     }
 
     if (!refreshToken && this.inMemoryRefreshToken) {
@@ -169,7 +181,10 @@ class GoogleCredentialManager {
     }
 
     if (!refreshToken) {
-      useContactSheetStore.getState().setGoogleConnection({ status: "AUTHORIZATION_EXPIRED" });
+      useContactSheetStore.getState().setGoogleConnection({
+        status: "AUTHORIZATION_EXPIRED",
+        error: "Phiên làm việc Google đã hết hạn. Vui lòng bấm 'Kết nối Google' để đăng nhập lại.",
+      });
       throw new Error("GOOGLE_REFRESH_TOKEN_NOT_FOUND: Phiên làm việc đã hết hạn. Vui lòng bấm 'Kết nối Google' để đăng nhập lại.");
     }
 
@@ -197,6 +212,7 @@ class GoogleCredentialManager {
       this.tokenExpiresAt = Date.now() + data.expires_in * 1000;
       this.activeAccountEmail = accountEmail;
 
+      setSafeStorage("mvd_google_active_email", accountEmail);
       setSafeStorage("mvd_google_access_token", data.access_token);
       setSafeStorage("mvd_google_token_expires_at", String(this.tokenExpiresAt));
 
@@ -209,7 +225,7 @@ class GoogleCredentialManager {
             refreshToken: data.refresh_token,
           });
         } catch (err) {
-          console.warn("Failed to update refresh token in native Keychain:", err);
+          console.warn("Failed to update refresh token in native storage:", err);
         }
       }
 
@@ -292,22 +308,25 @@ class GoogleCredentialManager {
       const accountEmail = userInfo.email || "google-user@studio.com";
       this.activeAccountEmail = accountEmail;
 
-      // 7. Store refresh token in OS Keychain via Rust & memory fallback
+      // 7. Store tokens across all layers: memory, localStorage, and Rust native file storage
+      setSafeStorage("mvd_google_active_email", accountEmail);
+      setSafeStorage("mvd_google_access_token", tokenData.access_token);
+      setSafeStorage("mvd_google_token_expires_at", String(this.tokenExpiresAt));
+      if (userInfo.name) setSafeStorage("mvd_google_user_name", userInfo.name);
+      if (userInfo.picture) setSafeStorage("mvd_google_avatar", userInfo.picture);
+
       if (tokenData.refresh_token) {
         this.inMemoryRefreshToken = tokenData.refresh_token;
+        setSafeStorage("mvd_google_refresh_token", tokenData.refresh_token);
         try {
           await invoke("save_google_secure_token", {
             accountEmail,
             refreshToken: tokenData.refresh_token,
           });
         } catch (err) {
-          console.warn("Failed to persist refresh token to native Keychain:", err);
+          console.warn("Failed to persist refresh token to native storage:", err);
         }
       }
-
-      setSafeStorage("mvd_google_active_email", accountEmail);
-      if (userInfo.name) setSafeStorage("mvd_google_user_name", userInfo.name);
-      if (userInfo.picture) setSafeStorage("mvd_google_avatar", userInfo.picture);
 
       // 8. Update store state
       useContactSheetStore.getState().setGoogleConnection({
@@ -330,7 +349,7 @@ class GoogleCredentialManager {
   }
 
   /**
-   * Disconnects Google account and clears credentials from native OS Keychain.
+   * Disconnects Google account and clears credentials from all storage layers.
    */
   public async disconnectGoogle(): Promise<void> {
     const email = this.getAccountEmail();
@@ -338,7 +357,7 @@ class GoogleCredentialManager {
       try {
         await invoke("delete_google_secure_token", { accountEmail: email });
       } catch (err) {
-        console.warn("Failed to delete token from native Keychain:", err);
+        console.warn("Failed to delete token from native storage:", err);
       }
     }
 
@@ -350,6 +369,9 @@ class GoogleCredentialManager {
     removeSafeStorage("mvd_google_active_email");
     removeSafeStorage("mvd_google_user_name");
     removeSafeStorage("mvd_google_avatar");
+    removeSafeStorage("mvd_google_access_token");
+    removeSafeStorage("mvd_google_token_expires_at");
+    removeSafeStorage("mvd_google_refresh_token");
 
     useContactSheetStore.getState().disconnectGoogle();
   }

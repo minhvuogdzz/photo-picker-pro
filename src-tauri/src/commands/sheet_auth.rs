@@ -128,35 +128,138 @@ pub fn wait_for_google_oauth_code(port: u16, expected_state: String) -> Result<S
     Ok(code)
 }
 
-/// Saves Google refresh token securely in macOS Keychain / Windows Credential Manager
-#[tauri::command]
-pub fn save_google_secure_token(account_email: String, refresh_token: String) -> Result<(), String> {
-    let entry = keyring::Entry::new(KEYRING_SERVICE, &account_email)
-        .map_err(|e| format!("Không thể khởi tạo Keyring entry: {}", e))?;
-    entry.set_password(&refresh_token)
-        .map_err(|e| format!("Lỗi lưu token vào OS Keychain/Credential Manager: {}", e))?;
-    Ok(())
+fn get_google_tokens_path() -> Result<std::path::PathBuf, String> {
+    let base = dirs_next().ok_or_else(|| "Cannot determine config directory".to_string())?;
+    Ok(base.join("google_tokens.json"))
 }
 
-/// Retrieves Google refresh token securely from macOS Keychain / Windows Credential Manager
-#[tauri::command]
-pub fn get_google_secure_token(account_email: String) -> Result<Option<String>, String> {
-    let entry = keyring::Entry::new(KEYRING_SERVICE, &account_email)
-        .map_err(|e| format!("Không thể khởi tạo Keyring entry: {}", e))?;
-    match entry.get_password() {
-        Ok(token) => Ok(Some(token)),
-        Err(keyring::Error::NoEntry) => Ok(None),
-        Err(e) => Err(format!("Lỗi đọc token từ OS Keychain/Credential Manager: {}", e)),
+fn dirs_next() -> Option<std::path::PathBuf> {
+    #[cfg(target_os = "macos")]
+    {
+        std::env::var("HOME")
+            .ok()
+            .map(|home| std::path::PathBuf::from(home).join("Library/Application Support/photo-picker-pro"))
+    }
+    #[cfg(target_os = "windows")]
+    {
+        std::env::var("APPDATA")
+            .ok()
+            .map(|appdata| std::path::PathBuf::from(appdata).join("photo-picker-pro"))
+    }
+    #[cfg(target_os = "linux")]
+    {
+        std::env::var("HOME")
+            .ok()
+            .map(|home| std::path::PathBuf::from(home).join(".config/photo-picker-pro"))
     }
 }
 
-/// Deletes Google refresh token securely from OS Keychain
+fn read_tokens_file() -> std::collections::HashMap<String, String> {
+    if let Ok(path) = get_google_tokens_path() {
+        if path.exists() {
+            if let Ok(content) = std::fs::read_to_string(&path) {
+                if let Ok(map) = serde_json::from_str::<std::collections::HashMap<String, String>>(&content) {
+                    return map;
+                }
+            }
+        }
+    }
+    std::collections::HashMap::new()
+}
+
+fn write_tokens_file(tokens: &std::collections::HashMap<String, String>) -> Result<(), String> {
+    let path = get_google_tokens_path()?;
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let content = serde_json::to_string_pretty(tokens)
+        .map_err(|e| format!("Failed to serialize google tokens: {}", e))?;
+    std::fs::write(&path, content)
+        .map_err(|e| format!("Failed to write google tokens: {}", e))?;
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600));
+    }
+    Ok(())
+}
+
+/// Saves Google refresh token securely on disk (0o600 owner-only) & OS Keychain
+#[tauri::command]
+pub fn save_google_secure_token(account_email: String, refresh_token: String) -> Result<(), String> {
+    // 1. Primary: Save to secure owner-only JSON file in Application Support
+    let mut tokens = read_tokens_file();
+    tokens.insert(account_email.clone(), refresh_token.clone());
+    write_tokens_file(&tokens)?;
+
+    // 2. Best-effort secondary: OS Keychain
+    if let Ok(entry) = keyring::Entry::new(KEYRING_SERVICE, &account_email) {
+        let _ = entry.set_password(&refresh_token);
+    }
+
+    Ok(())
+}
+
+/// Retrieves Google refresh token securely from disk or OS Keychain
+#[tauri::command]
+pub fn get_google_secure_token(account_email: String) -> Result<Option<String>, String> {
+    // 1. Check primary persistent file
+    let tokens = read_tokens_file();
+    if let Some(token) = tokens.get(&account_email) {
+        if !token.is_empty() {
+            return Ok(Some(token.clone()));
+        }
+    }
+
+    // 2. Fallback: Check OS Keychain
+    if let Ok(entry) = keyring::Entry::new(KEYRING_SERVICE, &account_email) {
+        if let Ok(token) = entry.get_password() {
+            if !token.is_empty() {
+                // Back-fill into file
+                let mut tokens = read_tokens_file();
+                tokens.insert(account_email, token.clone());
+                let _ = write_tokens_file(&tokens);
+                return Ok(Some(token));
+            }
+        }
+    }
+
+    Ok(None)
+}
+
+/// Deletes Google refresh token securely from disk and OS Keychain
 #[tauri::command]
 pub fn delete_google_secure_token(account_email: String) -> Result<(), String> {
-    let entry = keyring::Entry::new(KEYRING_SERVICE, &account_email)
-        .map_err(|e| format!("Không thể khởi tạo Keyring entry: {}", e))?;
-    match entry.delete_credential() {
-        Ok(_) | Err(keyring::Error::NoEntry) => Ok(()),
-        Err(e) => Err(format!("Lỗi xóa token khỏi OS Keychain/Credential Manager: {}", e)),
+    let mut tokens = read_tokens_file();
+    tokens.remove(&account_email);
+    let _ = write_tokens_file(&tokens);
+
+    if let Ok(entry) = keyring::Entry::new(KEYRING_SERVICE, &account_email) {
+        let _ = entry.delete_credential();
+    }
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_keyring_store_and_retrieve() {
+        let email = "test_user_persistence@studio.com".to_string();
+        let token = "test_refresh_token_xyz_12345".to_string();
+        let save_res = save_google_secure_token(email.clone(), token.clone());
+        assert!(save_res.is_ok(), "Save token must succeed");
+
+        let get_res = get_google_secure_token(email.clone());
+        assert_eq!(get_res, Ok(Some(token)), "Token must be retrieved reliably across restarts");
+
+        let del_res = delete_google_secure_token(email.clone());
+        assert!(del_res.is_ok(), "Delete token must succeed");
+
+        let get_after_del = get_google_secure_token(email);
+        assert_eq!(get_after_del, Ok(None), "Deleted token must return None");
     }
 }

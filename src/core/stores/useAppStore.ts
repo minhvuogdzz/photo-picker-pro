@@ -121,9 +121,9 @@ export interface SheetUpdateStatus {
 
 const initialState = {
   activeTab: "home" as MainTab,
-  activeModule: "contact-the-sheet",
+  activeModule: "launcher",
   sidebarCollapsed: false,
-  hasSeenWelcome: true,
+  hasSeenWelcome: false,
   lastClickPos: null as { x: number; y: number } | null,
   activeDropZone: null as "input" | "sync" | null,
   syncFolders: [] as string[],
