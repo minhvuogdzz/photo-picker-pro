@@ -1,8 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { sheetDiscoveryService } from "../../src/modules/contact-the-sheet/services/sheetDiscoveryService.ts";
+import { jobMatchingService, type SheetRowRecord } from "../../src/modules/contact-the-sheet/services/jobMatchingService.ts";
+import { batchPlannerService } from "../../src/modules/contact-the-sheet/services/batchPlannerService.ts";
 import { useContactSheetStore } from "../../src/modules/contact-the-sheet/stores/useContactSheetStore.ts";
-import type { ColumnProfile, FieldMapping, TabConfiguration, WorkspaceProfile } from "../../src/modules/contact-the-sheet/types/index.ts";
+import type { ColumnProfile, FieldMapping, TabConfiguration, WorkspaceProfile, DiscoveredJob } from "../../src/modules/contact-the-sheet/types/index.ts";
 
 test("Multi-Tab 1: autoDetectOrCloneMappings adapts to shifted columns on target tab", () => {
   // Base mappings from Tab 1 (where Tên file is Col H, Tên Edit is Col N, Link Edit is Col O)
@@ -256,3 +258,269 @@ test("Multi-Tab 3: WorkspaceProfile tabConfigurations stores and switches active
   assert.equal(activeBack?.headerRow, 3);
   assert.equal(activeBack?.fieldMappings[0].columnLetter, "H");
 });
+
+test("Multi-Tab 4: Single batch execution across multiple tabs matches and plans jobs accurately", () => {
+  const profile: WorkspaceProfile = {
+    id: "ws-multi-exec",
+    displayName: "Studio Multi-Tab Exec",
+    spreadsheetId: "test-sheet-id",
+    spreadsheetTitle: "Lịch chụp 2026",
+    selectedTabTitle: "Edit 8/2026",
+    selectedTabId: 800,
+    headerRow: 3,
+    fieldMappings: [
+      {
+        semanticField: "CUSTOMER_NAME",
+        columnLetter: "C",
+        columnIndex: 2,
+        columnHeader: "Tên khách",
+        permission: "READ_ONLY",
+        isFormulaDerived: false,
+        writePolicy: "SET_IF_EMPTY",
+      },
+      {
+        semanticField: "JOB_FOLDER_NAME",
+        columnLetter: "H",
+        columnIndex: 7,
+        columnHeader: "Tên file",
+        permission: "READ_ONLY",
+        isFormulaDerived: false,
+        writePolicy: "SET_IF_EMPTY",
+      },
+      {
+        semanticField: "EDITOR",
+        columnLetter: "N",
+        columnIndex: 13,
+        columnHeader: "Tên Edit",
+        permission: "READ_WRITE",
+        isFormulaDerived: false,
+        writePolicy: "SET_IF_EMPTY",
+      },
+      {
+        semanticField: "DELIVERY_LINK",
+        columnLetter: "O",
+        columnIndex: 14,
+        columnHeader: "Link Edit",
+        permission: "READ_WRITE",
+        isFormulaDerived: false,
+        writePolicy: "ASK_BEFORE_OVERWRITE",
+      },
+    ],
+    valueMappings: [
+      { semanticRole: "EDITOR_CURRENT_USER", sheetValue: "Vương" },
+    ],
+    rowScope: { startRow: 4, ignoreEmptyRows: true },
+    driveConfig: {
+      localRootPath: "",
+      remoteRootDriveId: "root",
+      sharingPolicy: "KEEP_EXISTING",
+      sharingAutomationEnabled: false,
+    },
+    isMockSandbox: true,
+    schemaFingerprint: "fp-8",
+    healthStatus: "HEALTHY",
+    tabConfigurations: {
+      "Edit 8/2026": {
+        sheetId: 800,
+        tabTitle: "Edit 8/2026",
+        headerRow: 3,
+        fieldMappings: [
+          {
+            semanticField: "CUSTOMER_NAME",
+            columnLetter: "C",
+            columnIndex: 2,
+            columnHeader: "Tên khách",
+            permission: "READ_ONLY",
+            isFormulaDerived: false,
+            writePolicy: "SET_IF_EMPTY",
+          },
+          {
+            semanticField: "JOB_FOLDER_NAME",
+            columnLetter: "H",
+            columnIndex: 7,
+            columnHeader: "Tên file",
+            permission: "READ_ONLY",
+            isFormulaDerived: false,
+            writePolicy: "SET_IF_EMPTY",
+          },
+          {
+            semanticField: "EDITOR",
+            columnLetter: "N",
+            columnIndex: 13,
+            columnHeader: "Tên Edit",
+            permission: "READ_WRITE",
+            isFormulaDerived: false,
+            writePolicy: "SET_IF_EMPTY",
+          },
+          {
+            semanticField: "DELIVERY_LINK",
+            columnLetter: "O",
+            columnIndex: 14,
+            columnHeader: "Link Edit",
+            permission: "READ_WRITE",
+            isFormulaDerived: false,
+            writePolicy: "ASK_BEFORE_OVERWRITE",
+          },
+        ],
+        rowScope: { startRow: 4, ignoreEmptyRows: true },
+        schemaFingerprint: "fp-8",
+        updatedAt: new Date().toISOString(),
+      },
+      "Edit 9/2026": {
+        sheetId: 900,
+        tabTitle: "Edit 9/2026",
+        headerRow: 3,
+        fieldMappings: [
+          {
+            semanticField: "CUSTOMER_NAME",
+            columnLetter: "C",
+            columnIndex: 2,
+            columnHeader: "Tên khách",
+            permission: "READ_ONLY",
+            isFormulaDerived: false,
+            writePolicy: "SET_IF_EMPTY",
+          },
+          {
+            semanticField: "JOB_FOLDER_NAME",
+            columnLetter: "H",
+            columnIndex: 7,
+            columnHeader: "Tên file",
+            permission: "READ_ONLY",
+            isFormulaDerived: false,
+            writePolicy: "SET_IF_EMPTY",
+          },
+          {
+            semanticField: "EDITOR",
+            columnLetter: "N",
+            columnIndex: 13,
+            columnHeader: "Tên Edit",
+            permission: "READ_WRITE",
+            isFormulaDerived: false,
+            writePolicy: "SET_IF_EMPTY",
+          },
+          {
+            semanticField: "DELIVERY_LINK",
+            columnLetter: "O",
+            columnIndex: 14,
+            columnHeader: "Link Edit",
+            permission: "READ_WRITE",
+            isFormulaDerived: false,
+            writePolicy: "ASK_BEFORE_OVERWRITE",
+          },
+        ],
+        rowScope: { startRow: 4, ignoreEmptyRows: true },
+        schemaFingerprint: "fp-9",
+        updatedAt: new Date().toISOString(),
+      },
+    },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  // Aggregated candidate rows from both tabs
+  const candidateRows: SheetRowRecord[] = [
+    {
+      row: 14,
+      tabTitle: "Edit 8/2026",
+      values: {
+        C: "Nguyen Van A",
+        H: "280826_0900_Nguyen Van A_Ao Dai",
+        N: "",
+        O: "",
+      },
+    },
+    {
+      row: 22,
+      tabTitle: "Edit 9/2026",
+      values: {
+        C: "Tran Thi B",
+        H: "050926_1400_Tran Thi B_Babau",
+        N: "",
+        O: "",
+      },
+    },
+  ];
+
+  // Job 1 is from August
+  const jobAug: DiscoveredJob = {
+    id: "job-aug",
+    jobFolderPath: "/photos/2026-08/280826_0900_Nguyen Van A_Ao Dai",
+    jobFolderName: "280826_0900_Nguyen Van A_Ao Dai",
+    finalFolderPath: "/photos/2026-08/280826_0900_Nguyen Van A_Ao Dai/edit",
+    finalFolderName: "edit",
+    imageCount: 35,
+    driveWebLink: "https://drive.google.com/drive/folders/aug-folder-id",
+    driveFolderId: "aug-folder-id",
+    metadata: {
+      customerName: "Nguyen Van A",
+      shootDate: "28/08/2026",
+    },
+    status: "DISCOVERED",
+  };
+
+  // Job 2 is from September
+  const jobSep: DiscoveredJob = {
+    id: "job-sep",
+    jobFolderPath: "/photos/2026-09/050926_1400_Tran Thi B_Babau",
+    jobFolderName: "050926_1400_Tran Thi B_Babau",
+    finalFolderPath: "/photos/2026-09/050926_1400_Tran Thi B_Babau/edit",
+    finalFolderName: "edit",
+    imageCount: 42,
+    driveWebLink: "https://drive.google.com/drive/folders/sep-folder-id",
+    driveFolderId: "sep-folder-id",
+    metadata: {
+      customerName: "Tran Thi B",
+      shootDate: "05/09/2026",
+    },
+    status: "DISCOVERED",
+  };
+
+  // 1. Match Job August against candidate rows
+  const matchAug = jobMatchingService.matchJobToSheetRows(jobAug, candidateRows, profile);
+  assert.equal(matchAug.status, "READY");
+  assert.equal(matchAug.targetRow, 14);
+  assert.equal(matchAug.targetTabTitle, "Edit 8/2026");
+
+  // 2. Match Job September against candidate rows
+  const matchSep = jobMatchingService.matchJobToSheetRows(jobSep, candidateRows, profile);
+  assert.equal(matchSep.status, "READY");
+  assert.equal(matchSep.targetRow, 22);
+  assert.equal(matchSep.targetTabTitle, "Edit 9/2026");
+
+  // 3. Plan update for Job August
+  const plannedJobAug: DiscoveredJob = {
+    ...jobAug,
+    targetSheetRow: matchAug.targetRow,
+    targetTabTitle: matchAug.targetTabTitle,
+    targetRowSnapshot: candidateRows[0].values,
+  };
+  const { plan: planAug } = batchPlannerService.planJobUpdate(plannedJobAug, profile);
+  assert.equal(planAug.targetTabTitle, "Edit 8/2026");
+  assert.equal(planAug.targetRow, 14);
+  assert.equal(planAug.writes.length, 2);
+  assert.equal(planAug.writes[0].tabTitle, "Edit 8/2026");
+  assert.equal(planAug.writes[0].columnLetter, "N");
+  assert.equal(planAug.writes[0].newValue, "Vương");
+  assert.equal(planAug.writes[1].tabTitle, "Edit 8/2026");
+  assert.equal(planAug.writes[1].columnLetter, "O");
+  assert.equal(planAug.writes[1].newValue, "https://drive.google.com/drive/folders/aug-folder-id");
+
+  // 4. Plan update for Job September
+  const plannedJobSep: DiscoveredJob = {
+    ...jobSep,
+    targetSheetRow: matchSep.targetRow,
+    targetTabTitle: matchSep.targetTabTitle,
+    targetRowSnapshot: candidateRows[1].values,
+  };
+  const { plan: planSep } = batchPlannerService.planJobUpdate(plannedJobSep, profile);
+  assert.equal(planSep.targetTabTitle, "Edit 9/2026");
+  assert.equal(planSep.targetRow, 22);
+  assert.equal(planSep.writes.length, 2);
+  assert.equal(planSep.writes[0].tabTitle, "Edit 9/2026");
+  assert.equal(planSep.writes[0].columnLetter, "N");
+  assert.equal(planSep.writes[0].newValue, "Vương");
+  assert.equal(planSep.writes[1].tabTitle, "Edit 9/2026");
+  assert.equal(planSep.writes[1].columnLetter, "O");
+  assert.equal(planSep.writes[1].newValue, "https://drive.google.com/drive/folders/sep-folder-id");
+});
+

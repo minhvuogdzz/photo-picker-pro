@@ -56,6 +56,7 @@ interface ContactSheetState {
   discoveredJobs: DiscoveredJob[];
   setDiscoveredJobs: (jobs: DiscoveredJob[]) => void;
   updateJob: (jobId: string, updates: Partial<DiscoveredJob>) => void;
+  removeJob: (jobId: string) => void;
   clearJobs: () => void;
 
   // Scanning State
@@ -487,6 +488,14 @@ export const useContactSheetStore = create<ContactSheetState>()(
             j.id === jobId ? { ...j, ...updates } : j
           ),
         })),
+      removeJob: (jobId) =>
+        set((state) => {
+          const { [jobId]: _, ...remainingPlans } = state.updatePlans;
+          return {
+            discoveredJobs: state.discoveredJobs.filter((j) => j.id !== jobId),
+            updatePlans: remainingPlans,
+          };
+        }),
       clearJobs: () => set({ discoveredJobs: [], updatePlans: {} }),
 
       isScanning: false,

@@ -27,7 +27,6 @@ export function LeftPanel() {
   const inputFolders = useAppStore((s) => s.inputFolders);
   const selectedInputFolders = useAppStore((s) => s.selectedInputFolders);
   const addInputFolder = useAppStore((s) => s.addInputFolder);
-  const addSyncFolders = useAppStore((s) => s.addSyncFolders);
   const setActiveDropZone = useAppStore((s) => s.setActiveDropZone);
   const phase = useAppStore((s) => s.phase);
   const matchResult = useAppStore((s) => s.matchResult);

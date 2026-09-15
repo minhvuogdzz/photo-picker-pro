@@ -13,6 +13,9 @@ import {
   Check,
   FolderSync,
   X,
+  Ban,
+  RotateCcw,
+  Trash2,
 } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -24,12 +27,22 @@ import { sheetDiscoveryService } from "../services/sheetDiscoveryService";
 import { PreviewPlanModal } from "./PreviewPlanModal";
 import { ConflictResolverDialog } from "./ConflictResolverDialog";
 import type { DiscoveredJob } from "../types";
+import type { SheetRowRecord } from "../services/jobMatchingService";
 
-export function BatchRunnerView() {
+interface BatchRunnerViewProps {
+  initialFolderPaths?: string[] | null;
+  onClearInitialPaths?: () => void;
+}
+
+export function BatchRunnerView({
+  initialFolderPaths,
+  onClearInitialPaths,
+}: BatchRunnerViewProps = {}) {
   const activeProfile = useContactSheetStore((s) => s.activeProfile);
   const discoveredJobs = useContactSheetStore((s) => s.discoveredJobs);
   const setDiscoveredJobs = useContactSheetStore((s) => s.setDiscoveredJobs);
   const updateJob = useContactSheetStore((s) => s.updateJob);
+  const removeJob = useContactSheetStore((s) => s.removeJob);
   const clearJobs = useContactSheetStore((s) => s.clearJobs);
   const isScanning = useContactSheetStore((s) => s.isScanning);
   const setIsScanning = useContactSheetStore((s) => s.setIsScanning);
@@ -51,6 +64,48 @@ export function BatchRunnerView() {
   const [assigningRowJob, setAssigningRowJob] = useState<DiscoveredJob | null>(null);
   const [reviewingJob, setReviewingJob] = useState<DiscoveredJob | null>(null);
   const [manualRowInput, setManualRowInput] = useState<string>("");
+  const [manualTabInput, setManualTabInput] = useState<string>("");
+
+  const availableTabTitles = Array.from(
+    new Set([
+      ...(activeProfile?.tabConfigurations ? Object.keys(activeProfile.tabConfigurations) : []),
+      ...(activeProfile?.selectedTabTitle ? [activeProfile.selectedTabTitle] : []),
+    ])
+  );
+
+  const [selectedTabTitles, setSelectedTabTitles] = useState<string[]>(() => {
+    if (activeProfile?.tabConfigurations && Object.keys(activeProfile.tabConfigurations).length > 0) {
+      return Object.keys(activeProfile.tabConfigurations);
+    }
+    return [activeProfile?.selectedTabTitle || "Edit 9/2026"];
+  });
+
+  const [filterTab, setFilterTab] = useState<string>("ALL");
+
+  useEffect(() => {
+    if (availableTabTitles.length > 0) {
+      setSelectedTabTitles((prev) => {
+        const valid = prev.filter((t) => availableTabTitles.includes(t));
+        if (valid.length > 0) return valid;
+        return availableTabTitles;
+      });
+    }
+  }, [activeProfile?.tabConfigurations, activeProfile?.selectedTabTitle]);
+
+  const toggleTabSelection = (tabTitle: string) => {
+    setSelectedTabTitles((prev) => {
+      if (prev.includes(tabTitle)) {
+        if (prev.length === 1) return prev;
+        return prev.filter((t) => t !== tabTitle);
+      } else {
+        return [...prev, tabTitle];
+      }
+    });
+  };
+
+  const selectAllTabs = () => {
+    setSelectedTabTitles(availableTabTitles);
+  };
 
   // Setup drag & drop listener from native Tauri window
   useEffect(() => {
@@ -80,6 +135,14 @@ export function BatchRunnerView() {
     };
   }, [activeProfile]);
 
+  // Automatically process initial folder paths (e.g. transferred from Subfolder Sync)
+  useEffect(() => {
+    if (initialFolderPaths && initialFolderPaths.length > 0 && activeProfile) {
+      handleProcessFolderPaths(initialFolderPaths);
+      onClearInitialPaths?.();
+    }
+  }, [initialFolderPaths, activeProfile]);
+
   const handlePickFolders = async () => {
     try {
       const selected = await open({
@@ -102,36 +165,56 @@ export function BatchRunnerView() {
     setScanProgress({ current: 0, total: 100, message: "Đang phân tích cây thư mục..." });
 
     try {
-      // Determine if sandbox mode should be used
-      // If user has connected Google, prioritize live Google Sheets API for the tab
       const isSandbox = activeProfile.isMockSandbox && googleConnection.status !== "CONNECTED";
+      const tabsToScan = selectedTabTitles.length > 0 ? selectedTabTitles : [activeProfile.selectedTabTitle];
 
       setScanProgress({
-        current: 20,
+        current: 10,
         total: 100,
-        message: isSandbox
-          ? "Đang nạp dữ liệu bảng tính mẫu..."
-          : `Đang tải dữ liệu từ Google Sheet tab "${activeProfile.selectedTabTitle}"...`,
+        message: `Đang kết nối tải dữ liệu trên ${tabsToScan.length} tab (${tabsToScan.join(", ")})...`,
       });
 
-      const sampleRows = await sheetDiscoveryService.fetchSheetRowsForMatching(
-        activeProfile.spreadsheetId,
-        activeProfile.selectedTabTitle,
-        activeProfile.rowScope.startRow,
-        1000,
-        isSandbox
-      );
+      const allSheetRows: SheetRowRecord[] = [];
+
+      for (let i = 0; i < tabsToScan.length; i++) {
+        const tabTitle = tabsToScan[i];
+        const tabConfig = activeProfile.tabConfigurations?.[tabTitle];
+        const startRow = tabConfig?.rowScope?.startRow ?? activeProfile.rowScope.startRow;
+
+        setScanProgress({
+          current: 10 + Math.round(((i + 1) / tabsToScan.length) * 35),
+          total: 100,
+          message: isSandbox
+            ? `Đang nạp dữ liệu bảng tính mẫu (Tab "${tabTitle}")...`
+            : `Đang tải dữ liệu Google Sheet tab "${tabTitle}" (từ dòng ${startRow})...`,
+        });
+
+        try {
+          const rows = await sheetDiscoveryService.fetchSheetRowsForMatching(
+            activeProfile.spreadsheetId,
+            tabTitle,
+            startRow,
+            1000,
+            isSandbox
+          );
+          for (const r of rows) {
+            allSheetRows.push({ ...r, tabTitle });
+          }
+        } catch (tabErr) {
+          console.warn(`Lỗi khi nạp dữ liệu tab ${tabTitle}:`, tabErr);
+        }
+      }
 
       setScanProgress({
         current: 50,
         total: 100,
-        message: "Đang quét thư mục thành phẩm sâu nhất & trích xuất tên khách hàng...",
+        message: `Đang quét thư mục thành phẩm sâu nhất & so khớp trên ${tabsToScan.length} tab...`,
       });
 
       const jobs = await folderScannerService.scanAndDiscoverJobs(
         paths,
         activeProfile,
-        sampleRows,
+        allSheetRows,
         isSandbox,
         (msg) => setScanProgress({ current: 65, total: 100, message: msg })
       );
@@ -152,7 +235,17 @@ export function BatchRunnerView() {
         ...planSummary.needsReviewJobs,
         ...planSummary.errorJobs,
       ];
-      setDiscoveredJobs(finalJobs);
+      // Merge with existing jobs, replacing any that share the same jobFolderName or finalFolderPath
+      const currentJobs = useContactSheetStore.getState().discoveredJobs;
+      const existingRemaining = currentJobs.filter(
+        (oldJob) =>
+          !finalJobs.some(
+            (newJob) =>
+              newJob.jobFolderName === oldJob.jobFolderName ||
+              newJob.finalFolderPath === oldJob.finalFolderPath
+          )
+      );
+      setDiscoveredJobs([...existingRemaining, ...finalJobs]);
     } catch (err: any) {
       console.error("Scan & discover jobs error:", err);
       alert(`Lỗi khi quét và khớp dữ liệu: ${err?.message || String(err)}`);
@@ -235,12 +328,14 @@ export function BatchRunnerView() {
     }
   };
 
-  const handleManualAssignRow = (job: DiscoveredJob, rowNumber: number) => {
+  const handleManualAssignRow = (job: DiscoveredJob, rowNumber: number, tabTitle?: string) => {
     if (!activeProfile || rowNumber <= 0) return;
 
+    const targetTabTitle = tabTitle || job.targetTabTitle || activeProfile.selectedTabTitle;
     const updatedJob: DiscoveredJob = {
       ...job,
       targetSheetRow: rowNumber,
+      targetTabTitle,
       statusReason: undefined,
     };
 
@@ -251,12 +346,19 @@ export function BatchRunnerView() {
     setManualRowInput("");
   };
 
-  const handleSelectCandidateRow = (job: DiscoveredJob, rowNumber: number, rowSnapshot?: Record<string, string>) => {
+  const handleSelectCandidateRow = (
+    job: DiscoveredJob,
+    rowNumber: number,
+    rowSnapshot?: Record<string, string>,
+    tabTitle?: string
+  ) => {
     if (!activeProfile || rowNumber <= 0) return;
 
+    const targetTabTitle = tabTitle || job.targetTabTitle || activeProfile.selectedTabTitle;
     const updatedJob: DiscoveredJob = {
       ...job,
       targetSheetRow: rowNumber,
+      targetTabTitle,
       targetRowSnapshot: rowSnapshot || job.targetRowSnapshot,
       statusReason: undefined,
     };
@@ -267,21 +369,61 @@ export function BatchRunnerView() {
     setReviewingJob(null);
   };
 
+  const handleCancelJob = (jobId: string) => {
+    updateJob(jobId, {
+      status: "SKIPPED",
+      statusReason: "Người dùng hủy bỏ (bỏ qua không cập nhật)",
+    });
+  };
+
+  const handleRestoreJob = (jobId: string) => {
+    const job = discoveredJobs.find((j) => j.id === jobId);
+    if (!job || !activeProfile) return;
+
+    if (job.targetSheetRow && job.targetSheetRow > 0) {
+      const { job: plannedJob, plan } = batchPlannerService.planJobUpdate(
+        { ...job, status: "READY", statusReason: undefined },
+        activeProfile
+      );
+      setUpdatePlan(job.id, plan);
+      updateJob(job.id, plannedJob);
+    } else {
+      updateJob(job.id, {
+        status: "NEEDS_REVIEW",
+        statusReason: "Cần gán số hàng",
+      });
+    }
+  };
+
+  const handleRemoveJob = (jobId: string) => {
+    removeJob(jobId);
+  };
+
   // Status Counts
   const readyCount = discoveredJobs.filter((j) => j.status === "READY").length;
   const conflictCount = discoveredJobs.filter((j) => j.status === "CONFLICT").length;
   const needsReviewCount = discoveredJobs.filter((j) => j.status === "NEEDS_REVIEW").length;
   const errorCount = discoveredJobs.filter((j) => j.status === "ERROR").length;
   const completedCount = discoveredJobs.filter((j) => j.status === "COMPLETED").length;
+  const skippedCount = discoveredJobs.filter((j) => j.status === "SKIPPED").length;
+
+  const discoveredTabTitles = Array.from(
+    new Set(discoveredJobs.map((j) => j.targetTabTitle || activeProfile?.selectedTabTitle).filter(Boolean) as string[])
+  );
 
   const filteredJobs = discoveredJobs.filter((j) => {
-    if (filterStatus === "ALL") return true;
-    return j.status === filterStatus;
+    if (filterStatus === "READY") return j.status === "READY";
+    if (filterStatus === "CONFLICT") return j.status === "CONFLICT";
+    if (filterStatus === "NEEDS_REVIEW") return j.status === "NEEDS_REVIEW";
+    if (filterStatus === "ERROR") return j.status === "ERROR";
+    if (filterStatus === "COMPLETED") return j.status === "COMPLETED";
+    if (filterStatus === "SKIPPED") return j.status === "SKIPPED";
+    return true;
+  }).filter((j) => {
+    if (filterTab === "ALL") return true;
+    const tab = j.targetTabTitle || activeProfile?.selectedTabTitle;
+    return tab === filterTab;
   });
-
-  const availableTabTitles = activeProfile?.tabConfigurations
-    ? Object.keys(activeProfile.tabConfigurations)
-    : [activeProfile?.selectedTabTitle || "Trang tính1"];
 
   const writableColsText =
     activeProfile?.fieldMappings
@@ -291,38 +433,68 @@ export function BatchRunnerView() {
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden p-6 gap-3 text-foreground custom-scrollbar">
-      {/* Tab & Workspace Bar */}
-      <div className="flex items-center justify-between p-3 bg-card/60 border border-border/80 rounded-2xl shrink-0 backdrop-blur-md shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-muted-foreground">Trang tính (Tab):</span>
-            {availableTabTitles.length > 1 ? (
-              <select
-                value={activeProfile?.selectedTabTitle || ""}
-                onChange={(e) => {
-                  switchActiveTab(e.target.value);
-                  if (discoveredJobs.length > 0) {
-                    alert(`Đã chuyển sang tab "${e.target.value}". Hãy bấm chọn lại thư mục để so khớp dữ liệu theo cấu trúc cột của tab này.`);
-                  }
-                }}
-                className="bg-background border border-border text-foreground font-semibold text-xs rounded-xl px-2.5 py-1 focus:outline-none focus:ring-1 focus:ring-primary shadow-inner cursor-pointer"
-              >
-                {availableTabTitles.map((title) => (
-                  <option key={title} value={title}>
-                    {title} {activeProfile?.tabConfigurations?.[title] ? "(Đã cấu hình riêng)" : ""}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <span className="px-2.5 py-0.5 bg-primary/10 border border-primary/25 text-primary text-xs font-semibold rounded-lg">
-                {activeProfile?.selectedTabTitle || "Edit 9/2026"}
-              </span>
-            )}
+      {/* Tab & Workspace Bar with Multi-Tab Checkboxes */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between p-3.5 bg-card/60 border border-border/80 rounded-2xl shrink-0 backdrop-blur-md shadow-sm gap-3">
+        <div className="flex items-center gap-3 flex-wrap flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Layers size={14} className="text-teal-400" />
+            <span className="text-xs font-bold text-foreground">Quét các Tab:</span>
           </div>
 
-          <div className="h-4 w-px bg-border/80" />
+          {/* Quick Select All Button */}
+          {availableTabTitles.length > 1 && (
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={selectAllTabs}
+                className={`px-2 py-0.5 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                  selectedTabTitles.length === availableTabTitles.length
+                    ? "bg-teal-500/20 text-teal-300 border-teal-500/40"
+                    : "bg-muted/40 text-muted-foreground hover:text-foreground border-border/60"
+                }`}
+                title="Chọn tất cả các tab để quét"
+              >
+                Tất cả ({availableTabTitles.length})
+              </button>
+            </div>
+          )}
 
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          {/* Multi-Tab Checkbox Pills */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {availableTabTitles.map((title) => {
+              const isSelected = selectedTabTitles.includes(title);
+              const isConfigured = !!activeProfile?.tabConfigurations?.[title];
+              return (
+                <button
+                  type="button"
+                  key={title}
+                  onClick={() => toggleTabSelection(title)}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold border transition-all cursor-pointer select-none ${
+                    isSelected
+                      ? "bg-teal-500/15 border-teal-500/40 text-teal-300 shadow-2xs"
+                      : "bg-background/60 border-border/70 text-muted-foreground hover:text-foreground hover:border-border"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => {}} // handled by button click
+                    className="w-3.5 h-3.5 rounded border-border text-teal-500 focus:ring-0 cursor-pointer pointer-events-none accent-teal-500"
+                  />
+                  <span>{title}</span>
+                  {isConfigured && (
+                    <span className="text-[9px] px-1 py-0.2 rounded bg-teal-500/20 text-teal-400 font-bold">
+                      Đã cấu hình
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="h-4 w-px bg-border/80 hidden xl:block" />
+
+          <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
             <span>Tiêu đề: <b className="text-foreground">Dòng {activeProfile?.headerRow || 3}</b></span>
             <span>•</span>
             <span>Cột ghi: <b className="text-emerald-400 font-semibold">{writableColsText}</b></span>
@@ -330,7 +502,7 @@ export function BatchRunnerView() {
         </div>
 
         {discoveredJobs.length > 0 && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={clearJobs}
               className="px-3 py-1 text-xs text-muted-foreground hover:text-foreground font-semibold rounded-lg hover:bg-muted/40 transition-colors cursor-pointer"
@@ -476,6 +648,19 @@ export function BatchRunnerView() {
                 <span>Đã cập nhật ({completedCount})</span>
               </button>
             )}
+            {skippedCount > 0 && (
+              <button
+                onClick={() => setFilterStatus("SKIPPED")}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 ${
+                  filterStatus === "SKIPPED"
+                    ? "bg-red-500/20 text-red-300 border border-red-500/40 shadow-sm"
+                    : "text-red-400 hover:text-red-300"
+                }`}
+              >
+                <Ban size={12} />
+                <span>Đã hủy ({skippedCount})</span>
+              </button>
+            )}
           </div>
 
           {/* Quick Bulk Actions for Conflicts */}
@@ -507,6 +692,23 @@ export function BatchRunnerView() {
           )}
 
           <div className="flex items-center gap-2">
+            {discoveredTabTitles.length > 1 && (
+              <div className="flex items-center gap-1.5 bg-background/60 border border-border/80 px-2 py-1 rounded-xl">
+                <span className="text-[11px] text-muted-foreground font-medium">Lọc Tab:</span>
+                <select
+                  value={filterTab}
+                  onChange={(e) => setFilterTab(e.target.value)}
+                  className="bg-transparent text-xs font-semibold text-foreground focus:outline-none cursor-pointer"
+                >
+                  <option value="ALL" className="bg-card text-foreground">Tất cả tab ({discoveredJobs.length})</option>
+                  {discoveredTabTitles.map((tab) => (
+                    <option key={tab} value={tab} className="bg-card text-foreground">
+                      {tab} ({discoveredJobs.filter((j) => (j.targetTabTitle || activeProfile?.selectedTabTitle) === tab).length})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <button
               onClick={clearJobs}
               className="px-3 py-1.5 rounded-xl border border-border text-muted-foreground hover:text-foreground text-xs font-semibold hover:bg-muted/40 transition-colors cursor-pointer"
@@ -556,7 +758,19 @@ export function BatchRunnerView() {
                       {job.imageCount} ảnh
                     </td>
                     <td className="py-2.5 px-4">
-                      {job.status === "NEEDS_REVIEW" ? (
+                      {job.status === "SKIPPED" ? (
+                        <div className="flex items-center gap-1.5 opacity-60">
+                          {job.targetTabTitle && (
+                            <span className="text-[10px] text-muted-foreground line-through">
+                              {job.targetTabTitle}
+                            </span>
+                          )}
+                          <span className="text-muted-foreground line-through text-[11px]">
+                            {job.targetSheetRow ? `Hàng ${job.targetSheetRow}` : "Chưa gắn"}
+                          </span>
+                          <span className="text-[10px] text-red-400 font-medium">(Đã bỏ qua)</span>
+                        </div>
+                      ) : job.status === "NEEDS_REVIEW" ? (
                         <div className="flex flex-col gap-1 max-w-[280px]">
                           <span className="text-[11px] text-purple-300 font-medium line-clamp-1" title={job.statusReason}>
                             {job.statusReason || "Cần duyệt chọn hàng"}
@@ -573,6 +787,7 @@ export function BatchRunnerView() {
                               onClick={() => {
                                 setAssigningRowJob(job);
                                 setManualRowInput("");
+                                setManualTabInput(job.targetTabTitle || selectedTabTitles[0] || "");
                               }}
                               className="text-[10px] text-muted-foreground hover:text-foreground underline cursor-pointer"
                             >
@@ -581,7 +796,12 @@ export function BatchRunnerView() {
                           </div>
                         </div>
                       ) : job.targetSheetRow ? (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {job.targetTabTitle && (
+                            <span className="font-bold text-sky-400 bg-sky-500/10 border border-sky-500/25 px-1.5 py-0.5 rounded text-[10px]" title="Tab Google Sheet">
+                              {job.targetTabTitle}
+                            </span>
+                          )}
                           <span className="font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md text-[11px]">
                             Hàng {job.targetSheetRow}
                           </span>
@@ -589,6 +809,7 @@ export function BatchRunnerView() {
                             onClick={() => {
                               setAssigningRowJob(job);
                               setManualRowInput(String(job.targetSheetRow || ""));
+                              setManualTabInput(job.targetTabTitle || selectedTabTitles[0] || "");
                             }}
                             className="text-[10px] text-muted-foreground hover:text-foreground underline cursor-pointer"
                             title="Gán lại hàng khác"
@@ -605,6 +826,7 @@ export function BatchRunnerView() {
                             onClick={() => {
                               setAssigningRowJob(job);
                               setManualRowInput("");
+                              setManualTabInput(job.targetTabTitle || selectedTabTitles[0] || "");
                             }}
                             className="px-2 py-0.5 bg-muted/60 hover:bg-muted text-foreground border border-border rounded text-[10px] font-semibold transition-colors cursor-pointer shrink-0"
                             title="Điền số hàng trên Sheet bằng tay"
@@ -638,6 +860,11 @@ export function BatchRunnerView() {
                           <Check size={12} /> Đã cập nhật
                         </span>
                       )}
+                      {job.status === "SKIPPED" && (
+                        <span className="inline-flex items-center gap-1 text-muted-foreground font-semibold px-2 py-0.5 rounded-full bg-muted/40 border border-border text-[11px]">
+                          <Ban size={12} className="text-red-400" /> Đã hủy bỏ
+                        </span>
+                      )}
                       {job.status === "ERROR" && (
                         <div className="flex flex-col gap-0.5" title={job.statusReason}>
                           <span className="inline-flex items-center gap-1 text-destructive font-semibold px-2 py-0.5 rounded-full bg-destructive/10 border border-destructive/25 text-[11px]">
@@ -665,12 +892,38 @@ export function BatchRunnerView() {
                             Xử lý xung đột
                           </button>
                         )}
+                        {job.status !== "SKIPPED" ? (
+                          <button
+                            onClick={() => handleCancelJob(job.id)}
+                            className="px-2 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                            title="Hủy / Bỏ qua job này, không cập nhật lên Google Sheet"
+                          >
+                            <Ban size={12} />
+                            <span>Hủy</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleRestoreJob(job.id)}
+                            className="px-2 py-1 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                            title="Khôi phục lại job này vào danh sách sẵn sàng"
+                          >
+                            <RotateCcw size={12} />
+                            <span>Khôi phục</span>
+                          </button>
+                        )}
                         <button
                           onClick={() => setInspectingJob(job)}
                           className="px-2.5 py-1 bg-muted/40 hover:bg-muted text-foreground border border-border rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
                         >
                           <Eye size={12} />
                           <span>Xem thay đổi</span>
+                        </button>
+                        <button
+                          onClick={() => handleRemoveJob(job.id)}
+                          className="p-1 hover:bg-red-500/20 text-muted-foreground hover:text-red-400 rounded-lg text-[11px] transition-colors cursor-pointer"
+                          title="Xóa job này khỏi danh sách quét"
+                        >
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     </td>
@@ -767,10 +1020,30 @@ export function BatchRunnerView() {
                   alert("Vui lòng nhập số hàng hợp lệ (lớn hơn 0)");
                   return;
                 }
-                handleManualAssignRow(assigningRowJob, rowNum);
+                const targetTab = manualTabInput || assigningRowJob.targetTabTitle || selectedTabTitles[0];
+                handleManualAssignRow(assigningRowJob, rowNum, targetTab);
               }}
               className="flex flex-col gap-4"
             >
+              {availableTabTitles.length > 1 && (
+                <div>
+                  <label className="text-xs font-bold text-foreground block mb-1.5">
+                    Tab Google Sheet:
+                  </label>
+                  <select
+                    value={manualTabInput || (assigningRowJob.targetTabTitle || selectedTabTitles[0] || "")}
+                    onChange={(e) => setManualTabInput(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-teal-400/50"
+                  >
+                    {(selectedTabTitles.length > 0 ? selectedTabTitles : availableTabTitles).map((tab) => (
+                      <option key={tab} value={tab} className="bg-card text-foreground">
+                        {tab}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div>
                 <label className="text-xs font-bold text-foreground block mb-1.5">
                   Số hàng trên Sheet (Row number):
@@ -873,7 +1146,12 @@ export function BatchRunnerView() {
                     className="p-3 bg-background hover:bg-muted/30 border border-border rounded-xl flex items-center justify-between gap-3 transition-colors shadow-sm"
                   >
                     <div className="flex flex-col gap-1 flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {candidate.tabTitle && (
+                          <span className="px-1.5 py-0.5 bg-sky-500/15 text-sky-300 border border-sky-500/30 rounded text-[10px] font-bold">
+                            Tab: {candidate.tabTitle}
+                          </span>
+                        )}
                         <span className="px-2 py-0.5 bg-purple-500/15 text-purple-300 border border-purple-500/30 rounded text-xs font-extrabold font-mono">
                           Hàng {candidate.row}
                         </span>
@@ -911,7 +1189,7 @@ export function BatchRunnerView() {
                     </div>
 
                     <button
-                      onClick={() => handleSelectCandidateRow(reviewingJob, candidate.row, candidate.values)}
+                      onClick={() => handleSelectCandidateRow(reviewingJob, candidate.row, candidate.values, candidate.tabTitle)}
                       className="px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:opacity-90 text-white text-xs font-extrabold rounded-xl shadow-md transition-all cursor-pointer shrink-0 flex items-center gap-1.5"
                     >
                       <Check size={14} />
@@ -931,6 +1209,7 @@ export function BatchRunnerView() {
                   setReviewingJob(null);
                   setAssigningRowJob(job);
                   setManualRowInput("");
+                  setManualTabInput(job.targetTabTitle || selectedTabTitles[0] || "");
                 }}
                 className="text-xs text-teal-400 hover:underline cursor-pointer flex items-center gap-1 font-semibold"
               >

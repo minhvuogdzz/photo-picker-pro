@@ -39,7 +39,12 @@ export function ConflictResolverDialog({ job, onResolve, onClose }: Props) {
         {/* Content */}
         <div className="p-5 flex flex-col gap-4 text-xs">
           <p className="text-muted-foreground">
-            Job <span className="font-bold text-foreground">{job.jobFolderName}</span> (Hàng {job.targetSheetRow}) đã có sẵn nội dung trong ô <b>{fieldName}</b>. Vui lòng chọn cách cập nhật:
+            Job <span className="font-bold text-foreground">{job.jobFolderName}</span>
+            {job.targetTabTitle ? (
+              <> (Tab <b className="text-sky-400">{job.targetTabTitle}</b>, Hàng {job.targetSheetRow})</>
+            ) : (
+              <> (Hàng {job.targetSheetRow})</>
+            )} đã có sẵn nội dung trong ô <b>{fieldName}</b>. Vui lòng chọn cách cập nhật:
           </p>
 
           {/* Current Cell Content Box */}

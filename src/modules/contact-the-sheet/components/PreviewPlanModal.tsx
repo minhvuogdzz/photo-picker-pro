@@ -25,7 +25,9 @@ export function PreviewPlanModal({ job, plan, onClose }: Props) {
                 Xem trước thay đổi (Preview Plan)
               </h3>
               <p className="text-[11px] text-muted-foreground">
-                Job: <span className="font-bold text-foreground">{job.jobFolderName}</span> — Hàng mục tiêu: <b>{job.targetSheetRow}</b>
+                Job: <span className="font-bold text-foreground">{job.jobFolderName}</span>
+                {job.targetTabTitle && <> — Tab: <span className="font-bold text-sky-400">{job.targetTabTitle}</span></>}
+                {" "}— Hàng mục tiêu: <b>{job.targetSheetRow}</b>
               </p>
             </div>
           </div>

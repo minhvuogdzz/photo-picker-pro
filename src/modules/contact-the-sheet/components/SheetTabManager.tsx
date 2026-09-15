@@ -7,6 +7,7 @@ import {
   ChevronUp,
   Layers,
   Sparkles,
+  Copy,
 } from "lucide-react";
 import type { SheetTabInfo, TabConfiguration } from "../types";
 
@@ -16,6 +17,7 @@ interface Props {
   tabConfigs: Record<string, TabConfiguration>;
   isAnalyzing: boolean;
   onSelectTab: (tab: SheetTabInfo) => void;
+  onCopyConfigToAllTabs?: () => void;
   subtitle?: string;
 }
 
@@ -25,6 +27,7 @@ export function SheetTabManager({
   tabConfigs,
   isAnalyzing,
   onSelectTab,
+  onCopyConfigToAllTabs,
   subtitle,
 }: Props) {
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
@@ -113,6 +116,19 @@ export function SheetTabManager({
               <LayoutGrid size={14} />
             </button>
           </div>
+
+          {/* Copy Config to All Tabs Button */}
+          {onCopyConfigToAllTabs && (
+            <button
+              type="button"
+              onClick={onCopyConfigToAllTabs}
+              title="Sao chép cấu hình cột và phạm vi hàng từ tab này sang tất cả các tab khác trong bảng tính"
+              className="px-2.5 py-1.5 rounded-xl border border-teal-500/30 bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <Copy size={13} />
+              <span className="hidden sm:inline">Áp dụng cho tất cả Tab</span>
+            </button>
+          )}
 
           {/* Expand / Collapse Button */}
           <button

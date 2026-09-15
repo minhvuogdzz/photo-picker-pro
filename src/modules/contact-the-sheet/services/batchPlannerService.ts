@@ -20,6 +20,20 @@ export class BatchPlannerService {
    * Builds an immutable UpdatePlan for a job and categorizes its execution state.
    */
   public planJobUpdate(job: DiscoveredJob, profile: WorkspaceProfile): { job: DiscoveredJob; plan: UpdatePlan } {
+    const targetTabTitle = job.targetTabTitle || profile.selectedTabTitle;
+    const tabConfig = job.targetTabTitle ? profile.tabConfigurations?.[job.targetTabTitle] : undefined;
+    const effectiveProfile: WorkspaceProfile = tabConfig
+      ? {
+          ...profile,
+          selectedTabTitle: tabConfig.tabTitle,
+          selectedTabId: tabConfig.sheetId,
+          headerRow: tabConfig.headerRow,
+          fieldMappings: tabConfig.fieldMappings,
+          rowScope: tabConfig.rowScope,
+          schemaFingerprint: tabConfig.schemaFingerprint,
+        }
+      : profile;
+
     // If job does not have a confirmed row yet, it cannot be planned
     if (!job.targetSheetRow) {
       return {
@@ -27,6 +41,7 @@ export class BatchPlannerService {
         plan: {
           jobId: job.id,
           targetRow: 0,
+          targetTabTitle,
           writes: [],
           isSafeToExecute: false,
           warnings: ["Chưa xác định được hàng đích trên Sheet"],
@@ -39,9 +54,9 @@ export class BatchPlannerService {
     const plannedWrites: PlannedCellWrite[] = [];
     const warnings: string[] = [];
 
-    // Find mapped editor & delivery link fields
-    const editorMapping = profile.fieldMappings.find((m) => m.semanticField === "EDITOR");
-    const linkMapping = profile.fieldMappings.find((m) => m.semanticField === "DELIVERY_LINK");
+    // Find mapped editor & delivery link fields on effective profile
+    const editorMapping = effectiveProfile.fieldMappings.find((m) => m.semanticField === "EDITOR");
+    const linkMapping = effectiveProfile.fieldMappings.find((m) => m.semanticField === "DELIVERY_LINK");
 
     let hasConflict = false;
     let detectedConflict: {
@@ -131,6 +146,7 @@ export class BatchPlannerService {
         field: "EDITOR",
         columnLetter: editorMapping.columnLetter,
         row: targetRow,
+        tabTitle: targetTabTitle,
         oldValue: currentVal,
         newValue: finalEditor,
         allowed,
@@ -225,6 +241,7 @@ export class BatchPlannerService {
         field: "DELIVERY_LINK",
         columnLetter: linkMapping.columnLetter,
         row: targetRow,
+        tabTitle: targetTabTitle,
         oldValue: currentVal,
         newValue: finalNewLink,
         allowed,
@@ -279,6 +296,7 @@ export class BatchPlannerService {
     const plan: UpdatePlan = {
       jobId: job.id,
       targetRow,
+      targetTabTitle,
       writes: plannedWrites,
       isSafeToExecute: !hasConflict && !hasHardError && executableWrites.length > 0,
       warnings,

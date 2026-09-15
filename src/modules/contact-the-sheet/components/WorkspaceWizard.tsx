@@ -247,6 +247,33 @@ export function WorkspaceWizard() {
     await handleSurveyTab(tab);
   };
 
+  const handleCopyCurrentConfigToAllTabs = () => {
+    if (availableTabs.length <= 1) return;
+    const confirmCopy = window.confirm(
+      `Bạn có muốn sao chép toàn bộ cấu hình cột (Field Mappings) và phạm vi hàng (từ dòng ${startRow}) từ tab "${selectedTab?.title || "hiện tại"}" sang TẤT CẢ ${availableTabs.length} tabs khác trong bảng không?`
+    );
+    if (!confirmCopy) return;
+
+    const fingerprint = schemaMappingService.generateSchemaFingerprint(
+      fieldMappings.map((m) => ({ index: m.columnIndex, headerName: m.columnHeader }))
+    );
+
+    const newConfigs: Record<string, TabConfiguration> = { ...tabConfigs };
+    for (const tab of availableTabs) {
+      newConfigs[tab.title] = {
+        sheetId: tab.sheetId,
+        tabTitle: tab.title,
+        headerRow: selectedHeaderRow,
+        fieldMappings: [...fieldMappings],
+        rowScope: { startRow, ignoreEmptyRows: true },
+        schemaFingerprint: fingerprint,
+        updatedAt: new Date().toISOString(),
+      };
+    }
+    setTabConfigs(newConfigs);
+    alert(`Đã áp dụng cấu hình này cho toàn bộ ${availableTabs.length} tabs trong bảng tính thành công! Hãy bấm "Lưu Cấu hình Workspace" ở Bước 4 để hoàn tất.`);
+  };
+
   const handleSaveProfile = () => {
     const spreadsheetId = sheetDiscoveryService.parseSpreadsheetId(sheetUrl);
     setLastSheetUrl(sheetUrl);
@@ -501,6 +528,7 @@ export function WorkspaceWizard() {
               tabConfigs={tabConfigs}
               isAnalyzing={isAnalyzing}
               onSelectTab={handleSwitchTabInWizard}
+              onCopyConfigToAllTabs={handleCopyCurrentConfigToAllTabs}
               subtitle="Chọn hoặc chuyển đổi giữa các trang tính để khảo sát tiêu đề và số cột tương ứng."
             />
           )}
@@ -625,6 +653,7 @@ export function WorkspaceWizard() {
               tabConfigs={tabConfigs}
               isAnalyzing={isAnalyzing}
               onSelectTab={handleSwitchTabInWizard}
+              onCopyConfigToAllTabs={handleCopyCurrentConfigToAllTabs}
               subtitle="Cấu hình ánh xạ cột riêng biệt cho từng trang tính. Tab khác nhau có thứ tự cột khác nhau."
             />
           )}

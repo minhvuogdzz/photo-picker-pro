@@ -64,6 +64,7 @@ export class FolderScannerService {
         if (sheetRows.length > 0) {
           const match = jobMatchingService.matchJobToSheetRows(job, sheetRows, profile);
           job.targetSheetRow = match.targetRow;
+          job.targetTabTitle = match.targetTabTitle;
           job.targetRowSnapshot = match.targetSnapshot;
           job.matchConfidence = match.confidence;
           if (match.status === "NEEDS_REVIEW") {
@@ -167,6 +168,7 @@ export class FolderScannerService {
         if (sheetRows.length > 0) {
           const match = jobMatchingService.matchJobToSheetRows(job, sheetRows, profile);
           job.targetSheetRow = match.targetRow;
+          job.targetTabTitle = match.targetTabTitle;
           job.targetRowSnapshot = match.targetSnapshot;
           job.matchConfidence = match.confidence;
           if (match.status === "NEEDS_REVIEW") {
@@ -248,6 +250,7 @@ export class FolderScannerService {
           if (sheetRows.length > 0) {
             const match = jobMatchingService.matchJobToSheetRows(job, sheetRows, profile);
             job.targetSheetRow = match.targetRow;
+            job.targetTabTitle = match.targetTabTitle;
             job.targetRowSnapshot = match.targetSnapshot;
             job.matchConfidence = match.confidence;
             if (match.status === "NEEDS_REVIEW") {

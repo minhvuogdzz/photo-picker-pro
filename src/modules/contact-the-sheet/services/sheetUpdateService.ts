@@ -30,8 +30,11 @@ export class SheetUpdateService {
     try {
       let token = await googleCredentialManager.getValidAccessToken();
 
-      // Batch read ranges for all jobs
-      const ranges = jobs.map((j) => `'${profile.selectedTabTitle}'!A${j.targetSheetRow}:Z${j.targetSheetRow}`);
+      // Batch read ranges for all jobs across their respective tabs
+      const ranges = jobs.map((j) => {
+        const tab = j.targetTabTitle || profile.selectedTabTitle;
+        return `'${tab}'!A${j.targetSheetRow}:Z${j.targetSheetRow}`;
+      });
       const query = ranges.map((r) => `ranges=${encodeURIComponent(r)}`).join("&");
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${profile.spreadsheetId}/values:batchGet?${query}`;
 
@@ -63,9 +66,13 @@ export class SheetUpdateService {
         const rowData = valueRanges[i]?.values?.[0] || [];
         const snapshot = job.targetRowSnapshot || {};
 
+        const tabTitle = job.targetTabTitle || profile.selectedTabTitle;
+        const tabConfig = profile.tabConfigurations?.[tabTitle];
+        const effectiveFieldMappings = tabConfig?.fieldMappings || profile.fieldMappings;
+
         let isStale = false;
-        // Compare mapped writable fields
-        for (const mapping of profile.fieldMappings) {
+        // Compare mapped writable fields using tab-specific mappings
+        for (const mapping of effectiveFieldMappings) {
           if (mapping.permission === "READ_WRITE") {
             const expected = (snapshot[mapping.columnLetter] || "").trim();
             const current = (rowData[mapping.columnIndex] || "").trim();
@@ -140,14 +147,17 @@ export class SheetUpdateService {
         const plan = plans[job.id];
         summary.successCount++;
 
+        const jobTabTitle = job.targetTabTitle || plan?.targetTabTitle || profile.selectedTabTitle;
+        const jobTabId = profile.tabConfigurations?.[jobTabTitle]?.sheetId || profile.selectedTabId;
+
         // Record audit
         const auditRecord: AuditRecord = {
           id: `audit_${Date.now()}_${i}`,
           timestamp: new Date().toISOString(),
           workspaceId: profile.id,
           workspaceTitle: profile.displayName,
-          sheetId: profile.selectedTabId,
-          tabTitle: profile.selectedTabTitle,
+          sheetId: jobTabId,
+          tabTitle: jobTabTitle,
           jobFolderName: job.jobFolderName,
           targetRow: job.targetSheetRow || 0,
           changes: (plan?.writes || []).map((w) => ({
@@ -182,8 +192,9 @@ export class SheetUpdateService {
 
         for (const write of plan.writes) {
           if (write.allowed) {
+            const tabTitle = write.tabTitle || job.targetTabTitle || plan.targetTabTitle || profile.selectedTabTitle;
             updateData.push({
-              range: `'${profile.selectedTabTitle}'!${write.columnLetter}${write.row}`,
+              range: `'${tabTitle}'!${write.columnLetter}${write.row}`,
               values: [[write.newValue]],
             });
           }
@@ -237,13 +248,16 @@ export class SheetUpdateService {
           const plan = plans[job.id];
           summary.successCount++;
 
+          const jobTabTitle = job.targetTabTitle || plan?.targetTabTitle || profile.selectedTabTitle;
+          const jobTabId = profile.tabConfigurations?.[jobTabTitle]?.sheetId || profile.selectedTabId;
+
           const auditRecord: AuditRecord = {
             id: `audit_${Date.now()}_${job.id}`,
             timestamp: new Date().toISOString(),
             workspaceId: profile.id,
             workspaceTitle: profile.displayName,
-            sheetId: profile.selectedTabId,
-            tabTitle: profile.selectedTabTitle,
+            sheetId: jobTabId,
+            tabTitle: jobTabTitle,
             jobFolderName: job.jobFolderName,
             targetRow: job.targetSheetRow || 0,
             changes: (plan?.writes || []).map((w) => ({

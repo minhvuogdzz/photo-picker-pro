@@ -49,10 +49,13 @@ export interface DiscoveredJob {
   status: JobStatus;
   statusReason?: string;
   targetSheetRow?: number;
+  targetTabTitle?: string;
+  targetTabId?: number;
   targetRowSnapshot?: Record<string, string>; // column letter -> current value
   matchConfidence?: number;
   candidateRows?: Array<{
     row: number;
+    tabTitle?: string;
     score: number;
     matchedFields: string[];
     values: Record<string, string>;

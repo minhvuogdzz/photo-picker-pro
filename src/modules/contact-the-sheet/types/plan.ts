@@ -8,6 +8,7 @@ export interface PlannedCellWrite {
   field: SemanticField;
   columnLetter: string;
   row: number;
+  tabTitle?: string;
   oldValue: string;
   newValue: string;
   allowed: boolean;
@@ -17,6 +18,7 @@ export interface PlannedCellWrite {
 export interface UpdatePlan {
   jobId: string;
   targetRow: number;
+  targetTabTitle?: string;
   writes: PlannedCellWrite[];
   isSafeToExecute: boolean;
   warnings: string[];

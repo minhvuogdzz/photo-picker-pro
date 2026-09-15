@@ -8,10 +8,12 @@ import { folderParserService } from "./folderParserService.ts";
 export interface SheetRowRecord {
   row: number; // 1-indexed
   values: Record<string, string>; // column letter -> cell formatted value
+  tabTitle?: string;
 }
 
 export interface MatchScoreResult {
   row: number;
+  tabTitle?: string;
   score: number;
   matchedFields: string[];
   values: Record<string, string>;
@@ -24,7 +26,7 @@ export const GENERIC_STOP_WORDS = new Set([
 
 export class JobMatchingService {
   /**
-   * Matches a job against indexed sheet rows using multi-signal scoring.
+   * Matches a job against indexed sheet rows across multiple tabs using multi-signal scoring.
    */
   public matchJobToSheetRows(
     job: DiscoveredJob,
@@ -33,19 +35,13 @@ export class JobMatchingService {
   ): {
     status: "READY" | "NEEDS_REVIEW" | "NO_MATCH";
     targetRow?: number;
+    targetTabTitle?: string;
     targetSnapshot?: Record<string, string>;
     confidence?: number;
     candidateRows?: MatchScoreResult[];
     reason?: string;
   } {
     const scoredCandidates: MatchScoreResult[] = [];
-
-    // Find mapped columns
-    const fileCol = profile.fieldMappings.find((m) => m.semanticField === "JOB_FOLDER_NAME")?.columnLetter;
-    const dateCol = profile.fieldMappings.find((m) => m.semanticField === "SHOOT_DATE")?.columnLetter;
-    const timeCol = profile.fieldMappings.find((m) => m.semanticField === "SHOOT_TIME")?.columnLetter;
-    const customerCol = profile.fieldMappings.find((m) => m.semanticField === "CUSTOMER_NAME")?.columnLetter;
-    const socialCol = profile.fieldMappings.find((m) => m.semanticField === "SOCIAL_USERNAME")?.columnLetter;
 
     const normFolderName = folderParserService.normalizeForComparison(job.jobFolderName);
     const normFinalName = folderParserService.normalizeForComparison(job.finalFolderName);
@@ -69,13 +65,25 @@ export class JobMatchingService {
       .filter((n) => n.length >= 2 && !GENERIC_STOP_WORDS.has(folderParserService.normalizeForComparison(n)));
 
     for (const record of rows) {
-      // Row scope check
-      if (profile.rowScope.startRow && record.row < profile.rowScope.startRow) {
+      const tabTitle = record.tabTitle || profile.selectedTabTitle;
+      const tabConfig = profile.tabConfigurations?.[tabTitle];
+      const effectiveFieldMappings = tabConfig?.fieldMappings || profile.fieldMappings;
+      const effectiveRowScope = tabConfig?.rowScope || profile.rowScope;
+
+      // Row scope check for this specific tab
+      if (effectiveRowScope.startRow && record.row < effectiveRowScope.startRow) {
         continue;
       }
-      if (profile.rowScope.endRow && record.row > profile.rowScope.endRow) {
+      if (effectiveRowScope.endRow && record.row > effectiveRowScope.endRow) {
         continue;
       }
+
+      // Find mapped columns for this specific tab
+      const fileCol = effectiveFieldMappings.find((m) => m.semanticField === "JOB_FOLDER_NAME")?.columnLetter;
+      const dateCol = effectiveFieldMappings.find((m) => m.semanticField === "SHOOT_DATE")?.columnLetter;
+      const timeCol = effectiveFieldMappings.find((m) => m.semanticField === "SHOOT_TIME")?.columnLetter;
+      const customerCol = effectiveFieldMappings.find((m) => m.semanticField === "CUSTOMER_NAME")?.columnLetter;
+      const socialCol = effectiveFieldMappings.find((m) => m.semanticField === "SOCIAL_USERNAME")?.columnLetter;
 
       let score = 0;
       const matchedFields: string[] = [];
@@ -218,6 +226,7 @@ export class JobMatchingService {
       if (score >= 0.85) {
         scoredCandidates.push({
           row: record.row,
+          tabTitle,
           score,
           matchedFields,
           values: record.values,
@@ -232,7 +241,7 @@ export class JobMatchingService {
     if (scoredCandidates.length === 0) {
       return {
         status: "NO_MATCH",
-        reason: `Không tìm thấy khách hàng "${job.metadata.customerName || job.finalFolderName}" trong tab trang tính`,
+        reason: `Không tìm thấy khách hàng "${job.metadata.customerName || job.finalFolderName}" trong các tab đã chọn`,
       };
     }
 
@@ -244,6 +253,7 @@ export class JobMatchingService {
       return {
         status: "READY",
         targetRow: top.row,
+        targetTabTitle: top.tabTitle || profile.selectedTabTitle,
         targetSnapshot: top.values,
         confidence: 1.0,
         reason: `Khớp chính xác tuyệt đối (${top.matchedFields.join(", ")})`,
@@ -254,9 +264,10 @@ export class JobMatchingService {
       return {
         status: "READY",
         targetRow: top.row,
+        targetTabTitle: top.tabTitle || profile.selectedTabTitle,
         targetSnapshot: top.values,
         confidence: top.score,
-        reason: `Đã dóng đúng hàng ${top.row} theo (${top.matchedFields.join(", ")})`,
+        reason: `Đã dóng đúng hàng ${top.row}${top.tabTitle ? ` (Tab ${top.tabTitle})` : ""} theo (${top.matchedFields.join(", ")})`,
       };
     }
 
@@ -266,7 +277,7 @@ export class JobMatchingService {
       status: "NEEDS_REVIEW",
       confidence: top.score,
       candidateRows: topCandidates,
-      reason: `Tìm thấy ${scoredCandidates.length} hàng tiềm năng có tên tương tự (Hàng ${topCandidates.map((c) => c.row).join(", ")}), vui lòng bấm để xác nhận hàng`,
+      reason: `Tìm thấy ${scoredCandidates.length} hàng tiềm năng (${topCandidates.map((c) => `${c.tabTitle ? `[${c.tabTitle}] ` : ""}Hàng ${c.row}`).join(", ")}), vui lòng xác nhận`,
     };
   }
 

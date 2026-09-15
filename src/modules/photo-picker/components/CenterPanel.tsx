@@ -6,18 +6,11 @@ import {
   Hash,
   Regex,
   Search,
-  FolderSync,
-  FolderOpen,
-  Trash2,
-  Loader2,
-  X,
   FileSpreadsheet,
   Settings2,
 } from "lucide-react";
 import type { CustomerCode } from "@/core/types";
 import { useTranslation } from "@/core/lib/i18n";
-import { getFolderName } from "@/core/lib/utils";
-import { open } from "@tauri-apps/plugin-dialog";
 import { listen } from "@tauri-apps/api/event";
 import { SheetCodeExtractorModal } from "./SheetCodeExtractorModal";
 
@@ -146,19 +139,9 @@ export function CenterPanel() {
   const scanOptions = useAppStore((s) => s.scanOptions);
   const setScanOptions = useAppStore((s) => s.setScanOptions);
   const [isParsingDebounced, setIsParsingDebounced] = useState(false);
-  const syncFolders = useAppStore((s) => s.syncFolders);
-  const addSyncFolders = useAppStore((s) => s.addSyncFolders);
-  const removeSyncFolder = useAppStore((s) => s.removeSyncFolder);
-  const clearSyncFolders = useAppStore((s) => s.clearSyncFolders);
-  const setActiveDropZone = useAppStore((s) => s.setActiveDropZone);
-  const activeDropZone = useAppStore((s) => s.activeDropZone);
   const { t } = useTranslation();
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Sync folder states
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [syncResult, setSyncResult] = useState<string | null>(null);
 
   // Sheet Code Extractor Modal state
   const [isSheetModalOpen, setIsSheetModalOpen] = useState(false);
@@ -249,55 +232,6 @@ export function CenterPanel() {
     [rawCodeInput, setRawCodeInput]
   );
 
-  // Add folders for sync uses global store now
-
-  const handleAddSyncFolders = async () => {
-    try {
-      const selected = await open({
-        directory: true,
-        multiple: true,
-        title: "Chọn thư mục cần đồng bộ tên",
-      });
-      if (selected) {
-        const folders = Array.isArray(selected) ? selected : [selected];
-        addSyncFolders(folders);
-      }
-    } catch (err) {
-      console.error("Failed to open folder dialog:", err);
-    }
-  };
-
-  const handleSyncAll = async (mode: "all" | "last") => {
-    if (syncFolders.length === 0) return;
-    setIsSyncing(true);
-    setSyncResult(null);
-
-    let successCount = 0;
-    let errorCount = 0;
-    const errors: string[] = [];
-
-    for (const folder of syncFolders) {
-      try {
-        await invoke<string>("sync_subfolder_names", {
-          folderPath: folder,
-          mode,
-        });
-        successCount++;
-      } catch (err) {
-        errorCount++;
-        errors.push(`${getFolderName(folder)}: ${String(err)}`);
-      }
-    }
-
-    if (errorCount === 0) {
-      setSyncResult(`✅ Đã đồng bộ thành công ${successCount} thư mục!`);
-    } else {
-      setSyncResult(
-        `⚠️ Thành công: ${successCount}, Lỗi: ${errorCount}\n${errors.join("\n")}`
-      );
-    }
-    setIsSyncing(false);
-  };
 
   const modes = [
     { id: "ExactNumber", label: "Exact", icon: <Hash size={11} /> },
@@ -461,101 +395,6 @@ export function CenterPanel() {
 
       </div>
 
-      {/* === DIVIDER === */}
-      <div className="border-t border-border/50" />
-
-      {/* === BOTTOM HALF: Sync Folder Names === */}
-      <div className="flex flex-col" style={{ height: "200px", minHeight: "160px" }}>
-        <div className="px-4 py-2 flex items-center justify-between shrink-0">
-          <span className="flex items-center gap-2 text-[11px] font-medium text-foreground">
-            <FolderSync size={13} className="text-emerald-500" />
-            Đồng bộ tên thư mục con
-            {syncFolders.length > 0 && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-muted/50 text-muted-foreground border border-border/40">{syncFolders.length}</span>
-            )}
-          </span>
-          <div className="flex items-center gap-1.5">
-            {syncFolders.length > 0 && (
-              <button
-                onClick={clearSyncFolders}
-                className="text-[10px] text-muted-foreground hover:text-red-500 transition-colors flex items-center gap-1 cursor-pointer"
-              >
-                <Trash2 size={10} />
-                Xoá hết
-              </button>
-            )}
-            <button
-              onClick={handleAddSyncFolders}
-              className="text-[10px] text-primary hover:text-primary/80 transition-colors flex items-center gap-1 cursor-pointer font-medium"
-            >
-              <FolderOpen size={10} />
-              Thêm
-            </button>
-          </div>
-        </div>
-
-        <div
-          className={`flex-1 mx-4 mb-2 overflow-y-auto rounded-lg border border-dashed transition-all ${
-            syncFolders.length === 0 ? "border-border/50" : "border-border/30"
-          }`}
-        >
-          {syncFolders.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center px-4">
-              <FolderSync size={20} className="text-muted-foreground/30 mb-1.5" />
-              <p className="text-[10px] text-muted-foreground">
-                Bấm <strong>Thêm</strong> để chọn nhiều thư mục cùng lúc
-              </p>
-            </div>
-          ) : (
-            <div className="p-2 space-y-1">
-              {syncFolders.map((folder, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-card border border-border/30 group"
-                >
-                  <FolderOpen size={12} className="text-emerald-500 shrink-0" />
-                  <span className="flex-1 text-[11px] truncate" title={folder}>
-                    {getFolderName(folder)}
-                  </span>
-                  <button
-                    onClick={() => removeSyncFolder(folder)}
-                    className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-500 transition-all cursor-pointer"
-                  >
-                    <X size={11} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Sync result message */}
-        {syncResult && (
-          <div className="mx-4 mb-2 text-[10px] text-muted-foreground bg-muted/20 rounded-md px-2.5 py-1.5 whitespace-pre-line">
-            {syncResult}
-          </div>
-        )}
-
-        {/* Action buttons */}
-        <div className="px-4 pb-2.5 flex gap-2 shrink-0">
-          <button
-            onClick={() => handleSyncAll("all")}
-            disabled={isSyncing || syncFolders.length === 0}
-            className="btn-primary text-[11px] py-1.5 px-3 flex-1 flex items-center justify-center gap-1.5 disabled:opacity-40 rounded-lg"
-          >
-            {isSyncing ? <Loader2 size={12} className="animate-spin" /> : <FolderSync size={12} />}
-            Đồng bộ tất cả
-          </button>
-          <button
-            onClick={() => handleSyncAll("last")}
-            disabled={isSyncing || syncFolders.length === 0}
-            className="btn-outline text-[11px] py-1.5 px-3 flex-1 flex items-center justify-center gap-1.5 disabled:opacity-40 rounded-lg"
-          >
-            {isSyncing ? <Loader2 size={12} className="animate-spin" /> : <FolderOpen size={12} />}
-            Chỉ thư mục cuối
-          </button>
-        </div>
-      </div>
 
       {/* Sheet Code Extractor Modal */}
       <SheetCodeExtractorModal
