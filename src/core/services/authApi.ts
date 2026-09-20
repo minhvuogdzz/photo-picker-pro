@@ -94,6 +94,14 @@ function fromLocalSession(local: LocalSession): AuthSession {
     },
     deviceId: local.device_id,
     lastSyncAt: local.last_sync_at,
+    sessionDurationMinutes: (() => {
+      try {
+        const s = localStorage.getItem("session_duration_minutes");
+        return s && !isNaN(Number(s)) ? Number(s) : 10;
+      } catch {
+        return 10;
+      }
+    })(),
   };
 }
 
@@ -164,6 +172,12 @@ export async function login(request: LoginRequest, autoLogin: boolean = true): P
     }
     sessionStorage.setItem("temp_auth_session", JSON.stringify(session));
     sessionStorage.setItem("auto_login", "false");
+  }
+
+  if (session.sessionDurationMinutes) {
+    try {
+      localStorage.setItem("session_duration_minutes", String(session.sessionDurationMinutes));
+    } catch {}
   }
   return session;
 }
@@ -300,6 +314,12 @@ export async function validateSubscription(
     await invoke("save_auth_session", { session: toLocalSession(updatedSession) });
   } else {
     sessionStorage.setItem("temp_auth_session", JSON.stringify(updatedSession));
+  }
+
+  if (updatedSession.sessionDurationMinutes) {
+    try {
+      localStorage.setItem("session_duration_minutes", String(updatedSession.sessionDurationMinutes));
+    } catch {}
   }
   return updatedSession;
 }

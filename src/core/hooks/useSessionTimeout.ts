@@ -3,49 +3,70 @@ import { useEffect, useRef } from "react";
 import { useAuthStore } from "@/core/stores/useAuthStore";
 import { logout } from "@/core/services/authApi";
 import {
+  DEFAULT_SESSION_DURATION_MINUTES,
+  DEFAULT_SESSION_DURATION_MS,
   MAX_SESSION_DURATION_MS,
   SESSION_START_KEY,
   formatSessionRemaining,
   computeRemainingSeconds,
   isSessionExpiringSoon,
+  isSessionWarning30s,
 } from "../services/sessionTimeoutPolicy.ts";
 
 export {
+  DEFAULT_SESSION_DURATION_MINUTES,
+  DEFAULT_SESSION_DURATION_MS,
   MAX_SESSION_DURATION_MS,
   SESSION_START_KEY,
   formatSessionRemaining,
   computeRemainingSeconds,
   isSessionExpiringSoon,
+  isSessionWarning30s,
 };
 
 interface SessionTimerState {
   remainingSeconds: number;
   formattedTime: string;
+  totalDurationMinutes: number;
   isExpiringSoon: boolean;
+  isWarning30s: boolean;
+  hasDismissed30sWarning: boolean;
+  dismiss30sWarning: () => void;
   setRemainingSeconds: (seconds: number) => void;
-  resetTimer: () => void;
+  setTotalDurationMinutes: (minutes: number) => void;
+  resetTimer: (durationMinutes?: number) => void;
 }
 
 export const useSessionTimerStore = create<SessionTimerState>((set) => ({
   remainingSeconds: 600,
   formattedTime: "10:00",
+  totalDurationMinutes: 10,
   isExpiringSoon: false,
+  isWarning30s: false,
+  hasDismissed30sWarning: false,
+  dismiss30sWarning: () => set({ hasDismissed30sWarning: true }),
   setRemainingSeconds: (remainingSeconds) =>
     set({
       remainingSeconds,
       formattedTime: formatSessionRemaining(remainingSeconds),
       isExpiringSoon: isSessionExpiringSoon(remainingSeconds),
+      isWarning30s: isSessionWarning30s(remainingSeconds),
     }),
-  resetTimer: () =>
+  setTotalDurationMinutes: (totalDurationMinutes) =>
+    set({ totalDurationMinutes }),
+  resetTimer: (durationMinutes = DEFAULT_SESSION_DURATION_MINUTES) =>
     set({
-      remainingSeconds: 600,
-      formattedTime: "10:00",
+      remainingSeconds: durationMinutes * 60,
+      formattedTime: formatSessionRemaining(durationMinutes * 60),
+      totalDurationMinutes: durationMinutes,
       isExpiringSoon: false,
+      isWarning30s: false,
+      hasDismissed30sWarning: false,
     }),
 }));
 
 /**
- * Global listener hook that enforces the 10-minute session duration.
+ * Global listener hook that enforces the session duration limit.
  * Mounted once inside AuthGuard to ensure the timer runs continuously.
  */
 export function useSessionTimeoutListener() {
@@ -53,6 +74,7 @@ export function useSessionTimeoutListener() {
   const authLogout = useAuthStore((s) => s.logout);
   const setSessionTimeoutExpired = useAuthStore((s) => s.setSessionTimeoutExpired);
   const setRemainingSeconds = useSessionTimerStore((s) => s.setRemainingSeconds);
+  const setTotalDurationMinutes = useSessionTimerStore((s) => s.setTotalDurationMinutes);
 
   const sessionTokenRef = useRef(session?.accessToken);
   sessionTokenRef.current = session?.accessToken;
@@ -60,8 +82,16 @@ export function useSessionTimeoutListener() {
   useEffect(() => {
     if (!session) {
       setRemainingSeconds(0);
+      useSessionTimerStore.setState({ hasDismissed30sWarning: false });
       return;
     }
+
+    const durationMinutes = (typeof session.sessionDurationMinutes === "number" && session.sessionDurationMinutes > 0)
+      ? session.sessionDurationMinutes
+      : DEFAULT_SESSION_DURATION_MINUTES;
+
+    setTotalDurationMinutes(durationMinutes);
+    const maxDurationMs = durationMinutes * 60 * 1000;
 
     let startedAt = Date.now();
     try {
@@ -76,11 +106,11 @@ export function useSessionTimeoutListener() {
     }
 
     const checkTime = () => {
-      const left = computeRemainingSeconds(startedAt);
+      const left = computeRemainingSeconds(startedAt, maxDurationMs);
       setRemainingSeconds(left);
 
       if (left <= 0) {
-        // 10 minutes reached -> trigger logout and show expiration modal
+        // Session duration reached -> trigger logout and show expiration modal
         try {
           sessionStorage.removeItem(SESSION_START_KEY);
         } catch {}
@@ -94,7 +124,7 @@ export function useSessionTimeoutListener() {
     checkTime();
     const interval = setInterval(checkTime, 1000);
     return () => clearInterval(interval);
-  }, [session?.userId, authLogout, setSessionTimeoutExpired, setRemainingSeconds]);
+  }, [session?.userId, session?.sessionDurationMinutes, authLogout, setSessionTimeoutExpired, setRemainingSeconds, setTotalDurationMinutes]);
 }
 
 /**

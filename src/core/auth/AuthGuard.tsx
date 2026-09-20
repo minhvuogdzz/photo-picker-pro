@@ -17,6 +17,7 @@ import { Loader2, AlertTriangle, Info } from "lucide-react";
 import { useAppStore } from "@/core/stores/useAppStore";
 import { exit } from '@tauri-apps/plugin-process';
 import { useSessionTimeoutListener } from "@/core/hooks/useSessionTimeout";
+import { SessionExpiringWarningModal } from "./SessionExpiringWarningModal";
 
 interface AuthGuardProps {
   readonly children: React.ReactNode;
@@ -210,6 +211,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
   return (
     <>
       {children}
+      <SessionExpiringWarningModal />
       
       {/* Copyright/Crack Warning Dialog (Blocking) */}
       {!!copyrightWarningMessage && (

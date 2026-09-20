@@ -9,6 +9,7 @@ export interface AuthSession {
   readonly subscription: SubscriptionInfo;
   readonly deviceId: string;
   readonly lastSyncAt: string;
+  readonly sessionDurationMinutes?: number;
 }
 
 /** Subscription details */
