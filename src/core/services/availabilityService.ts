@@ -127,25 +127,20 @@ class AvailabilityService {
     if (document.visibilityState !== "visible") return;
 
     const now = Date.now();
-    const cooldown = import.meta.env.DEV ? 2000 : FOCUS_COOLDOWN_MS;
+    const cooldown = import.meta.env.DEV ? 15000 : FOCUS_COOLDOWN_MS;
     if (now - this.lastFocusCheckTime < cooldown) {
-      return;
-    }
-    this.lastFocusCheckTime = now;
-
-    // In dev mode, always recheck on focus so switching from terminal immediately tests the new state
-    if (import.meta.env.DEV) {
-      this.performHealthCheck();
       return;
     }
 
     const store = useAvailabilityStore.getState();
-    // Only recheck on focus if currently in maintenance or degraded
+    // Only recheck on focus if currently offline, degraded, or in maintenance
     if (
       store.state === "BACKEND_UNAVAILABLE" ||
       store.state === "MAINTENANCE_CONFIRMED" ||
-      store.state === "DEGRADED"
+      store.state === "DEGRADED" ||
+      store.state === "LOCAL_OFFLINE"
     ) {
+      this.lastFocusCheckTime = now;
       this.performHealthCheck();
     }
   };

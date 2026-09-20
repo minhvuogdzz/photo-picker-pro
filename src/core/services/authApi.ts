@@ -58,6 +58,7 @@ export function toLocalSession(session: AuthSession): LocalSession {
     name: session.name,
     subscription_status: session.subscription.status,
     subscription_plan: session.subscription.plan,
+    is_premium: session.subscription.isPremium ?? false,
     expires_at: session.subscription.expiresAt,
     device_id: session.deviceId,
     last_sync_at: session.lastSyncAt,
@@ -75,6 +76,8 @@ function fromLocalSession(local: LocalSession): AuthSession {
     daysRemaining = Math.max(0, Math.ceil((expiry - now) / (1000 * 60 * 60 * 24)));
   }
 
+  const isLifetime = local.subscription_status === "LIFETIME" || local.subscription_plan === "LIFETIME";
+
   return {
     accessToken: local.access_token,
     refreshToken: local.refresh_token,
@@ -85,6 +88,7 @@ function fromLocalSession(local: LocalSession): AuthSession {
     subscription: {
       status: local.subscription_status as AuthSession["subscription"]["status"],
       plan: local.subscription_plan as AuthSession["subscription"]["plan"],
+      isPremium: local.is_premium !== undefined ? local.is_premium : isLifetime,
       expiresAt: local.expires_at,
       daysRemaining,
     },

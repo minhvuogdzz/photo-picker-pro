@@ -19,6 +19,8 @@ pub struct LocalSession {
     pub last_sync_at: String,
     #[serde(default)]
     pub username: Option<String>,
+    #[serde(default)]
+    pub is_premium: Option<bool>,
 }
 
 /// Returns the app config directory path (platform-specific)

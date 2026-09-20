@@ -75,6 +75,7 @@ export interface LocalSession {
   readonly name: string;
   readonly subscription_status: string;
   readonly subscription_plan: string;
+  readonly is_premium?: boolean;
   readonly expires_at: string | null;
   readonly device_id: string;
   readonly last_sync_at: string;

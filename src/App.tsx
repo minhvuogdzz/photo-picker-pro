@@ -50,10 +50,22 @@ function AppContent() {
         failureCount,
         hasValidatedExpiry
       );
-      const enforcementDelay = socketService.isConnected() ? 30_000 : 5_000;
+
+      // If policy indicates no check is required (e.g. LIFETIME, permanently inactive,
+      // or already validated as expired), do NOT schedule any timer!
+      if (policyDelay === null) {
+        return;
+      }
+
+      // WebSocket handles real-time events (kick, suspend, expiry) immediately without polling.
+      // When WebSocket is connected, rely purely on policyDelay (4 hours or exact expiry moment).
+      // When WebSocket is disconnected, fallback to gentle 15-minute interval (NEVER 5 seconds).
+      const FALLBACK_DISCONNECTED_INTERVAL = 15 * 60 * 1000; // 15 minutes
       const delay = failureCount > 0
-        ? (policyDelay ?? enforcementDelay)
-        : Math.min(policyDelay ?? enforcementDelay, enforcementDelay);
+        ? policyDelay
+        : socketService.isConnected()
+          ? policyDelay
+          : Math.min(policyDelay, FALLBACK_DISCONNECTED_INTERVAL);
 
       if (timer) {
         clearTimeout(timer);

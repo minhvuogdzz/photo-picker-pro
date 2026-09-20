@@ -12,10 +12,10 @@ import type { AuthSession } from "@/core/types/auth";
 /** Set to true to use local mock API (no backend required) */
 const USE_MOCK = false;
 
-/** Backend API base URL — update when NestJS backend is deployed */
+/** Backend API base URL — defaults to local backend in DEV or when configured */
 const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
-  (import.meta.env.VITE_USE_LOCAL_BACKEND === "true"
+  (import.meta.env.VITE_USE_LOCAL_BACKEND === "true" || import.meta.env.DEV
     ? "http://localhost:3000"
     : "https://photo-picker-backend.vercel.app");
 
@@ -63,6 +63,7 @@ function toLocalSession(session: AuthSession) {
     name: session.name,
     subscription_status: session.subscription.status,
     subscription_plan: session.subscription.plan,
+    is_premium: session.subscription.isPremium ?? false,
     expires_at: session.subscription.expiresAt,
     device_id: session.deviceId,
     last_sync_at: session.lastSyncAt,

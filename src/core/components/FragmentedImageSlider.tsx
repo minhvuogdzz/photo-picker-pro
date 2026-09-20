@@ -4,8 +4,27 @@ import { API_BASE_URL } from '@/core/services/apiClient';
 // Module-level cache to provide instantaneous rendering and throttle requests across mounts
 let cachedShowcaseImages: string[] = [];
 let lastShowcaseFetchTime = 0;
-const SHOWCASE_FOCUS_COOLDOWN_MS = 30 * 1000; // 30 seconds cooldown between focus revalidations
-const SHOWCASE_POLL_INTERVAL_MS = 2 * 60 * 1000; // 2 minutes periodic revalidation while on login screen
+const SHOWCASE_FOCUS_COOLDOWN_MS = 15 * 60 * 1000; // 15 minutes cooldown between focus revalidations
+const SHOWCASE_POLL_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes periodic revalidation while on login screen
+const CACHE_STORAGE_KEY = 'photo_picker_showcase_cache_v1';
+const CACHE_TIME_KEY = 'photo_picker_showcase_time_v1';
+
+// Pre-load from sessionStorage on module load
+try {
+  if (typeof window !== 'undefined') {
+    const saved = sessionStorage.getItem(CACHE_STORAGE_KEY);
+    const savedTime = sessionStorage.getItem(CACHE_TIME_KEY);
+    if (saved && savedTime) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        cachedShowcaseImages = parsed;
+        lastShowcaseFetchTime = Number(savedTime) || 0;
+      }
+    }
+  }
+} catch {
+  // Ignore storage errors
+}
 
 export function FragmentedImageSlider() {
   const [images, setImages] = useState<string[]>(() => cachedShowcaseImages);
@@ -13,7 +32,7 @@ export function FragmentedImageSlider() {
   const isMountedRef = useRef(true);
   const isFetchingRef = useRef(false);
 
-  // Fetch dynamic showcase images from backend using Edge CDN caching
+  // Fetch dynamic showcase images from backend with relaxed cooldowns
   const fetchShowcase = useCallback(async (isForced: boolean = false) => {
     // Inflight deduplication: don't start a duplicate fetch if one is already running
     if (isFetchingRef.current) return;
@@ -26,8 +45,6 @@ export function FragmentedImageSlider() {
 
     isFetchingRef.current = true;
     try {
-      // Clean static URL without timestamp or no-store headers, allowing Vercel Edge CDN
-      // to serve cached responses instantly without waking up serverless functions.
       const res = await fetch(`${API_BASE_URL}/showcase`);
       if (!res.ok) return;
 
@@ -39,6 +56,12 @@ export function FragmentedImageSlider() {
           .filter(Boolean);
 
         cachedShowcaseImages = activeUrls;
+        try {
+          sessionStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(activeUrls));
+          sessionStorage.setItem(CACHE_TIME_KEY, String(lastShowcaseFetchTime));
+        } catch {
+          // Ignore storage quota
+        }
 
         if (isMountedRef.current) {
           setImages((prev) => {
@@ -59,11 +82,11 @@ export function FragmentedImageSlider() {
     }
   }, []);
 
-  // Fetch on mount, window focus (with cooldown), and periodic sync (15m)
+  // Fetch on mount and periodic sync (30m)
   useEffect(() => {
     isMountedRef.current = true;
 
-    // Fetch on initial mount if cache is empty or stale (> 5m)
+    // Fetch on initial mount only if cache is empty or older than 15 minutes
     if (cachedShowcaseImages.length === 0 || Date.now() - lastShowcaseFetchTime > SHOWCASE_FOCUS_COOLDOWN_MS) {
       fetchShowcase(true);
     }
