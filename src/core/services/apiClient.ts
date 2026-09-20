@@ -17,7 +17,7 @@ const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
   (import.meta.env.VITE_USE_LOCAL_BACKEND === "true" || import.meta.env.DEV
     ? "http://localhost:3000"
-    : "https://photo-picker-backend.vercel.app");
+    : "https://photo-picker-backend.onrender.com");
 
 interface ApiResponse<T> {
   readonly data: T;
