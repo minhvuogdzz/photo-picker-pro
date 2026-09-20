@@ -21,6 +21,8 @@ interface AuthState {
   readonly copyrightWarningMessage: string | null;
   /** Expiring soon warning message */
   readonly expiringSoonMessage: string | null;
+  /** Whether the 10-minute session timeout expired */
+  readonly sessionTimeoutExpired: boolean;
 
   setSession: (session: AuthSession | null) => void;
   setLoading: (loading: boolean) => void;
@@ -29,6 +31,7 @@ interface AuthState {
   setSubscriptionExpired: (expired: boolean) => void;
   setOfflineGracePeriodExpired: (expired: boolean) => void;
   setAccountSuspended: (suspended: boolean) => void;
+  setSessionTimeoutExpired: (expired: boolean) => void;
   setCopyrightWarningMessage: (message: string | null) => void;
   setExpiringSoonMessage: (message: string | null) => void;
   logout: () => void;
@@ -42,17 +45,30 @@ export const useAuthStore = create<AuthState>((set) => ({
   subscriptionExpired: false,
   offlineGracePeriodExpired: false,
   accountSuspended: false,
+  sessionTimeoutExpired: false,
   copyrightWarningMessage: null,
   expiringSoonMessage: null,
 
   setSession: (session) => {
     useAvailabilityStore.getState().setOfflineBypass(false);
+    if (session) {
+      try {
+        if (!sessionStorage.getItem("session_started_at")) {
+          sessionStorage.setItem("session_started_at", String(Date.now()));
+        }
+      } catch {}
+    } else {
+      try {
+        sessionStorage.removeItem("session_started_at");
+      } catch {}
+    }
     set({
       session,
       sessionExpiredByOtherDevice: false,
       subscriptionExpired: session ? !["ACTIVE", "TRIAL", "LIFETIME"].includes(session.subscription.status) : false,
       offlineGracePeriodExpired: false,
       accountSuspended: false,
+      sessionTimeoutExpired: false,
       copyrightWarningMessage: null,
       expiringSoonMessage: null,
     });
@@ -68,6 +84,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ offlineGracePeriodExpired: expired }),
   setAccountSuspended: (suspended) =>
     set({ accountSuspended: suspended }),
+  setSessionTimeoutExpired: (expired) =>
+    set({ sessionTimeoutExpired: expired }),
   setCopyrightWarningMessage: (message) =>
     set({ copyrightWarningMessage: message }),
   setExpiringSoonMessage: (message) =>
@@ -75,12 +93,16 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: () => {
     useAvailabilityStore.getState().setOfflineBypass(false);
+    try {
+      sessionStorage.removeItem("session_started_at");
+    } catch {}
     set({
       session: null,
       sessionExpiredByOtherDevice: false,
       subscriptionExpired: false,
       offlineGracePeriodExpired: false,
       accountSuspended: false,
+      sessionTimeoutExpired: false,
       copyrightWarningMessage: null,
       expiringSoonMessage: null,
     });

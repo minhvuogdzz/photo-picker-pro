@@ -20,6 +20,7 @@ import { useUpdaterStore } from "@/core/stores/useUpdaterStore";
 import { LicenseManager } from "@/core/license/LicenseManager";
 import { AccountSecurityModal } from "@/core/components/AccountSecurityModal";
 import { SmartSearchBar } from "./SmartSearchBar";
+import { useSessionTimeout } from "@/core/hooks/useSessionTimeout";
 import type { MainTab } from "@/core/types";
 
 export function TopBar() {
@@ -31,6 +32,7 @@ export function TopBar() {
   const setLastClickPos = useAppStore((s) => s.setLastClickPos);
   const session = useAuthStore((s) => s.session);
   const authLogout = useAuthStore((s) => s.logout);
+  const { formattedTime, isExpiringSoon } = useSessionTimeout();
   const { t } = useTranslation();
 
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -158,6 +160,21 @@ export function TopBar() {
         </div>
         
         <SubscriptionBadge />
+
+        {/* 10-minute Session Countdown Badge */}
+        {session && (
+          <div
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono border transition-all select-none ${
+              isExpiringSoon
+                ? "bg-destructive/15 text-destructive border-destructive/40 animate-pulse font-bold shadow-sm"
+                : "bg-white/5 text-muted-foreground hover:text-foreground border-border/40"
+            }`}
+            title="Thời gian còn lại của phiên làm việc (tối đa 10 phút/phiên, tự động đăng xuất và có thể đăng nhập lại)"
+          >
+            <Clock size={12} className={isExpiringSoon ? "text-destructive" : "text-amber-500"} />
+            <span>{formattedTime}</span>
+          </div>
+        )}
 
         {/* User Avatar / Menu */}
         <div className="relative">

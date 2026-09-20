@@ -2,17 +2,17 @@ import React, { useEffect, useState } from "react";
 import { useAuthStore } from "@/core/stores/useAuthStore";
 import { logout } from "@/core/services/authApi";
 import { useTranslation } from "@/core/lib/i18n";
-import { AlertTriangle, LogIn, MonitorX, WifiOff, XCircle } from "lucide-react";
+import { AlertTriangle, Clock, LogIn, MonitorX, WifiOff, XCircle } from "lucide-react";
 
 interface SessionExpiredDialogProps {
-  readonly reason: "device" | "subscription" | "offline" | "error" | "suspended";
+  readonly reason: "device" | "subscription" | "offline" | "error" | "suspended" | "timeout";
   readonly errorMessage?: string;
 }
 
 /**
  * Full-screen dialog shown when the user's session is invalid.
  * Covers cases: kicked by another device, subscription expired,
- * offline too long, or initialization error.
+ * offline too long, 10-minute session timeout, or initialization error.
  */
 export function SessionExpiredDialog({
   reason,
@@ -24,6 +24,7 @@ export function SessionExpiredDialog({
   const setSubscriptionExpired = useAuthStore((s) => s.setSubscriptionExpired);
   const setAccountSuspended = useAuthStore((s) => s.setAccountSuspended);
   const setOfflineGracePeriodExpired = useAuthStore((s) => s.setOfflineGracePeriodExpired);
+  const setSessionTimeoutExpired = useAuthStore((s) => s.setSessionTimeoutExpired);
   const { t } = useTranslation();
   const [countdown, setCountdown] = useState(3);
 
@@ -54,6 +55,10 @@ export function SessionExpiredDialog({
     setSubscriptionExpired(false);
     setOfflineGracePeriodExpired(false);
     setAccountSuspended(false);
+    setSessionTimeoutExpired(false);
+    try {
+      sessionStorage.removeItem("session_started_at");
+    } catch {}
   };
 
   const handleChangePassword = async () => {
@@ -87,6 +92,11 @@ export function SessionExpiredDialog({
       icon: <XCircle size={40} className="text-destructive" />,
       title: "Tài khoản bị khoá",
       description: "Tài khoản của bạn đã bị khoá.",
+    },
+    timeout: {
+      icon: <Clock size={40} className="text-amber-500" />,
+      title: "Hết thời gian phiên làm việc (10 phút)",
+      description: "Phiên làm việc đã kết thúc sau 10 phút sử dụng. Hệ thống tự động đăng xuất để bảo vệ phiên làm việc. Bạn có thể đăng nhập lại ngay.",
     },
   }[reason];
 

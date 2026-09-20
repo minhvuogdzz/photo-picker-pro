@@ -16,6 +16,7 @@ import { useAvailabilityStore } from "@/core/stores/useAvailabilityStore";
 import { Loader2, AlertTriangle, Info } from "lucide-react";
 import { useAppStore } from "@/core/stores/useAppStore";
 import { exit } from '@tauri-apps/plugin-process';
+import { useSessionTimeoutListener } from "@/core/hooks/useSessionTimeout";
 
 interface AuthGuardProps {
   readonly children: React.ReactNode;
@@ -23,18 +24,22 @@ interface AuthGuardProps {
 
 /**
  * Wraps the entire app. Handles:
- * - Initial session loading from disk
+ * - Initial session load from disk
  * - Online/offline subscription validation
  * - Backend availability & maintenance screen rendering
+ * - 10-minute session timeout enforcement
  * - Rendering LoginPage when not authenticated
- * - Showing SessionExpiredDialog when kicked by another device
+ * - Showing SessionExpiredDialog when kicked by another device or timeout
  */
 export function AuthGuard({ children }: AuthGuardProps) {
+  useSessionTimeoutListener();
+
   const session = useAuthStore((s) => s.session);
   const isLoading = useAuthStore((s) => s.isLoading);
   const availabilityState = useAvailabilityStore((s) => s.state);
   const offlineBypass = useAvailabilityStore((s) => s.offlineBypass);
   const sessionExpiredByOtherDevice = useAuthStore((s) => s.sessionExpiredByOtherDevice);
+  const sessionTimeoutExpired = useAuthStore((s) => s.sessionTimeoutExpired);
   const subscriptionExpired = useAuthStore((s) => s.subscriptionExpired);
   const offlineGracePeriodExpired = useAuthStore((s) => s.offlineGracePeriodExpired);
   const setSession = useAuthStore((s) => s.setSession);
@@ -189,6 +194,11 @@ export function AuthGuard({ children }: AuthGuardProps) {
   // Init error
   if (initError) {
     return <SessionExpiredDialog reason="error" errorMessage={initError} />;
+  }
+
+  // 10-minute session timeout reached
+  if (sessionTimeoutExpired) {
+    return <SessionExpiredDialog reason="timeout" />;
   }
 
   // Not authenticated → show login
