@@ -196,7 +196,16 @@ pub fn launch_photon_studio(app: tauri::AppHandle) -> Result<String, String> {
                     let _ = std::fs::remove_file(p_support.join("SingletonCookie"));
                 }
                 
-                // 1. Primary: Launch via macOS open command with isolated instance (-n)
+                // 1. Primary: Launch binary directly with env vars to bypass Electron single-instance lock
+                if let Ok(_) = Command::new(&binary_file)
+                    .env("PHOTON_E2E_ALLOW_MULTIPLE_INSTANCES", "1")
+                    .env("PHOTON_DISABLE_QUIT_CONFIRM", "1")
+                    .spawn()
+                {
+                    return true;
+                }
+
+                // 2. Fallback: open command
                 if let Ok(st) = Command::new("open")
                     .args(["-n", p.to_str().unwrap_or("")])
                     .status()
@@ -204,11 +213,6 @@ pub fn launch_photon_studio(app: tauri::AppHandle) -> Result<String, String> {
                     if st.success() {
                         return true;
                     }
-                }
-
-                // 2. Fallback: Launch binary directly
-                if let Ok(_) = Command::new(&binary_file).spawn() {
-                    return true;
                 }
             }
             false
