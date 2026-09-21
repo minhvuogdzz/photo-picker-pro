@@ -291,50 +291,48 @@ export default function ResourcesApp() {
   // If user does not have VIP Premium
   if (!isPremium) {
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center bg-[#111216] rounded-2xl border border-white/10 p-8 text-center relative overflow-hidden animate-fade-in select-none">
-        {/* Glowing Radial Effect */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-
+      <div className="w-full h-full flex flex-col items-center justify-center bg-card/90 backdrop-blur-md rounded-xl border border-border p-8 text-center relative overflow-hidden animate-fade-in select-none text-foreground">
+        
         {/* Back Button */}
         <button
           onClick={() => setActiveModule("launcher")}
-          className="absolute top-5 left-5 w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 flex items-center justify-center text-muted-foreground hover:text-foreground transition-all duration-150 cursor-pointer border border-white/10 transform-gpu"
+          className="absolute top-4 left-4 w-7 h-7 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer border border-border"
           title="Quay lại Launcher"
         >
-          <ArrowLeft size={15} />
+          <ArrowLeft size={14} />
         </button>
 
         {/* VIP Crown Box */}
-        <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-amber-500/20 via-orange-500/15 to-transparent border border-amber-500/30 flex items-center justify-center text-amber-400 mb-4 shadow-xl shadow-amber-500/10">
-          <Crown size={32} className="fill-amber-400/30 animate-pulse" />
+        <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 mb-3">
+          <Crown size={22} />
         </div>
 
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[11px] font-bold mb-3">
-          <Sparkles size={13} />
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] font-semibold mb-2.5">
+          <Sparkles size={11} />
           <span>ĐẶC QUYỀN VIP CREATIVE HUB</span>
         </div>
 
-        <h2 className="text-xl font-extrabold text-foreground mb-2.5 tracking-tight">
+        <h2 className="text-base font-semibold text-foreground mb-1.5 tracking-tight">
           Kho Tài Nguyên Dành Riêng Cho VIP Premium
         </h2>
 
-        <p className="text-xs text-muted-foreground max-w-md mb-6 leading-relaxed">
+        <p className="text-xs text-muted-foreground max-w-md mb-5 leading-relaxed">
           Kho tài nguyên Actions Retouch, Presets độc quyền, Brushes và giáo trình thực chiến chỉ mở khóa cho tài khoản được cấp quyền <strong>VIP Premium</strong>.
         </p>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <button
             onClick={() => setActiveModule("launcher")}
-            className="h-10 px-4 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 text-xs font-semibold text-muted-foreground hover:text-foreground border border-white/10 transition-all duration-150 cursor-pointer transform-gpu"
+            className="h-9 px-3.5 rounded-lg bg-muted hover:bg-muted/80 text-xs font-medium text-foreground border border-border transition-colors cursor-pointer"
           >
             Quay lại Launcher
           </button>
 
           <button
             onClick={() => setShowLicenseModal(true)}
-            className="h-10 px-5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:brightness-110 active:scale-[0.98] text-black font-extrabold text-xs shadow-lg shadow-amber-500/25 transition-all duration-150 flex items-center gap-2 cursor-pointer transform-gpu"
+            className="h-9 px-4 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
           >
-            <Crown size={14} className="fill-black" />
+            <Crown size={13} />
             <span>Đổi quyền lợi / Đăng ký Premium</span>
           </button>
         </div>
@@ -352,27 +350,27 @@ export default function ResourcesApp() {
   }
 
   return (
-    <div className="w-full h-full flex flex-col bg-card/85 backdrop-blur-2xl rounded-2xl border border-border overflow-hidden relative animate-fade-in select-none text-foreground">
+    <div className="w-full h-full flex flex-col bg-card/90 backdrop-blur-md rounded-xl border border-border overflow-hidden relative animate-fade-in select-none text-foreground">
       
       {/* Top Header / Navigation Bar */}
       <div className="px-5 py-3 border-b border-border bg-muted/30 flex items-center justify-between gap-4 shrink-0">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setActiveModule("launcher")}
-            className="w-7 h-7 rounded-lg bg-muted hover:bg-muted/80 active:scale-95 flex items-center justify-center text-muted-foreground hover:text-foreground transition-all duration-150 cursor-pointer border border-border transform-gpu"
+            className="w-7 h-7 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer border border-border"
             title="Quay lại Launcher"
           >
             <ArrowLeft size={14} />
           </button>
 
-          <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-500">
+          <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
             <Layers size={14} />
           </div>
 
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xs font-bold text-foreground tracking-tight">Kho Tài Nguyên Creative</h1>
-              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-500 border border-amber-500/30">
+              <h1 className="text-xs font-semibold text-foreground tracking-tight">Kho Tài Nguyên Creative</h1>
+              <span className="text-[9px] font-medium px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20">
                 PRO VAULT
               </span>
             </div>
@@ -383,20 +381,20 @@ export default function ResourcesApp() {
         </div>
 
         {/* Search Input */}
-        <div className="relative w-56">
-          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <div className="relative w-52">
+          <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm tài nguyên, hashtag..."
-            className="w-full bg-background border border-border rounded-xl pl-8 pr-2.5 py-1 text-xs text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary/50 transition-colors shadow-sm"
+            className="w-full bg-background border border-border rounded-lg pl-7 pr-2.5 py-1 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50 transition-colors shadow-sm"
           />
         </div>
       </div>
 
       {/* Category Pills Navigation with live counts */}
-      <div className="px-5 py-2 border-b border-border bg-muted/15 flex items-center gap-1.5 overflow-x-auto shrink-0 custom-scrollbar">
+      <div className="px-5 py-2 border-b border-border bg-muted/15 flex items-center gap-1 overflow-x-auto shrink-0 custom-scrollbar">
         {categories.map((cat) => {
           const Icon = cat.icon;
           const isSelected = selectedCategory.trim().toLowerCase() === cat.id.trim().toLowerCase();
@@ -404,15 +402,15 @@ export default function ResourcesApp() {
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold transition-colors duration-150 whitespace-nowrap cursor-pointer transform-gpu ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors whitespace-nowrap cursor-pointer ${
                 isSelected
-                  ? "bg-primary/15 text-primary shadow-sm border border-primary/30"
+                  ? "bg-primary/12 text-primary border border-primary/25"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/60 border border-transparent"
               }`}
             >
               <Icon size={12} />
               <span>{cat.label}</span>
-              <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${isSelected ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+              <span className={`text-[9px] font-mono px-1 rounded ${isSelected ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
                 {cat.count}
               </span>
             </button>
@@ -440,53 +438,53 @@ export default function ResourcesApp() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 pb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pb-6">
             {filteredResources.map((item) => (
               <div
                 key={item.id}
-                className="group rounded-2xl p-4 bg-card/75 hover:bg-card border border-border hover:border-primary/30 transition-colors duration-150 flex flex-col justify-between shadow-sm transform-gpu"
+                className="group rounded-xl p-3.5 bg-card hover:bg-card/90 border border-border hover:border-primary/30 transition-colors flex flex-col justify-between shadow-sm"
               >
                 <div>
                   {/* Top Line: Category Pill + VIP/HOT + Format Tag */}
-                  <div className="flex items-center justify-between gap-2 mb-2.5">
-                    <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-muted text-muted-foreground border border-border">
                       {item.category}
                     </span>
 
                     <div className="flex items-center gap-1.5">
                       {item.isVip && (
-                        <span className="text-[9px] font-extrabold px-2 py-0.2 rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/40 tracking-wider">
+                        <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-500 border border-amber-500/25">
                           VIP
                         </span>
                       )}
                       {item.isHot && (
-                        <span className="text-[9px] font-extrabold px-2 py-0.2 rounded-full bg-rose-500/20 text-rose-500 border border-rose-500/40 tracking-wider">
+                        <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-rose-500/15 text-rose-500 border border-rose-500/25">
                           HOT
                         </span>
                       )}
-                      <span className="text-[10px] font-bold font-mono text-muted-foreground tracking-wider uppercase">
+                      <span className="text-[10px] font-mono text-muted-foreground uppercase">
                         {item.fileFormat?.startsWith(".") ? item.fileFormat : `.${item.fileFormat}`}
                       </span>
                     </div>
                   </div>
 
                   {/* Title */}
-                  <h3 className="text-xs md:text-sm font-bold text-foreground group-hover:text-primary transition-colors duration-150 line-clamp-1 mb-1.5 tracking-tight leading-snug">
+                  <h3 className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1 mb-1 tracking-tight">
                     {item.title}
                   </h3>
 
                   {/* Description */}
-                  <p className="text-[11px] text-muted-foreground/80 line-clamp-2 leading-relaxed mb-3">
+                  <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed mb-2.5">
                     {item.description}
                   </p>
 
                   {/* Hashtags */}
                   {item.hashtags && item.hashtags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-3">
+                    <div className="flex flex-wrap gap-1 mb-2.5">
                       {item.hashtags.map((tag, idx) => (
                         <span
                           key={idx}
-                          className="text-[10px] text-muted-foreground/90 px-2 py-0.5 rounded-md bg-muted/60 border border-border/60"
+                          className="text-[9px] text-muted-foreground px-1.5 py-0.2 rounded bg-muted/60 border border-border/50"
                         >
                           #{tag.replace(/^#/, "")}
                         </span>
@@ -496,20 +494,20 @@ export default function ResourcesApp() {
                 </div>
 
                 {/* Card Footer: Size, Rating and 'Chi tiết' Button */}
-                <div className="pt-2.5 border-t border-border flex items-center justify-between gap-2 mt-auto">
-                  <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                <div className="pt-2 border-t border-border flex items-center justify-between gap-2 mt-auto">
+                  <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                     <span>{item.size || "0 MB"}</span>
-                    <span>•</span>
-                    <span className="text-amber-500 font-bold flex items-center gap-0.5">
+                    <span>·</span>
+                    <span className="text-amber-500 font-medium">
                       ★ {Number(item.rating || 5).toFixed(1)}
                     </span>
                   </div>
 
                   <button
                     onClick={() => handleOpenDetail(item)}
-                    className="h-8 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-muted/60 hover:bg-muted active:scale-95 text-foreground font-semibold text-xs border border-border hover:border-primary/40 transition-all duration-150 cursor-pointer shadow-sm transform-gpu"
+                    className="h-7 flex items-center gap-1 px-2.5 rounded-lg bg-muted hover:bg-muted/80 text-foreground font-medium text-[11px] border border-border hover:border-primary/30 transition-colors cursor-pointer"
                   >
-                    <Download size={13} className="text-muted-foreground" />
+                    <Download size={11} className="text-muted-foreground" />
                     <span>Chi tiết</span>
                   </button>
                 </div>
@@ -521,52 +519,52 @@ export default function ResourcesApp() {
 
       {/* Resource Detail Modal */}
       {activeItem && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 animate-fade-in">
-          <div className="w-full max-w-lg bg-card border border-border rounded-3xl p-6 shadow-2xl relative animate-scale-in text-foreground">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
+          <div className="w-full max-w-md bg-card border border-border rounded-xl p-5 shadow-xl relative animate-scale-in text-foreground">
             
             {/* Top Bar inside Modal */}
-            <div className="flex items-start justify-between gap-4 mb-3">
-              <span className="text-[10px] font-bold px-3 py-1 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30">
+            <div className="flex items-start justify-between gap-4 mb-2.5">
+              <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-md bg-amber-500/10 text-amber-500 border border-amber-500/20">
                 {activeItem.category}
               </span>
 
               <button
                 onClick={handleCloseModal}
-                className="w-7 h-7 rounded-full bg-muted hover:bg-muted/80 active:scale-95 text-muted-foreground hover:text-foreground flex items-center justify-center cursor-pointer transition-all duration-150 transform-gpu"
+                className="w-6 h-6 rounded-md bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground flex items-center justify-center cursor-pointer transition-colors"
                 title="Đóng"
               >
-                <X size={14} />
+                <X size={13} />
               </button>
             </div>
 
             {/* Title & Description */}
-            <h2 className="text-base font-bold text-foreground leading-snug mb-2">
+            <h2 className="text-sm font-semibold text-foreground leading-snug mb-1.5">
               {activeItem.title}
             </h2>
 
-            <p className="text-xs text-muted-foreground leading-relaxed mb-5">
+            <p className="text-xs text-muted-foreground leading-relaxed mb-4">
               {activeItem.description}
             </p>
 
             {/* 3-Column Info Box */}
-            <div className="grid grid-cols-3 gap-2 p-3.5 rounded-2xl bg-muted/40 border border-border mb-5 text-center">
+            <div className="grid grid-cols-3 gap-2 p-2.5 rounded-lg bg-muted/40 border border-border mb-4 text-center">
               <div>
-                <span className="text-[10px] text-muted-foreground block mb-1">Định dạng</span>
-                <span className="text-xs font-bold text-foreground font-mono uppercase">
+                <span className="text-[10px] text-muted-foreground block mb-0.5">Định dạng</span>
+                <span className="text-xs font-semibold text-foreground font-mono uppercase">
                   {activeItem.fileFormat?.startsWith(".") ? activeItem.fileFormat : `.${activeItem.fileFormat}`}
                 </span>
               </div>
 
               <div>
-                <span className="text-[10px] text-muted-foreground block mb-1">Dung lượng</span>
-                <span className="text-xs font-bold text-foreground font-mono">
+                <span className="text-[10px] text-muted-foreground block mb-0.5">Dung lượng</span>
+                <span className="text-xs font-semibold text-foreground font-mono">
                   {activeItem.size || "0 MB"}
                 </span>
               </div>
 
               <div>
-                <span className="text-[10px] text-muted-foreground block mb-1">Tác giả</span>
-                <span className="text-xs font-bold text-amber-500 truncate block">
+                <span className="text-[10px] text-muted-foreground block mb-0.5">Tác giả</span>
+                <span className="text-xs font-semibold text-foreground truncate block">
                   {activeItem.author || "MVD Academy"}
                 </span>
               </div>
@@ -574,19 +572,19 @@ export default function ResourcesApp() {
 
             {/* Dynamic Download Progress / Success State View */}
             {downloadStatus === "downloading" && (
-              <div className="mb-5 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 space-y-2.5 animate-fade-in">
-                <div className="flex items-center justify-between text-xs font-semibold text-amber-400">
-                  <div className="flex items-center gap-2">
-                    <Loader2 size={14} className="animate-spin" />
+              <div className="mb-4 p-3 rounded-lg bg-primary/10 border border-primary/20 space-y-2 animate-fade-in">
+                <div className="flex items-center justify-between text-xs font-semibold text-primary">
+                  <div className="flex items-center gap-1.5">
+                    <Loader2 size={13} className="animate-spin" />
                     <span>Đang tải xuống tài nguyên...</span>
                   </div>
                   <span>{downloadProgress}%</span>
                 </div>
                 
-                {/* Glowing Progress Bar */}
-                <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+                {/* Progress Bar */}
+                <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-300 rounded-full shadow-[0_0_10px_rgba(245,158,11,0.5)]"
+                    className="h-full bg-primary transition-all duration-300 rounded-full"
                     style={{ width: `${downloadProgress}%` }}
                   />
                 </div>
@@ -597,17 +595,17 @@ export default function ResourcesApp() {
             )}
 
             {downloadStatus === "success" && (
-              <div className="mb-5 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-2 animate-scale-in">
-                <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
-                  <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
+              <div className="mb-4 p-3 rounded-lg bg-primary/10 border border-primary/20 space-y-2 animate-scale-in">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+                  <CheckCircle2 size={14} className="text-primary shrink-0" />
                   <span>Tải về thành công!</span>
                 </div>
 
                 {savedFilePath ? (
                   <div className="text-[11px] text-muted-foreground space-y-1">
-                    <span>Đã lưu an toàn tại:</span>
-                    <div className="p-2 rounded-lg bg-black/40 border border-white/5 font-mono text-[10px] text-foreground/90 break-all select-all flex items-center gap-1.5">
-                      <FolderOpen size={13} className="text-amber-400 shrink-0" />
+                    <span>Đã lưu tại:</span>
+                    <div className="p-2 rounded-md bg-muted/50 border border-border font-mono text-[10px] text-foreground break-all select-all flex items-center gap-1.5">
+                      <FolderOpen size={12} className="text-primary shrink-0" />
                       <span className="truncate">{savedFilePath}</span>
                     </div>
                   </div>
@@ -620,29 +618,29 @@ export default function ResourcesApp() {
             )}
 
             {downloadStatus === "error" && (
-              <div className="mb-5 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
-                <X size={16} className="shrink-0" />
+              <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2">
+                <X size={14} className="shrink-0" />
                 <span>{errorMessage || "Đã xảy ra lỗi trong quá trình tải về."}</span>
               </div>
             )}
 
-            {/* Action Buttons - Smooth & Non-jittering */}
-            <div className="flex items-center gap-3">
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2.5">
               {downloadStatus === "success" && savedFilePath ? (
                 <>
                   <button
                     onClick={handleRevealFile}
-                    className="flex-1 h-11 rounded-2xl bg-white/10 hover:bg-white/15 active:scale-[0.98] text-foreground font-bold text-xs transition-all duration-150 cursor-pointer text-center flex items-center justify-center gap-1.5 transform-gpu"
+                    className="flex-1 h-9 rounded-lg bg-muted hover:bg-muted/80 text-foreground font-medium text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 border border-border"
                   >
-                    <FolderOpen size={14} className="text-amber-400" />
+                    <FolderOpen size={13} className="text-primary" />
                     <span>Mở thư mục</span>
                   </button>
 
                   <button
                     onClick={handleCloseModal}
-                    className="flex-1 h-11 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:brightness-110 active:scale-[0.98] text-black font-extrabold text-xs shadow-lg shadow-emerald-500/25 transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer transform-gpu"
+                    className="flex-1 h-9 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs shadow-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                   >
-                    <CheckCircle2 size={14} />
+                    <CheckCircle2 size={13} />
                     <span>Hoàn tất</span>
                   </button>
                 </>
@@ -650,7 +648,7 @@ export default function ResourcesApp() {
                 <>
                   <button
                     onClick={handleCloseModal}
-                    className="flex-1 h-11 rounded-2xl bg-white/10 hover:bg-white/15 active:scale-[0.98] text-foreground font-bold text-xs transition-all duration-150 cursor-pointer text-center flex items-center justify-center transform-gpu"
+                    className="flex-1 h-9 rounded-lg bg-muted hover:bg-muted/80 text-foreground font-medium text-xs transition-colors cursor-pointer border border-border"
                   >
                     Đóng
                   </button>
@@ -658,26 +656,26 @@ export default function ResourcesApp() {
                   <button
                     onClick={() => handleStartDownload(activeItem)}
                     disabled={downloadStatus === "downloading" || downloadStatus === "picking"}
-                    className="flex-1 h-11 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:brightness-110 active:scale-[0.98] text-black font-extrabold text-xs shadow-lg shadow-amber-500/25 transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 transform-gpu"
+                    className="flex-1 h-9 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs shadow-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
                     {downloadStatus === "downloading" ? (
                       <>
-                        <Loader2 size={15} className="animate-spin" />
+                        <Loader2 size={13} className="animate-spin" />
                         Đang tải {downloadProgress}%
                       </>
                     ) : downloadStatus === "picking" ? (
                       <>
-                        <HardDrive size={15} className="animate-pulse" />
+                        <HardDrive size={13} className="animate-pulse" />
                         Đang chọn thư mục...
                       </>
                     ) : activeItem.downloadType === "DRIVE" ? (
                       <>
-                        <ExternalLink size={15} />
+                        <ExternalLink size={13} />
                         Mở Google Drive
                       </>
                     ) : (
                       <>
-                        <Download size={15} />
+                        <Download size={13} />
                         Tải về ngay
                       </>
                     )}

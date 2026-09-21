@@ -1,6 +1,7 @@
 import { ElementType } from "react";
-import { FileImage, Eraser, Layers, Sparkles, FolderArchive, Palette, FileSpreadsheet } from "lucide-react";
+import { FileImage, Layers, Sparkles, FolderArchive, Palette, FileSpreadsheet } from "lucide-react";
 import { PhotoPickerIcon } from "@/core/components/PhotoPickerIcon";
+import { PhotonIcon } from "@/core/components/PhotonIcon";
 
 export interface AppModule {
   id: string;
@@ -19,6 +20,8 @@ export interface AppModule {
     border: string;
     bgGlow: string;
     iconBg: string;
+    badgeClass: string;
+    lightGlow: string;
   };
 }
 
@@ -35,12 +38,14 @@ export const modules: AppModule[] = [
       "lọc ảnh", "photo picker", "đồng bộ", "google sheet", 
       "khách hàng", "copy ảnh", "studio", "raw", "chọn ảnh"
     ],
-    badge: "Core App",
+    badge: "Core Studio",
     accentColor: {
-      primary: "text-blue-400",
-      border: "hover:border-blue-400/50 hover:shadow-[0_0_30px_rgba(59,130,246,0.35)]",
-      bgGlow: "from-blue-500/20 via-cyan-500/10 to-transparent",
-      iconBg: "from-blue-500/20 to-cyan-500/10 border-blue-500/30",
+      primary: "text-blue-600 dark:text-blue-400",
+      border: "hover:border-blue-500/50",
+      bgGlow: "from-blue-500/15 via-blue-500/5 to-transparent",
+      iconBg: "bg-blue-500/12 dark:bg-blue-500/25 border-blue-500/25 dark:border-blue-500/35 text-blue-600 dark:text-blue-400",
+      badgeClass: "bg-blue-500/10 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/25 dark:border-blue-500/35",
+      lightGlow: "rgba(59, 130, 246, 0.2)",
     }
   },
   {
@@ -55,13 +60,15 @@ export const modules: AppModule[] = [
       "contact the sheet", "google sheet", "google drive", "đối soát", 
       "link edit", "tên edit", "tự động hóa", "studio", "workflow"
     ],
-    badge: "VIP Studio Ops",
+    badge: "Studio Ops",
     isPremium: true,
     accentColor: {
-      primary: "text-teal-400",
-      border: "hover:border-teal-400/50 hover:shadow-[0_0_30px_rgba(20,184,166,0.35)]",
-      bgGlow: "from-teal-500/20 via-emerald-500/10 to-transparent",
-      iconBg: "from-teal-500/20 to-emerald-500/10 border-teal-500/30",
+      primary: "text-emerald-600 dark:text-emerald-400",
+      border: "hover:border-emerald-500/50",
+      bgGlow: "from-emerald-500/15 via-emerald-500/5 to-transparent",
+      iconBg: "bg-emerald-500/12 dark:bg-emerald-500/25 border-emerald-500/25 dark:border-emerald-500/35 text-emerald-600 dark:text-emerald-400",
+      badgeClass: "bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25 dark:border-emerald-500/35",
+      lightGlow: "rgba(16, 185, 129, 0.2)",
     }
   },
   {
@@ -78,13 +85,14 @@ export const modules: AppModule[] = [
       "giáo trình", "retouch", "blend màu"
     ],
     isPinned: true,
-    badge: "Featured Hub",
     isPremium: true,
     accentColor: {
-      primary: "text-amber-400",
-      border: "hover:border-amber-400/50 hover:shadow-[0_0_30px_rgba(251,191,36,0.3)]",
-      bgGlow: "from-amber-500/20 via-orange-500/10 to-transparent",
-      iconBg: "from-amber-500/20 to-orange-500/10 border-amber-500/30",
+      primary: "text-amber-600 dark:text-amber-400",
+      border: "hover:border-amber-500/50",
+      bgGlow: "from-amber-500/15 via-amber-500/5 to-transparent",
+      iconBg: "bg-amber-500/12 dark:bg-amber-500/25 border-amber-500/25 dark:border-amber-500/35 text-amber-600 dark:text-amber-400",
+      badgeClass: "bg-amber-500/10 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/25 dark:border-amber-500/35",
+      lightGlow: "rgba(245, 158, 11, 0.2)",
     }
   },
   {
@@ -99,32 +107,38 @@ export const modules: AppModule[] = [
       "convert", "chuyển đổi", "raw sang jpg", "cr2", "cr3", 
       "nef", "arw", "webp", "nén ảnh", "batch convert"
     ],
-    badge: "Fast engine",
+    badge: "Fast Engine",
     accentColor: {
-      primary: "text-emerald-400",
-      border: "hover:border-emerald-400/50 hover:shadow-[0_0_30px_rgba(160,185,129,0.35)]",
-      bgGlow: "from-emerald-500/20 via-teal-500/10 to-transparent",
-      iconBg: "from-emerald-500/20 to-teal-500/10 border-emerald-500/30",
+      primary: "text-violet-600 dark:text-violet-400",
+      border: "hover:border-violet-500/50",
+      bgGlow: "from-violet-500/15 via-violet-500/5 to-transparent",
+      iconBg: "bg-violet-500/12 dark:bg-violet-500/25 border-violet-500/25 dark:border-violet-500/35 text-violet-600 dark:text-violet-400",
+      badgeClass: "bg-violet-500/10 dark:bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/25 dark:border-violet-500/35",
+      lightGlow: "rgba(139, 92, 246, 0.2)",
     }
   },
   {
-    id: "ps-plugin",
-    name: "Cleanup Agent",
-    shortName: "Retouch Agent",
-    icon: Eraser,
-    path: "/ps-plugin",
-    description: "Tự động hóa tác vụ nhận diện vùng rác, tạo mask và làm sạch trực tiếp trong Adobe Photoshop qua Content-Aware.",
+    id: "photon-studio",
+    name: "MPhoton",
+    shortName: "MPhoton",
+    icon: PhotonIcon,
+    path: "/photon-studio",
+    description: "Bộ công cụ studio hậu kỳ & retouch chuyên nghiệp MPhoton, tối ưu phân tích workflow và gia tốc phần cứng trên cửa sổ riêng.",
     category: "retouch",
     tags: [
-      "retouch", "photoshop", "cleanup", "xóa rác", "content-aware", 
-      "mask", "plugin", "tự động hóa", "brush"
+      "mphoton", "photon", "studio", "retouch", "chân dung", 
+      "hậu kỳ", "photoshop", "màu sắc", "mvd"
     ],
-    badge: "PS Bridge",
+    badge: "VIP Retouch",
+    isPremium: true,
     accentColor: {
-      primary: "text-purple-400",
-      border: "hover:border-purple-400/50 hover:shadow-[0_0_30px_rgba(168,85,247,0.35)]",
-      bgGlow: "from-purple-500/20 via-pink-500/10 to-transparent",
-      iconBg: "from-purple-500/20 to-pink-500/10 border-purple-500/30",
+      primary: "text-cyan-600 dark:text-cyan-400",
+      border: "hover:border-cyan-500/50",
+      bgGlow: "from-cyan-500/15 via-cyan-500/5 to-transparent",
+      iconBg: "bg-cyan-500/12 dark:bg-cyan-500/25 border-cyan-500/25 dark:border-cyan-500/35 text-cyan-600 dark:text-cyan-400",
+      badgeClass: "bg-cyan-500/10 dark:bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border-cyan-500/25 dark:border-cyan-500/35",
+      lightGlow: "rgba(6, 182, 212, 0.2)",
     }
-  },
+  }
 ];
+

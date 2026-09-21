@@ -24,6 +24,7 @@ import {
   Crown,
   Lock,
   Cpu,
+  FileSpreadsheet,
 } from "lucide-react";
 import { useUpdaterStore } from "@/core/stores/useUpdaterStore";
 import { apiRequest } from "@/core/services/apiClient";
@@ -155,21 +156,21 @@ export function SystemModule() {
   const isLifetime = session?.subscription?.status === "LIFETIME";
 
   return (
-    <div className="flex-1 flex w-full h-full animate-fade-in bg-card/85 backdrop-blur-2xl rounded-2xl overflow-hidden border border-border text-foreground">
+    <div className="flex-1 flex w-full h-full animate-fade-in bg-card/90 backdrop-blur-md rounded-xl overflow-hidden border border-border text-foreground">
       {/* Sidebar */}
       <div className="w-56 bg-muted/30 border-r border-border p-3 flex flex-col gap-1 shrink-0">
         <div className="flex items-center gap-2.5 px-2 py-3 mb-2 border-b border-border">
           <img src="/logo.png" alt="Logo" className="w-6 h-6 object-contain" />
           <div>
-            <h2 className="text-xs font-extrabold tracking-tight text-foreground">{t("system")}</h2>
+            <h2 className="text-[11px] font-semibold tracking-tight text-foreground">{t("system")}</h2>
             <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-semibold">{t("general_options")}</p>
           </div>
         </div>
 
         <button
           onClick={() => setActiveTab("general")}
-          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-            activeTab === "general" ? "bg-primary/15 text-primary shadow-sm border border-primary/25" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground border border-transparent"
+          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
+            activeTab === "general" ? "bg-primary/12 text-primary border border-primary/20" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground border border-transparent"
           }`}
         >
           <Settings2 size={15} />
@@ -178,8 +179,8 @@ export function SystemModule() {
 
         <button
           onClick={() => setActiveTab("about")}
-          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-            activeTab === "about" ? "bg-primary/15 text-primary shadow-sm border border-primary/25" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground border border-transparent"
+          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
+            activeTab === "about" ? "bg-primary/12 text-primary border border-primary/20" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground border border-transparent"
           }`}
         >
           <Info size={15} />
@@ -196,10 +197,10 @@ export function SystemModule() {
             <div className="max-w-xl w-full space-y-6 animate-slide-up pb-8">
               <div className="flex items-center justify-between pb-3.5 border-b border-border">
                 <div>
-                  <h1 className="text-sm font-extrabold tracking-tight text-foreground">{t("general_settings")}</h1>
+                  <h1 className="text-[13px] font-semibold tracking-tight text-foreground">{t("general_settings")}</h1>
                   <p className="text-[11px] text-muted-foreground mt-0.5">Tùy biến môi trường làm việc và cập nhật phần mềm</p>
                 </div>
-                <button onClick={handleSave} className="py-2 px-3.5 bg-primary hover:bg-primary/90 active:scale-95 text-primary-foreground font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer">
+                <button onClick={handleSave} className="py-1.5 px-3 bg-primary hover:bg-primary/90 active:scale-97 text-primary-foreground font-medium text-[11px] rounded-lg transition-all flex items-center gap-1.5 cursor-pointer">
                   <Save size={13} /> {t("save_changes")}
                 </button>
               </div>
@@ -393,13 +394,13 @@ export function SystemModule() {
                   </div>
 
                   <div className="p-3 rounded-xl bg-muted/40 border border-border/80 flex items-start gap-2.5">
-                    <div className="w-7 h-7 rounded-lg bg-purple-500/15 text-purple-400 flex items-center justify-center shrink-0 mt-0.5">
-                      <Layers size={14} />
+                    <div className="w-7 h-7 rounded-lg bg-teal-500/15 text-teal-400 flex items-center justify-center shrink-0 mt-0.5">
+                      <FileSpreadsheet size={14} />
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-foreground">Retouch Agent Bridge</h4>
+                      <h4 className="text-xs font-bold text-foreground">Contact the Sheet</h4>
                       <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">
-                        Cầu nối tự động hóa Photoshop Actions, Color Grading và xử lý da tự động mượt mà.
+                        Tự động hóa đối soát Google Sheet & Drive, khớp thư mục khách hàng và cập nhật tiến độ siêu tốc.
                       </p>
                     </div>
                   </div>

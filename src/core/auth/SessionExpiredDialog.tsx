@@ -29,7 +29,13 @@ export function SessionExpiredDialog({
   const { t } = useTranslation();
   const [countdown, setCountdown] = useState(3);
 
+  const isPremium = session?.subscription?.isPremium === true || session?.subscription?.status === "LIFETIME";
+
   useEffect(() => {
+    if (reason === "timeout" && isPremium) {
+      setSessionTimeoutExpired(false);
+      return;
+    }
     if (reason === 'suspended' || reason === 'subscription') {
       const timer = setInterval(() => {
         setCountdown((prev: number) => {
@@ -69,6 +75,7 @@ export function SessionExpiredDialog({
 
   // Dedicated Ultra-Premium Glassmorphism view for Session Timeout
   if (reason === "timeout") {
+    if (isPremium) return null;
     return (
       <div className="relative min-h-screen w-full flex items-center justify-center bg-[#0d0f14] overflow-hidden p-4 select-none">
         {/* Ambient background glow effects */}

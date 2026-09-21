@@ -95,6 +95,8 @@ function fromLocalSession(local: LocalSession): AuthSession {
     deviceId: local.device_id,
     lastSyncAt: local.last_sync_at,
     sessionDurationMinutes: (() => {
+      const isPrem = local.is_premium !== undefined ? local.is_premium : isLifetime;
+      if (isPrem) return 0;
       try {
         const s = localStorage.getItem("session_duration_minutes");
         return s && !isNaN(Number(s)) ? Number(s) : 10;
@@ -300,6 +302,9 @@ export async function validateSubscription(
     accessToken: session.accessToken,
   });
 
+  const isUpdatedPrem = (partialSession.subscription?.isPremium ?? session.subscription.isPremium) || 
+    (partialSession.subscription?.status === "LIFETIME" || session.subscription.status === "LIFETIME");
+
   const updatedSession: AuthSession = {
     ...session,
     ...partialSession,
@@ -307,6 +312,9 @@ export async function validateSubscription(
       ...session.subscription,
       ...(partialSession.subscription || {}),
     },
+    sessionDurationMinutes: isUpdatedPrem 
+      ? 0 
+      : (partialSession.sessionDurationMinutes ?? session.sessionDurationMinutes),
   };
 
   const autoLogin = sessionStorage.getItem("auto_login") !== "false";
@@ -316,7 +324,7 @@ export async function validateSubscription(
     sessionStorage.setItem("temp_auth_session", JSON.stringify(updatedSession));
   }
 
-  if (updatedSession.sessionDurationMinutes) {
+  if (!isUpdatedPrem && updatedSession.sessionDurationMinutes && updatedSession.sessionDurationMinutes > 0) {
     try {
       localStorage.setItem("session_duration_minutes", String(updatedSession.sessionDurationMinutes));
     } catch {}

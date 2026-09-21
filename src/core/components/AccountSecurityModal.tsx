@@ -214,7 +214,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/10 bg-white/[0.03] shrink-0">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/80 bg-muted/30 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary shadow-sm">
               <Shield size={16} />
@@ -227,7 +227,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
           <button
             type="button"
             onClick={onClose}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors cursor-pointer border border-transparent hover:border-white/10"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer border border-transparent hover:border-border"
             title="Đóng (ESC)"
           >
             <X size={16} />
@@ -235,7 +235,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-white/10 px-4 bg-black/20 shrink-0">
+        <div className="flex border-b border-border/80 px-4 bg-muted/20 shrink-0">
           <button
             type="button"
             onClick={() => {
@@ -289,7 +289,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
           {activeTab === "profile" && (
             <form onSubmit={handleSaveProfile} className="space-y-3.5 animate-fade-in">
               {/* Account summary banner */}
-              <div className="p-3 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-between">
+              <div className="p-3 rounded-2xl bg-card border border-border flex items-center justify-between shadow-xs">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center font-bold text-primary text-xs shadow-inner">
                     {session.name?.[0]?.toUpperCase() || "U"}
@@ -388,7 +388,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 btn-base bg-white/5 hover:bg-white/10 text-foreground py-2 text-xs font-bold transition-colors cursor-pointer border border-white/10 rounded-xl"
+                  className="flex-1 btn-base btn-outline py-2 text-xs font-bold transition-colors cursor-pointer rounded-xl"
                 >
                   Đóng
                 </button>
@@ -489,7 +489,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 btn-base bg-white/5 hover:bg-white/10 text-foreground py-2 text-xs font-bold transition-colors cursor-pointer border border-white/10 rounded-xl"
+                  className="flex-1 btn-base btn-outline py-2 text-xs font-bold transition-colors cursor-pointer rounded-xl"
                 >
                   Đóng
                 </button>
@@ -519,7 +519,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
             <div className="space-y-4 animate-fade-in">
               <div className="space-y-1.5">
                 <label className="text-[11px] font-semibold text-foreground/90 uppercase tracking-wider">Thiết bị hiện tại</label>
-                <div className="p-3 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-between">
+                <div className="p-3 rounded-2xl bg-card border border-border flex items-center justify-between shadow-xs">
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
                       <Laptop size={16} />
@@ -584,7 +584,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full btn-base bg-white/5 hover:bg-white/10 text-foreground py-2 text-xs font-bold transition-colors cursor-pointer border border-white/10 rounded-xl mt-2"
+                className="w-full btn-base btn-outline py-2 text-xs font-bold transition-colors cursor-pointer rounded-xl mt-2"
               >
                 Đóng
               </button>

@@ -153,3 +153,211 @@ pub fn save_file_bytes(file_path: String, bytes: Vec<u8>) -> Result<String, Stri
     Ok("Đã lưu tệp thành công".to_string())
 }
 
+#[tauri::command]
+pub fn launch_photon_studio(app: tauri::AppHandle) -> Result<String, String> {
+    #[cfg(target_os = "macos")]
+    {
+        use tauri::Manager;
+
+        // 0. Enforce VIP Premium permission
+        if let Ok(Some(session)) = crate::commands::auth::load_auth_session() {
+            let is_premium = session.is_premium.unwrap_or(false) || session.subscription_status == "LIFETIME";
+            if !is_premium {
+                return Err("MPhoton là tính năng độc quyền yêu cầu tài khoản VIP Premium để khởi chạy.".to_string());
+            }
+        }
+
+        // Helper closure to validate integrity, strip quarantine and launch app
+        let launch_bundle = |p: &Path| -> bool {
+            if p.exists() {
+                let asar_file = p.join("Contents").join("Resources").join("app.asar");
+                let binary_file = if p.join("Contents").join("MacOS").join("MPhoton").exists() {
+                    p.join("Contents").join("MacOS").join("MPhoton")
+                } else {
+                    p.join("Contents").join("MacOS").join("Photon Studio")
+                };
+
+                // Ensure it is a complete, uncorrupted bundle (prevents launching partial copies)
+                if !asar_file.exists() || !binary_file.exists() {
+                    return false;
+                }
+
+                // Automatically strip macOS quarantine attribute
+                let _ = Command::new("xattr").args(["-cr", p.to_str().unwrap_or("")]).status();
+                
+                // Hide bundle from Finder so users cannot locate it
+                let _ = Command::new("chflags").args(["hidden", p.to_str().unwrap_or("")]).status();
+
+                // Clean up any stale Singleton lock files in Application Support to prevent instant exit
+                if let Ok(home) = std::env::var("HOME") {
+                    let p_support = Path::new(&home).join("Library/Application Support/Photon Studio");
+                    let _ = std::fs::remove_file(p_support.join("SingletonLock"));
+                    let _ = std::fs::remove_file(p_support.join("SingletonSocket"));
+                    let _ = std::fs::remove_file(p_support.join("SingletonCookie"));
+                }
+                
+                // 1. Primary: Launch via macOS open command with isolated instance (-n)
+                if let Ok(st) = Command::new("open")
+                    .args(["-n", p.to_str().unwrap_or("")])
+                    .status()
+                {
+                    if st.success() {
+                        return true;
+                    }
+                }
+
+                // 2. Fallback: Launch binary directly
+                if let Ok(_) = Command::new(&binary_file).spawn() {
+                    return true;
+                }
+            }
+            false
+        };
+
+        // 1. Check direct development workspace paths first (intact source files)
+        if let Ok(cwd) = std::env::current_dir() {
+            let candidates = [
+                cwd.join("resources").join("apps").join("MPhoton.app"),
+                cwd.join("src-tauri").join("resources").join("apps").join("MPhoton.app"),
+                cwd.join("photo-picker-pro").join("src-tauri").join("resources").join("apps").join("MPhoton.app"),
+                cwd.join("resources").join("apps").join("Photon Studio.app"),
+                cwd.join("src-tauri").join("resources").join("apps").join("Photon Studio.app"),
+                cwd.join("photo-picker-pro").join("src-tauri").join("resources").join("apps").join("Photon Studio.app"),
+            ];
+            for c in candidates {
+                if launch_bundle(&c) {
+                    return Ok("Đã khởi chạy cửa sổ MPhoton thành công".to_string());
+                }
+            }
+        }
+
+        // 2. Check bundled resources (production)
+        if let Ok(res_dir) = app.path().resource_dir() {
+            let candidates = [
+                res_dir.join("resources").join("apps").join("MPhoton.app"),
+                res_dir.join("apps").join("MPhoton.app"),
+                res_dir.join("resources").join("apps").join("Photon Studio.app"),
+                res_dir.join("apps").join("Photon Studio.app"),
+            ];
+            for p in candidates {
+                if launch_bundle(&p) {
+                    return Ok("Đã khởi chạy cửa sổ MPhoton thành công".to_string());
+                }
+            }
+        }
+
+        // 3. Fallback to system /Applications
+        let fallback_sys1 = Path::new("/Applications/MPhoton.app");
+        if launch_bundle(&fallback_sys1) {
+            return Ok("Đã khởi chạy cửa sổ MPhoton thành công".to_string());
+        }
+        let fallback_sys2 = Path::new("/Applications/Photon Studio.app");
+        if launch_bundle(&fallback_sys2) {
+            return Ok("Đã khởi chạy cửa sổ MPhoton thành công".to_string());
+        }
+
+        Err("Không tìm thấy ứng dụng MPhoton hợp lệ trong thư mục resources/apps.".to_string())
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        Err("MPhoton hiện chỉ hỗ trợ trên hệ điều hành macOS.".to_string())
+    }
+}
+
+#[tauri::command]
+pub fn check_photon_studio_status() -> Result<bool, String> {
+    #[cfg(target_os = "macos")]
+    {
+        let output1 = Command::new("pgrep").args(["-f", "MPhoton"]).output();
+        if let Ok(out) = output1 {
+            if out.status.success() {
+                return Ok(true);
+            }
+        }
+
+        let output2 = Command::new("pgrep").args(["-f", "Photon Studio"]).output();
+        if let Ok(out) = output2 {
+            return Ok(out.status.success());
+        }
+
+        Ok(false)
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        Ok(false)
+    }
+}
+
+#[tauri::command]
+pub fn terminate_photon_studio() -> Result<String, String> {
+    #[cfg(target_os = "macos")]
+    {
+        let _ = Command::new("pkill").args(["-9", "-f", "MPhoton"]).status();
+        let _ = Command::new("pkill").args(["-9", "-f", "Photon Studio"]).status();
+
+        Ok("Đã gửi lệnh đóng MPhoton".to_string())
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        Err("MPhoton hiện chỉ hỗ trợ trên macOS.".to_string())
+    }
+}
+
+#[tauri::command]
+pub fn set_window_companion_mode(app: tauri::AppHandle, enabled: bool) -> Result<(), String> {
+    use tauri::Manager;
+
+    if let Some(window) = app.get_webview_window("main") {
+        if enabled {
+            let _ = window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize { width: 360.0, height: 580.0 })));
+            let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize { width: 380.0, height: 680.0 }));
+            let _ = window.set_always_on_top(true);
+
+            if let Ok(Some(monitor)) = window.current_monitor() {
+                let screen_size = monitor.size();
+                let scale = monitor.scale_factor();
+                let screen_width = screen_size.width as f64 / scale;
+                let new_x = (screen_width - 400.0).max(20.0);
+                let _ = window.set_position(tauri::Position::Logical(tauri::LogicalPosition { x: new_x, y: 60.0 }));
+            }
+        } else {
+            let _ = window.set_always_on_top(false);
+            let _ = window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize { width: 1024.0, height: 680.0 })));
+            let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize { width: 1280.0, height: 800.0 }));
+            let _ = window.center();
+            let _ = window.set_focus();
+        }
+        Ok(())
+    } else {
+        Err("Không tìm thấy cửa sổ chính của Super-App".to_string())
+    }
+}
+
+#[tauri::command]
+pub fn minimize_main_window(app: tauri::AppHandle) -> Result<(), String> {
+    use tauri::Manager;
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.minimize();
+        Ok(())
+    } else {
+        Err("Không tìm thấy cửa sổ chính".to_string())
+    }
+}
+
+#[tauri::command]
+pub fn restore_main_window(app: tauri::AppHandle) -> Result<(), String> {
+    use tauri::Manager;
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.unminimize();
+        let _ = window.show();
+        let _ = window.set_focus();
+        Ok(())
+    } else {
+        Err("Không tìm thấy cửa sổ chính".to_string())
+    }
+}
+
+

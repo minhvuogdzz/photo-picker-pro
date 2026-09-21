@@ -124,7 +124,7 @@ Photo Picker Pro is architected as an extensible **Super-App** suite:
 graph TD
     A[🌟 MVD Studio Super-App Shell] --> B[📸 Photo Picker Pro Engine]
     A --> C[🔄 MVD Image Converter]
-    A --> D[🪄 Cleanup Worker & Photoshop Agent]
+    A --> D[📊 Contact the Sheet Ops]
     A --> E[🛡️ Hardware-Bound License & System Hub]
     
     B --> B1[Rayon Parallel Scanner]
@@ -134,13 +134,13 @@ graph TD
     C --> C1[RAW to Web Proof JPG 2048px]
     C --> C2[Batch WebP / AVIF Compression]
     
-    D --> D1[Photoshop AppleScript / COM Bridge]
-    D --> D2[Automated Content-Aware Fill]
+    D --> D1[Google Sheet & Drive Reconciliation]
+    D --> D2[Formula & Dropdown Security Guard]
 ```
 
 - 📸 **Photo Picker Pro Module**: Core high-speed photo filtering and dispatch engine.
 - 🔄 **MVD Image Converter**: Batch convert RAW (CR2/CR3/ARW/NEF) to high-speed Web Proofs (2048px JPG), WebP, or TIFF with custom compression.
-- 🪄 **Cleanup Worker (Photoshop Agent)**: Direct desktop automation bridge to active Adobe Photoshop instances for AI/Content-Aware defect removal.
+- 📊 **Contact the Sheet**: Automated reconciliation for Google Sheets & Google Drive, matching customer job folders and batch status sync.
 - 🛡️ **System & Device Hub**: Hardware-fingerprinted offline license validation with optional real-time cloud management.
 
 <br/>
@@ -209,7 +209,8 @@ photo-picker-pro/
     └── modules/
         ├── photo-picker/           # Core Photo Filtering Module (Left/Center/Right panels)
         ├── mvd-convert/            # Image Format & Web Proof Converter
-        ├── ps-plugin/              # Photoshop Automation Cleanup Worker
+        ├── contact-the-sheet/      # Google Sheet & Drive Job Reconciliation Module
+        ├── resources/              # Creative Resources Hub (Presets, Actions, Brushes)
         └── system/                 # Settings, hardware diagnostics & licensing
 ```
 

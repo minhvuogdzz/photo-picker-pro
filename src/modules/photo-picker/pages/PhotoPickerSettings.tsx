@@ -38,39 +38,39 @@ export function SettingsPage() {
         </div>
 
         {/* Default Match Mode */}
-        <div className="bg-[#14161b] rounded-xl p-3.5 border border-white/10 space-y-2">
+        <div className="bg-card rounded-xl p-3.5 border border-border shadow-xs space-y-2">
           <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
             <Hash size={14} className="text-primary" />
             {t("default_match_mode")}
           </div>
           <select
-            className="w-full bg-white/5 border border-white/10 text-foreground py-1.5 px-2.5 rounded-lg text-xs font-medium outline-none focus:border-white/30 cursor-pointer"
+            className="w-full bg-muted/50 border border-border text-foreground py-1.5 px-2.5 rounded-lg text-xs font-medium outline-none focus:border-primary/50 cursor-pointer"
             value={settings.default_match_mode}
             onChange={(e) => updateSetting("default_match_mode", e.target.value)}
           >
-            <option value="ExactNumber" className="bg-[#16181d] text-foreground">{t("exact_number")}</option>
-            <option value="Contains" className="bg-[#16181d] text-foreground">{t("contains")}</option>
-            <option value="Regex" className="bg-[#16181d] text-foreground">{t("regex")}</option>
+            <option value="ExactNumber" className="bg-card text-foreground">{t("exact_number")}</option>
+            <option value="Contains" className="bg-card text-foreground">{t("contains")}</option>
+            <option value="Regex" className="bg-card text-foreground">{t("regex")}</option>
           </select>
         </div>
 
         {/* Default Output (PRO Feature) */}
         <div
-          className="bg-[#14161b] rounded-xl p-3.5 border border-white/10 space-y-2 opacity-70 cursor-pointer hover:opacity-90 transition-opacity"
+          className="bg-card rounded-xl p-3.5 border border-border shadow-xs space-y-2 opacity-75 cursor-pointer hover:opacity-100 transition-opacity"
           onClick={() => alert("Vui lòng liên hệ nhà cung cấp để sử dụng tính năng trả phí qua Zalo: 0869528304")}
         >
           <div className="flex items-center justify-between pointer-events-none">
             <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
-              <FolderOutput size={14} className="text-amber-400" />
+              <FolderOutput size={14} className="text-amber-500" />
               {t("default_output_folder")}
             </div>
-            <span className="bg-amber-500/20 text-amber-300 text-[9px] px-1.5 py-0.2 rounded font-bold tracking-wider border border-amber-500/30">
+            <span className="bg-amber-500/15 text-amber-700 dark:text-amber-300 text-[9px] px-1.5 py-0.2 rounded font-bold tracking-wider border border-amber-500/30">
               PRO
             </span>
           </div>
           <input
             type="text"
-            className="w-full bg-white/5 border border-white/10 text-foreground py-1.5 px-2.5 rounded-lg text-xs opacity-60 pointer-events-none cursor-pointer"
+            className="w-full bg-muted/40 border border-border text-foreground py-1.5 px-2.5 rounded-lg text-xs opacity-70 pointer-events-none cursor-pointer"
             value=""
             readOnly
             placeholder="Tính năng tự động đồng bộ theo Studio"
@@ -78,25 +78,25 @@ export function SettingsPage() {
         </div>
 
         {/* Default Duplicate Policy */}
-        <div className="bg-[#14161b] rounded-xl p-3.5 border border-white/10 space-y-2">
+        <div className="bg-card rounded-xl p-3.5 border border-border shadow-xs space-y-2">
           <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
             <Copy size={14} className="text-primary" />
             {t("default_duplicate_policy")}
           </div>
           <select
-            className="w-full bg-white/5 border border-white/10 text-foreground py-1.5 px-2.5 rounded-lg text-xs font-medium outline-none focus:border-white/30 cursor-pointer"
+            className="w-full bg-muted/50 border border-border text-foreground py-1.5 px-2.5 rounded-lg text-xs font-medium outline-none focus:border-primary/50 cursor-pointer"
             value={settings.default_duplicate_policy}
             onChange={(e) => updateSetting("default_duplicate_policy", e.target.value)}
           >
-            <option value="CopyFirst" className="bg-[#16181d] text-foreground">{t("copy_first")}</option>
-            <option value="CopyAll" className="bg-[#16181d] text-foreground">{t("copy_all")}</option>
-            <option value="RenameAutomatically" className="bg-[#16181d] text-foreground">{t("rename_auto")}</option>
-            <option value="Skip" className="bg-[#16181d] text-foreground">{t("skip")}</option>
+            <option value="CopyFirst" className="bg-card text-foreground">{t("copy_first")}</option>
+            <option value="CopyAll" className="bg-card text-foreground">{t("copy_all")}</option>
+            <option value="RenameAutomatically" className="bg-card text-foreground">{t("rename_auto")}</option>
+            <option value="Skip" className="bg-card text-foreground">{t("skip")}</option>
           </select>
         </div>
 
         {/* Preserve Folder Structure */}
-        <div className="bg-[#14161b] rounded-xl p-3.5 border border-white/10 space-y-2">
+        <div className="bg-card rounded-xl p-3.5 border border-border shadow-xs space-y-2">
           <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
             <FolderTree size={14} className="text-primary" />
             {t("preserve_folder")}
@@ -108,7 +108,7 @@ export function SettingsPage() {
               onChange={(e) =>
                 updateSetting("default_preserve_folder", e.target.checked)
               }
-              className="w-3.5 h-3.5 rounded border-white/20 accent-primary cursor-pointer"
+              className="w-3.5 h-3.5 rounded border-border accent-primary cursor-pointer"
             />
             <span className="text-xs text-muted-foreground">
               {t("maintain_hierarchy")}

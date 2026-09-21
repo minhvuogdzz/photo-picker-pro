@@ -100,86 +100,81 @@ export default function MvdConvertApp() {
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-gradient-to-br from-[#0f172a] via-[#020617] to-[#064e3b]/30 rounded-3xl border border-white/10 overflow-hidden relative shadow-2xl animate-fade-in">
+    <div className="w-full h-full flex flex-col bg-card/90 backdrop-blur-md rounded-xl border border-border overflow-hidden relative animate-fade-in text-foreground select-none">
       
-      {/* Glow Effects */}
-      <div className="absolute top-0 left-1/3 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-teal-500/10 rounded-full blur-[100px] pointer-events-none" />
-
       {/* Header */}
-      <div className="px-8 py-5 border-b border-white/10 bg-black/40 backdrop-blur-md flex justify-between items-center shrink-0 z-10 shadow-sm">
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-            <Zap className="text-black" size={20} fill="currentColor" />
+      <div className="px-5 py-3 border-b border-border bg-muted/30 flex justify-between items-center shrink-0 z-10">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center text-primary">
+            <Zap size={16} />
           </div>
           <div>
-            <h2 className="text-xl font-black tracking-tight text-white drop-shadow-md">MVD Convert</h2>
-            <p className="text-xs text-emerald-300/80 font-medium mt-0.5">Siêu tốc độ - Giữ nguyên Profile màu</p>
+            <h2 className="text-sm font-semibold tracking-tight text-foreground">MVD Convert</h2>
+            <p className="text-[11px] text-muted-foreground">Chuyển đổi đa luồng hàng loạt · Giữ nguyên Color Profile</p>
           </div>
         </div>
       </div>
 
       {/* 3-Column Layout */}
-      <div className="flex-1 flex flex-row w-full overflow-hidden relative z-10">
+      <div className="flex-1 flex flex-row w-full overflow-hidden relative z-10 divide-x divide-border">
         
         {/* COLUMN 1: INPUT */}
-        <div className="flex-1 border-r border-white/10 flex flex-col bg-white/[0.02] backdrop-blur-sm">
-          <div className="px-6 py-4 border-b border-white/5 bg-black/20 flex items-center gap-3">
-            <div className="w-6 h-6 rounded-md bg-white/10 flex items-center justify-center text-emerald-400">
-              <FolderOpen size={14} />
-            </div>
-            <h3 className="text-xs font-bold uppercase tracking-widest text-white/90">Nguồn Đầu Vào</h3>
+        <div className="flex-1 flex flex-col min-w-0 bg-background/30">
+          <div className="px-4 py-2.5 border-b border-border bg-muted/20 flex items-center gap-2">
+            <FolderOpen size={13} className="text-primary" />
+            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-foreground">Nguồn đầu vào</h3>
           </div>
           
-          <div className="p-6 flex flex-col h-full overflow-hidden gap-5">
+          <div className="p-4 flex flex-col h-full overflow-hidden gap-3">
             <div 
-              className={`shrink-0 p-8 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center transition-all duration-300 text-center relative group ${
+              className={`shrink-0 p-5 rounded-xl border border-dashed flex flex-col items-center justify-center transition-colors text-center relative group ${
                 isHovering 
-                  ? 'border-emerald-400 bg-emerald-500/20 scale-[1.02] shadow-[0_0_30px_rgba(52,211,153,0.15)]' 
-                  : 'border-white/15 bg-black/20 hover:border-emerald-500/40 hover:bg-white/5'
+                  ? 'border-primary bg-primary/10' 
+                  : 'border-border/80 bg-muted/20 hover:border-primary/40 hover:bg-muted/40'
               }`}
             >
-              <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-3 transition-colors ${isHovering ? 'bg-emerald-500 text-black' : 'bg-white/5 text-white/40 group-hover:text-emerald-400 group-hover:bg-emerald-500/10'}`}>
-                <UploadCloud size={24} />
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-2 bg-primary/10 text-primary">
+                <UploadCloud size={20} />
               </div>
-              <p className="text-sm font-bold text-white/90 mb-1">Kéo thả ảnh / thư mục</p>
-              <p className="text-xs text-white/40 mb-4">CR2, CR3, ARW, HEIC, JPG...</p>
+              <p className="text-xs font-semibold text-foreground mb-0.5">Kéo thả ảnh hoặc thư mục vào đây</p>
+              <p className="text-[10px] text-muted-foreground mb-3">Hỗ trợ CR2, CR3, ARW, NEF, HEIC, JPG, PNG...</p>
               <button 
                 onClick={handleSelectInput}
-                className="px-5 py-2.5 bg-white/10 hover:bg-emerald-500/20 hover:text-emerald-400 text-xs font-bold rounded-xl transition-all border border-white/10 hover:border-emerald-500/30 shadow-sm"
+                className="px-3 py-1.5 bg-muted hover:bg-muted/80 text-foreground text-xs font-medium rounded-lg transition-colors border border-border cursor-pointer shadow-sm"
               >
                 Chọn từ máy tính
               </button>
             </div>
 
-            <div className="flex flex-col flex-1 overflow-hidden glass-panel rounded-2xl border border-white/10 bg-black/40">
-              <div className="px-4 py-3 border-b border-white/5 flex justify-between items-center bg-white/5">
-                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
-                  <Layers size={12} /> Danh sách chờ ({store.inputFolders.length})
+            <div className="flex flex-col flex-1 overflow-hidden rounded-xl border border-border bg-muted/10">
+              <div className="px-3 py-2 border-b border-border flex justify-between items-center bg-muted/20">
+                <span className="text-[10px] font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Layers size={12} className="text-primary" /> Danh sách chờ ({store.inputFolders.length})
                 </span>
                 {store.inputFolders.length > 0 && (
-                  <button onClick={() => store.clearInputFolders()} className="text-[10px] text-destructive/80 hover:text-destructive font-semibold transition-colors">Xóa tất cả</button>
+                  <button onClick={() => store.clearInputFolders()} className="text-[10px] text-destructive hover:underline font-medium transition-colors cursor-pointer">Xóa tất cả</button>
                 )}
               </div>
               
-              <div className="flex-1 overflow-y-auto p-2 space-y-1.5 custom-scrollbar">
+              <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
                 {store.inputFolders.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-white/20 gap-2 opacity-50">
-                    <FileImage size={32} />
-                    <span className="text-xs font-medium">Chưa có dữ liệu</span>
+                  <div className="h-full flex flex-col items-center justify-center text-muted-foreground/60 gap-1.5 py-8">
+                    <FileImage size={24} className="opacity-40" />
+                    <span className="text-[11px]">Chưa có thư mục nào được chọn</span>
                   </div>
                 ) : (
                   store.inputFolders.map(f => (
-                    <div key={f} className="flex justify-between items-center text-xs bg-white/5 p-3 rounded-xl border border-white/5 hover:border-emerald-500/30 transition-colors group">
-                      <div className="flex items-center gap-2.5 overflow-hidden">
-                        <FileImage size={14} className="text-emerald-400 shrink-0" />
-                        <span className="truncate text-white/80 font-medium">{f.split(/[\\/]/).pop()}</span>
+                    <div key={f} className="flex justify-between items-center text-[11px] bg-card p-2 rounded-lg border border-border/60 hover:border-primary/30 transition-colors group">
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <FileImage size={13} className="text-primary shrink-0" />
+                        <span className="truncate text-foreground/90 font-medium">{f.split(/[\\/]/).pop()}</span>
                       </div>
                       <button 
-                        className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-destructive hover:text-white transition-colors shrink-0 opacity-0 group-hover:opacity-100 text-white/50 bg-white/5" 
+                        className="w-5 h-5 rounded flex items-center justify-center hover:bg-destructive hover:text-destructive-foreground transition-colors shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground cursor-pointer" 
                         onClick={() => store.removeInputFolder(f)}
+                        title="Xóa"
                       >
-                        <X size={12} />
+                        <X size={11} />
                       </button>
                     </div>
                   ))
@@ -190,40 +185,38 @@ export default function MvdConvertApp() {
         </div>
 
         {/* COLUMN 2: SETTINGS */}
-        <div className="flex-1 border-r border-white/10 flex flex-col bg-black/20 backdrop-blur-md">
-          <div className="px-6 py-4 border-b border-white/5 bg-black/20 flex items-center gap-3">
-            <div className="w-6 h-6 rounded-md bg-white/10 flex items-center justify-center text-emerald-400">
-              <Settings2 size={14} />
-            </div>
-            <h3 className="text-xs font-bold uppercase tracking-widest text-white/90">Cấu Hình</h3>
+        <div className="flex-1 flex flex-col min-w-0 bg-background/20">
+          <div className="px-4 py-2.5 border-b border-border bg-muted/20 flex items-center gap-2">
+            <Settings2 size={13} className="text-primary" />
+            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-foreground">Cấu hình xuất</h3>
           </div>
           
-          <div className="p-6 flex flex-col gap-6 overflow-y-auto h-full">
+          <div className="p-4 flex flex-col gap-3.5 overflow-y-auto h-full custom-scrollbar">
             {/* Format Setting */}
-            <div className="flex flex-col gap-3 p-5 glass-panel rounded-2xl border border-white/10 group hover:border-emerald-500/30 transition-colors bg-white/5 shrink-0">
-              <label className="text-[10px] font-bold text-white/50 uppercase tracking-widest flex items-center gap-2">
-                <FileDown size={12} /> Định dạng đích
+            <div className="flex flex-col gap-2 p-3.5 rounded-xl border border-border bg-card/60">
+              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <FileDown size={12} className="text-primary" /> Định dạng đích
               </label>
               <div className="relative">
                 <button 
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="w-full flex items-center justify-between px-5 py-4 bg-black/40 hover:bg-black/60 border border-white/10 rounded-xl text-sm font-black text-white transition-all shadow-inner"
+                  className="w-full flex items-center justify-between px-3 py-2 bg-muted/40 hover:bg-muted/70 border border-border rounded-lg text-xs font-semibold text-foreground transition-colors cursor-pointer"
                 >
-                  <span className="text-emerald-400 text-base">{store.targetFormat}</span>
-                  <ChevronDown size={18} className="text-white/40" />
+                  <span className="text-primary">{store.targetFormat}</span>
+                  <ChevronDown size={14} className="text-muted-foreground" />
                 </button>
                 
                 {dropdownOpen && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
-                    <div className="absolute left-0 right-0 top-full mt-2 bg-[#0f172a] border border-white/10 rounded-xl shadow-2xl z-20 py-2 overflow-hidden animate-slide-up backdrop-blur-xl">
+                    <div className="absolute left-0 right-0 top-full mt-1.5 bg-card border border-border rounded-lg shadow-lg z-20 py-1 overflow-hidden animate-fade-in">
                       {formats.map(f => (
                         <button 
                           key={f}
                           onClick={() => { store.setTargetFormat(f); setDropdownOpen(false); }}
-                          className={`w-full flex items-center px-5 py-3 text-sm font-bold transition-colors ${store.targetFormat === f ? 'bg-emerald-500/20 text-emerald-400' : 'text-white/60 hover:bg-white/10 hover:text-white'}`}
+                          className={`w-full flex items-center px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${store.targetFormat === f ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground/80 hover:bg-muted'}`}
                         >
-                          {store.targetFormat === f && <CheckCircle2 size={14} className="mr-2" />}
+                          {store.targetFormat === f && <CheckCircle2 size={12} className="mr-1.5" />}
                           {f}
                         </button>
                       ))}
@@ -234,13 +227,13 @@ export default function MvdConvertApp() {
             </div>
 
             {/* Quality Slider */}
-            <div className="flex flex-col gap-4 p-5 glass-panel rounded-2xl border border-white/10 group hover:border-emerald-500/30 transition-colors bg-white/5 shrink-0">
-              <div className="flex flex-wrap justify-between items-center gap-y-2">
-                <label className="text-[10px] font-bold text-white/50 uppercase tracking-widest flex items-center gap-2">
-                  <Settings2 size={12} /> Chất lượng xuất
+            <div className="flex flex-col gap-2.5 p-3.5 rounded-xl border border-border bg-card/60">
+              <div className="flex justify-between items-center">
+                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Settings2 size={12} className="text-primary" /> Chất lượng xuất
                 </label>
-                <span className="text-xs font-bold text-emerald-400">
-                  {store.quality === 4 ? "MAX (100%)" : store.quality === 3 ? "Cao (80%)" : store.quality === 2 ? "Trung bình (60%)" : "Thấp (40%)"}
+                <span className="text-[11px] font-semibold text-primary font-mono">
+                  {store.quality === 4 ? "MAX (100%)" : store.quality === 3 ? "Cao (80%)" : store.quality === 2 ? "TB (60%)" : "Thấp (40%)"}
                 </span>
               </div>
               <input 
@@ -248,18 +241,18 @@ export default function MvdConvertApp() {
                 min="1" max="4" step="1" 
                 value={store.quality} 
                 onChange={(e) => store.setQuality(Number(e.target.value))}
-                className="w-full h-2 bg-black/40 rounded-lg appearance-none cursor-pointer accent-emerald-500 border border-white/10"
+                className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
               />
-              <div className="flex justify-between text-[10px] font-medium text-white/40 px-1">
+              <div className="flex justify-between text-[9px] font-mono text-muted-foreground px-0.5">
                 <span>40%</span>
                 <span>60%</span>
                 <span>80%</span>
-                <span>Max</span>
+                <span>100%</span>
               </div>
             </div>
 
             {/* JPG 2048 Toggle */}
-            <div className="flex items-start gap-4 p-5 glass-panel rounded-2xl border border-white/10 group hover:border-emerald-500/30 transition-colors bg-white/5 mt-auto">
+            <div className="flex items-start gap-3 p-3.5 rounded-xl border border-border bg-card/60 mt-auto">
               <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
                 <input 
                   type="checkbox" 
@@ -267,12 +260,12 @@ export default function MvdConvertApp() {
                   checked={store.exportJpg2048}
                   onChange={(e) => store.setExportJpg2048(e.target.checked)}
                 />
-                <div className="w-10 h-5 bg-black/50 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500 border border-white/10"></div>
+                <div className="w-8 h-4 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary border border-border"></div>
               </label>
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-bold text-white/90">Xuất JPG 2048 (Chỉ RAW)</span>
-                <span className="text-[10px] text-white/40 leading-relaxed">
-                  Tự động chuyển đổi các file RAW sang định dạng JPG với cạnh dài tối đa 2048px (rất nhẹ để gửi ảnh xem trước).
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xs font-medium text-foreground">Xuất JPG 2048 (Chỉ RAW)</span>
+                <span className="text-[10px] text-muted-foreground leading-relaxed">
+                  Tự động chuyển file RAW sang JPG cạnh dài 2048px (nhẹ để gửi xem trước).
                 </span>
               </div>
             </div>
@@ -280,109 +273,99 @@ export default function MvdConvertApp() {
         </div>
 
         {/* COLUMN 3: OUTPUT & ACTION */}
-        <div className="flex-1 flex flex-col bg-white/[0.01] backdrop-blur-sm relative">
-          <div className="px-6 py-4 border-b border-white/5 bg-black/20 flex items-center gap-3">
-            <div className="w-6 h-6 rounded-md bg-white/10 flex items-center justify-center text-emerald-400">
-              <FolderDown size={14} />
-            </div>
-            <h3 className="text-xs font-bold uppercase tracking-widest text-white/90">Xử lý & Xuất file</h3>
+        <div className="flex-1 flex flex-col min-w-0 bg-background/30">
+          <div className="px-4 py-2.5 border-b border-border bg-muted/20 flex items-center gap-2">
+            <FolderDown size={13} className="text-primary" />
+            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-foreground">Xử lý & Xuất file</h3>
           </div>
           
-          <div className="p-6 flex flex-col h-full overflow-hidden gap-5">
+          <div className="p-4 flex flex-col h-full overflow-hidden gap-3">
             {/* Output Selector */}
-            <div className="flex flex-col gap-3 p-5 glass-panel rounded-2xl border border-white/10 bg-white/5 shrink-0">
+            <div className="flex flex-col gap-2 p-3 rounded-xl border border-border bg-card/60 shrink-0">
               <div className="flex items-center justify-between">
-                <label className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Nơi lưu trữ</label>
+                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Thư mục lưu trữ</label>
                 <button 
                   onClick={handleSelectOutput}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded-lg transition-colors border border-emerald-500/20"
+                  className="flex items-center gap-1 px-2.5 py-1 bg-muted hover:bg-muted/80 text-foreground text-[10px] font-medium rounded-md transition-colors border border-border cursor-pointer"
                 >
-                  <FolderOpen size={12} /> CHỌN FOLDER
+                  <FolderOpen size={11} /> Chọn folder
                 </button>
               </div>
               
               {store.outputFolder ? (
-                <div className="text-xs text-emerald-100 truncate bg-black/40 px-4 py-3 rounded-xl border border-emerald-500/30 font-medium flex items-center gap-2 shadow-inner" title={store.outputFolder}>
-                  <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
-                  <span className="truncate">{store.outputFolder}/<span className="font-bold text-emerald-400">mvdconvert...</span></span>
+                <div className="text-[11px] text-foreground truncate bg-muted/30 px-3 py-2 rounded-lg border border-border font-mono flex items-center gap-2" title={store.outputFolder}>
+                  <CheckCircle2 size={13} className="text-primary shrink-0" />
+                  <span className="truncate">{store.outputFolder}</span>
                 </div>
               ) : (
-                <div className="text-xs text-amber-400 bg-amber-500/10 px-4 py-3 rounded-xl border border-amber-500/30 flex items-center gap-2 font-semibold">
-                  <AlertCircle size={14} /> Chưa thiết lập thư mục xuất
+                <div className="text-[11px] text-amber-500 bg-amber-500/10 px-3 py-2 rounded-lg border border-amber-500/20 flex items-center gap-2 font-medium">
+                  <AlertCircle size={13} /> Chưa thiết lập thư mục xuất
                 </div>
               )}
             </div>
 
             {/* Progress */}
-            <div className="bg-black/40 p-5 rounded-2xl border border-white/10 flex flex-col gap-3 shrink-0 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                <Zap size={60} />
-              </div>
-              <div className="flex justify-between items-end relative z-10">
-                <div className="flex flex-col">
-                  <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">
+            <div className="p-3 rounded-xl border border-border bg-card/60 flex flex-col gap-2 shrink-0">
+              <div className="flex justify-between items-end">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xl font-bold text-foreground font-mono">
                     {store.progress ? store.progress.percentage : 0}%
                   </span>
-                  <span className="text-[10px] font-bold text-white/40 mt-1 tracking-wider uppercase">
+                  <span className="text-[10px] text-muted-foreground uppercase">
                     Đã xử lý: {store.progress ? store.progress.current : 0} / {store.progress ? store.progress.total : 0}
                   </span>
                 </div>
-                {store.isConverting && <div className="loader-spin text-emerald-400 mb-2"><Play size={18} /></div>}
+                {store.isConverting && <div className="animate-spin text-primary"><Play size={14} /></div>}
               </div>
               
-              <div className="w-full h-3 bg-black/60 rounded-full overflow-hidden shadow-inner border border-white/5 relative z-10">
+              <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-300 relative"
+                  className="h-full bg-primary transition-all duration-300 rounded-full"
                   style={{ width: `${store.progress ? store.progress.percentage : 0}%` }}
-                >
-                  <div className="absolute inset-0 bg-[url('/noise.png')] opacity-20 mix-blend-overlay" />
-                </div>
+                />
               </div>
               
-              <div className="text-[10px] font-medium text-emerald-200/60 truncate h-4 relative z-10">
-                {store.progress?.currentFile ? `Đang convert: ${store.progress.currentFile.split(/[\\/]/).pop()}` : "Sẵn sàng hoạt động..."}
+              <div className="text-[10px] text-muted-foreground truncate h-3.5">
+                {store.progress?.currentFile ? `Đang convert: ${store.progress.currentFile.split(/[\\/]/).pop()}` : "Sẵn sàng hoạt động"}
               </div>
             </div>
             
             {/* Logs */}
-            <div className="flex-1 bg-black/60 rounded-2xl border border-white/10 p-1 flex flex-col overflow-hidden relative shadow-inner">
-              <div className="absolute inset-0 p-4 overflow-y-auto custom-scrollbar space-y-2">
+            <div className="flex-1 bg-background/60 rounded-xl border border-border p-2.5 flex flex-col overflow-hidden">
+              <div className="h-full overflow-y-auto custom-scrollbar space-y-1">
                 {store.logs.map((log, i) => (
-                  <div key={i} className="text-[10px] font-mono text-emerald-100/50 break-all leading-relaxed">
-                    <span className="text-emerald-500/70 mr-2 select-none">[{new Date().toLocaleTimeString()}]</span>
+                  <div key={i} className="text-[10px] font-mono text-muted-foreground break-all leading-relaxed">
+                    <span className="text-primary/70 mr-1.5 select-none">[{new Date().toLocaleTimeString()}]</span>
                     {log}
                   </div>
                 ))}
                 {store.logs.length === 0 && (
-                  <div className="h-full flex flex-col items-center justify-center text-white/10 gap-2">
-                    <Zap size={24} className="opacity-20" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest">System Ready</span>
+                  <div className="h-full flex flex-col items-center justify-center text-muted-foreground/40 gap-1">
+                    <Zap size={18} className="opacity-30" />
+                    <span className="text-[10px]">Nhật ký xử lý sẽ hiển thị tại đây</span>
                   </div>
                 )}
               </div>
             </div>
             
             {/* Action Button */}
-            <div className="shrink-0 mt-1">
+            <div className="shrink-0">
               <button 
                 onClick={handleStartConvert}
                 disabled={store.isConverting || store.inputFolders.length === 0}
-                className={`w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2.5 transition-all duration-300 relative overflow-hidden group ${
+                className={`w-full py-2.5 rounded-lg font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer ${
                   store.isConverting 
-                    ? 'bg-emerald-500/20 text-emerald-200 cursor-not-allowed border border-emerald-500/30' 
+                    ? 'bg-muted text-muted-foreground cursor-not-allowed border border-border' 
                     : store.inputFolders.length === 0
-                    ? 'bg-white/5 text-white/30 cursor-not-allowed border border-white/10'
-                    : 'bg-gradient-to-r from-emerald-500 to-teal-500 text-black shadow-[0_0_30px_rgba(16,185,129,0.3)] hover:shadow-[0_0_50px_rgba(16,185,129,0.5)] hover:-translate-y-1'
+                    ? 'bg-muted text-muted-foreground/40 cursor-not-allowed border border-border'
+                    : 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm'
                 }`}
               >
                 {store.isConverting ? (
-                  <>ĐANG XỬ LÝ DỮ LIỆU...</>
+                  <>Đang xử lý dữ liệu...</>
                 ) : (
                   <>
-                    <FileDown size={20} /> BẮT ĐẦU CHUYỂN ĐỔI
-                    {!store.isConverting && store.inputFolders.length > 0 && (
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
-                    )}
+                    <FileDown size={14} /> Bắt đầu chuyển đổi
                   </>
                 )}
               </button>

@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "MVD PHOTOSHOP ACADEMY",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "identifier": "com.minhvuong.devtool",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -36,6 +36,9 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
+    ],
+    "resources": [
+      "resources/**/*"
     ],
     "category": "Utility",
     "shortDescription": "Smart photo filtering for photography studios",

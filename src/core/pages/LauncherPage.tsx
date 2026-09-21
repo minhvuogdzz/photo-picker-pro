@@ -5,43 +5,65 @@ import { modules, AppModule } from "@/registry";
 import {
   ArrowRight,
   Shield,
-  Layers,
-  Zap,
-  Sliders,
-  BookOpen,
-  Palette,
-  Sparkles,
+  ExternalLink,
   Crown,
+  Sparkles,
+  Zap,
+  LayoutGrid,
+  CheckCircle2,
+  Layers,
+  ChevronRight,
 } from "lucide-react";
 import { getVersion } from "@tauri-apps/api/app";
+import { openUrl } from "@tauri-apps/plugin-opener";
+import { apiRequest } from "@/core/services/apiClient";
 
-type CategoryFilter = "all" | "workflow" | "retouch";
+const DEFAULT_COMPANY_URL = "https://mvdphotoshopacademy.com";
 
 export function LauncherPage() {
   const setActiveModule = useAppStore((s) => s.setActiveModule);
   const setLastClickPos = useAppStore((s) => s.setLastClickPos);
   const session = useAuthStore((s) => s.session);
 
-  const [version, setVersion] = useState("2.0.0");
-  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>("all");
+  const [version, setVersion] = useState("2.1.1");
+  const [companyUrl, setCompanyUrl] = useState("");
+  const [bannerConfig, setBannerConfig] = useState<{ badge?: string; title?: string; subtitle?: string }>({});
 
   useEffect(() => {
     getVersion().then(setVersion).catch(console.error);
   }, []);
 
-  // Separate pinned resources module from other apps
-  const resourceModule = useMemo(() => {
-    return modules.find((m) => m.id === "resources");
+  // Fetch company website URL & custom banner config from backend (admin-configurable)
+  useEffect(() => {
+    const cachedUrl = localStorage.getItem("mvd_company_url");
+    if (cachedUrl) setCompanyUrl(cachedUrl);
+
+    const cachedBanner = localStorage.getItem("mvd_launcher_banner");
+    if (cachedBanner) {
+      try {
+        setBannerConfig(JSON.parse(cachedBanner));
+      } catch {
+        // Ignore JSON parse error
+      }
+    }
+
+    apiRequest<{ companyWebsiteUrl?: string; launcherBanner?: { badge?: string; title?: string; subtitle?: string } }>("/config/public")
+      .then((data) => {
+        if (data?.companyWebsiteUrl) {
+          setCompanyUrl(data.companyWebsiteUrl);
+          localStorage.setItem("mvd_company_url", data.companyWebsiteUrl);
+        }
+        if (data?.launcherBanner) {
+          setBannerConfig(data.launcherBanner);
+          localStorage.setItem("mvd_launcher_banner", JSON.stringify(data.launcherBanner));
+        }
+      })
+      .catch(() => {
+        // Silently use cached or default
+      });
   }, []);
 
-  const coreModules = useMemo(() => {
-    return modules.filter((m) => m.id !== "resources");
-  }, []);
-
-  const filteredModules = useMemo(() => {
-    if (selectedCategory === "all") return coreModules;
-    return coreModules.filter((m) => m.category === selectedCategory);
-  }, [coreModules, selectedCategory]);
+  const workflowApps = useMemo(() => modules.filter((m) => m.id !== "resources"), []);
 
   const handleLaunch = (modId: string, e: React.MouseEvent) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -52,138 +74,168 @@ export function LauncherPage() {
     setActiveModule(modId);
   };
 
+  // Determine greeting based on local time
+  const greetingData = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return { text: "Chào buổi sáng", icon: "☀️" };
+    if (hour < 18) return { text: "Chào buổi chiều", icon: "🌤️" };
+    return { text: "Chào buổi tối", icon: "🌙" };
+  }, []);
+
+  const userName = session?.name || session?.email?.split("@")[0] || "Quý khách";
+  const isPremium = session?.subscription?.isPremium === true;
+  const isLifetime = session?.subscription?.status === "LIFETIME";
+
+  // Compute banner values (admin custom with fallback)
+  const displayTitle = useMemo(() => {
+    if (bannerConfig.title?.trim()) {
+      return bannerConfig.title.replace("{name}", userName);
+    }
+    return null;
+  }, [bannerConfig.title, userName]);
+
+  const displaySubtitle = bannerConfig.subtitle?.trim() || "Trung tâm điều phối ứng dụng tự động hoá studio. Chọn công cụ bên dưới để bắt đầu luồng làm việc.";
+  const displayBadge = bannerConfig.badge?.trim();
+
   return (
-    <div className="flex-1 flex flex-col h-full relative overflow-y-auto overflow-x-hidden p-6 md:p-8 animate-fade-in custom-scrollbar text-foreground">
+    <div className="flex-1 flex flex-col h-full relative overflow-y-auto overflow-x-hidden p-5 md:p-7 animate-fade-in custom-scrollbar text-foreground">
       
-      {/* Ecosystem Header */}
-      <div className="w-full max-w-6xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6 relative z-10">
-        <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/15 border border-primary/30 text-primary w-fit mb-2.5 shadow-sm backdrop-blur-md">
-            <Zap size={13} className="animate-pulse" />
-            <span className="text-[10px] font-bold tracking-wider">
-              Xin chào, {session?.name || session?.email || "Quý khách"} 👋
-            </span>
+      {/* AMBIENT BACKGROUND GLOWS — clean in light mode, atmospheric in dark mode */}
+      <div className="fixed top-[-10%] right-[-5%] w-[45%] h-[45%] bg-blue-500/8 rounded-full blur-[130px] pointer-events-none hidden dark:block" />
+      <div className="fixed bottom-[-10%] left-[-5%] w-[40%] h-[40%] bg-amber-500/6 rounded-full blur-[120px] pointer-events-none hidden dark:block" />
+      <div className="fixed top-[40%] left-[20%] w-[35%] h-[35%] bg-violet-500/5 rounded-full blur-[140px] pointer-events-none hidden dark:block" />
+
+      {/* HEADER: ADMIN-CONFIGURABLE BANNER & DEDICATED PREMIUM HUB */}
+      <div className="w-full max-w-5xl mx-auto mb-5 relative z-10">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-border/80">
+          <div>
+            {/* Top pill badge */}
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted/70 border border-border text-[11px] font-medium text-foreground mb-2">
+              <span className="text-amber-500 dark:text-amber-400">{greetingData.icon}</span>
+              {displayBadge ? (
+                <span className="font-semibold text-primary">{displayBadge}</span>
+              ) : (
+                <>
+                  <span className="font-semibold text-primary">MVD Studio Suite</span>
+                  <span className="text-muted-foreground/60">·</span>
+                  <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-[10px] font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Hệ thống sẵn sàng
+                  </span>
+                </>
+              )}
+            </div>
+
+            {/* Greeting Headline */}
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground leading-snug">
+              {displayTitle ? (
+                displayTitle
+              ) : (
+                <>
+                  {greetingData.text},{" "}
+                  <span className="text-primary font-bold">
+                    {userName}
+                  </span>
+                </>
+              )}
+            </h1>
+            <p className="text-xs text-muted-foreground mt-1 max-w-xl leading-relaxed">
+              {displaySubtitle}
+            </p>
           </div>
 
-          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-foreground via-foreground/90 to-primary bg-clip-text text-transparent leading-tight drop-shadow-sm">
-            Hệ sinh thái MVD Photoshop Academy
-          </h1>
-          <p className="text-xs text-muted-foreground mt-1 max-w-xl">
-            Nền tảng All-in-one chuyên nghiệp dành cho Photographer & Retoucher. Chọn một công cụ để khởi chạy.
-          </p>
-        </div>
-
-        {/* Quick Filter Tabs */}
-        <div className="flex items-center gap-1 p-1 bg-card/85 backdrop-blur-2xl border border-border rounded-2xl shrink-0 shadow-sm">
-          {[
-            { id: "all", label: "Tất cả công cụ" },
-            { id: "workflow", label: "Lọc ảnh & File" },
-            { id: "retouch", label: "Retouch & PS" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setSelectedCategory(tab.id as CategoryFilter)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                selectedCategory === tab.id
-                  ? "bg-primary/15 text-primary shadow-sm border border-primary/30"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* PINNED HERO CARD: Kho Tài Nguyên Mini-App */}
-      {resourceModule && (
-        <div className="w-full max-w-6xl mx-auto mb-6 relative z-10">
-          <div
-            onClick={(e) => handleLaunch("resources", e)}
-            className="group cursor-pointer rounded-3xl p-5 md:p-6 bg-card/85 hover:bg-card backdrop-blur-3xl border border-amber-500/35 hover:border-amber-400 shadow-lg shadow-amber-500/5 hover:shadow-amber-500/15 transition-all duration-300 relative overflow-hidden"
-          >
-            {/* Ambient Background Aura */}
-            <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-amber-500/15 via-orange-500/10 to-transparent rounded-full blur-[60px] pointer-events-none group-hover:scale-110 transition-transform duration-500" />
-            <div className="absolute -left-10 -bottom-10 w-52 h-52 bg-amber-500/10 rounded-full blur-[50px] pointer-events-none" />
-
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
-              
-              {/* Left Content */}
-              <div className="flex items-start gap-4 max-w-2xl">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500/25 to-orange-500/15 border border-amber-500/40 flex items-center justify-center text-amber-500 shrink-0 shadow-md group-hover:scale-110 transition-transform duration-300">
-                  <Layers size={24} className="drop-shadow-sm" />
-                </div>
-
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-500 border border-amber-500/40 uppercase tracking-wide flex items-center gap-1">
-                      <Crown size={11} className="text-amber-500" /> VIP Premium Vault
-                    </span>
-                    <span className="text-[10px] font-semibold text-amber-500 flex items-center gap-1">
-                      <Sparkles size={11} className="animate-pulse" /> Tuyển chọn độc quyền
-                    </span>
-                  </div>
-
-                  <h2 className="text-base md:text-lg font-bold text-foreground group-hover:text-amber-500 transition-colors tracking-tight drop-shadow-sm">
-                    Kho Tài Nguyên Thiết Kế, Retouch & Photoshop
-                  </h2>
-
-                  <p className="text-xs text-muted-foreground leading-relaxed mt-1">
-                    Chia sẻ độc quyền cho cộng đồng: Tuyển tập Photoshop Actions tự động, Tone màu Presets/LUTs, Brushes vẽ tóc, Overlays ánh sáng 6K và tài liệu kỹ thuật Retouch chuyên sâu.
-                  </p>
-
-                  {/* Resource Badges */}
-                  <div className="flex flex-wrap items-center gap-1.5 mt-3">
-                    {[
-                      { label: "Photoshop Actions D&B", icon: Sparkles },
-                      { label: "120+ Presets & LUTs", icon: Sliders },
-                      { label: "Brushes Vẽ Tóc & Da", icon: Palette },
-                      { label: "Overlays Tia Nắng 6K", icon: Layers },
-                      { label: "Giáo Trình Edit Màu", icon: BookOpen },
-                    ].map((item, idx) => {
-                      const Icon = item.icon;
-                      return (
-                        <span
-                          key={idx}
-                          className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-md bg-muted/70 border border-border text-foreground group-hover:border-amber-500/40 transition-colors"
-                        >
-                          <Icon size={10} className="text-amber-500" />
-                          {item.label}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
+          {/* Right User & Dedicated Premium Hub */}
+          <div className="flex items-center gap-2.5 self-start md:self-center shrink-0">
+            <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-card border border-border shadow-xs hover:border-amber-500/40 transition-colors">
+              <div className={`w-8.5 h-8.5 rounded-lg flex items-center justify-center shrink-0 ${
+                isPremium 
+                  ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30" 
+                  : "bg-primary/10 text-primary border border-primary/20"
+              }`}>
+                {isPremium ? <Crown size={17} /> : <Shield size={17} />}
               </div>
-
-              {/* Right CTA Button */}
-              <div className="flex md:flex-col items-center md:items-end justify-between gap-2.5 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-border">
-                <button className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-black font-extrabold text-xs shadow-lg shadow-amber-500/25 group-hover:shadow-amber-500/40 transition-all flex items-center gap-1.5 cursor-pointer">
-                  Khám phá Kho Tài Nguyên
-                  <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                </button>
-                <span className="text-[10px] text-muted-foreground font-medium">
-                  Cập nhật liên tục
+              <div className="flex flex-col">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-foreground">
+                    {isPremium ? "VIP Creative Hub" : "Standard Plan"}
+                  </span>
+                  {isPremium && (
+                    <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/35 uppercase">
+                      {isLifetime ? "LIFETIME" : "PRO"}
+                    </span>
+                  )}
+                </div>
+                <span className="text-[10px] text-muted-foreground max-w-[150px] truncate">
+                  {session?.email || "Studio Member"}
                 </span>
               </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* CORE APPS GRID */}
-      <div className="w-full max-w-6xl mx-auto mb-8 relative z-10">
+      {/* FEATURED SPOTLIGHT CARD — KHO TÀI NGUYÊN CREATIVE */}
+      <div className="w-full max-w-5xl mx-auto mb-6 relative z-10">
+        <div 
+          onClick={(e) => handleLaunch("resources", e)}
+          className="group cursor-pointer rounded-2xl p-6 md:py-6.5 md:px-7 bg-gradient-to-r from-amber-500/12 via-card to-amber-500/8 hover:from-amber-500/18 hover:to-amber-500/12 border border-amber-500/35 hover:border-amber-500/55 transition-all duration-200 shadow-xs hover:shadow-lg relative overflow-hidden"
+        >
+          {/* Subtle warm glow inside spotlight */}
+          <div className="absolute top-0 right-0 w-80 h-full bg-gradient-to-l from-amber-500/12 to-transparent pointer-events-none hidden dark:block" />
+
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
+            <div className="flex items-start sm:items-center gap-4.5">
+              <div className="w-13 h-13 rounded-xl bg-amber-500/15 dark:bg-amber-500/25 border border-amber-500/40 flex items-center justify-center text-amber-600 dark:text-amber-400 group-hover:scale-105 group-hover:rotate-1 transition-all duration-200 shrink-0 shadow-xs">
+                <Layers size={25} />
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-base font-bold text-foreground group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors tracking-tight">
+                    Kho Tài Nguyên Creative · VIP Vault
+                  </h3>
+                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/35 flex items-center gap-1 shadow-xs">
+                    <Sparkles size={11} />
+                    <span>Đặc quyền VIP</span>
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed max-w-2xl">
+                  Tuyển chọn độc quyền hàng nghìn Presets Lightroom, Actions Photoshop Retouch da chuyên sâu, Brushes cao cấp & LUTs màu ảnh cưới/studio.
+                </p>
+                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                  {["10.000+ Tài nguyên", "Presets Lightroom", "Actions Retouch Da", "Brushes & Textures", "LUTs Màu Cinematic"].map((tag, idx) => (
+                    <span
+                      key={idx}
+                      className="text-[10px] text-amber-800 dark:text-amber-300 font-medium px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/25"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 px-4.5 py-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-800 dark:text-amber-300 font-semibold text-xs transition-all shadow-xs shrink-0 self-end md:self-center group-hover:border-amber-500/50">
+              <span>Mở kho tài nguyên</span>
+              <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ALL APPS GRID — 3 REMAINING WORKFLOW APPS IN A BALANCED ROW */}
+      <div className="w-full max-w-5xl mx-auto mb-6 relative z-10">
         <div className="flex items-center justify-between mb-3 px-1">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-            <Zap size={13} className="text-primary" /> Ứng dụng công cụ làm việc
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+            <LayoutGrid size={13} className="text-primary" />
+            <span>Công cụ làm việc</span>
           </h3>
           <span className="text-[11px] text-muted-foreground">
-            {filteredModules.length} ứng dụng sẵn sàng
+            {workflowApps.length} ứng dụng sẵn sàng
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {filteredModules.map((mod) => {
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          {workflowApps.map((mod) => {
             const Icon = mod.icon;
             const accent = mod.accentColor;
 
@@ -191,55 +243,69 @@ export function LauncherPage() {
               <div
                 key={mod.id}
                 onClick={(e) => handleLaunch(mod.id, e)}
-                className={`group cursor-pointer rounded-3xl p-5 transition-all duration-300 relative overflow-hidden bg-card/80 hover:bg-card backdrop-blur-2xl border border-border hover:border-primary/40 flex flex-col justify-between shadow-sm hover:shadow-xl`}
-                style={{ willChange: "transform, box-shadow" }}
+                className={`group cursor-pointer rounded-xl p-4.5 transition-all duration-200 relative overflow-hidden bg-card/85 hover:bg-card border border-border ${accent.border} flex flex-col justify-between shadow-sm hover:shadow-md`}
               >
-                {/* Glow Overlay */}
+                {/* Colored Corner Ambient Glow on hover */}
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br ${accent.bgGlow} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`}
+                  className={`absolute top-0 right-0 w-36 h-36 bg-gradient-to-bl ${accent.bgGlow} rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`}
                 />
 
                 <div className="relative z-10">
                   {/* Card Header: Icon + Badge */}
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div
-                      className={`w-11 h-11 bg-gradient-to-br ${accent.iconBg} rounded-2xl flex items-center justify-center shadow-sm border border-border group-hover:scale-110 transition-transform duration-300`}
+                      className={`w-10 h-10 ${accent.iconBg} rounded-lg flex items-center justify-center border shadow-sm group-hover:scale-105 transition-transform duration-200`}
                     >
-                      <Icon size={22} className={`${accent.primary} drop-shadow-sm`} />
+                      <Icon size={20} />
                     </div>
 
-                    {mod.isPremium ? (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center gap-1 shadow-sm">
-                        <Crown size={11} className="fill-amber-400/30 text-amber-400" />
-                        <span>VIP Premium</span>
-                      </span>
-                    ) : mod.badge ? (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border group-hover:border-primary/30 group-hover:text-foreground transition-colors">
-                        {mod.badge}
-                      </span>
-                    ) : null}
+                    <div className="flex items-center gap-1.5">
+                      {mod.isPremium && (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/35 flex items-center gap-1 shadow-xs">
+                          <Crown size={10} />
+                          <span>VIP</span>
+                        </span>
+                      )}
+                      {mod.badge && (
+                        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md ${accent.badgeClass}`}>
+                          {mod.badge}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* App Title */}
-                  <h4 className={`text-sm font-bold text-foreground group-hover:text-primary transition-colors tracking-tight mb-1.5`}>
+                  <h4 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors mb-1.5 tracking-tight">
                     {mod.name}
                   </h4>
 
                   {/* App Description */}
-                  <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed mb-4">
+                  <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed mb-3">
                     {mod.description}
                   </p>
+
+                  {/* Feature Tags */}
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {mod.tags.slice(0, 3).map((tag, idx) => (
+                      <span
+                        key={idx}
+                        className="text-[10px] text-muted-foreground px-2 py-0.5 rounded bg-muted/70 border border-border/70 font-medium"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Card Footer */}
-                <div className="pt-3 border-t border-border flex items-center justify-between text-xs font-semibold relative z-10">
-                  <span className="text-[11px] text-muted-foreground font-normal">
-                    {mod.category === "workflow" ? "Tự động hóa" : "Photoshop Retouch"}
+                <div className="pt-2.5 border-t border-border/80 flex items-center justify-between relative z-10 text-xs">
+                  <span className="text-[11px] text-muted-foreground font-medium">
+                    Tự động hóa Studio
                   </span>
                   
-                  <div className={`flex items-center gap-1 ${accent.primary} text-xs font-bold group-hover:translate-x-1 transition-transform`}>
-                    <span>Khởi chạy</span>
-                    <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
+                  <div className={`flex items-center gap-1 ${accent.primary} text-xs font-semibold group-hover:translate-x-0.5 transition-transform`}>
+                    <span>Mở công cụ</span>
+                    <ArrowRight size={13} />
                   </div>
                 </div>
               </div>
@@ -248,33 +314,45 @@ export function LauncherPage() {
         </div>
       </div>
 
-      {/* FOOTER & SYSTEM STATUS */}
-      <div className="w-full max-w-6xl mx-auto mt-auto pt-4 border-t border-border relative z-10">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground py-2">
+      {/* FOOTER — CLEAN & DYNAMIC COMPANY WEBSITE LINK */}
+      <div className="w-full max-w-5xl mx-auto mt-auto pt-3 border-t border-border relative z-10">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-muted-foreground py-1.5">
           
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[11px] font-semibold text-foreground">Server Sync: Online</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
+              <Shield size={12} className="text-primary/70" />
+              <span className="font-mono">v{version}</span>
             </div>
-            
-            <div className="flex items-center gap-1 text-[11px]">
-              <Shield size={12} className="text-primary" />
-              <span>MVD Ecosystem v{version}</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-            <span>Bấm <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px] text-foreground">⌘K</kbd> để tìm kiếm nhanh</span>
-            <span>•</span>
+            <span className="text-border">·</span>
             <span>© {new Date().getFullYear()} MVD Photoshop Academy</span>
           </div>
+
+          {(() => {
+            const effectiveUrl = companyUrl || DEFAULT_COMPANY_URL;
+            const displayUrl = effectiveUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+            const handleOpenUrl = async (e: React.MouseEvent) => {
+              e.preventDefault();
+              const fullUrl = effectiveUrl.startsWith("http") ? effectiveUrl : `https://${effectiveUrl}`;
+              try {
+                await openUrl(fullUrl);
+              } catch {
+                window.open(fullUrl, "_blank");
+              }
+            };
+
+            return (
+              <button
+                onClick={handleOpenUrl}
+                className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors cursor-pointer group"
+                title={`Mở trang web ${displayUrl}`}
+              >
+                <span className="group-hover:underline underline-offset-2">{displayUrl}</span>
+                <ExternalLink size={11} className="text-muted-foreground/70 group-hover:text-primary transition-colors" />
+              </button>
+            );
+          })()}
         </div>
       </div>
-
-      {/* Ambient background glows for rich depth */}
-      <div className="fixed top-[-10%] right-[-5%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[110px] pointer-events-none" />
-      <div className="fixed bottom-[-10%] left-[-5%] w-[35%] h-[35%] bg-amber-500/10 rounded-full blur-[100px] pointer-events-none" />
     </div>
   );
 }

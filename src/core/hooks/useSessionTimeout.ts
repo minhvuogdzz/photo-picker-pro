@@ -31,6 +31,7 @@ interface SessionTimerState {
   isExpiringSoon: boolean;
   isWarning30s: boolean;
   hasDismissed30sWarning: boolean;
+  isUnlimited: boolean;
   dismiss30sWarning: () => void;
   setRemainingSeconds: (seconds: number) => void;
   setTotalDurationMinutes: (minutes: number) => void;
@@ -44,6 +45,7 @@ export const useSessionTimerStore = create<SessionTimerState>((set) => ({
   isExpiringSoon: false,
   isWarning30s: false,
   hasDismissed30sWarning: false,
+  isUnlimited: false,
   dismiss30sWarning: () => set({ hasDismissed30sWarning: true }),
   setRemainingSeconds: (remainingSeconds) =>
     set({
@@ -62,12 +64,14 @@ export const useSessionTimerStore = create<SessionTimerState>((set) => ({
       isExpiringSoon: false,
       isWarning30s: false,
       hasDismissed30sWarning: false,
+      isUnlimited: false,
     }),
 }));
 
 /**
  * Global listener hook that enforces the session duration limit.
  * Mounted once inside AuthGuard to ensure the timer runs continuously.
+ * Premium accounts have unlimited session duration and no timeout restrictions.
  */
 export function useSessionTimeoutListener() {
   const session = useAuthStore((s) => s.session);
@@ -79,12 +83,34 @@ export function useSessionTimeoutListener() {
   const sessionTokenRef = useRef(session?.accessToken);
   sessionTokenRef.current = session?.accessToken;
 
+  const isPremium = session?.subscription?.isPremium === true || session?.subscription?.status === "LIFETIME";
+
   useEffect(() => {
     if (!session) {
       setRemainingSeconds(0);
-      useSessionTimerStore.setState({ hasDismissed30sWarning: false });
+      useSessionTimerStore.setState({ hasDismissed30sWarning: false, isUnlimited: false });
       return;
     }
+
+    // PREMIUM ACCOUNTS: Unlimited session duration without timeout restriction
+    if (isPremium) {
+      useSessionTimerStore.setState({
+        remainingSeconds: Infinity,
+        formattedTime: "Không giới hạn",
+        totalDurationMinutes: 0,
+        isExpiringSoon: false,
+        isWarning30s: false,
+        hasDismissed30sWarning: true,
+        isUnlimited: true,
+      });
+      try {
+        sessionStorage.removeItem(SESSION_START_KEY);
+      } catch {}
+      return;
+    }
+
+    // STANDARD ACCOUNTS: Enforce session countdown & timeout
+    useSessionTimerStore.setState({ isUnlimited: false });
 
     const durationMinutes = (typeof session.sessionDurationMinutes === "number" && session.sessionDurationMinutes > 0)
       ? session.sessionDurationMinutes
@@ -124,7 +150,15 @@ export function useSessionTimeoutListener() {
     checkTime();
     const interval = setInterval(checkTime, 1000);
     return () => clearInterval(interval);
-  }, [session?.userId, session?.sessionDurationMinutes, authLogout, setSessionTimeoutExpired, setRemainingSeconds, setTotalDurationMinutes]);
+  }, [
+    session?.userId, 
+    isPremium, 
+    session?.sessionDurationMinutes, 
+    authLogout, 
+    setSessionTimeoutExpired, 
+    setRemainingSeconds, 
+    setTotalDurationMinutes
+  ]);
 }
 
 /**

@@ -247,15 +247,13 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-[#0B0F19] relative overflow-hidden p-4 sm:p-8">
-      {/* Mesh Gradient Background */}
+      {/* Subtle Ambient Background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[50%] bg-indigo-600/30 rounded-full blur-[120px] mix-blend-screen animate-pulse" style={{ animationDuration: '4s' }} />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[50%] bg-purple-600/30 rounded-full blur-[120px] mix-blend-screen animate-pulse" style={{ animationDuration: '5s', animationDelay: '1s' }} />
-        <div className="absolute top-[20%] right-[20%] w-[30%] h-[40%] bg-rose-500/20 rounded-full blur-[100px] mix-blend-screen animate-pulse" style={{ animationDuration: '6s', animationDelay: '2s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[140px]" />
       </div>
 
       {/* Main Split Card */}
-      <div className="w-full max-w-5xl xl:max-w-6xl min-h-[600px] xl:min-h-[700px] flex flex-col lg:flex-row bg-white/5 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] relative z-10 overflow-hidden">
+      <div className="w-full max-w-5xl xl:max-w-6xl min-h-[560px] xl:min-h-[640px] flex flex-col lg:flex-row bg-card/90 backdrop-blur-md rounded-xl border border-border shadow-xl relative z-10 overflow-hidden">
         
         {/* Left Side: Image Slider */}
         <div className="w-full lg:w-1/2 relative hidden lg:block bg-black/20">
@@ -264,7 +262,7 @@ export function LoginPage() {
 
         {/* Right Side: Login Panel */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12 relative">
-           <div className="w-full max-w-md mx-auto space-y-8 animate-fade-in">
+           <div className="w-full max-w-md mx-auto space-y-6 animate-fade-in">
         {mode !== "login" && mode !== "success" && (
           <button 
             type="button"
@@ -272,26 +270,26 @@ export function LoginPage() {
             className="absolute top-6 left-6 text-muted-foreground hover:text-foreground p-1 transition-colors"
             title="Quay lại đăng nhập"
           >
-            <ArrowLeft size={20} />
+            <ArrowLeft size={18} />
           </button>
         )}
 
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center shadow-lg">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-14 h-14 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
             <img
               src="/logo.png"
               alt="Logo"
-              className="w-14 h-14 object-contain drop-shadow-md"
+              className="w-10 h-10 object-contain"
               onError={(e) => {
                 e.currentTarget.style.display = "none";
                 e.currentTarget.parentElement?.classList.add("fallback-icon");
               }}
             />
-            <Camera size={32} className="text-primary hidden" />
+            <Camera size={24} className="text-primary hidden" />
           </div>
           <div className="text-center">
-            <h1 className="text-xl font-bold text-gradient">MVD PHOTOSHOP ACADEMY</h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            <h1 className="text-base font-semibold text-foreground tracking-tight">MVD PHOTOSHOP ACADEMY</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
               {mode === "login" && t("login_subtitle")}
               {mode === "register" && "Đăng ký tài khoản mới"}
               {mode === "register-verify" && "Xác nhận và Hoàn tất"}

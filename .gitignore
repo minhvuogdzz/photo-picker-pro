@@ -25,3 +25,10 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Large binary sub-apps (Avoid GitHub 100MB file limit rejection)
+src-tauri/resources/apps/*
+!src-tauri/resources/apps/.gitkeep
+*.dmg
+*.asar.original.bak
+

@@ -11,28 +11,28 @@ export function PhotoPickerModule() {
   const activeTab = useAppStore((s) => s.activeTab);
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 w-full h-full gap-4">
+    <div className="flex-1 flex flex-col min-h-0 w-full h-full gap-2">
       {activeTab === "settings" && (
-        <div className="flex-1 overflow-hidden rounded-2xl border border-border/40 shadow-sm bg-card">
+        <div className="flex-1 overflow-hidden rounded-xl border border-border shadow-sm bg-card">
           <SettingsPage />
         </div>
       )}
       {activeTab === "history" && (
-        <div className="flex-1 overflow-hidden rounded-2xl border border-border/40 shadow-sm bg-card">
+        <div className="flex-1 overflow-hidden rounded-xl border border-border shadow-sm bg-card">
           <HistoryPage />
         </div>
       )}
       
       {activeTab === "home" && (
         <>
-          <div className="flex-1 flex gap-4 min-h-0">
+          <div className="flex-1 flex gap-2 min-h-0">
             <LeftPanel />
             <CenterPanel />
             <RightPanel />
           </div>
           
           {/* BottomBar Wrapper */}
-          <div className="rounded-2xl overflow-hidden shadow-xl border border-border/40 shrink-0">
+          <div className="rounded-xl overflow-hidden shadow-sm border border-border shrink-0">
             <BottomBar />
           </div>
           

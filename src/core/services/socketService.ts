@@ -109,6 +109,21 @@ class SocketService {
         });
       }
     });
+
+    this.socket.on('sessionConfigUpdated', (data: { sessionDurationMinutes: number }) => {
+      if (data?.sessionDurationMinutes) {
+        try {
+          localStorage.setItem("session_duration_minutes", String(data.sessionDurationMinutes));
+        } catch {}
+        const currentSession = useAuthStore.getState().session;
+        if (currentSession && !currentSession.subscription?.isPremium && currentSession.subscription?.status !== "LIFETIME") {
+          useAuthStore.getState().setSession({
+            ...currentSession,
+            sessionDurationMinutes: data.sessionDurationMinutes,
+          });
+        }
+      }
+    });
   }
 
 

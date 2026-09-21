@@ -14,6 +14,7 @@ import {
   ArrowLeft,
   Shield,
   RefreshCw,
+  Sparkles,
 } from "lucide-react";
 import { useState } from "react";
 import { useUpdaterStore } from "@/core/stores/useUpdaterStore";
@@ -32,7 +33,7 @@ export function TopBar() {
   const setLastClickPos = useAppStore((s) => s.setLastClickPos);
   const session = useAuthStore((s) => s.session);
   const authLogout = useAuthStore((s) => s.logout);
-  const { formattedTime, isExpiringSoon } = useSessionTimeout();
+  const { formattedTime, isExpiringSoon, isUnlimited } = useSessionTimeout();
   const { t } = useTranslation();
 
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -44,9 +45,9 @@ export function TopBar() {
 
   if (activeModule === "photo-picker") {
     tabs = [
-      { id: "home", label: t("home"), icon: <Camera size={14} /> },
-      { id: "history", label: t("history"), icon: <Clock size={14} /> },
-      { id: "settings", label: t("settings"), icon: <Settings size={14} /> },
+      { id: "home", label: t("home"), icon: <Camera size={13} /> },
+      { id: "history", label: t("history"), icon: <Clock size={13} /> },
+      { id: "settings", label: t("settings"), icon: <Settings size={13} /> },
     ];
   }
 
@@ -61,12 +62,12 @@ export function TopBar() {
   };
 
   return (
-    <div className="flex items-center justify-between px-3.5 py-2">
-      {/* Left: Logo + Full Brand Name + Back Button */}
+    <div className="flex items-center justify-between px-3 py-1.5">
+      {/* Left: Logo + Brand + Back Button */}
       <div className="flex items-center gap-2">
         {activeModule !== "launcher" && (
           <button 
-            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/10 text-muted-foreground hover:text-foreground transition-all cursor-pointer mr-1 border border-border/40"
+            className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer border border-transparent hover:border-border"
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               setLastClickPos({ 
@@ -77,12 +78,12 @@ export function TopBar() {
             }}
             title="Quay lại Launcher"
           >
-            <ArrowLeft size={15} />
+            <ArrowLeft size={14} />
           </button>
         )}
         
         <div 
-          className={`flex items-center gap-2.5 ${activeModule === "launcher" ? 'ml-0.5' : ''} cursor-pointer hover:opacity-90 transition-opacity group`}
+          className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
           onClick={(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
             setLastClickPos({ 
@@ -92,45 +93,44 @@ export function TopBar() {
             setActiveModule("launcher");
           }}
         >
-          <img src="/logo.png" alt="Logo" className="w-6 h-6 object-contain drop-shadow-sm transition-transform group-hover:scale-105" />
-          <h1 className="text-xs font-extrabold tracking-wider text-foreground uppercase whitespace-nowrap">
-            MVD PHOTOSHOP ACADEMY
+          <img src="/logo.png" alt="Logo" className="w-5 h-5 object-contain" />
+          <h1 className="text-[11px] font-semibold tracking-wide text-foreground uppercase whitespace-nowrap">
+            MVD Photoshop Academy
           </h1>
         </div>
 
-        {/* Badge phiên bản mới nổi bật cạnh Logo/Tiêu đề */}
+        {/* Update badge — flat subtle */}
         {updateResult?.hasUpdate && (
           <button
             onClick={(e) => {
               e.stopPropagation();
               openModal();
             }}
-            className="text-[11px] py-1 px-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 active:scale-95 text-white font-bold flex items-center gap-1.5 rounded-xl cursor-pointer shadow-md shadow-blue-500/30 border border-blue-400/40 shrink-0 ml-1 transition-all group hover:border-blue-300/60"
-            title={`Có bản cập nhật mới v${updateResult.version}. Nhấn để cập nhật ngay!`}
+            className="text-[10px] py-0.5 px-2 bg-primary/10 hover:bg-primary/15 text-primary font-medium flex items-center gap-1 rounded-md cursor-pointer border border-primary/20 transition-all"
+            title={`Có bản cập nhật mới v${updateResult.version}`}
           >
-            <RefreshCw size={12} className="text-white shrink-0 group-hover:rotate-180 transition-transform duration-500" />
-            <span className="text-white font-bold tracking-tight">v{updateResult.version}</span>
-            <span className="hidden sm:inline text-[10px] font-medium text-blue-100 opacity-90">• Cập nhật</span>
+            <RefreshCw size={10} className="shrink-0" />
+            <span>v{updateResult.version}</span>
           </button>
         )}
       </div>
 
       {/* Center: Smart Search Bar & Navigation Tabs */}
-      <div className="flex items-center gap-3">
-        {/* Smart Search Bar */}
-        <SmartSearchBar />
+      <div className="flex items-center gap-2">
+        {/* Smart Search Bar — Only visible on Launcher page */}
+        {activeModule === "launcher" && <SmartSearchBar />}
 
         {/* Module Sub-tabs */}
         {(activeModule !== "launcher" && activeModule !== "system" && activeModule !== "resources") && tabs.length > 0 && (
-          <nav className="flex items-center gap-1 p-0.5 bg-black/20 dark:bg-white/5 rounded-lg border border-border/40">
+          <nav className="flex items-center gap-0.5 p-0.5 bg-muted/50 rounded-lg border border-border/50">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`text-xs font-medium py-1 px-2.5 rounded-md flex items-center gap-1.5 transition-all cursor-pointer ${
+                className={`text-[11px] font-medium py-1 px-2 rounded-md flex items-center gap-1 transition-all cursor-pointer ${
                   activeTab === tab.id
-                    ? "bg-white/15 text-foreground shadow-sm font-semibold"
-                    : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                    ? "bg-card text-foreground shadow-sm font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {tab.icon}
@@ -141,15 +141,15 @@ export function TopBar() {
         )}
       </div>
 
-      {/* Right: Subscription Badge + License + User Menu + System Hamburger */}
-      <div className="flex items-center gap-2">
+      {/* Right: Subscription Badge + License + User Menu + System */}
+      <div className="flex items-center gap-1.5">
         <div className="relative">
           <button
             onClick={() => setShowLicenseManager(!showLicenseManager)}
-            className="text-[11px] py-1 px-2.5 bg-muted/60 hover:bg-muted active:scale-95 border border-border text-foreground transition-all shadow-sm font-semibold flex items-center gap-1.5 rounded-xl cursor-pointer"
+            className="text-[10px] py-1 px-2 bg-muted/50 hover:bg-muted border border-border text-foreground transition-all font-medium flex items-center gap-1 rounded-lg cursor-pointer"
           >
-            <Key size={12} className="text-amber-500" />
-            <span className="hidden md:inline">Đổi Quyền Lợi</span>
+            <Key size={11} className="text-amber-500/80" />
+            <span className="hidden md:inline">Quyền Lợi</span>
           </button>
           {showLicenseManager && (
             <LicenseManager
@@ -161,31 +161,42 @@ export function TopBar() {
         
         <SubscriptionBadge />
 
-        {/* 10-minute Session Countdown Badge */}
+        {/* Session Status / Countdown */}
         {session && (
-          <div
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono border transition-all select-none ${
-              isExpiringSoon
-                ? "bg-destructive/15 text-destructive border-destructive/40 animate-pulse font-bold shadow-sm"
-                : "bg-white/5 text-muted-foreground hover:text-foreground border-border/40"
-            }`}
-            title="Thời gian còn lại của phiên làm việc (tối đa 10 phút/phiên, tự động đăng xuất và có thể đăng nhập lại)"
-          >
-            <Clock size={12} className={isExpiringSoon ? "text-destructive" : "text-amber-500"} />
-            <span>{formattedTime}</span>
-          </div>
+          (isUnlimited || session.subscription?.isPremium || session.subscription?.status === "LIFETIME") ? (
+            <div
+              className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-medium border bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25 select-none shadow-xs"
+              title="Tài khoản VIP Premium: Phiên làm việc không giới hạn thời gian"
+            >
+              <Sparkles size={11} className="text-amber-500 shrink-0" />
+              <span className="hidden sm:inline">Phiên VIP:</span>
+              <span className="font-semibold">Không giới hạn</span>
+            </div>
+          ) : (
+            <div
+              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-mono border transition-all select-none ${
+                isExpiringSoon
+                  ? "bg-destructive/10 text-destructive border-destructive/30 font-semibold animate-pulse"
+                  : "bg-muted/30 text-muted-foreground border-border/40"
+              }`}
+              title="Thời gian còn lại của phiên làm việc"
+            >
+              <Clock size={10} className={isExpiringSoon ? "text-destructive shrink-0" : "text-muted-foreground shrink-0"} />
+              <span>{formattedTime}</span>
+            </div>
+          )
         )}
 
         {/* User Avatar / Menu */}
         <div className="relative">
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-white/10 transition-all cursor-pointer"
+            className="flex items-center gap-1 px-1.5 py-1 rounded-md hover:bg-muted transition-all cursor-pointer"
           >
-            <div className="w-5 h-5 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center shadow-sm text-primary">
-              <User size={12} />
+            <div className="w-5 h-5 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center text-primary">
+              <User size={11} />
             </div>
-            <span className="text-xs font-medium text-foreground/90 max-w-[90px] truncate hidden sm:inline">
+            <span className="text-[11px] font-medium text-foreground/80 max-w-[80px] truncate hidden sm:inline">
               {session?.name || "User"}
             </span>
           </button>
@@ -197,13 +208,13 @@ export function TopBar() {
                 className="fixed inset-0 z-40"
                 onClick={() => setShowUserMenu(false)}
               />
-              <div className="absolute right-0 top-full mt-2 w-56 panel p-2 z-50 animate-slide-up shadow-xl border border-border/80 rounded-xl bg-[#16181d]">
-                <div className="px-3 py-2 border-b border-border/50 mb-1">
-                  <p className="text-xs font-semibold truncate text-foreground">{session?.name}</p>
-                  <p className="text-[11px] font-mono text-primary font-bold truncate">
+              <div className="absolute right-0 top-full mt-1.5 w-52 panel p-1.5 z-50 animate-slide-up shadow-lg border border-border rounded-xl">
+                <div className="px-2.5 py-2 border-b border-border/50 mb-1">
+                  <p className="text-[11px] font-semibold truncate text-foreground">{session?.name}</p>
+                  <p className="text-[10px] font-mono text-primary truncate">
                     @{session?.username || session?.email.split("@")[0]}
                   </p>
-                  <p className="text-[11px] text-muted-foreground truncate">
+                  <p className="text-[10px] text-muted-foreground truncate">
                     {session?.email}
                   </p>
                 </div>
@@ -213,9 +224,9 @@ export function TopBar() {
                     setShowUserMenu(false);
                     setShowAccountModal(true);
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 text-[11px] text-foreground hover:bg-muted rounded-md transition-colors cursor-pointer"
                 >
-                  <Shield size={14} className="text-primary" />
+                  <Shield size={13} className="text-primary/70" />
                   Tài khoản & Bảo mật
                 </button>
 
@@ -224,9 +235,9 @@ export function TopBar() {
                     setShowUserMenu(false);
                     setShowLicenseManager(true);
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 text-[11px] text-foreground hover:bg-muted rounded-md transition-colors cursor-pointer"
                 >
-                  <Key size={14} className="text-amber-500" />
+                  <Key size={13} className="text-amber-500/70" />
                   Đổi Quyền Lợi / Key
                 </button>
 
@@ -234,9 +245,9 @@ export function TopBar() {
 
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-destructive hover:bg-destructive/10 rounded-lg transition-colors cursor-pointer"
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 text-[11px] text-destructive hover:bg-destructive/8 rounded-md transition-colors cursor-pointer"
                 >
-                  <LogOut size={14} />
+                  <LogOut size={13} />
                   {t("logout")}
                 </button>
               </div>
@@ -250,16 +261,16 @@ export function TopBar() {
           onClose={() => setShowAccountModal(false)}
         />
 
-        {/* System Menu (Hamburger) */}
+        {/* System Menu */}
         <div className="relative">
           <button
             onClick={() => setActiveModule("system")}
             title="Cài đặt hệ thống"
-            className={`flex items-center justify-center w-7 h-7 rounded-lg hover:bg-white/10 transition-all cursor-pointer ${
-              activeModule === "system" ? "bg-white/20 text-foreground shadow-inner" : "text-muted-foreground hover:text-foreground"
+            className={`flex items-center justify-center w-6 h-6 rounded-md hover:bg-muted transition-all cursor-pointer ${
+              activeModule === "system" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Menu size={15} />
+            <Menu size={14} />
           </button>
         </div>
       </div>
