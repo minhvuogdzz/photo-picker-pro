@@ -43,6 +43,27 @@ jobs:
       - name: install frontend dependencies
         run: npm install
 
+      - name: Download MPhoton.app from private assets repo (macOS only)
+        if: matrix.platform == 'macos-latest'
+        env:
+          ASSETS_GITHUB_TOKEN: ${{ secrets.ASSETS_GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          mkdir -p src-tauri/resources/apps
+          # Get asset download URL from latest release
+          ASSET_URL=$(curl -s \
+            -H "Authorization: Bearer $ASSETS_GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/minhvuogdzz/mvd-studio-assets/releases/latest" \
+            | python3 -c "import sys,json; assets=json.load(sys.stdin)['assets']; print(next(a['url'] for a in assets if a['name']=='MPhoton.app.zip'))")
+          # Download the asset
+          curl -L \
+            -H "Authorization: Bearer $ASSETS_GITHUB_TOKEN" \
+            -H "Accept: application/octet-stream" \
+            "$ASSET_URL" \
+            -o src-tauri/resources/apps/MPhoton.app.zip
+          cd src-tauri/resources/apps && unzip -q MPhoton.app.zip && rm MPhoton.app.zip
+
       - name: Clean secrets
         env:
           RAW_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
