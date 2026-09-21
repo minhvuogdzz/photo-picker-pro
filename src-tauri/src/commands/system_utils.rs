@@ -231,22 +231,41 @@ pub fn launch_photon_studio(app: tauri::AppHandle) -> Result<String, String> {
             }
         }
 
-        // 2. Check bundled resources (production)
+        // 2. Check bundled resources via current_exe() — most reliable in production .app bundle
+        if let Ok(exe_path) = std::env::current_exe() {
+            // exe: <AppBundle>/Contents/MacOS/<binary>
+            if let Some(contents_dir) = exe_path.parent().and_then(|p| p.parent()) {
+                let res_dir = contents_dir.join("Resources");
+                let candidates = [
+                    res_dir.join("apps").join("MPhoton.app"),
+                    res_dir.join("apps").join("Photon Studio.app"),
+                    res_dir.join("resources").join("apps").join("MPhoton.app"),
+                    res_dir.join("resources").join("apps").join("Photon Studio.app"),
+                ];
+                for p in &candidates {
+                    if launch_bundle(p) {
+                        return Ok("Đã khởi chạy cửa sổ MPhoton thành công".to_string());
+                    }
+                }
+            }
+        }
+
+        // 3. Check via Tauri resource_dir API
         if let Ok(res_dir) = app.path().resource_dir() {
             let candidates = [
-                res_dir.join("resources").join("apps").join("MPhoton.app"),
                 res_dir.join("apps").join("MPhoton.app"),
-                res_dir.join("resources").join("apps").join("Photon Studio.app"),
                 res_dir.join("apps").join("Photon Studio.app"),
+                res_dir.join("resources").join("apps").join("MPhoton.app"),
+                res_dir.join("resources").join("apps").join("Photon Studio.app"),
             ];
-            for p in candidates {
-                if launch_bundle(&p) {
+            for p in &candidates {
+                if launch_bundle(p) {
                     return Ok("Đã khởi chạy cửa sổ MPhoton thành công".to_string());
                 }
             }
         }
 
-        // 3. Fallback to system /Applications
+        // 4. Fallback to system /Applications
         let fallback_sys1 = Path::new("/Applications/MPhoton.app");
         if launch_bundle(&fallback_sys1) {
             return Ok("Đã khởi chạy cửa sổ MPhoton thành công".to_string());
@@ -256,7 +275,17 @@ pub fn launch_photon_studio(app: tauri::AppHandle) -> Result<String, String> {
             return Ok("Đã khởi chạy cửa sổ MPhoton thành công".to_string());
         }
 
-        Err("Không tìm thấy ứng dụng MPhoton hợp lệ trong thư mục resources/apps.".to_string())
+        // Build debug info showing what was checked
+        let exe_info = std::env::current_exe()
+            .map(|p| p.display().to_string())
+            .unwrap_or_else(|_| "unknown".to_string());
+        let res_info = app.path().resource_dir()
+            .map(|p| p.display().to_string())
+            .unwrap_or_else(|_| "unknown".to_string());
+
+        Err(format!(
+            "Không tìm thấy MPhoton.app. Đường dẫn đã kiểm tra — exe: {exe_info} | res_dir: {res_info}"
+        ))
     }
 
     #[cfg(not(target_os = "macos"))]
