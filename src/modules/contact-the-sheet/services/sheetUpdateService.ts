@@ -32,8 +32,8 @@ export class SheetUpdateService {
 
       // Batch read ranges for all jobs across their respective tabs
       const ranges = jobs.map((j) => {
-        const tab = j.targetTabTitle || profile.selectedTabTitle;
-        return `'${tab}'!A${j.targetSheetRow}:Z${j.targetSheetRow}`;
+        const tab = (j.targetTabTitle || profile.selectedTabTitle).replace(/'/g, "''");
+        return `'${tab}'!A${j.targetSheetRow}:ZZ${j.targetSheetRow}`;
       });
       const query = ranges.map((r) => `ranges=${encodeURIComponent(r)}`).join("&");
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${profile.spreadsheetId}/values:batchGet?${query}`;
@@ -192,7 +192,7 @@ export class SheetUpdateService {
 
         for (const write of plan.writes) {
           if (write.allowed) {
-            const tabTitle = write.tabTitle || job.targetTabTitle || plan.targetTabTitle || profile.selectedTabTitle;
+            const tabTitle = (write.tabTitle || job.targetTabTitle || plan.targetTabTitle || profile.selectedTabTitle).replace(/'/g, "''");
             updateData.push({
               range: `'${tabTitle}'!${write.columnLetter}${write.row}`,
               values: [[write.newValue]],
@@ -340,7 +340,7 @@ export class SheetUpdateService {
 
     try {
       let token = await googleCredentialManager.getValidAccessToken();
-      const cellRange = `'${tab}'!${columnLetter}${row}`;
+      const cellRange = `'${tab.replace(/'/g, "''")}'!${columnLetter}${row}`;
       const encodedRange = encodeURIComponent(cellRange);
       const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${profile.spreadsheetId}/values/${encodedRange}`;
 

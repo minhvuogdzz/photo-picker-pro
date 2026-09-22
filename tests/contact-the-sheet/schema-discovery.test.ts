@@ -152,3 +152,15 @@ test("Acceptance Test I: Column shift detection and auto-remap", () => {
   assert.equal(remapped.find((m) => m.semanticField === "EDITOR")?.columnLetter, "O");
   assert.equal(remapped.find((m) => m.semanticField === "DELIVERY_LINK")?.columnLetter, "P");
 });
+
+test("fetchSheetRowsForMatching returns all rows when rowCount is omitted", async () => {
+  // When rowCount is omitted/undefined in mock mode, all rows from startRow onwards should be returned
+  const allRows = await sheetDiscoveryService.fetchSheetRowsForMatching("test-id", "Sheet1", 4, undefined, true);
+  const fixtureRowsCount = (realSheetFixture as any).sheets[0].data[0].rowData.length - 3;
+  assert.equal(allRows.length, fixtureRowsCount);
+
+  // When rowCount is explicitly provided, it should cap at rowCount
+  const cappedRows = await sheetDiscoveryService.fetchSheetRowsForMatching("test-id", "Sheet1", 4, 2, true);
+  assert.equal(cappedRows.length, 2);
+});
+

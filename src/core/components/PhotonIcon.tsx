@@ -15,7 +15,7 @@ export function PhotonIcon({ size = 16, className = "" }: PhotonIconProps) {
     >
       <img
         src={photonIconUrl}
-        alt="Photon Studio"
+        alt="MVD Generation"
         className="w-full h-full object-contain rounded-xs drop-shadow-xs"
         draggable={false}
       />

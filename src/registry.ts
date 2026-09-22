@@ -119,17 +119,17 @@ export const modules: AppModule[] = [
   },
   {
     id: "photon-studio",
-    name: "MPhoton",
-    shortName: "MPhoton",
+    name: "MVD Generation",
+    shortName: "MVD Gen",
     icon: PhotonIcon,
     path: "/photon-studio",
-    description: "Bộ công cụ studio hậu kỳ & retouch chuyên nghiệp MPhoton, tối ưu phân tích workflow và gia tốc phần cứng trên cửa sổ riêng.",
+    description: "Bộ công cụ thế hệ mới MVD Generation gia tốc Metal GPU (Native Swift), xử lý layers, curves, mask và liên thông dữ liệu trực tiếp trong Super-App.",
     category: "retouch",
     tags: [
-      "mphoton", "photon", "studio", "retouch", "chân dung", 
+      "mvd generation", "generation", "mvd studio", "metal", 
       "hậu kỳ", "photoshop", "màu sắc", "mvd"
     ],
-    badge: "VIP Retouch",
+    badge: "Native Metal 33MB",
     isPremium: true,
     accentColor: {
       primary: "text-cyan-600 dark:text-cyan-400",

@@ -275,7 +275,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
         profile.spreadsheetId,
         newTabTitle,
         profile.rowScope?.startRow || 4,
-        1500,
+        undefined,
         profile.isMockSandbox
       );
       setSheetRows(rows);
@@ -301,7 +301,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
         profile.spreadsheetId,
         tabName,
         profile.rowScope?.startRow || 4,
-        1500,
+        undefined,
         profile.isMockSandbox
       );
       setSheetRows(rows);
@@ -806,11 +806,11 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                       type="button"
                       onClick={() => loadRows(currentTabTitle).then((r) => runExtractionWithRows(r, currentTabTitle))}
                       disabled={isLoadingRows}
-                      className="text-[11px] text-primary hover:underline flex items-center gap-1 cursor-pointer"
-                      title="Tải lại dữ liệu dòng mới nhất"
+                      className="px-2.5 py-1 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-md text-[11px] font-semibold flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
+                      title="Tải lại toàn bộ dữ liệu dòng Google Sheet mới nhất & quét lại"
                     >
                       <RefreshCw size={11} className={isLoadingRows ? "animate-spin" : ""} />
-                      Làm mới
+                      <span>Làm mới dữ liệu</span>
                     </button>
                   </div>
                 </div>
@@ -916,7 +916,19 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                           {extractionResult.matchedRow ? (
                             <span>Dòng {extractionResult.matchedRow}: {extractionResult.customerName || extractionResult.jobFolderName}</span>
                           ) : (
-                            <span>Không tìm thấy dòng khớp trên Tab "{currentTabTitle}"</span>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span>Không tìm thấy dòng khớp trên Tab "{currentTabTitle}"</span>
+                              <button
+                                type="button"
+                                onClick={() => loadRows(currentTabTitle).then((r) => runExtractionWithRows(r, currentTabTitle))}
+                                disabled={isLoadingRows}
+                                className="px-2 py-0.5 bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 rounded text-[10px] font-semibold flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                                title="Tải lại dòng từ Google Sheet"
+                              >
+                                <RefreshCw size={10} className={isLoadingRows ? "animate-spin" : ""} />
+                                <span>Quét lại Sheet</span>
+                              </button>
+                            </div>
                           )}
                           {extractionResult.confidence && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-background/60 border border-current/20 font-mono">

@@ -59,6 +59,10 @@ interface ContactSheetState {
   removeJob: (jobId: string) => void;
   clearJobs: () => void;
 
+  // Last Scanned Folder Paths
+  lastScannedPaths: string[];
+  setLastScannedPaths: (paths: string[]) => void;
+
   // Scanning State
   isScanning: boolean;
   setIsScanning: (scanning: boolean) => void;
@@ -498,6 +502,9 @@ export const useContactSheetStore = create<ContactSheetState>()(
         }),
       clearJobs: () => set({ discoveredJobs: [], updatePlans: {} }),
 
+      lastScannedPaths: [],
+      setLastScannedPaths: (lastScannedPaths) => set({ lastScannedPaths }),
+
       isScanning: false,
       setIsScanning: (isScanning) => set({ isScanning }),
       scanProgress: null,
@@ -531,6 +538,7 @@ export const useContactSheetStore = create<ContactSheetState>()(
         googleConnection: state.googleConnection,
         lastSheetUrl: state.lastSheetUrl,
         lastDriveConfig: state.lastDriveConfig,
+        lastScannedPaths: state.lastScannedPaths,
       }),
     }
   )

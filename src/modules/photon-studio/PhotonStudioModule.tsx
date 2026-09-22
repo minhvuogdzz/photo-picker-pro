@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { 
   Play, 
@@ -52,6 +52,13 @@ export function PhotonStudioModule() {
 
   const hasConfirmedRunningRef = useRef<boolean>(false);
 
+  const matchedPhotosList = useMemo(() => {
+    if (!matchResult?.matches) return [];
+    return matchResult.matches
+      .map((m) => m.photo?.full_path)
+      .filter((p): p is string => Boolean(p));
+  }, [matchResult]);
+
   const isPremium = session?.subscription?.isPremium === true || session?.subscription?.status === "LIFETIME";
 
   const checkStatus = useCallback(async () => {
@@ -87,20 +94,24 @@ export function PhotonStudioModule() {
     localStorage.setItem("mvd_photon_integration_mode", newMode);
   };
 
-  const handleLaunch = async () => {
+  const handleLaunch = async (photosToOpen?: string[]) => {
     if (!isPremium) {
-      setErrorMessage("MPhoton là đặc quyền dành riêng cho tài khoản VIP Premium.");
+      setErrorMessage("MVD Generation là đặc quyền dành riêng cho tài khoản VIP Premium.");
       return;
     }
 
     setIsLaunching(true);
     setErrorMessage(null);
-    setStatusMessage("Đang chuẩn bị môi trường & khởi chạy MPhoton...");
+    setStatusMessage(photosToOpen && photosToOpen.length > 0 
+      ? `Đang mở ${photosToOpen.length} ảnh trong MVD Generation (Native Metal)...`
+      : "Đang chuẩn bị môi trường & khởi chạy MVD Generation (Native Metal)...");
 
     try {
-      // 1. Launch MPhoton (Tauri Rust automatically removes quarantine xattr -cr)
-      const msg = await invoke<string>("launch_photon_studio");
-      setStatusMessage(msg || "Đã khởi chạy cửa sổ MPhoton thành công");
+      // 1. Launch MVD Generation (Native Swift + Metal Engine)
+      const msg = await invoke<string>("launch_photon_studio", {
+        photos: photosToOpen && photosToOpen.length > 0 ? photosToOpen : null
+      });
+      setStatusMessage(msg || "Đã khởi chạy cửa sổ MVD Generation thành công");
       setIsRunning(true);
 
       // 2. Apply Seamless Window Behavior based on selected mode
@@ -124,21 +135,26 @@ export function PhotonStudioModule() {
       }
 
       setTimeout(checkStatus, 2000);
-    } catch (err) {
-      const errStr = typeof err === "string" ? err : String(err);
-      setErrorMessage(errStr);
-      setStatusMessage(null);
     } finally {
       setIsLaunching(false);
     }
   };
+
+  const autoLaunchedRef = useRef(false);
+
+  useEffect(() => {
+    if (!autoLaunchedRef.current && isPremium && !isRunning) {
+      autoLaunchedRef.current = true;
+      handleLaunch(matchedPhotosList.length > 0 ? matchedPhotosList : undefined);
+    }
+  }, [isPremium, isRunning]);
 
   const handleTerminate = async () => {
     try {
       await invoke("terminate_photon_studio");
       setIsRunning(false);
       hasConfirmedRunningRef.current = false;
-      setStatusMessage("Đã đóng tiến trình MPhoton");
+      setStatusMessage("Đã đóng MVD Generation");
       setTimeout(checkStatus, 1000);
     } catch (err) {
       const errStr = typeof err === "string" ? err : String(err);
@@ -199,11 +215,11 @@ export function PhotonStudioModule() {
         </div>
 
         <h2 className="text-base font-semibold text-foreground mb-1.5 tracking-tight">
-          MPhoton Dành Riêng Cho Tài Khoản VIP Premium
+          MVD Generation Dành Riêng Cho Tài Khoản VIP Premium
         </h2>
 
         <p className="text-xs text-muted-foreground max-w-md mb-5 leading-relaxed">
-          Bộ công cụ studio hậu kỳ & retouch chuyên nghiệp <strong>MPhoton</strong> với khả năng tối ưu workflow và gia tốc phần cứng trên cửa sổ riêng chỉ mở khóa dành riêng cho tài khoản được cấp quyền <strong>VIP Premium</strong>.
+          Bộ công cụ thế hệ mới <strong>MVD Generation</strong> với khả năng xử lý đồ họa chuyên sâu và gia tốc Metal GPU chỉ mở khóa dành riêng cho tài khoản được cấp quyền <strong>VIP Premium</strong>.
         </p>
 
         <div className="flex items-center gap-2.5">
@@ -364,7 +380,7 @@ export function PhotonStudioModule() {
                 <div className="w-20 h-20 rounded-2xl p-2 bg-gradient-to-b from-cyan-500/15 to-blue-500/10 border border-cyan-500/30 shadow-md flex items-center justify-center">
                   <img 
                     src={photonIconUrl} 
-                    alt="MPhoton" 
+                    alt="MVD Generation" 
                     className="w-full h-full object-contain drop-shadow-sm select-none"
                     draggable={false}
                   />
@@ -380,18 +396,18 @@ export function PhotonStudioModule() {
               <div>
                 <div className="flex flex-wrap items-center gap-2 mb-1.5">
                   <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
-                    MPhoton
+                    MVD Generation
                   </h1>
                   <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-cyan-500/15 text-cyan-600 dark:text-cyan-300 border border-cyan-500/30">
-                    Tenzen Ecosystem
+                    Native Metal Engine
                   </span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground border border-border">
-                    Portable Sub-App
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    33 MB • GPU Accelerated
                   </span>
                 </div>
                 
                 <p className="text-xs text-muted-foreground max-w-xl leading-relaxed">
-                  Ứng dụng xử lý studio, phân tích màu sắc và tối ưu hóa workflow ảnh cưới & sự kiện, liên kết liền mạch cùng Super-App.
+                  Công cụ thế hệ mới MVD Generation gia tốc phần cứng Apple Metal GPU, xử lý layer, mask, curves và liên thông dữ liệu trực tiếp trong Super-App.
                 </p>
 
                 {/* Status Indicator Pill */}
@@ -402,7 +418,7 @@ export function PhotonStudioModule() {
                       : "bg-muted/70 border-border text-muted-foreground"
                   }`}>
                     <span className={`w-2 h-2 rounded-full ${isRunning ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/40"}`} />
-                    {isRunning ? "Cửa sổ MPhoton đang hoạt động" : "MPhoton chưa khởi chạy"}
+                    {isRunning ? "Cửa sổ MVD Generation đang hoạt động" : "MVD Generation chưa khởi chạy"}
                   </div>
                 </div>
               </div>
@@ -411,7 +427,7 @@ export function PhotonStudioModule() {
             {/* Launch Controls */}
             <div className="flex flex-col sm:flex-row md:flex-col gap-2.5 w-full md:w-auto shrink-0">
               <button
-                onClick={handleLaunch}
+                onClick={() => handleLaunch()}
                 disabled={isLaunching}
                 className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all shadow-md active:scale-98 cursor-pointer ${
                   isRunning
@@ -443,7 +459,7 @@ export function PhotonStudioModule() {
                   className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-xs bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/25 transition-all cursor-pointer"
                 >
                   <Square size={13} className="fill-current" />
-                  <span>Đóng MPhoton</span>
+                  <span>Đóng MVD Generation</span>
                 </button>
               )}
             </div>
@@ -587,31 +603,45 @@ export function PhotonStudioModule() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Codes Card */}
+            {/* Codes & Photos Card */}
             <div className="p-4 rounded-2xl bg-muted/30 border border-border flex flex-col justify-between space-y-3">
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-semibold text-foreground">Mã ảnh khách chọn</span>
+                  <span className="text-xs font-semibold text-foreground">Ảnh khách đã chọn</span>
                   <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-muted text-foreground border border-border">
-                    {parsedCodes.length} mã
+                    {matchedPhotosList.length > 0 ? `${matchedPhotosList.length} ảnh khớp` : `${parsedCodes.length} mã`}
                   </span>
                 </div>
                 <p className="text-[11px] text-muted-foreground">
-                  {parsedCodes.length > 0 
+                  {matchedPhotosList.length > 0 
+                    ? `Đã tìm thấy ${matchedPhotosList.length} tệp ảnh sẵn sàng đưa vào MVD Generation để xử lý.`
+                    : parsedCodes.length > 0 
                     ? parsedCodes.slice(0, 15).map(c => c.raw || c.normalized).join(", ") + (parsedCodes.length > 15 ? "..." : "")
-                    : "Chưa có mã từ khách. Hãy chạy quét mã ở module Photo Picker Pro."}
+                    : "Chưa có ảnh khớp từ khách. Hãy chạy quét mã ở module Photo Picker Pro."}
                 </p>
               </div>
 
-              {parsedCodes.length > 0 && (
-                <button
-                  onClick={handleCopyCodes}
-                  className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary font-medium text-xs transition-colors cursor-pointer"
-                >
-                  {copiedCodes ? <Check size={13} /> : <Copy size={13} />}
-                  <span>{copiedCodes ? "Đã sao chép vào Clipboard!" : "Sao chép toàn bộ mã ảnh"}</span>
-                </button>
-              )}
+              <div className="flex flex-wrap gap-2">
+                {matchedPhotosList.length > 0 && (
+                  <button
+                    onClick={() => handleLaunch(matchedPhotosList)}
+                    disabled={isLaunching}
+                    className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs transition-all shadow-xs cursor-pointer"
+                  >
+                    <Sparkles size={13} />
+                    <span>Đẩy {matchedPhotosList.length} ảnh sang MVD Generation</span>
+                  </button>
+                )}
+                {parsedCodes.length > 0 && (
+                  <button
+                    onClick={handleCopyCodes}
+                    className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-muted hover:bg-muted/80 text-foreground font-medium text-xs transition-colors border border-border cursor-pointer"
+                  >
+                    {copiedCodes ? <Check size={13} /> : <Copy size={13} />}
+                    <span>{copiedCodes ? "Đã chép mã" : "Sao chép mã"}</span>
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Folder Card */}

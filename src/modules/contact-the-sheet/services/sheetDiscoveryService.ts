@@ -145,8 +145,9 @@ export class SheetDiscoveryService {
       rowData = targetSheet?.data?.[0]?.rowData || [];
     } else {
       let token = await googleCredentialManager.getValidAccessToken();
-      const maxColLetter = this.columnIndexToLetter(Math.min(tab.columnCount - 1, 25));
-      const range = `'${tab.title}'!A1:${maxColLetter}${sampleRowCount}`;
+      const maxColLetter = this.columnIndexToLetter(Math.max(0, Math.min((tab.columnCount || 26) - 1, 701)));
+      const escapedTitle = tab.title.replace(/'/g, "''");
+      const range = `'${escapedTitle}'!A1:${maxColLetter}${sampleRowCount}`;
       const fields = "sheets.data.rowData.values(formattedValue,userEnteredValue,effectiveValue,dataValidation,hyperlink)";
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?ranges=${encodeURIComponent(range)}&fields=${encodeURIComponent(fields)}`;
 
@@ -402,17 +403,21 @@ export class SheetDiscoveryService {
 
   /**
    * Fetches sheet rows for matching in BatchRunnerView.
+   * If rowCount is omitted or <= 0, queries open-ended to fetch all populated rows
+   * from startRow down to the bottom of the sheet without row limit truncation.
    */
   public async fetchSheetRowsForMatching(
     spreadsheetId: string,
     tabTitle: string,
     startRow: number = 4,
-    rowCount: number = 1000,
+    rowCount?: number,
     isMock: boolean = false
   ): Promise<Array<{ row: number; values: Record<string, string> }>> {
     if (isMock) {
       const fixture = realSheetFixture as any;
-      return fixture.sheets[0].data[0].rowData.slice(startRow - 1).map((r: any, idx: number) => {
+      const allRows = fixture.sheets[0].data[0].rowData.slice(startRow - 1);
+      const targetRows = rowCount && rowCount > 0 ? allRows.slice(0, rowCount) : allRows;
+      return targetRows.map((r: any, idx: number) => {
         const values: Record<string, string> = {};
         for (let c = 0; c < 26; c++) {
           const letter = this.columnIndexToLetter(c);
@@ -426,7 +431,11 @@ export class SheetDiscoveryService {
     }
 
     let token = await googleCredentialManager.getValidAccessToken();
-    const range = `'${tabTitle}'!A${startRow}:ZZ${startRow + rowCount - 1}`;
+    const escapedTabTitle = tabTitle.replace(/'/g, "''");
+    const range =
+      rowCount && rowCount > 0
+        ? `'${escapedTabTitle}'!A${startRow}:ZZ${startRow + rowCount - 1}`
+        : `'${escapedTabTitle}'!A${startRow}:ZZ`;
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}`;
 
     let res = await fetch(url, {

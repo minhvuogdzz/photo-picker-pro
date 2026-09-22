@@ -14,7 +14,6 @@ import {
   ArrowLeft,
   Shield,
   RefreshCw,
-  Sparkles,
 } from "lucide-react";
 import { useState } from "react";
 import { useUpdaterStore } from "@/core/stores/useUpdaterStore";
@@ -161,30 +160,19 @@ export function TopBar() {
         
         <SubscriptionBadge />
 
-        {/* Session Status / Countdown */}
-        {session && (
-          (isUnlimited || session.subscription?.isPremium || session.subscription?.status === "LIFETIME") ? (
-            <div
-              className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-medium border bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25 select-none shadow-xs"
-              title="Tài khoản VIP Premium: Phiên làm việc không giới hạn thời gian"
-            >
-              <Sparkles size={11} className="text-amber-500 shrink-0" />
-              <span className="hidden sm:inline">Phiên VIP:</span>
-              <span className="font-semibold">Không giới hạn</span>
-            </div>
-          ) : (
-            <div
-              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-mono border transition-all select-none ${
-                isExpiringSoon
-                  ? "bg-destructive/10 text-destructive border-destructive/30 font-semibold animate-pulse"
-                  : "bg-muted/30 text-muted-foreground border-border/40"
-              }`}
-              title="Thời gian còn lại của phiên làm việc"
-            >
-              <Clock size={10} className={isExpiringSoon ? "text-destructive shrink-0" : "text-muted-foreground shrink-0"} />
-              <span>{formattedTime}</span>
-            </div>
-          )
+        {/* Session Countdown (only for non-premium accounts) */}
+        {session && !(isUnlimited || session.subscription?.isPremium || session.subscription?.status === "LIFETIME") && (
+          <div
+            className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-mono border transition-all select-none ${
+              isExpiringSoon
+                ? "bg-destructive/10 text-destructive border-destructive/30 font-semibold animate-pulse"
+                : "bg-muted/30 text-muted-foreground border-border/40"
+            }`}
+            title="Thời gian còn lại của phiên làm việc"
+          >
+            <Clock size={10} className={isExpiringSoon ? "text-destructive shrink-0" : "text-muted-foreground shrink-0"} />
+            <span>{formattedTime}</span>
+          </div>
         )}
 
         {/* User Avatar / Menu */}

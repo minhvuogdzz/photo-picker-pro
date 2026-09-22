@@ -387,8 +387,108 @@ fn photon_app_support_path() -> Option<std::path::PathBuf> {
     })
 }
 
+#[cfg(target_os = "macos")]
+fn compositor_app_support_path() -> Option<std::path::PathBuf> {
+    std::env::var("HOME").ok().map(|home| {
+        Path::new(&home)
+            .join("Library")
+            .join("Application Support")
+            .join("MVD Studio")
+            .join("apps")
+            .join("MVD Generation.app")
+    })
+}
+
+#[cfg(target_os = "macos")]
+fn legacy_compositor_app_support_path() -> Option<std::path::PathBuf> {
+    std::env::var("HOME").ok().map(|home| {
+        Path::new(&home)
+            .join("Library")
+            .join("Application Support")
+            .join("MVD Studio")
+            .join("apps")
+            .join("Compositor.app")
+    })
+}
+
+#[cfg(target_os = "macos")]
+fn is_valid_compositor_bundle(p: &Path) -> bool {
+    p.exists() && (
+        p.join("Contents").join("MacOS").join("Compositor").exists() ||
+        p.join("Contents").join("MacOS").join("MVD Generation").exists()
+    )
+}
+
+#[cfg(target_os = "macos")]
+fn spawn_compositor(bundle_path: &Path, photos: Option<Vec<String>>) -> bool {
+    let mut cmd = Command::new("open");
+    cmd.arg("-a").arg(bundle_path);
+
+    if let Some(files) = photos {
+        for file in files {
+            if Path::new(&file).exists() {
+                cmd.arg(file);
+            }
+        }
+    }
+
+    let status = cmd.status().map(|st| st.success()).unwrap_or(false);
+    if !status {
+        return false;
+    }
+
+    for _ in 0..15 {
+        std::thread::sleep(std::time::Duration::from_millis(150));
+        if check_photon_studio_status().unwrap_or(false) {
+            align_compositor_window();
+            return true;
+        }
+    }
+
+    false
+}
+
+#[cfg(target_os = "macos")]
+fn align_compositor_window() {
+    let script = r#"
+        tell application "System Events"
+            try
+                set parentProc to (first process whose name is "photo-picker-pro" or name is "MVD PHOTOSHOP ACADEMY")
+                set parentWin to first window of parentProc
+                set parentPos to position of parentWin
+                set parentSize to size of parentWin
+                
+                set compProc to (first process whose name is "MVD Generation" or name is "Compositor" or name is "MVD Retouch Studio")
+                set compWin to first window of compProc
+                
+                set position of compWin to parentPos
+                set size of compWin to parentSize
+            end try
+        end tell
+    "#;
+    let _ = Command::new("osascript").args(["-e", script]).status();
+}
+
 #[tauri::command]
-pub fn launch_photon_studio(app: tauri::AppHandle) -> Result<String, String> {
+pub fn align_studio_window() -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        align_compositor_window();
+        Ok(())
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        Ok(())
+    }
+}
+
+#[tauri::command]
+pub fn launch_compositor(app: tauri::AppHandle, photos: Option<Vec<String>>) -> Result<String, String> {
+    launch_photon_studio(app, photos)
+}
+
+#[tauri::command]
+pub fn launch_photon_studio(app: tauri::AppHandle, photos: Option<Vec<String>>) -> Result<String, String> {
     #[cfg(target_os = "macos")]
     {
         use tauri::Manager;
@@ -397,18 +497,84 @@ pub fn launch_photon_studio(app: tauri::AppHandle) -> Result<String, String> {
         if let Ok(Some(session)) = crate::commands::auth::load_auth_session() {
             let is_premium = session.is_premium.unwrap_or(false) || session.subscription_status == "LIFETIME";
             if !is_premium {
-                return Err("MPhoton là tính năng độc quyền yêu cầu tài khoản VIP Premium để khởi chạy.".to_string());
+                return Err("MVD Generation là tính năng độc quyền yêu cầu tài khoản VIP Premium để khởi chạy.".to_string());
             }
         }
 
-        // 1. Fast path: MPhoton already staged in Application Support — launch directly
+        // =========================================================================
+        // PRIORITY 1: MVD Generation / Compositor (Native Swift + Metal Engine, ~33MB)
+        // =========================================================================
+        if let Some(staged) = compositor_app_support_path() {
+            if is_valid_compositor_bundle(&staged) && spawn_compositor(&staged, photos.clone()) {
+                return Ok("Đã khởi chạy MVD Generation (Native Metal) thành công".to_string());
+            }
+        }
+        if let Some(staged) = legacy_compositor_app_support_path() {
+            if is_valid_compositor_bundle(&staged) && spawn_compositor(&staged, photos.clone()) {
+                return Ok("Đã khởi chạy MVD Generation (Native Metal) thành công".to_string());
+            }
+        }
+
+        let mut compositor_sources: Vec<std::path::PathBuf> = Vec::new();
+        if let Ok(cwd) = std::env::current_dir() {
+            compositor_sources.push(cwd.join("resources").join("apps").join("MVD Generation.app"));
+            compositor_sources.push(cwd.join("resources").join("apps").join("Compositor.app"));
+            compositor_sources.push(cwd.join("src-tauri").join("resources").join("apps").join("MVD Generation.app"));
+            compositor_sources.push(cwd.join("src-tauri").join("resources").join("apps").join("Compositor.app"));
+            compositor_sources.push(cwd.join("photo-picker-pro").join("src-tauri").join("resources").join("apps").join("MVD Generation.app"));
+            compositor_sources.push(cwd.join("photo-picker-pro").join("src-tauri").join("resources").join("apps").join("Compositor.app"));
+        }
+        if let Ok(exe_path) = std::env::current_exe() {
+            if let Some(contents_dir) = exe_path.parent().and_then(|p| p.parent()) {
+                let res_dir = contents_dir.join("Resources");
+                compositor_sources.push(res_dir.join("apps").join("MVD Generation.app"));
+                compositor_sources.push(res_dir.join("apps").join("Compositor.app"));
+                compositor_sources.push(res_dir.join("resources").join("apps").join("MVD Generation.app"));
+                compositor_sources.push(res_dir.join("resources").join("apps").join("Compositor.app"));
+            }
+        }
+        if let Ok(res_dir) = app.path().resource_dir() {
+            compositor_sources.push(res_dir.join("apps").join("MVD Generation.app"));
+            compositor_sources.push(res_dir.join("apps").join("Compositor.app"));
+            compositor_sources.push(res_dir.join("resources").join("apps").join("MVD Generation.app"));
+            compositor_sources.push(res_dir.join("resources").join("apps").join("Compositor.app"));
+        }
+        compositor_sources.push(Path::new("/Applications/MVD Generation.app").to_path_buf());
+        compositor_sources.push(Path::new("/Applications/Compositor.app").to_path_buf());
+
+        if let Some(source) = compositor_sources.iter().find(|p| is_valid_compositor_bundle(p)) {
+            if let Some(staged) = compositor_app_support_path() {
+                let staged_parent = staged.parent().unwrap();
+                if staged.exists() {
+                    let _ = std::fs::remove_dir_all(&staged);
+                }
+                let _ = std::fs::create_dir_all(staged_parent);
+                let copy_ok = Command::new("cp")
+                    .args(["-Rp", source.to_str().unwrap_or(""), staged.to_str().unwrap_or("")])
+                    .status()
+                    .map(|st| st.success())
+                    .unwrap_or(false);
+
+                if copy_ok && is_valid_compositor_bundle(&staged) {
+                    let _ = Command::new("xattr").args(["-cr", staged.to_str().unwrap_or("")]).status();
+                    let _ = Command::new("codesign").args(["-f", "-s", "-", "--deep", staged.to_str().unwrap_or("")]).status();
+
+                    if spawn_compositor(&staged, photos.clone()) {
+                        return Ok("Đã cài đặt và khởi chạy MVD Generation (Native Metal) thành công".to_string());
+                    }
+                }
+            }
+        }
+
+        // =========================================================================
+        // PRIORITY 2: Fallback to MPhoton / Photon Studio (Legacy Electron)
+        // =========================================================================
         if let Some(staged) = photon_app_support_path() {
             if is_valid_photon_bundle(&staged) && spawn_photon(&staged) {
                 return Ok("Đã khởi chạy cửa sổ MPhoton thành công".to_string());
             }
         }
 
-        // 2. Not staged yet or failed — find a source bundle (dev workspace, app resources, or /Applications)
         let mut source_candidates: Vec<std::path::PathBuf> = Vec::new();
 
         if let Ok(cwd) = std::env::current_dir() {
@@ -446,13 +612,12 @@ pub fn launch_photon_studio(app: tauri::AppHandle) -> Result<String, String> {
             let exe_info = std::env::current_exe().map(|p| p.display().to_string()).unwrap_or_else(|_| "unknown".to_string());
             let res_info = app.path().resource_dir().map(|p| p.display().to_string()).unwrap_or_else(|_| "unknown".to_string());
             return Err(format!(
-                "Không tìm thấy MPhoton.app. Đường dẫn đã kiểm tra — exe: {exe_info} | res_dir: {res_info}"
+                "Không tìm thấy Studio App (Compositor.app hoặc MPhoton.app). Đường dẫn đã kiểm tra — exe: {exe_info} | res_dir: {res_info}"
             ));
         };
 
-        // 3. Stage it: copy out of the source into Application Support, then repair & launch
         let Some(staged) = photon_app_support_path() else {
-            return Err("Không thể xác định thư mục HOME để cài đặt MPhoton.".to_string());
+            return Err("Không thể xác định thư mục HOME để cài đặt Studio.".to_string());
         };
         let staged_parent = staged.parent().unwrap();
 
@@ -460,7 +625,7 @@ pub fn launch_photon_studio(app: tauri::AppHandle) -> Result<String, String> {
             let _ = std::fs::remove_dir_all(&staged);
         }
         if let Err(e) = std::fs::create_dir_all(staged_parent) {
-            return Err(format!("Không thể tạo thư mục cài đặt MPhoton: {e}"));
+            return Err(format!("Không thể tạo thư mục cài đặt Studio: {e}"));
         }
 
         let copy_ok = Command::new("cp")
@@ -470,19 +635,19 @@ pub fn launch_photon_studio(app: tauri::AppHandle) -> Result<String, String> {
             .unwrap_or(false);
 
         if !copy_ok || !is_valid_photon_bundle(&staged) {
-            return Err(format!("Không thể sao chép MPhoton từ {} sang Application Support.", source.display()));
+            return Err(format!("Không thể sao chép Studio từ {} sang Application Support.", source.display()));
         }
 
         if spawn_photon(&staged) {
             return Ok("Đã cài đặt và khởi chạy MPhoton thành công".to_string());
         }
 
-        Err("Đã sao chép MPhoton nhưng không thể khởi chạy. Vui lòng kiểm tra quyền hệ thống.".to_string())
+        Err("Đã sao chép Studio nhưng không thể khởi chạy. Vui lòng kiểm tra quyền hệ thống.".to_string())
     }
 
     #[cfg(not(target_os = "macos"))]
     {
-        Err("MPhoton hiện chỉ hỗ trợ trên hệ điều hành macOS.".to_string())
+        Err("MVD Retouch Studio hiện chỉ hỗ trợ trên hệ điều hành macOS.".to_string())
     }
 }
 
@@ -490,16 +655,12 @@ pub fn launch_photon_studio(app: tauri::AppHandle) -> Result<String, String> {
 pub fn check_photon_studio_status() -> Result<bool, String> {
     #[cfg(target_os = "macos")]
     {
-        let output1 = Command::new("pgrep").args(["-f", "MPhoton"]).output();
-        if let Ok(out) = output1 {
-            if out.status.success() {
-                return Ok(true);
+        for app_name in ["MVD Generation", "Compositor", "MPhoton", "Photon Studio"] {
+            if let Ok(out) = Command::new("pgrep").args(["-f", app_name]).output() {
+                if out.status.success() {
+                    return Ok(true);
+                }
             }
-        }
-
-        let output2 = Command::new("pgrep").args(["-f", "Photon Studio"]).output();
-        if let Ok(out) = output2 {
-            return Ok(out.status.success());
         }
 
         Ok(false)
@@ -515,15 +676,17 @@ pub fn check_photon_studio_status() -> Result<bool, String> {
 pub fn terminate_photon_studio() -> Result<String, String> {
     #[cfg(target_os = "macos")]
     {
+        let _ = Command::new("pkill").args(["-9", "-f", "MVD Generation"]).status();
+        let _ = Command::new("pkill").args(["-9", "-f", "Compositor"]).status();
         let _ = Command::new("pkill").args(["-9", "-f", "MPhoton"]).status();
         let _ = Command::new("pkill").args(["-9", "-f", "Photon Studio"]).status();
 
-        Ok("Đã gửi lệnh đóng MPhoton".to_string())
+        Ok("Đã gửi lệnh đóng MVD Generation".to_string())
     }
 
     #[cfg(not(target_os = "macos"))]
     {
-        Err("MPhoton hiện chỉ hỗ trợ trên macOS.".to_string())
+        Err("MVD Generation hiện chỉ hỗ trợ trên macOS.".to_string())
     }
 }
 

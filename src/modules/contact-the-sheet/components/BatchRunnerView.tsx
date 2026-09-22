@@ -44,6 +44,8 @@ export function BatchRunnerView({
   const updateJob = useContactSheetStore((s) => s.updateJob);
   const removeJob = useContactSheetStore((s) => s.removeJob);
   const clearJobs = useContactSheetStore((s) => s.clearJobs);
+  const lastScannedPaths = useContactSheetStore((s) => s.lastScannedPaths);
+  const setLastScannedPaths = useContactSheetStore((s) => s.setLastScannedPaths);
   const isScanning = useContactSheetStore((s) => s.isScanning);
   const setIsScanning = useContactSheetStore((s) => s.setIsScanning);
   const scanProgress = useContactSheetStore((s) => s.scanProgress);
@@ -161,6 +163,9 @@ export function BatchRunnerView({
 
   const handleProcessFolderPaths = async (paths: string[]) => {
     if (!activeProfile) return;
+    if (paths && paths.length > 0) {
+      setLastScannedPaths(paths);
+    }
     setIsScanning(true);
     setScanProgress({ current: 0, total: 100, message: "Đang phân tích cây thư mục..." });
 
@@ -194,7 +199,7 @@ export function BatchRunnerView({
             activeProfile.spreadsheetId,
             tabTitle,
             startRow,
-            1000,
+            undefined,
             isSandbox
           );
           for (const r of rows) {
@@ -252,6 +257,22 @@ export function BatchRunnerView({
     } finally {
       setIsScanning(false);
       setScanProgress(null);
+    }
+  };
+
+  const handleRefreshData = async () => {
+    if (isScanning) return;
+    let paths = lastScannedPaths;
+    if (!paths || paths.length === 0) {
+      const currentJobs = useContactSheetStore.getState().discoveredJobs;
+      const jobPaths = currentJobs.map((j) => j.finalFolderPath).filter((p): p is string => Boolean(p));
+      paths = Array.from(new Set(jobPaths));
+    }
+
+    if (paths.length > 0) {
+      await handleProcessFolderPaths(paths);
+    } else {
+      await handlePickFolders();
     }
   };
 
@@ -501,16 +522,26 @@ export function BatchRunnerView({
           </div>
         </div>
 
-        {discoveredJobs.length > 0 && (
-          <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={handleRefreshData}
+            disabled={isScanning}
+            className="px-3 py-1.5 text-xs text-emerald-400 hover:text-white font-semibold rounded-xl bg-emerald-500/15 hover:bg-emerald-600/80 border border-emerald-500/30 transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer disabled:opacity-50"
+            title="Tải lại toàn bộ dữ liệu Google Sheets mới nhất & quét lại đối soát"
+          >
+            <RotateCw size={13} className={isScanning ? "animate-spin" : ""} />
+            <span>Làm mới dữ liệu</span>
+          </button>
+          {discoveredJobs.length > 0 && (
             <button
               onClick={clearJobs}
-              className="px-3 py-1 text-xs text-muted-foreground hover:text-foreground font-semibold rounded-lg hover:bg-muted/40 transition-colors cursor-pointer"
+              className="px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground font-semibold rounded-xl hover:bg-muted/40 transition-colors cursor-pointer"
             >
               Xóa danh sách
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Compact Drop Zone - Ultra Minimal Vertical Footprint */}
@@ -543,12 +574,28 @@ export function BatchRunnerView({
               <span>Đang quét...</span>
             </div>
           ) : (
-            <button
-              type="button"
-              className="px-3 py-1 bg-muted/60 hover:bg-muted text-foreground text-xs font-semibold rounded-lg border border-border/80 transition-colors cursor-pointer"
-            >
-              Chọn thư mục
-            </button>
+            <div className="flex items-center gap-2">
+              {(lastScannedPaths.length > 0 || discoveredJobs.length > 0) && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRefreshData();
+                  }}
+                  className="px-3 py-1 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 text-xs font-semibold rounded-lg border border-emerald-500/30 transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                  title="Quét lại các thư mục với dữ liệu Google Sheets mới nhất"
+                >
+                  <RotateCw size={12} />
+                  <span>Quét lại</span>
+                </button>
+              )}
+              <button
+                type="button"
+                className="px-3 py-1 bg-muted/60 hover:bg-muted text-foreground text-xs font-semibold rounded-lg border border-border/80 transition-colors cursor-pointer"
+              >
+                Chọn thư mục
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -709,6 +756,16 @@ export function BatchRunnerView({
                 </select>
               </div>
             )}
+            <button
+              type="button"
+              onClick={handleRefreshData}
+              disabled={isScanning}
+              className="px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              title="Tải lại Google Sheets mới nhất và quét lại danh sách job"
+            >
+              <RotateCw size={12} className={isScanning ? "animate-spin" : ""} />
+              <span>Làm mới dữ liệu</span>
+            </button>
             <button
               onClick={clearJobs}
               className="px-3 py-1.5 rounded-xl border border-border text-muted-foreground hover:text-foreground text-xs font-semibold hover:bg-muted/40 transition-colors cursor-pointer"

@@ -74,7 +74,7 @@ export class SheetFilterAutomationService {
               targetProfile.spreadsheetId,
               targetTab,
               startRow,
-              1000,
+              undefined,
               isMock
             );
             const match = sheetExtractorService.extractCodesForFolder(
