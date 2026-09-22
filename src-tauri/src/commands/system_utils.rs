@@ -173,12 +173,156 @@ fn is_valid_photon_bundle(p: &Path) -> bool {
 }
 
 #[cfg(target_os = "macos")]
+fn repair_framework_symlinks(bundle_path: &Path) -> Result<(), String> {
+    use std::os::unix::fs::symlink;
+
+    let frameworks_dir = bundle_path.join("Contents").join("Frameworks");
+    if !frameworks_dir.exists() || !frameworks_dir.is_dir() {
+        return Ok(());
+    }
+
+    let entries = fs::read_dir(&frameworks_dir)
+        .map_err(|e| format!("Không thể đọc thư mục Frameworks: {e}"))?;
+
+    for entry in entries.flatten() {
+        let fw_path = entry.path();
+        if !fw_path.is_dir() {
+            continue;
+        }
+        let fw_name = match fw_path.file_name().and_then(|n| n.to_str()) {
+            Some(name) if name.ends_with(".framework") => name,
+            _ => continue,
+        };
+
+        let versions_dir = fw_path.join("Versions");
+        let version_a_dir = versions_dir.join("A");
+        if !version_a_dir.exists() || !version_a_dir.is_dir() {
+            continue;
+        }
+
+        // 1. Ensure Versions/Current points to A
+        let current_link = versions_dir.join("Current");
+        let needs_current_symlink = match fs::symlink_metadata(&current_link) {
+            Ok(meta) => {
+                if meta.file_type().is_symlink() {
+                    fs::read_link(&current_link)
+                        .map(|target| target != Path::new("A"))
+                        .unwrap_or(true)
+                } else {
+                    if meta.is_dir() {
+                        let _ = fs::remove_dir_all(&current_link);
+                    } else {
+                        let _ = fs::remove_file(&current_link);
+                    }
+                    true
+                }
+            }
+            Err(_) => true,
+        };
+
+        if needs_current_symlink {
+            let _ = fs::remove_file(&current_link);
+            let _ = fs::remove_dir_all(&current_link);
+            symlink("A", &current_link)
+                .map_err(|e| format!("Không thể tạo symlink Current -> A trong {fw_name}: {e}"))?;
+        }
+
+        // 2. For every item in Versions/A, ensure root of framework has symlink to Versions/Current/<item>
+        if let Ok(a_entries) = fs::read_dir(&version_a_dir) {
+            for a_entry in a_entries.flatten() {
+                let item_name = a_entry.file_name();
+                let item_name_str = match item_name.to_str() {
+                    Some(s) => s,
+                    None => continue,
+                };
+
+                let root_item = fw_path.join(&item_name);
+                let target_rel_path = format!("Versions/Current/{}", item_name_str);
+
+                let needs_symlink = match fs::symlink_metadata(&root_item) {
+                    Ok(meta) => {
+                        if meta.file_type().is_symlink() {
+                            fs::read_link(&root_item)
+                                .map(|target| target != Path::new(&target_rel_path))
+                                .unwrap_or(true)
+                        } else {
+                            if meta.is_dir() {
+                                let _ = fs::remove_dir_all(&root_item);
+                            } else {
+                                let _ = fs::remove_file(&root_item);
+                            }
+                            true
+                        }
+                    }
+                    Err(_) => true,
+                };
+
+                if needs_symlink {
+                    let _ = fs::remove_file(&root_item);
+                    let _ = fs::remove_dir_all(&root_item);
+                    symlink(&target_rel_path, &root_item).map_err(|e| {
+                        format!("Không thể tạo symlink {item_name_str} trong {fw_name}: {e}")
+                    })?;
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn prepare_and_sign_bundle(p: &Path) -> Result<(), String> {
+    let p_str = p.to_str().ok_or("Đường dẫn không hợp lệ")?;
+
+    // 1. Repair framework symlinks if dereferenced or damaged by bundler
+    repair_framework_symlinks(p)?;
+
+    // 2. Strip quarantine attributes
+    let _ = Command::new("xattr").args(["-cr", p_str]).status();
+
+    // 3. Ensure executable permissions
+    let _ = Command::new("chmod").args(["-R", "+x", p_str]).status();
+
+    // 4. Check if signature is already valid; if not, re-sign ad-hoc
+    let verify_status = Command::new("codesign")
+        .args(["--verify", "--deep", "--strict", p_str])
+        .status();
+
+    let needs_signing = match verify_status {
+        Ok(st) => !st.success(),
+        Err(_) => true,
+    };
+
+    if needs_signing {
+        let sign_status = Command::new("codesign")
+            .args(["--force", "--deep", "-s", "-", p_str])
+            .status()
+            .map_err(|e| format!("Lỗi khi chạy codesign: {e}"))?;
+
+        if !sign_status.success() {
+            return Err("Không thể ký mã (codesign) cho MPhoton.app".to_string());
+        }
+    }
+
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
 fn spawn_photon(p: &Path) -> bool {
     let binary_file = p.join("Contents").join("MacOS").join(photon_binary_name(p));
+    let p_str = p.to_str().unwrap_or("");
 
-    // Strip quarantine + restore execute permissions (copies/bundling may strip these)
-    let _ = Command::new("xattr").args(["-cr", p.to_str().unwrap_or("")]).status();
-    let _ = Command::new("chmod").args(["-R", "+x", p.to_str().unwrap_or("")]).status();
+    // If already running, bring window to front
+    if check_photon_studio_status().unwrap_or(false) {
+        let _ = Command::new("open").args([p_str]).status();
+        return true;
+    }
+
+    // Ensure the bundle is repaired and validly signed
+    if let Err(e) = prepare_and_sign_bundle(p) {
+        eprintln!("[MPhoton] prepare_and_sign_bundle warning: {e}");
+    }
 
     // Clean up stale Electron Singleton locks to prevent instant quit
     if let Ok(home) = std::env::var("HOME") {
@@ -188,22 +332,43 @@ fn spawn_photon(p: &Path) -> bool {
         let _ = std::fs::remove_file(p_support.join("SingletonCookie"));
     }
 
-    // 1. Primary: launch binary directly so env vars pass through (bypasses Electron singleton lock)
+    // 1. Primary: launch via open -n with env vars (LaunchServices handles macOS window lifecycle)
+    let open_ok = Command::new("open")
+        .args([
+            "-n",
+            "--env", "PHOTON_E2E_ALLOW_MULTIPLE_INSTANCES=1",
+            "--env", "PHOTON_DISABLE_QUIT_CONFIRM=1",
+            p_str,
+        ])
+        .status()
+        .map(|st| st.success())
+        .unwrap_or(false);
+
+    if open_ok {
+        // Wait and verify the process is alive (prevents false positive if it immediately exits)
+        for _ in 0..10 {
+            std::thread::sleep(std::time::Duration::from_millis(150));
+            if check_photon_studio_status().unwrap_or(false) {
+                return true;
+            }
+        }
+    }
+
+    // 2. Fallback: direct binary execution
     if Command::new(&binary_file)
         .env("PHOTON_E2E_ALLOW_MULTIPLE_INSTANCES", "1")
         .env("PHOTON_DISABLE_QUIT_CONFIRM", "1")
         .spawn()
         .is_ok()
     {
-        return true;
-    }
-
-    // 2. Fallback: open command
-    if let Ok(st) = Command::new("open").args(["-n", p.to_str().unwrap_or("")]).status() {
-        if st.success() {
-            return true;
+        for _ in 0..10 {
+            std::thread::sleep(std::time::Duration::from_millis(150));
+            if check_photon_studio_status().unwrap_or(false) {
+                return true;
+            }
         }
     }
+
     false
 }
 
@@ -243,7 +408,7 @@ pub fn launch_photon_studio(app: tauri::AppHandle) -> Result<String, String> {
             }
         }
 
-        // 2. Not staged yet — find a source bundle (dev workspace, app resources, or /Applications)
+        // 2. Not staged yet or failed — find a source bundle (dev workspace, app resources, or /Applications)
         let mut source_candidates: Vec<std::path::PathBuf> = Vec::new();
 
         if let Ok(cwd) = std::env::current_dir() {
@@ -285,8 +450,7 @@ pub fn launch_photon_studio(app: tauri::AppHandle) -> Result<String, String> {
             ));
         };
 
-        // 3. Stage it: copy out of the (possibly nested/signed/read-only-translocated) source
-        // into a plain writable folder in Application Support, then launch from there.
+        // 3. Stage it: copy out of the source into Application Support, then repair & launch
         let Some(staged) = photon_app_support_path() else {
             return Err("Không thể xác định thư mục HOME để cài đặt MPhoton.".to_string());
         };
@@ -300,7 +464,7 @@ pub fn launch_photon_studio(app: tauri::AppHandle) -> Result<String, String> {
         }
 
         let copy_ok = Command::new("cp")
-            .args(["-R", source.to_str().unwrap_or(""), staged.to_str().unwrap_or("")])
+            .args(["-Rp", source.to_str().unwrap_or(""), staged.to_str().unwrap_or("")])
             .status()
             .map(|st| st.success())
             .unwrap_or(false);
@@ -313,7 +477,7 @@ pub fn launch_photon_studio(app: tauri::AppHandle) -> Result<String, String> {
             return Ok("Đã cài đặt và khởi chạy MPhoton thành công".to_string());
         }
 
-        Err("Đã sao chép MPhoton nhưng không thể khởi chạy.".to_string())
+        Err("Đã sao chép MPhoton nhưng không thể khởi chạy. Vui lòng kiểm tra quyền hệ thống.".to_string())
     }
 
     #[cfg(not(target_os = "macos"))]
@@ -416,5 +580,51 @@ pub fn restore_main_window(app: tauri::AppHandle) -> Result<(), String> {
         Err("Không tìm thấy cửa sổ chính".to_string())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[cfg(target_os = "macos")]
+    fn test_repair_and_sign_corrupted_production_frameworks() {
+        let prod_source = Path::new("/Applications/MVD PHOTOSHOP ACADEMY.app/Contents/Resources/resources/apps/MPhoton.app");
+        if !prod_source.exists() {
+            return;
+        }
+
+        let temp_dir = std::env::temp_dir().join("test_mphoton_repair");
+        let _ = fs::remove_dir_all(&temp_dir);
+        let _ = fs::create_dir_all(&temp_dir);
+        let test_bundle = temp_dir.join("MPhoton.app");
+
+        // Copy the raw corrupted production bundle
+        let copy_status = Command::new("cp")
+            .args(["-Rp", prod_source.to_str().unwrap(), test_bundle.to_str().unwrap()])
+            .status()
+            .expect("Failed to copy test bundle");
+        assert!(copy_status.success());
+
+        // Prior to repair, codesign verify should fail due to broken symlinks / modified Info.plist
+        let pre_verify = Command::new("codesign")
+            .args(["--verify", "--deep", "--strict", test_bundle.to_str().unwrap()])
+            .status()
+            .expect("Failed to run codesign");
+        assert!(!pre_verify.success(), "Corrupted bundle should fail verify initially");
+
+        // Run repair and sign
+        assert!(prepare_and_sign_bundle(&test_bundle).is_ok());
+
+        // After repair, codesign verify must succeed
+        let post_verify = Command::new("codesign")
+            .args(["--verify", "--deep", "--strict", test_bundle.to_str().unwrap()])
+            .status()
+            .expect("Failed to run codesign");
+        assert!(post_verify.success(), "Repaired bundle must pass codesign verify");
+
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+}
+
 
 
