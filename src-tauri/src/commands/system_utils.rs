@@ -153,6 +153,75 @@ pub fn save_file_bytes(file_path: String, bytes: Vec<u8>) -> Result<String, Stri
     Ok("Đã lưu tệp thành công".to_string())
 }
 
+#[cfg(target_os = "macos")]
+fn photon_binary_name(p: &Path) -> &'static str {
+    if p.join("Contents").join("MacOS").join("MPhoton").exists() {
+        "MPhoton"
+    } else {
+        "Photon Studio"
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn is_valid_photon_bundle(p: &Path) -> bool {
+    if !p.exists() {
+        return false;
+    }
+    let asar_file = p.join("Contents").join("Resources").join("app.asar");
+    let binary_file = p.join("Contents").join("MacOS").join(photon_binary_name(p));
+    asar_file.exists() && binary_file.exists()
+}
+
+#[cfg(target_os = "macos")]
+fn spawn_photon(p: &Path) -> bool {
+    let binary_file = p.join("Contents").join("MacOS").join(photon_binary_name(p));
+
+    // Strip quarantine + restore execute permissions (copies/bundling may strip these)
+    let _ = Command::new("xattr").args(["-cr", p.to_str().unwrap_or("")]).status();
+    let _ = Command::new("chmod").args(["-R", "+x", p.to_str().unwrap_or("")]).status();
+
+    // Clean up stale Electron Singleton locks to prevent instant quit
+    if let Ok(home) = std::env::var("HOME") {
+        let p_support = Path::new(&home).join("Library/Application Support/Photon Studio");
+        let _ = std::fs::remove_file(p_support.join("SingletonLock"));
+        let _ = std::fs::remove_file(p_support.join("SingletonSocket"));
+        let _ = std::fs::remove_file(p_support.join("SingletonCookie"));
+    }
+
+    // 1. Primary: launch binary directly so env vars pass through (bypasses Electron singleton lock)
+    if Command::new(&binary_file)
+        .env("PHOTON_E2E_ALLOW_MULTIPLE_INSTANCES", "1")
+        .env("PHOTON_DISABLE_QUIT_CONFIRM", "1")
+        .spawn()
+        .is_ok()
+    {
+        return true;
+    }
+
+    // 2. Fallback: open command
+    if let Ok(st) = Command::new("open").args(["-n", p.to_str().unwrap_or("")]).status() {
+        if st.success() {
+            return true;
+        }
+    }
+    false
+}
+
+/// The stable, writable home for MPhoton — outside any signed app bundle so macOS
+/// doesn't apply nested-bundle / translocation restrictions, and independent of
+/// app updates (a small app update never touches this folder).
+#[cfg(target_os = "macos")]
+fn photon_app_support_path() -> Option<std::path::PathBuf> {
+    std::env::var("HOME").ok().map(|home| {
+        Path::new(&home)
+            .join("Library")
+            .join("Application Support")
+            .join("MVD Studio")
+            .join("apps")
+            .join("MPhoton.app")
+    })
+}
+
 #[tauri::command]
 pub fn launch_photon_studio(app: tauri::AppHandle) -> Result<String, String> {
     #[cfg(target_os = "macos")]
@@ -167,129 +236,84 @@ pub fn launch_photon_studio(app: tauri::AppHandle) -> Result<String, String> {
             }
         }
 
-        // Helper closure to validate integrity, strip quarantine and launch app
-        let launch_bundle = |p: &Path| -> bool {
-            if p.exists() {
-                let asar_file = p.join("Contents").join("Resources").join("app.asar");
-                let binary_file = if p.join("Contents").join("MacOS").join("MPhoton").exists() {
-                    p.join("Contents").join("MacOS").join("MPhoton")
-                } else {
-                    p.join("Contents").join("MacOS").join("Photon Studio")
-                };
-
-                // Ensure it is a complete, uncorrupted bundle (prevents launching partial copies)
-                if !asar_file.exists() || !binary_file.exists() {
-                    return false;
-                }
-
-                // Automatically strip macOS quarantine attribute
-                let _ = Command::new("xattr").args(["-cr", p.to_str().unwrap_or("")]).status();
-                
-                // Hide bundle from Finder so users cannot locate it
-                let _ = Command::new("chflags").args(["hidden", p.to_str().unwrap_or("")]).status();
-
-                // Clean up any stale Singleton lock files in Application Support to prevent instant exit
-                if let Ok(home) = std::env::var("HOME") {
-                    let p_support = Path::new(&home).join("Library/Application Support/Photon Studio");
-                    let _ = std::fs::remove_file(p_support.join("SingletonLock"));
-                    let _ = std::fs::remove_file(p_support.join("SingletonSocket"));
-                    let _ = std::fs::remove_file(p_support.join("SingletonCookie"));
-                }
-                
-                // 1. Primary: Launch binary directly with env vars to bypass Electron single-instance lock
-                if let Ok(_) = Command::new(&binary_file)
-                    .env("PHOTON_E2E_ALLOW_MULTIPLE_INSTANCES", "1")
-                    .env("PHOTON_DISABLE_QUIT_CONFIRM", "1")
-                    .spawn()
-                {
-                    return true;
-                }
-
-                // 2. Fallback: open command
-                if let Ok(st) = Command::new("open")
-                    .args(["-n", p.to_str().unwrap_or("")])
-                    .status()
-                {
-                    if st.success() {
-                        return true;
-                    }
-                }
-            }
-            false
-        };
-
-        // 1. Check direct development workspace paths first (intact source files)
-        if let Ok(cwd) = std::env::current_dir() {
-            let candidates = [
-                cwd.join("resources").join("apps").join("MPhoton.app"),
-                cwd.join("src-tauri").join("resources").join("apps").join("MPhoton.app"),
-                cwd.join("photo-picker-pro").join("src-tauri").join("resources").join("apps").join("MPhoton.app"),
-                cwd.join("resources").join("apps").join("Photon Studio.app"),
-                cwd.join("src-tauri").join("resources").join("apps").join("Photon Studio.app"),
-                cwd.join("photo-picker-pro").join("src-tauri").join("resources").join("apps").join("Photon Studio.app"),
-            ];
-            for c in candidates {
-                if launch_bundle(&c) {
-                    return Ok("Đã khởi chạy cửa sổ MPhoton thành công".to_string());
-                }
+        // 1. Fast path: MPhoton already staged in Application Support — launch directly
+        if let Some(staged) = photon_app_support_path() {
+            if is_valid_photon_bundle(&staged) && spawn_photon(&staged) {
+                return Ok("Đã khởi chạy cửa sổ MPhoton thành công".to_string());
             }
         }
 
-        // 2. Check bundled resources via current_exe() — most reliable in production .app bundle
+        // 2. Not staged yet — find a source bundle (dev workspace, app resources, or /Applications)
+        let mut source_candidates: Vec<std::path::PathBuf> = Vec::new();
+
+        if let Ok(cwd) = std::env::current_dir() {
+            source_candidates.push(cwd.join("resources").join("apps").join("MPhoton.app"));
+            source_candidates.push(cwd.join("src-tauri").join("resources").join("apps").join("MPhoton.app"));
+            source_candidates.push(cwd.join("photo-picker-pro").join("src-tauri").join("resources").join("apps").join("MPhoton.app"));
+            source_candidates.push(cwd.join("resources").join("apps").join("Photon Studio.app"));
+            source_candidates.push(cwd.join("src-tauri").join("resources").join("apps").join("Photon Studio.app"));
+            source_candidates.push(cwd.join("photo-picker-pro").join("src-tauri").join("resources").join("apps").join("Photon Studio.app"));
+        }
+
         if let Ok(exe_path) = std::env::current_exe() {
-            // exe: <AppBundle>/Contents/MacOS/<binary>
             if let Some(contents_dir) = exe_path.parent().and_then(|p| p.parent()) {
                 let res_dir = contents_dir.join("Resources");
-                let candidates = [
-                    res_dir.join("apps").join("MPhoton.app"),
-                    res_dir.join("apps").join("Photon Studio.app"),
-                    res_dir.join("resources").join("apps").join("MPhoton.app"),
-                    res_dir.join("resources").join("apps").join("Photon Studio.app"),
-                ];
-                for p in &candidates {
-                    if launch_bundle(p) {
-                        return Ok("Đã khởi chạy cửa sổ MPhoton thành công".to_string());
-                    }
-                }
+                source_candidates.push(res_dir.join("apps").join("MPhoton.app"));
+                source_candidates.push(res_dir.join("apps").join("Photon Studio.app"));
+                source_candidates.push(res_dir.join("resources").join("apps").join("MPhoton.app"));
+                source_candidates.push(res_dir.join("resources").join("apps").join("Photon Studio.app"));
             }
         }
 
-        // 3. Check via Tauri resource_dir API
         if let Ok(res_dir) = app.path().resource_dir() {
-            let candidates = [
-                res_dir.join("apps").join("MPhoton.app"),
-                res_dir.join("apps").join("Photon Studio.app"),
-                res_dir.join("resources").join("apps").join("MPhoton.app"),
-                res_dir.join("resources").join("apps").join("Photon Studio.app"),
-            ];
-            for p in &candidates {
-                if launch_bundle(p) {
-                    return Ok("Đã khởi chạy cửa sổ MPhoton thành công".to_string());
-                }
-            }
+            source_candidates.push(res_dir.join("apps").join("MPhoton.app"));
+            source_candidates.push(res_dir.join("apps").join("Photon Studio.app"));
+            source_candidates.push(res_dir.join("resources").join("apps").join("MPhoton.app"));
+            source_candidates.push(res_dir.join("resources").join("apps").join("Photon Studio.app"));
         }
 
-        // 4. Fallback to system /Applications
-        let fallback_sys1 = Path::new("/Applications/MPhoton.app");
-        if launch_bundle(&fallback_sys1) {
-            return Ok("Đã khởi chạy cửa sổ MPhoton thành công".to_string());
+        source_candidates.push(Path::new("/Applications/MPhoton.app").to_path_buf());
+        source_candidates.push(Path::new("/Applications/Photon Studio.app").to_path_buf());
+
+        let source = source_candidates.iter().find(|p| is_valid_photon_bundle(p));
+
+        let Some(source) = source else {
+            let exe_info = std::env::current_exe().map(|p| p.display().to_string()).unwrap_or_else(|_| "unknown".to_string());
+            let res_info = app.path().resource_dir().map(|p| p.display().to_string()).unwrap_or_else(|_| "unknown".to_string());
+            return Err(format!(
+                "Không tìm thấy MPhoton.app. Đường dẫn đã kiểm tra — exe: {exe_info} | res_dir: {res_info}"
+            ));
+        };
+
+        // 3. Stage it: copy out of the (possibly nested/signed/read-only-translocated) source
+        // into a plain writable folder in Application Support, then launch from there.
+        let Some(staged) = photon_app_support_path() else {
+            return Err("Không thể xác định thư mục HOME để cài đặt MPhoton.".to_string());
+        };
+        let staged_parent = staged.parent().unwrap();
+
+        if staged.exists() {
+            let _ = std::fs::remove_dir_all(&staged);
         }
-        let fallback_sys2 = Path::new("/Applications/Photon Studio.app");
-        if launch_bundle(&fallback_sys2) {
-            return Ok("Đã khởi chạy cửa sổ MPhoton thành công".to_string());
+        if let Err(e) = std::fs::create_dir_all(staged_parent) {
+            return Err(format!("Không thể tạo thư mục cài đặt MPhoton: {e}"));
         }
 
-        // Build debug info showing what was checked
-        let exe_info = std::env::current_exe()
-            .map(|p| p.display().to_string())
-            .unwrap_or_else(|_| "unknown".to_string());
-        let res_info = app.path().resource_dir()
-            .map(|p| p.display().to_string())
-            .unwrap_or_else(|_| "unknown".to_string());
+        let copy_ok = Command::new("cp")
+            .args(["-R", source.to_str().unwrap_or(""), staged.to_str().unwrap_or("")])
+            .status()
+            .map(|st| st.success())
+            .unwrap_or(false);
 
-        Err(format!(
-            "Không tìm thấy MPhoton.app. Đường dẫn đã kiểm tra — exe: {exe_info} | res_dir: {res_info}"
-        ))
+        if !copy_ok || !is_valid_photon_bundle(&staged) {
+            return Err(format!("Không thể sao chép MPhoton từ {} sang Application Support.", source.display()));
+        }
+
+        if spawn_photon(&staged) {
+            return Ok("Đã cài đặt và khởi chạy MPhoton thành công".to_string());
+        }
+
+        Err("Đã sao chép MPhoton nhưng không thể khởi chạy.".to_string())
     }
 
     #[cfg(not(target_os = "macos"))]
