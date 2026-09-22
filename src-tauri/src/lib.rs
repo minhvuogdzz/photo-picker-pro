@@ -32,14 +32,6 @@ pub fn run() {
             commands::system_utils::sync_subfolder_names,
             commands::system_utils::launch_photoshop,
             commands::system_utils::save_file_bytes,
-            commands::system_utils::launch_compositor,
-            commands::system_utils::launch_photon_studio,
-            commands::system_utils::align_studio_window,
-            commands::system_utils::check_photon_studio_status,
-            commands::system_utils::terminate_photon_studio,
-            commands::system_utils::set_window_companion_mode,
-            commands::system_utils::minimize_main_window,
-            commands::system_utils::restore_main_window,
             commands::converter::run_convert_batch,
             commands::sheet_auth::start_google_oauth_loopback,
             commands::sheet_auth::wait_for_google_oauth_code,
@@ -47,6 +39,8 @@ pub fn run() {
             commands::sheet_auth::get_google_secure_token,
             commands::sheet_auth::delete_google_secure_token,
             commands::sheet_fs::scan_folder_topology,
+            commands::photo_counter::scan_month_photos,
+            commands::scanner::expand_batch_customer_folders,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

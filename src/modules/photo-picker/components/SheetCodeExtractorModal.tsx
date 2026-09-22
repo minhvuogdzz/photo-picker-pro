@@ -65,6 +65,8 @@ const STANDARD_LETTERS = [
 
 export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract" }: Props) {
   const inputFolders = useAppStore((s) => s.inputFolders);
+  const selectedInputFolders = useAppStore((s) => s.selectedInputFolders);
+  const selectSingleInputFolder = useAppStore((s) => s.selectSingleInputFolder);
   const rawCodeInput = useAppStore((s) => s.rawCodeInput);
   const setRawCodeInput = useAppStore((s) => s.setRawCodeInput);
   const setSheetFilterContext = useAppStore((s) => s.setSheetFilterContext);
@@ -170,8 +172,10 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
   useEffect(() => {
     if (isOpen) {
       setModalTab(initialTab);
-      if (inputFolders.length > 0) {
-        setSelectedFolder(inputFolders[0]);
+      // Prioritize the currently selected/active folder from checkbox queue
+      const activeFolder = selectedInputFolders[0] || inputFolders[0] || "";
+      if (activeFolder) {
+        setSelectedFolder(activeFolder);
         setUseCustomFolder(false);
       } else {
         setUseCustomFolder(true);
@@ -188,7 +192,18 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
       // Refresh metadata tabs if connected
       fetchSheetTabsMetadata();
     }
-  }, [isOpen, initialTab, inputFolders, profile?.id]);
+  }, [isOpen, initialTab, profile?.id]);
+
+  // Sync selectedFolder whenever user clicks a different customer checkbox in the queue
+  useEffect(() => {
+    if (selectedInputFolders.length > 0) {
+      const activeFolder = selectedInputFolders[0];
+      if (activeFolder !== selectedFolder) {
+        setSelectedFolder(activeFolder);
+        setUseCustomFolder(false);
+      }
+    }
+  }, [selectedInputFolders]);
 
   // Fetch real sheet tabs from Google Sheets API
   const fetchSheetTabsMetadata = async () => {
@@ -838,7 +853,11 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                   <div className="flex gap-2">
                     <select
                       value={selectedFolder}
-                      onChange={(e) => setSelectedFolder(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSelectedFolder(val);
+                        selectSingleInputFolder(val);
+                      }}
                       className="flex-1 bg-background border border-border/60 rounded-md px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"
                     >
                       {inputFolders.map((f, idx) => (

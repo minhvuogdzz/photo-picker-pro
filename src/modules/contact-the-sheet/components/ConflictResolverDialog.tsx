@@ -22,8 +22,8 @@ export function ConflictResolverDialog({ job, onResolve, onClose }: Props) {
       <div className="bg-card border border-border shadow-2xl rounded-2xl w-full max-w-lg overflow-hidden flex flex-col animate-scale-in">
         {/* Header */}
         <div className="px-5 py-4 border-b border-border flex items-center justify-between bg-muted/20">
-          <div className="flex items-center gap-2.5 text-amber-400">
-            <AlertCircle size={20} />
+          <div className="flex items-center gap-2.5">
+            <AlertCircle size={18} className="text-amber-500" />
             <h3 className="font-extrabold text-sm text-foreground">
               Xử lý xung đột ô {fieldName}
             </h3>
@@ -41,7 +41,7 @@ export function ConflictResolverDialog({ job, onResolve, onClose }: Props) {
           <p className="text-muted-foreground">
             Job <span className="font-bold text-foreground">{job.jobFolderName}</span>
             {job.targetTabTitle ? (
-              <> (Tab <b className="text-sky-400">{job.targetTabTitle}</b>, Hàng {job.targetSheetRow})</>
+              <> (Tab <b className="text-foreground">{job.targetTabTitle}</b>, Hàng {job.targetSheetRow})</>
             ) : (
               <> (Hàng {job.targetSheetRow})</>
             )} đã có sẵn nội dung trong ô <b>{fieldName}</b>. Vui lòng chọn cách cập nhật:
@@ -58,11 +58,11 @@ export function ConflictResolverDialog({ job, onResolve, onClose }: Props) {
           </div>
 
           {/* Proposed Value Box */}
-          <div className="bg-background/80 border border-teal-500/30 rounded-xl p-3 flex flex-col gap-1.5">
-            <span className="text-[11px] font-semibold text-teal-400 flex items-center gap-1">
+          <div className="bg-background/80 border border-border rounded-xl p-3 flex flex-col gap-1.5">
+            <span className="text-[11px] font-semibold text-foreground flex items-center gap-1">
               <Link size={13} /> Giá trị mới cần cập nhật:
             </span>
-            <div className="p-2 bg-teal-500/10 rounded-lg font-mono text-[11px] text-teal-300 break-all whitespace-pre-wrap">
+            <div className="p-2 bg-muted/30 rounded-lg font-mono text-[11px] text-foreground break-all whitespace-pre-wrap">
               {proposedValue}
             </div>
           </div>

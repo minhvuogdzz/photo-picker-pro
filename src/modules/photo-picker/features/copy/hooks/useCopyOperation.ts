@@ -57,6 +57,23 @@ export function useCopyOperation() {
         // Auto-update Google Sheet status field upon filtering completion
         sheetFilterAutomationService
           .updateStatusOnFilterComplete(effectiveFolders, result)
+          .then(() => {
+            const store = useAppStore.getState();
+            if (store.pickerMode === "multi" && effectiveFolders.length > 0) {
+              const finishedFolder = effectiveFolders[0];
+              const folderName =
+                finishedFolder.split(/[/\\]+/).filter(Boolean).pop() || finishedFolder;
+
+              if (store.dontAskRemoveCompleted) {
+                store.removeInputFolder(finishedFolder);
+              } else {
+                store.setCompletedCustomerPendingRemoval({
+                  folderPath: finishedFolder,
+                  folderName,
+                });
+              }
+            }
+          })
           .catch((err) => {
             console.error("[useCopyOperation] Status auto-update error:", err);
           });

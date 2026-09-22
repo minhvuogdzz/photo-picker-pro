@@ -10,7 +10,7 @@ import PhotoPickerModule from "@/modules/photo-picker";
 import MvdConvertApp from "@/modules/mvd-convert/MvdConvertApp";
 import ResourcesApp from "@/modules/resources/ResourcesApp";
 import ContactTheSheetApp from "@/modules/contact-the-sheet";
-import { PhotonStudioModule } from "@/modules/photon-studio/PhotonStudioModule";
+import PhotoCounterApp from "@/modules/photo-counter";
 
 export function AppLayout() {
   const activeTab = useAppStore((s) => s.activeTab);
@@ -43,13 +43,13 @@ export function AppLayout() {
           </div>
         )}
 
-        <div className={`flex-1 flex flex-row min-h-0 w-full h-full gap-2 ${subscriptionExpired && activeTab !== "settings" ? "opacity-30 pointer-events-none" : ""}`}>
+        <div className={`flex-1 flex flex-row min-h-0 min-w-0 w-full h-full gap-2 ${subscriptionExpired && activeTab !== "settings" ? "opacity-30 pointer-events-none" : ""}`}>
           
           {activeModule !== "launcher" && <EcosystemSidebar />}
 
           <div 
             key={activeModule} 
-            className="flex-1 relative flex flex-col min-h-0 w-full animate-app-enter"
+            className="flex-1 relative flex flex-col min-h-0 min-w-0 w-full overflow-hidden animate-app-enter"
             style={originStyle}
           >
             {activeModule === "launcher" && <LauncherPage />}
@@ -58,7 +58,7 @@ export function AppLayout() {
             {activeModule === "mvd-convert" && <MvdConvertApp />}
             {activeModule === "resources" && <ResourcesApp />}
             {activeModule === "contact-the-sheet" && <ContactTheSheetApp />}
-            {activeModule === "photon-studio" && <PhotonStudioModule />}
+            {activeModule === "photo-counter" && <PhotoCounterApp />}
           </div>
         </div>
       </div>

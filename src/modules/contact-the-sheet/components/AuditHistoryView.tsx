@@ -26,7 +26,7 @@ export function AuditHistoryView() {
       <div className="flex items-center justify-between shrink-0">
         <div>
           <h2 className="text-base font-extrabold text-foreground flex items-center gap-2">
-            <History size={18} className="text-teal-400" />
+            <History size={18} className="text-primary" />
             <span>Nhật ký hoạt động (Audit Trail)</span>
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
@@ -89,7 +89,7 @@ export function AuditHistoryView() {
                     <td className="py-2.5 px-4 font-semibold text-foreground max-w-[200px] truncate">
                       {r.jobFolderName}
                     </td>
-                    <td className="py-2.5 px-4 font-bold text-teal-400">
+                    <td className="py-2.5 px-4 font-semibold text-foreground">
                       Hàng {r.targetRow}
                     </td>
                     <td className="py-2.5 px-4">
@@ -97,7 +97,7 @@ export function AuditHistoryView() {
                         {r.changes.map((c, idx) => (
                           <div key={idx} className="text-[11px]">
                             <span className="font-semibold text-foreground">{c.columnLetter} ({c.field}): </span>
-                            <span className="text-teal-300 font-mono truncate max-w-[200px] inline-block align-bottom">
+                            <span className="text-muted-foreground font-mono truncate max-w-[200px] inline-block align-bottom">
                               {c.newValue}
                             </span>
                           </div>
@@ -106,8 +106,8 @@ export function AuditHistoryView() {
                     </td>
                     <td className="py-2.5 px-4 whitespace-nowrap">
                       {r.status === "SUCCESS" ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-400 font-semibold text-[11px]">
-                          <CheckCircle2 size={13} /> Thành công
+                        <span className="inline-flex items-center gap-1 text-foreground font-medium text-[11px]">
+                          <CheckCircle2 size={13} className="text-emerald-500" /> Thành công
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-destructive font-semibold text-[11px]">

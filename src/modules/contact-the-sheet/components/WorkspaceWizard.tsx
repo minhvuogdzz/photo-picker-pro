@@ -548,7 +548,7 @@ export function WorkspaceWizard() {
                     Cấu hình Dòng Tiêu đề (Header Row)
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    Đang sử dụng cấu hình đã lưu cho tab <b className="text-emerald-400">{activeProfile?.selectedTabTitle || "Edit 9/2026"}</b>. Bạn có thể thay đổi số dòng hoặc bấm khảo sát trực tiếp từ Google Sheet.
+                    Đang sử dụng cấu hình đã lưu cho tab <b className="text-foreground font-semibold">{activeProfile?.selectedTabTitle || "Edit 9/2026"}</b>. Bạn có thể thay đổi số dòng hoặc bấm khảo sát trực tiếp từ Google Sheet.
                   </p>
                 </div>
                 <button
@@ -1104,7 +1104,7 @@ export function WorkspaceWizard() {
                 </div>
                 <div>
                   <span className="text-muted-foreground">Cột cho phép ghi: </span>
-                  <b className="text-emerald-400">Tên Edit (N), Link Edit (O)</b>
+                  <b className="text-foreground font-semibold">Tên Edit (N), Link Edit (O)</b>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Dòng tiêu đề: </span>

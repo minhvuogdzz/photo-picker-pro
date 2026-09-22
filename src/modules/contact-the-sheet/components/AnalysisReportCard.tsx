@@ -29,7 +29,7 @@ export function AnalysisReportCard({ analysis, onConfirmHeader, selectedHeaderRo
       {/* Header Info */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center text-teal-400 shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
             <Table size={18} />
           </div>
           <div className="min-w-0">
@@ -48,8 +48,8 @@ export function AnalysisReportCard({ analysis, onConfirmHeader, selectedHeaderRo
             <span className="truncate">Phát hiện lỗi #REF! (Cột {refErrorColumns.join(", ")})</span>
           </div>
         ) : (
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-xs font-semibold">
-            <CheckCircle2 size={14} className="shrink-0" />
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-muted/60 text-foreground border border-border text-xs font-medium">
+            <CheckCircle2 size={14} className="shrink-0 text-emerald-500" />
             <span>Dữ liệu nguồn sẵn sàng</span>
           </div>
         )}
@@ -57,7 +57,7 @@ export function AnalysisReportCard({ analysis, onConfirmHeader, selectedHeaderRo
 
       {/* Warnings & Signals */}
       {hasImportRangeRefErrors && (
-        <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300 leading-relaxed w-full min-w-0 break-words">
+        <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-foreground leading-relaxed w-full min-w-0 break-words">
           <span className="font-bold">Lưu ý về IMPORTRANGE:</span> Một số cột nguồn đang hiển thị lỗi <code>#REF!</code> (do chưa cấp quyền truy cập bảng tính nguồn trong Google Sheets). Contact the Sheet sẽ chặn khớp tự động trên các cột này để bảo vệ dữ liệu.
         </div>
       )}
@@ -66,7 +66,7 @@ export function AnalysisReportCard({ analysis, onConfirmHeader, selectedHeaderRo
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs w-full min-w-0">
         <div className="p-3 rounded-xl bg-background/60 border border-border flex flex-col gap-1 min-w-0 overflow-hidden">
           <span className="text-muted-foreground flex items-center gap-1">
-            <FunctionSquare size={13} className="text-purple-400 shrink-0" /> Cột công thức
+            <FunctionSquare size={13} className="text-muted-foreground shrink-0" /> Cột công thức
           </span>
           <span className="font-bold text-foreground text-sm">
             {formulaCols.length} cột
@@ -78,7 +78,7 @@ export function AnalysisReportCard({ analysis, onConfirmHeader, selectedHeaderRo
 
         <div className="p-3 rounded-xl bg-background/60 border border-border flex flex-col gap-1 min-w-0 overflow-hidden">
           <span className="text-muted-foreground flex items-center gap-1">
-            <Table size={13} className="text-blue-400 shrink-0" /> Cột Dropdown
+            <Table size={13} className="text-muted-foreground shrink-0" /> Cột Dropdown
           </span>
           <span className="font-bold text-foreground text-sm">
             {dropdownCols.length} cột
@@ -90,7 +90,7 @@ export function AnalysisReportCard({ analysis, onConfirmHeader, selectedHeaderRo
 
         <div className="p-3 rounded-xl bg-background/60 border border-border flex flex-col gap-1 min-w-0 overflow-hidden">
           <span className="text-muted-foreground flex items-center gap-1">
-            <Link size={13} className="text-teal-400 shrink-0" /> Cột Link Drive
+            <Link size={13} className="text-muted-foreground shrink-0" /> Cột Link Drive
           </span>
           <span className="font-bold text-foreground text-sm">
             {linkCols.length} cột
@@ -102,12 +102,12 @@ export function AnalysisReportCard({ analysis, onConfirmHeader, selectedHeaderRo
 
         <div className="p-3 rounded-xl bg-background/60 border border-border flex flex-col gap-1 min-w-0 overflow-hidden">
           <span className="text-muted-foreground flex items-center gap-1">
-            <Sparkles size={13} className="text-amber-400 shrink-0" /> Tiêu đề dò thấy
+            <Sparkles size={13} className="text-muted-foreground shrink-0" /> Tiêu đề dò thấy
           </span>
           <span className="font-bold text-foreground text-sm">
             Hàng {selectedHeaderRow}
           </span>
-          <span className="text-[11px] text-emerald-400 font-semibold truncate">
+          <span className="text-[11px] text-muted-foreground font-medium truncate">
             Độ tin cậy: Cao
           </span>
         </div>

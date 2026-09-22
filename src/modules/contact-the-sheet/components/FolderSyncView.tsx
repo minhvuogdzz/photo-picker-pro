@@ -189,75 +189,75 @@ export function FolderSyncView({ onGoToBatch }: Props) {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden p-6 gap-4 text-foreground custom-scrollbar select-none">
+    <div className="flex-1 flex flex-col h-full overflow-y-auto overflow-x-hidden p-3.5 sm:p-5 gap-3 text-foreground custom-scrollbar select-none min-w-0">
       {/* Header Bar */}
-      <div className="flex items-center justify-between p-4 bg-card/60 border border-border/80 rounded-2xl shrink-0 backdrop-blur-md shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center text-teal-400 shrink-0 shadow-sm">
-            <FolderSync size={20} />
+      <div className="flex flex-wrap lg:flex-nowrap items-center justify-between p-3 sm:p-3.5 bg-card/60 border border-border/80 rounded-2xl shrink-0 backdrop-blur-md shadow-2xs gap-3 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+            <FolderSync size={16} />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-extrabold text-foreground tracking-tight">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-xs sm:text-sm font-bold text-foreground tracking-tight truncate">
                 Đồng bộ tên thư mục con
               </h2>
-              <span className="px-2 py-0.5 rounded-full bg-teal-500/15 text-teal-300 border border-teal-500/30 text-[10px] font-bold uppercase tracking-wider">
+              <span className="px-1.5 py-0.2 rounded bg-muted text-muted-foreground border border-border text-[9px] font-semibold uppercase tracking-wider shrink-0">
                 Tiện ích thư mục Studio
               </span>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Đổi tên các thư mục con bên trong để đồng nhất theo tên thư mục cha (mã khách/buổi chụp), chuẩn bị sẵn sàng cho quy trình batch.
+            <p className="text-[11px] text-muted-foreground truncate max-w-xl">
+              Đổi tên các thư mục con bên trong theo tên thư mục cha (mã khách/buổi chụp), chuẩn bị sẵn sàng cho quy trình batch.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-center flex-wrap">
           {folders.length > 0 && (
             <button
               onClick={clearAllFolders}
               disabled={isSyncing}
-              className="px-3 py-1.5 text-xs text-muted-foreground hover:text-red-400 font-semibold rounded-xl hover:bg-red-500/10 transition-all cursor-pointer flex items-center gap-1.5 border border-transparent hover:border-red-500/20"
+              className="h-8 px-2.5 text-xs text-muted-foreground hover:text-destructive font-medium rounded-lg hover:bg-destructive/10 transition-colors cursor-pointer flex items-center gap-1.5"
             >
-              <Trash2 size={13} />
-              <span>Xóa danh sách ({folders.length})</span>
+              <Trash2 size={12} />
+              <span>Xóa ({folders.length})</span>
             </button>
           )}
 
           <button
             onClick={handlePickFolders}
             disabled={isSyncing}
-            className="h-9 px-4 rounded-xl bg-primary hover:bg-primary/90 active:scale-95 text-xs font-bold text-primary-foreground shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+            className="h-8 px-3 rounded-lg bg-primary hover:bg-primary/90 text-xs font-semibold text-primary-foreground shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer"
           >
-            <FolderOpen size={14} />
+            <FolderOpen size={13} />
             <span>Thêm thư mục</span>
           </button>
 
           {onGoToBatch && (
             <button
               onClick={() => onGoToBatch(folders.map((f) => f.path))}
-              className="h-9 px-3.5 rounded-xl bg-card border border-border/80 hover:bg-muted active:scale-95 text-xs font-semibold text-muted-foreground hover:text-foreground transition-all flex items-center gap-1.5 cursor-pointer ml-1"
+              className="h-8 px-3 rounded-lg bg-muted hover:bg-accent text-xs font-semibold text-foreground border border-border transition-colors flex items-center gap-1.5 cursor-pointer"
               title="Chuyển sang màn hình Thực thi Batch và quét các thư mục này"
             >
               <span>Thực thi Batch</span>
-              <ArrowRight size={13} />
+              <ArrowRight size={12} />
             </button>
           )}
         </div>
       </div>
 
-      {/* Main Drag & Drop Zone */}
+      {/* Main Drag & Drop Zone - Compact & Clean */}
       <div
         onClick={handlePickFolders}
-        className={`p-6 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center transition-all cursor-pointer select-none shrink-0 text-center ${
+        className={`py-4 px-4 rounded-xl border border-dashed flex flex-col items-center justify-center transition-all cursor-pointer select-none shrink-0 text-center min-w-0 ${
           isDragging
-            ? "border-teal-400 bg-teal-500/15 shadow-lg ring-2 ring-teal-400/30 scale-[1.005]"
-            : "border-border/80 bg-card/40 hover:bg-card/70 hover:border-teal-500/50 shadow-sm"
+            ? "border-primary bg-primary/10 ring-2 ring-primary/20 scale-[1.002]"
+            : "border-border/80 bg-card/40 hover:bg-card/70 hover:border-primary/50 shadow-2xs"
         }`}
       >
-        <div className="w-12 h-12 rounded-2xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-400 mb-2">
-          <FolderSync size={24} className={isDragging ? "animate-spin" : ""} />
+        <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mb-1.5">
+          <FolderSync size={18} className={isDragging ? "animate-spin" : ""} />
         </div>
-        <p className="text-xs font-bold text-foreground mb-1">
+        <p className="text-xs font-bold text-foreground mb-0.5">
           Kéo thả các thư mục buổi chụp vào đây hoặc bấm để chọn thư mục
         </p>
         <p className="text-[11px] text-muted-foreground max-w-lg">
@@ -265,56 +265,58 @@ export function FolderSyncView({ onGoToBatch }: Props) {
         </p>
       </div>
 
-      {/* Mode Selection & Execution Buttons */}
-      <div className="flex items-center justify-between gap-4 p-4 bg-card/60 border border-border/80 rounded-2xl shrink-0 backdrop-blur-md">
-        <div className="flex items-center gap-2 text-xs">
-          <span className="font-bold text-muted-foreground">Đã chọn:</span>
-          <span className="px-2.5 py-0.5 rounded-lg bg-teal-500/20 text-teal-300 font-extrabold border border-teal-500/30">
+      {/* Mode Selection & Execution Buttons - Responsive & Clean Neutral Styling */}
+      <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-2.5 p-3 bg-card/60 border border-border/80 rounded-xl shrink-0 backdrop-blur-md min-w-0">
+        <div className="flex items-center gap-2 text-xs min-w-0">
+          <span className="font-semibold text-muted-foreground shrink-0">Đã chọn:</span>
+          <span className="px-2 py-0.5 rounded-md bg-muted text-foreground font-mono font-bold border border-border text-xs shrink-0">
             {folders.length} thư mục
           </span>
-          <div className="h-3.5 w-px bg-border/80 mx-1" />
-          <span className="text-muted-foreground hidden sm:inline text-[11px]">
-            Chọn 1 trong 2 chế độ xử lý bên phải:
+          <div className="h-3.5 w-px bg-border/80 mx-1 hidden sm:block shrink-0" />
+          <span className="text-muted-foreground hidden lg:inline text-[11px] truncate">
+            Chọn 1 trong 2 chế độ xử lý:
           </span>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
           <button
             onClick={() => handleExecuteSync("all")}
             disabled={isSyncing || folders.length === 0}
-            className="h-9 px-4 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 hover:brightness-110 active:scale-95 text-xs font-extrabold text-white shadow-md shadow-teal-500/20 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="h-8 px-3 rounded-lg bg-primary hover:bg-primary/90 text-xs font-semibold text-primary-foreground shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap shrink-0"
+            title="Đồng bộ tất cả các thư mục con bên trong theo tên thư mục cha"
           >
-            {isSyncing ? <Loader2 size={14} className="animate-spin" /> : <FolderCheck size={14} />}
-            <span>Đồng bộ tất cả thư mục con</span>
+            {isSyncing ? <Loader2 size={13} className="animate-spin" /> : <FolderCheck size={13} />}
+            <span>Đồng bộ tất cả</span>
           </button>
 
           <button
             onClick={() => handleExecuteSync("last")}
             disabled={isSyncing || folders.length === 0}
-            className="h-9 px-4 rounded-xl bg-card border border-teal-500/40 hover:bg-teal-500/10 active:scale-95 text-xs font-bold text-teal-300 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="h-8 px-3 rounded-lg bg-muted hover:bg-accent text-foreground border border-border text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap shrink-0"
+            title="Chỉ đổi tên thư mục thành phẩm sâu nhất theo tên thư mục cha"
           >
-            {isSyncing ? <Loader2 size={14} className="animate-spin" /> : <Layers size={14} />}
-            <span>Chỉ thư mục cuối (Deepest)</span>
+            {isSyncing ? <Loader2 size={13} className="animate-spin" /> : <Layers size={13} />}
+            <span>Chỉ thư mục cuối</span>
           </button>
         </div>
       </div>
 
       {/* Progress Bar (Visible while syncing) */}
       {isSyncing && syncProgress && (
-        <div className="p-3 bg-teal-500/10 border border-teal-500/30 rounded-2xl shrink-0 flex flex-col gap-1.5 animate-fade-in">
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-teal-300 flex items-center gap-2">
-              <Loader2 size={13} className="animate-spin text-teal-400" />
-              Đang đồng bộ: <b className="text-foreground">{syncProgress.currentName}</b>
+        <div className="p-3 bg-card border border-primary/30 rounded-xl shrink-0 flex flex-col gap-1.5 animate-fade-in min-w-0">
+          <div className="flex items-center justify-between text-xs min-w-0">
+            <span className="font-medium text-foreground flex items-center gap-2 truncate">
+              <Loader2 size={12} className="animate-spin text-primary" />
+              <span>Đang đồng bộ: <b className="text-foreground">{syncProgress.currentName}</b></span>
             </span>
-            <span className="font-mono text-teal-400 font-bold">
+            <span className="font-mono text-foreground font-bold shrink-0">
               {syncProgress.current} / {syncProgress.total} (
               {Math.round((syncProgress.current / syncProgress.total) * 100)}%)
             </span>
           </div>
-          <div className="w-full h-1.5 bg-background/50 rounded-full overflow-hidden">
+          <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-teal-400 to-emerald-400 transition-all duration-200"
+              className="h-full bg-primary transition-all duration-200 rounded-full"
               style={{
                 width: `${(syncProgress.current / syncProgress.total) * 100}%`,
               }}
@@ -326,19 +328,19 @@ export function FolderSyncView({ onGoToBatch }: Props) {
       {/* Sync Result Summary Alert */}
       {syncSummary && (
         <div
-          className={`p-3.5 rounded-2xl border shrink-0 flex items-start justify-between gap-3 animate-fade-in ${
+          className={`p-3 rounded-xl border shrink-0 flex items-start justify-between gap-3 animate-fade-in min-w-0 ${
             syncSummary.errors === 0
-              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
-              : "bg-amber-500/10 border-amber-500/30 text-amber-300"
+              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-300"
+              : "bg-amber-500/10 border-amber-500/30 text-amber-800 dark:text-amber-300"
           }`}
         >
-          <div className="flex items-start gap-2.5">
+          <div className="flex items-start gap-2.5 min-w-0">
             {syncSummary.errors === 0 ? (
-              <CheckCircle2 size={17} className="text-emerald-400 shrink-0 mt-0.5" />
+              <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
             ) : (
-              <AlertTriangle size={17} className="text-amber-400 shrink-0 mt-0.5" />
+              <AlertTriangle size={16} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
             )}
-            <div>
+            <div className="min-w-0">
               <p className="text-xs font-bold text-foreground">
                 {syncSummary.errors === 0
                   ? `Đã đồng bộ thành công tất cả ${syncSummary.success} thư mục!`
@@ -347,7 +349,7 @@ export function FolderSyncView({ onGoToBatch }: Props) {
               {syncSummary.details.length > 0 && (
                 <div className="mt-1 text-[11px] text-muted-foreground space-y-0.5">
                   {syncSummary.details.map((d, i) => (
-                    <div key={i} className="font-mono">{d}</div>
+                    <div key={i} className="font-mono truncate">{d}</div>
                   ))}
                 </div>
               )}
@@ -355,7 +357,7 @@ export function FolderSyncView({ onGoToBatch }: Props) {
           </div>
           <button
             onClick={() => setSyncSummary(null)}
-            className="text-muted-foreground hover:text-foreground cursor-pointer p-1"
+            className="text-muted-foreground hover:text-foreground cursor-pointer p-1 shrink-0"
           >
             <X size={13} />
           </button>
@@ -363,64 +365,64 @@ export function FolderSyncView({ onGoToBatch }: Props) {
       )}
 
       {/* Folder Items List */}
-      <div className="flex-1 flex flex-col min-h-0 bg-card/40 border border-border/80 rounded-2xl overflow-hidden shadow-inner backdrop-blur-md">
-        <div className="px-4 py-2.5 border-b border-border/70 bg-muted/40 flex items-center justify-between shrink-0">
+      <div className="flex-1 flex flex-col min-h-0 bg-card/40 border border-border/80 rounded-xl overflow-hidden shadow-inner backdrop-blur-md min-w-0">
+        <div className="px-3.5 py-2 border-b border-border/70 bg-muted/30 flex flex-wrap items-center justify-between gap-2 shrink-0 min-w-0">
           <span className="text-xs font-bold text-muted-foreground">
             Danh sách thư mục ({folders.length})
           </span>
-          <span className="text-[11px] text-muted-foreground">
+          <span className="text-[11px] text-muted-foreground hidden sm:inline truncate">
             Tên thư mục con sẽ được đổi khớp theo tên thư mục cha này
           </span>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5 custom-scrollbar min-w-0">
           {folders.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-8">
-              <div className="w-12 h-12 rounded-2xl bg-muted/30 border border-border flex items-center justify-center text-muted-foreground mb-3">
-                <FolderOpen size={20} />
+              <div className="w-10 h-10 rounded-xl bg-muted/40 border border-border flex items-center justify-center text-muted-foreground mb-2">
+                <FolderOpen size={18} />
               </div>
-              <p className="text-xs font-bold text-foreground mb-1">
+              <p className="text-xs font-bold text-foreground mb-0.5">
                 Chưa có thư mục nào được chọn
               </p>
-              <p className="text-[11px] text-muted-foreground max-w-sm mb-4">
+              <p className="text-[11px] text-muted-foreground max-w-sm mb-3">
                 Kéo thả các folder khách hàng cần sửa tên con vào đây hoặc bấm nút "Thêm thư mục".
               </p>
-              <div className="p-3 bg-muted/30 rounded-xl border border-border/60 max-w-md text-left text-[11px] text-muted-foreground space-y-1.5">
+              <div className="p-3 bg-muted/30 rounded-xl border border-border/60 max-w-md text-left text-[11px] text-muted-foreground space-y-1">
                 <div className="flex items-center gap-1.5 font-bold text-foreground">
-                  <Info size={13} className="text-teal-400" />
+                  <Info size={13} className="text-muted-foreground" />
                   <span>Cơ chế hoạt động:</span>
                 </div>
-                <p>• <b>Đồng bộ tất cả</b>: Đổi tên toàn bộ thư mục con từ cấp nông đến cấp sâu nhất thành tên thư mục cha.</p>
+                <p>• <b>Đồng bộ tất cả con</b>: Đổi tên toàn bộ thư mục con từ cấp nông đến cấp sâu nhất thành tên thư mục cha.</p>
                 <p>• <b>Chỉ thư mục cuối</b>: Chỉ đổi tên thư mục thành phẩm sâu nhất (nơi chứa ảnh xuất JPG/Final) theo tên thư mục cha.</p>
               </div>
             </div>
           ) : (
-            folders.map((folder, index) => (
+            folders.map((folder) => (
               <div
                 key={folder.path}
-                className="flex items-center justify-between p-3 rounded-xl bg-card border border-border/70 hover:border-teal-500/40 hover:bg-card/80 transition-all group shadow-2xs"
+                className="flex items-center justify-between p-2.5 rounded-lg bg-card border border-border/70 hover:border-primary/40 hover:bg-card/80 transition-all group shadow-2xs min-w-0 gap-2.5"
               >
-                <div className="flex items-center gap-3 min-w-0 flex-1 pr-3">
-                  <div className="w-8 h-8 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-400 shrink-0">
-                    <FolderOpen size={16} />
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <div className="w-7 h-7 rounded-lg bg-muted text-muted-foreground border border-border/60 flex items-center justify-center shrink-0">
+                    <FolderOpen size={14} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-foreground truncate">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-semibold text-foreground truncate">
                         {folder.name}
                       </span>
                       {folder.status === "syncing" && (
-                        <span className="inline-flex items-center gap-1 text-[10px] text-teal-400 bg-teal-500/15 px-2 py-0.5 rounded-full font-semibold">
+                        <span className="inline-flex items-center gap-1 text-[10px] text-primary bg-primary/10 px-2 py-0.2 rounded-full font-medium">
                           <Loader2 size={10} className="animate-spin" /> Đang xử lý
                         </span>
                       )}
                       {folder.status === "success" && (
-                        <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-full font-semibold">
+                        <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.2 rounded-full font-medium">
                           <CheckCircle2 size={10} /> Đã đồng bộ
                         </span>
                       )}
                       {folder.status === "error" && (
-                        <span className="inline-flex items-center gap-1 text-[10px] text-rose-400 bg-rose-500/15 px-2 py-0.5 rounded-full font-semibold">
+                        <span className="inline-flex items-center gap-1 text-[10px] text-destructive bg-destructive/10 px-2 py-0.2 rounded-full font-medium">
                           <AlertTriangle size={10} /> Lỗi
                         </span>
                       )}
@@ -429,7 +431,7 @@ export function FolderSyncView({ onGoToBatch }: Props) {
                       {folder.path}
                     </p>
                     {folder.message && (
-                      <p className="text-[10px] text-teal-400/90 mt-0.5 truncate">
+                      <p className="text-[10px] text-muted-foreground mt-0.5 truncate font-mono">
                         {folder.message}
                       </p>
                     )}
@@ -439,10 +441,10 @@ export function FolderSyncView({ onGoToBatch }: Props) {
                 <button
                   onClick={() => removeFolder(folder.path)}
                   disabled={isSyncing}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer shrink-0 opacity-70 group-hover:opacity-100"
+                  className="w-6 h-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer shrink-0"
                   title="Xóa khỏi danh sách"
                 >
-                  <X size={13} />
+                  <X size={12} />
                 </button>
               </div>
             ))

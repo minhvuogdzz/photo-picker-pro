@@ -115,22 +115,22 @@ export default function ContactTheSheetApp() {
   return (
     <div className="flex-1 flex flex-col h-full w-full min-w-0 max-w-full overflow-hidden bg-card/90 backdrop-blur-md rounded-xl border border-border text-foreground relative select-none">
       {/* Top Header & Navigation Bar */}
-      <div className="px-5 py-3 border-b border-border bg-muted/30 flex items-center justify-between gap-4 shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+      <div className="px-3 sm:px-5 py-2.5 sm:py-3 border-b border-border bg-muted/30 flex flex-wrap items-center justify-between gap-3 shrink-0 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
             <FileSpreadsheet size={16} />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="font-semibold text-xs tracking-tight text-foreground">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <h1 className="font-semibold text-xs tracking-tight text-foreground truncate">
                 Contact the Sheet
               </h1>
-              <span className="text-[9px] font-medium px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 uppercase tracking-wider flex items-center gap-1">
+              <span className="text-[9px] font-medium px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 uppercase tracking-wider flex items-center gap-1 shrink-0">
                 <Crown size={9} />
                 <span>VIP Studio Ops</span>
               </span>
             </div>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-[10px] text-muted-foreground truncate max-w-[200px] sm:max-w-xs md:max-w-sm">
               {activeProfile
                 ? `Không gian: ${activeProfile.displayName} — Tab: ${activeProfile.selectedTabTitle || "Edit 9/2026"}`
                 : "Chưa cấu hình Workspace"}
@@ -139,7 +139,7 @@ export default function ContactTheSheetApp() {
         </div>
 
         {/* Center: View Tabs */}
-        <div className="flex items-center gap-0.5 p-1 bg-muted/30 border border-border rounded-lg overflow-x-auto max-w-full">
+        <div className="flex items-center gap-0.5 p-1 bg-muted/30 border border-border rounded-lg overflow-x-auto max-w-full custom-scrollbar shrink-0">
           <button
             onClick={() => setActiveTab("sync-folders")}
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
@@ -147,9 +147,11 @@ export default function ContactTheSheetApp() {
                 ? "bg-primary text-primary-foreground shadow-sm font-semibold"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             }`}
+            title="Đồng bộ tên thư mục con"
           >
             <FolderSync size={12} />
-            <span>Đồng bộ tên thư mục con</span>
+            <span className="hidden xl:inline">Đồng bộ tên thư mục con</span>
+            <span className="xl:hidden">Đồng bộ</span>
           </button>
           <button
             onClick={() => setActiveTab("batch")}
@@ -158,35 +160,42 @@ export default function ContactTheSheetApp() {
                 ? "bg-primary text-primary-foreground shadow-sm font-semibold"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             }`}
+            title="Thực thi Batch"
           >
             <Play size={12} />
-            <span>Thực thi Batch</span>
+            <span className="hidden md:inline">Thực thi Batch</span>
+            <span className="md:hidden">Batch</span>
           </button>
           <button
             onClick={() => setActiveTab("workspace")}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
               activeTab === "workspace"
                 ? "bg-primary text-primary-foreground shadow-sm font-semibold"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             }`}
+            title="Cấu hình Sheet"
           >
             <Sliders size={12} />
-            <span>Cấu hình Sheet</span>
+            <span className="hidden md:inline">Cấu hình Sheet</span>
+            <span className="md:hidden">Sheet</span>
           </button>
           <button
             onClick={() => setIsDriveModalOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer whitespace-nowrap"
+            title="Google Drive"
           >
             <HardDrive size={12} />
-            <span>Google Drive</span>
+            <span className="hidden md:inline">Google Drive</span>
+            <span className="md:hidden">Drive</span>
           </button>
           <button
             onClick={() => setActiveTab("audit")}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
               activeTab === "audit"
                 ? "bg-primary text-primary-foreground shadow-sm font-semibold"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             }`}
+            title="Nhật ký"
           >
             <History size={12} />
             <span>Nhật ký</span>

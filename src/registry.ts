@@ -1,7 +1,6 @@
 import { ElementType } from "react";
-import { FileImage, Layers, Sparkles, FolderArchive, Palette, FileSpreadsheet } from "lucide-react";
+import { FileImage, Layers, Sparkles, FolderArchive, Palette, FileSpreadsheet, Coins, BarChart3 } from "lucide-react";
 import { PhotoPickerIcon } from "@/core/components/PhotoPickerIcon";
-import { PhotonIcon } from "@/core/components/PhotonIcon";
 
 export interface AppModule {
   id: string;
@@ -118,26 +117,26 @@ export const modules: AppModule[] = [
     }
   },
   {
-    id: "photon-studio",
-    name: "MVD Generation",
-    shortName: "MVD Gen",
-    icon: PhotonIcon,
-    path: "/photon-studio",
-    description: "Bộ công cụ thế hệ mới MVD Generation gia tốc Metal GPU (Native Swift), xử lý layers, curves, mask và liên thông dữ liệu trực tiếp trong Super-App.",
-    category: "retouch",
+    id: "photo-counter",
+    name: "Thống kê",
+    shortName: "Thống kê",
+    icon: BarChart3,
+    path: "/photo-counter",
+    description: "Thống kê sản lượng ảnh hoàn thiện theo ngày, bóc tách thư mục sâu nhất, phân loại ảnh và đối soát hiệu suất studio.",
+    category: "workflow",
     tags: [
-      "mvd generation", "generation", "mvd studio", "metal", 
-      "hậu kỳ", "photoshop", "màu sắc", "mvd"
+      "thống kê", "sản lượng", "kpi", "đếm ảnh", "tiến độ", 
+      "retouch", "thư mục sâu nhất", "studio", "thang"
     ],
-    badge: "Native Metal 33MB",
+    badge: "Studio Ops",
     isPremium: true,
     accentColor: {
-      primary: "text-cyan-600 dark:text-cyan-400",
-      border: "hover:border-cyan-500/50",
-      bgGlow: "from-cyan-500/15 via-cyan-500/5 to-transparent",
-      iconBg: "bg-cyan-500/12 dark:bg-cyan-500/25 border-cyan-500/25 dark:border-cyan-500/35 text-cyan-600 dark:text-cyan-400",
-      badgeClass: "bg-cyan-500/10 dark:bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border-cyan-500/25 dark:border-cyan-500/35",
-      lightGlow: "rgba(6, 182, 212, 0.2)",
+      primary: "text-emerald-600 dark:text-emerald-400",
+      border: "hover:border-emerald-500/50",
+      bgGlow: "from-emerald-500/15 via-emerald-500/5 to-transparent",
+      iconBg: "bg-emerald-500/12 dark:bg-emerald-500/25 border-emerald-500/25 dark:border-emerald-500/35 text-emerald-600 dark:text-emerald-400",
+      badgeClass: "bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25 dark:border-emerald-500/35",
+      lightGlow: "rgba(16, 185, 129, 0.2)",
     }
   }
 ];

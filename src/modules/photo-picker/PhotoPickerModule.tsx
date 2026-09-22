@@ -6,6 +6,7 @@ import { BottomBar } from "./components/BottomBar";
 import { SettingsPage } from "./pages/PhotoPickerSettings";
 import { HistoryPage } from "./pages/HistoryPage";
 import { MatchProgressPopup } from "./components/MatchProgressPopup";
+import { RemoveCompletedCustomerDialog } from "./components/RemoveCompletedCustomerDialog";
 
 export function PhotoPickerModule() {
   const activeTab = useAppStore((s) => s.activeTab);
@@ -38,6 +39,9 @@ export function PhotoPickerModule() {
           
           {/* Progress Popup Overlay */}
           <MatchProgressPopup />
+
+          {/* Remove Completed Customer Dialog */}
+          <RemoveCompletedCustomerDialog />
         </>
       )}
     </div>

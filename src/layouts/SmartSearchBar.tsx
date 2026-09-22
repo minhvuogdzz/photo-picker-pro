@@ -12,6 +12,7 @@ import {
   X,
   History,
   FolderSync,
+  BarChart3,
 } from "lucide-react";
 
 interface SearchableItem {
@@ -148,6 +149,24 @@ export function SmartSearchBar() {
       tags: ["cài đặt", "settings", "giao diện", "theme", "dark mode", "ngôn ngữ"],
       action: () => {
         setActiveModule("system");
+        setIsOpen(false);
+        setQuery("");
+      },
+    });
+
+    list.push({
+      id: "feature-photo-counter",
+      moduleId: "photo-counter",
+      name: "Thống kê",
+      subName: "Sản lượng & Tiến độ Studio",
+      description: "Thống kê số lượng ảnh hoàn thiện theo ngày, bóc tách thư mục sâu nhất và tổng hợp sản lượng.",
+      category: "app",
+      categoryName: "Công cụ Studio",
+      icon: BarChart3,
+      tags: ["thống kê", "sản lượng", "kpi", "đếm ảnh", "tháng", "tiến độ"],
+      badge: "VIP Pro",
+      action: () => {
+        setActiveModule("photo-counter");
         setIsOpen(false);
         setQuery("");
       },

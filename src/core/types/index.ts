@@ -129,3 +129,15 @@ export type AppPhase = "idle" | "scanning" | "scanned" | "matching" | "matched" 
 
 /** Tab for the main view */
 export type MainTab = "home" | "settings" | "history" | "about";
+
+/** Mode for Photo Picker: Single customer vs Multi-customer batch queue */
+export type PickerMode = "single" | "multi";
+
+/** Item representing an expanded customer folder in multi-customer batch mode */
+export interface CustomerFolderItem {
+  readonly folder_path: string;
+  readonly folder_name: string;
+  readonly day_name?: string | null;
+  readonly month_name?: string | null;
+  readonly image_count: number;
+}

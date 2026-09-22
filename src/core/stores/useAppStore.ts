@@ -7,6 +7,8 @@ import type {
   MainTab,
   CopyResult,
   ProgressEvent,
+  PickerMode,
+  CustomerFolderItem,
 } from "@/core/types";
 
 interface AppState {
@@ -37,13 +39,27 @@ interface AppState {
   removeSyncFolder: (folder: string) => void;
   clearSyncFolders: () => void;
 
-  // Input folders
+  // Mode: Single customer vs Multi-customer batch queue
+  readonly pickerMode: PickerMode;
+  setPickerMode: (mode: PickerMode) => void;
+
+  // Input folders & Batch Customer Queue
   readonly inputFolders: string[];
   readonly selectedInputFolders: string[];
+  readonly batchCustomerFolders: CustomerFolderItem[];
   addInputFolder: (folder: string) => void;
+  addBatchInputFolders: (items: (CustomerFolderItem | string)[]) => void;
+  selectSingleInputFolder: (folder: string) => void;
   removeInputFolder: (folder: string) => void;
   clearInputFolders: () => void;
   toggleInputFolderSelection: (folder: string) => void;
+  setBatchCustomerFolders: (folders: CustomerFolderItem[]) => void;
+
+  // Post-filter completion removal prompt
+  readonly dontAskRemoveCompleted: boolean;
+  setDontAskRemoveCompleted: (val: boolean) => void;
+  readonly completedCustomerPendingRemoval: { folderPath: string; folderName: string } | null;
+  setCompletedCustomerPendingRemoval: (item: { folderPath: string; folderName: string } | null) => void;
 
   // Customer codes
   readonly rawCodeInput: string;
@@ -119,6 +135,23 @@ export interface SheetUpdateStatus {
   updatedAt?: string;
 }
 
+const loadStoredDontAsk = (): boolean => {
+  try {
+    return localStorage.getItem("mvd_picker_dont_ask_remove_completed") === "true";
+  } catch {
+    return false;
+  }
+};
+
+const loadStoredPickerMode = (): PickerMode => {
+  try {
+    const val = localStorage.getItem("mvd_picker_mode");
+    return val === "multi" ? "multi" : "single";
+  } catch {
+    return "single";
+  }
+};
+
 const initialState = {
   activeTab: "home" as MainTab,
   activeModule: "launcher",
@@ -127,8 +160,12 @@ const initialState = {
   lastClickPos: null as { x: number; y: number } | null,
   activeDropZone: null as "input" | "sync" | null,
   syncFolders: [] as string[],
+  pickerMode: loadStoredPickerMode(),
   inputFolders: [] as string[],
   selectedInputFolders: [] as string[],
+  batchCustomerFolders: [] as CustomerFolderItem[],
+  dontAskRemoveCompleted: loadStoredDontAsk(),
+  completedCustomerPendingRemoval: null as { folderPath: string; folderName: string } | null,
   rawCodeInput: "",
   parsedCodes: [] as CustomerCode[],
   scannedFiles: [] as PhotoFile[],
@@ -170,31 +207,138 @@ export const useAppStore = create<AppState>((set) => ({
     set((state) => ({ syncFolders: state.syncFolders.filter((f) => f !== folder) })),
   clearSyncFolders: () => set({ syncFolders: [] }),
 
+  setPickerMode: (mode) => {
+    try {
+      localStorage.setItem("mvd_picker_mode", mode);
+    } catch {}
+    set((state) => {
+      if (mode === "single" && state.inputFolders.length > 1) {
+        const keep = state.selectedInputFolders[0] || state.inputFolders[0];
+        const keepItem = state.batchCustomerFolders.find((f) => f.folder_path === keep);
+        return {
+          pickerMode: mode,
+          inputFolders: keep ? [keep] : [],
+          selectedInputFolders: keep ? [keep] : [],
+          batchCustomerFolders: keepItem ? [keepItem] : [],
+        };
+      }
+      return { pickerMode: mode };
+    });
+  },
+
+  setBatchCustomerFolders: (folders) => set({ batchCustomerFolders: folders }),
+
   addInputFolder: (folder) =>
     set((state) => {
-      if (state.inputFolders.includes(folder)) return state;
-      return { 
-        inputFolders: [folder],
-        selectedInputFolders: [folder]
+      const folderName = folder.split(/[/\\]+/).filter(Boolean).pop() || folder;
+      const newItem: CustomerFolderItem = {
+        folder_path: folder,
+        folder_name: folderName,
+        image_count: 0,
+      };
+
+      if (state.pickerMode === "single") {
+        return {
+          inputFolders: [folder],
+          selectedInputFolders: [folder],
+          batchCustomerFolders: [newItem],
+        };
+      } else {
+        if (state.inputFolders.includes(folder)) return state;
+        const nextInputFolders = [...state.inputFolders, folder];
+        const nextBatchFolders = [...state.batchCustomerFolders, newItem];
+        const nextSelected = state.selectedInputFolders.length > 0 ? state.selectedInputFolders : [folder];
+        return {
+          inputFolders: nextInputFolders,
+          batchCustomerFolders: nextBatchFolders,
+          selectedInputFolders: nextSelected,
+        };
+      }
+    }),
+
+  addBatchInputFolders: (items) =>
+    set((state) => {
+      if (!items || items.length === 0) return state;
+
+      const normalized: CustomerFolderItem[] = items.map((item) => {
+        if (typeof item === "string") {
+          const folderName = item.split(/[/\\]+/).filter(Boolean).pop() || item;
+          return {
+            folder_path: item,
+            folder_name: folderName,
+            image_count: 0,
+          };
+        }
+        return item;
+      });
+
+      if (state.pickerMode === "single") {
+        const first = normalized[0];
+        return {
+          inputFolders: [first.folder_path],
+          selectedInputFolders: [first.folder_path],
+          batchCustomerFolders: [first],
+        };
+      }
+
+      const existingPaths = new Set(state.inputFolders);
+      const newItems = normalized.filter((it) => !existingPaths.has(it.folder_path));
+      if (newItems.length === 0) return state;
+
+      const nextInputFolders = [...state.inputFolders, ...newItems.map((it) => it.folder_path)];
+      const nextBatchFolders = [...state.batchCustomerFolders, ...newItems];
+      const nextSelected =
+        state.selectedInputFolders.length > 0 ? state.selectedInputFolders : [nextInputFolders[0]];
+
+      return {
+        inputFolders: nextInputFolders,
+        batchCustomerFolders: nextBatchFolders,
+        selectedInputFolders: nextSelected,
       };
     }),
 
-  removeInputFolder: (folder) =>
-    set((state) => ({
-      inputFolders: state.inputFolders.filter((f) => f !== folder),
-      selectedInputFolders: state.selectedInputFolders.filter((f) => f !== folder),
-    })),
+  selectSingleInputFolder: (folder) =>
+    set({
+      selectedInputFolders: [folder],
+    }),
 
-  clearInputFolders: () => set({ inputFolders: [], selectedInputFolders: [] }),
+  removeInputFolder: (folder) =>
+    set((state) => {
+      const nextInputFolders = state.inputFolders.filter((f) => f !== folder);
+      const nextBatchFolders = state.batchCustomerFolders.filter((f) => f.folder_path !== folder);
+      let nextSelected = state.selectedInputFolders.filter((f) => f !== folder);
+      if (nextSelected.length === 0 && nextInputFolders.length > 0) {
+        nextSelected = [nextInputFolders[0]];
+      }
+      return {
+        inputFolders: nextInputFolders,
+        batchCustomerFolders: nextBatchFolders,
+        selectedInputFolders: nextSelected,
+      };
+    }),
+
+  clearInputFolders: () =>
+    set({
+      inputFolders: [],
+      selectedInputFolders: [],
+      batchCustomerFolders: [],
+    }),
 
   toggleInputFolderSelection: (folder) =>
     set((state) => {
-      if (state.selectedInputFolders.includes(folder)) {
-        return { selectedInputFolders: state.selectedInputFolders.filter((f) => f !== folder) };
-      } else {
-        return { selectedInputFolders: [...state.selectedInputFolders, folder] };
-      }
+      // In single mode or multi mode, rule is: active 1 folder at a time
+      return { selectedInputFolders: [folder] };
     }),
+
+  setDontAskRemoveCompleted: (val) => {
+    try {
+      localStorage.setItem("mvd_picker_dont_ask_remove_completed", String(val));
+    } catch {}
+    set({ dontAskRemoveCompleted: val });
+  },
+
+  setCompletedCustomerPendingRemoval: (item) =>
+    set({ completedCustomerPendingRemoval: item }),
 
   setRawCodeInput: (input) => set({ rawCodeInput: input }),
   setParsedCodes: (codes) => set({ parsedCodes: codes }),

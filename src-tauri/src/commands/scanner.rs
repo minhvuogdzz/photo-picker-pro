@@ -10,7 +10,7 @@ use walkdir::WalkDir;
 use super::types::{PhotoFile, ProgressEvent, ScanResult};
 
 /// Image file extensions supported by the scanner
-const IMAGE_EXTENSIONS: &[&str] = &[
+const _IMAGE_EXTENSIONS: &[&str] = &[
     "jpg", "jpeg", "png", "gif", "bmp", "tiff", "tif", "webp", "heic", "heif",
     "raw", "cr2", "cr3", "nef", "arw", "orf", "rw2", "dng", "raf", "pef",
     "srw", "x3f", "3fr", "mef", "erf", "nrw", "rwl", "mrw",
@@ -233,6 +233,231 @@ pub async fn scan_folders(
     })
 }
 
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct CustomerFolderItem {
+    pub folder_path: String,
+    pub folder_name: String,
+    pub day_name: Option<String>,
+    pub month_name: Option<String>,
+    pub image_count: usize,
+}
+
+fn is_asset_subfolder_name(name: &str) -> bool {
+    let lower = name.trim().to_lowercase();
+    let norm: String = lower
+        .replace('đ', "d")
+        .replace('á', "a")
+        .replace('à', "a")
+        .replace('ả', "a")
+        .replace('ã', "a")
+        .replace('ạ', "a")
+        .replace('ă', "a")
+        .replace('ắ', "a")
+        .replace('ằ', "a")
+        .replace('ẳ', "a")
+        .replace('ẵ', "a")
+        .replace('ặ', "a")
+        .replace('â', "a")
+        .replace('ấ', "a")
+        .replace('ầ', "a")
+        .replace('ẩ', "a")
+        .replace('ẫ', "a")
+        .replace('ậ', "a")
+        .replace('é', "e")
+        .replace('è', "e")
+        .replace('ẻ', "e")
+        .replace('ẽ', "e")
+        .replace('ẹ', "e")
+        .replace('ê', "e")
+        .replace('ế', "e")
+        .replace('ề', "e")
+        .replace('ể', "e")
+        .replace('ễ', "e")
+        .replace('ệ', "e")
+        .replace('í', "i")
+        .replace('ì', "i")
+        .replace('ỉ', "i")
+        .replace('ĩ', "i")
+        .replace('ị', "i")
+        .replace('ó', "o")
+        .replace('ò', "o")
+        .replace('ỏ', "o")
+        .replace('õ', "o")
+        .replace('ọ', "o")
+        .replace('ô', "o")
+        .replace('ố', "o")
+        .replace('ồ', "o")
+        .replace('ổ', "o")
+        .replace('ỗ', "o")
+        .replace('ộ', "o")
+        .replace('ơ', "o")
+        .replace('ớ', "o")
+        .replace('ờ', "o")
+        .replace('ở', "o")
+        .replace('ỡ', "o")
+        .replace('ợ', "o")
+        .replace('ú', "u")
+        .replace('ù', "u")
+        .replace('ủ', "u")
+        .replace('ũ', "u")
+        .replace('ụ', "u")
+        .replace('ư', "u")
+        .replace('ứ', "u")
+        .replace('ừ', "u")
+        .replace('ử', "u")
+        .replace('ữ', "u")
+        .replace('ự', "u")
+        .replace('ý', "y")
+        .replace('ỳ', "y")
+        .replace('ỷ', "y")
+        .replace('ỹ', "y")
+        .replace('ỵ', "y");
+
+    matches!(
+        norm.as_str(),
+        "raw" | "jpg" | "jpeg" | "png" | "cr2" | "cr3" | "nef" | "arw" | "dng"
+            | "export" | "exports" | "xuat" | "xuat jpg" | "selected" | "select" | "chon"
+            | "goc" | "file goc" | "anh goc" | "coc" | "chup" | "chua loc"
+            | "final" | "edited" | "done" | "da sua" | "da loc" | "loc"
+            | "psd" | "tif" | "tiff" | "backup" | "edit" | "retouch" | "blend" | "in" | "album" | "preview"
+    )
+}
+
+fn get_immediate_subdirs(dir: &Path) -> Vec<std::path::PathBuf> {
+    let mut dirs = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            let p = entry.path();
+            if p.is_dir() {
+                let name = entry.file_name().to_string_lossy().to_string();
+                if !name.starts_with('.') {
+                    dirs.push(p);
+                }
+            }
+        }
+    }
+    dirs.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
+    dirs
+}
+
+/// Recursively and intelligently expands input paths (Month folder, Day folder, or Customer folders)
+/// into a flat list of individual Customer Folder items with 2-level parallel traversal.
+/// Ultra-fast: avoids deep file counting to prevent hanging on Google Drive / network drives.
+#[tauri::command]
+pub fn expand_batch_customer_folders(paths: Vec<String>) -> Result<Vec<CustomerFolderItem>, String> {
+    use std::collections::HashSet;
+    let mut results: Vec<CustomerFolderItem> = Vec::new();
+    let mut seen_paths: HashSet<String> = HashSet::new();
+
+    for path_str in paths {
+        let root = Path::new(&path_str);
+        if !root.exists() || !root.is_dir() {
+            continue;
+        }
+
+        let child_dirs = get_immediate_subdirs(root);
+
+        // Check if child_dirs is empty or ALL child_dirs are asset subfolders (like raw/jpg)
+        let has_only_asset_subdirs = !child_dirs.is_empty()
+            && child_dirs.iter().all(|d| {
+                let name = d.file_name().map(|n| n.to_string_lossy()).unwrap_or_default();
+                is_asset_subfolder_name(&name)
+            });
+
+        if child_dirs.is_empty() || has_only_asset_subdirs {
+            // This directory itself is a Customer Folder!
+            let p_str = root.to_string_lossy().to_string();
+            if !seen_paths.contains(&p_str) {
+                seen_paths.insert(p_str.clone());
+                let folder_name = root
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or_else(|| p_str.clone());
+                results.push(CustomerFolderItem {
+                    folder_path: p_str,
+                    folder_name,
+                    day_name: None,
+                    month_name: None,
+                    image_count: 0,
+                });
+            }
+            continue;
+        }
+
+        // Check if this is a Month folder:
+        // A Month folder has children (Days) whose own children contain customer folders (non-asset subdirs)
+        let is_month_folder = child_dirs.iter().take(5).any(|d| {
+            let sub_sub = get_immediate_subdirs(d);
+            sub_sub.iter().any(|sub_p| {
+                let name = sub_p.file_name().map(|n| n.to_string_lossy()).unwrap_or_default();
+                !is_asset_subfolder_name(&name)
+            })
+        });
+
+        if is_month_folder {
+            let month_name = root.file_name().map(|n| n.to_string_lossy().to_string());
+
+            // Scan each Day folder in parallel
+            let day_results: Vec<Vec<CustomerFolderItem>> = child_dirs
+                .par_iter()
+                .map(|day_dir| {
+                    let day_name = day_dir.file_name().map(|n| n.to_string_lossy().to_string());
+                    let mut items: Vec<CustomerFolderItem> = Vec::new();
+                    let cust_dirs = get_immediate_subdirs(day_dir);
+
+                    for p in cust_dirs {
+                        let name = p.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+                        if !is_asset_subfolder_name(&name) {
+                            items.push(CustomerFolderItem {
+                                folder_path: p.to_string_lossy().to_string(),
+                                folder_name: name,
+                                day_name: day_name.clone(),
+                                month_name: month_name.clone(),
+                                image_count: 0,
+                            });
+                        }
+                    }
+                    items
+                })
+                .collect();
+
+            for items in day_results {
+                for item in items {
+                    if !seen_paths.contains(&item.folder_path) {
+                        seen_paths.insert(item.folder_path.clone());
+                        results.push(item);
+                    }
+                }
+            }
+        } else {
+            // It's a Day folder (contains customer folders directly: 1-9 8h Hà Tiny, etc.)
+            let day_name = root.file_name().map(|n| n.to_string_lossy().to_string());
+            let month_name = root
+                .parent()
+                .and_then(|p| p.file_name().map(|n| n.to_string_lossy().to_string()));
+
+            for cust_dir in child_dirs {
+                let name = cust_dir.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+                if !is_asset_subfolder_name(&name) {
+                    let p_str = cust_dir.to_string_lossy().to_string();
+                    if !seen_paths.contains(&p_str) {
+                        seen_paths.insert(p_str.clone());
+                        results.push(CustomerFolderItem {
+                            folder_path: p_str,
+                            folder_name: name,
+                            day_name: day_name.clone(),
+                            month_name: month_name.clone(),
+                            image_count: 0,
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(results)
+}
+
 /// Cancels an ongoing scan operation
 #[tauri::command]
 pub async fn cancel_scan(
@@ -269,5 +494,34 @@ mod tests {
     #[test]
     fn test_extract_number_no_digits() {
         assert_eq!(extract_number_from_filename("photo.jpg"), "");
+    }
+
+    #[test]
+    fn test_expand_batch_customer_folders() {
+        use std::fs::{create_dir_all, File};
+
+        let temp_dir = std::env::temp_dir().join(format!("mvd_test_batch_{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        let cust1 = temp_dir.join("Tháng 9").join("01-09").join("1-9 8h Hà Tiny 2cc");
+        let cust2 = temp_dir.join("Tháng 9").join("01-09").join("1-9 9h Như Quỳnh 1cc");
+        let cust3 = temp_dir.join("Tháng 9").join("02-09").join("2-9 10h Linh Thùy 1cc");
+
+        create_dir_all(&cust1).unwrap();
+        create_dir_all(&cust2).unwrap();
+        create_dir_all(&cust3).unwrap();
+
+        File::create(cust1.join("IMG_0001.JPG")).unwrap();
+        File::create(cust2.join("IMG_0002.CR3")).unwrap();
+        File::create(cust3.join("IMG_0003.ARW")).unwrap();
+
+        let month_path = temp_dir.join("Tháng 9").to_string_lossy().to_string();
+        let items = expand_batch_customer_folders(vec![month_path]).unwrap();
+
+        assert_eq!(items.len(), 3);
+        let names: Vec<String> = items.into_iter().map(|it| it.folder_name).collect();
+        assert!(names.contains(&"1-9 8h Hà Tiny 2cc".to_string()));
+        assert!(names.contains(&"1-9 9h Như Quỳnh 1cc".to_string()));
+        assert!(names.contains(&"2-9 10h Linh Thùy 1cc".to_string()));
+
+        let _ = std::fs::remove_dir_all(temp_dir);
     }
 }

@@ -40,7 +40,7 @@ export function SheetTabManager({
       {/* Top Header & Quick Selector Bar */}
       <div className="flex items-center justify-between flex-wrap gap-3 w-full min-w-0">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center text-teal-400 shrink-0">
+          <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
             <Layers size={16} />
           </div>
           <div className="min-w-0">
@@ -49,7 +49,7 @@ export function SheetTabManager({
                 Trang tính đang làm việc:
               </span>
               {selectedTab && (
-                <span className="px-2.5 py-0.5 rounded-lg bg-teal-500/20 text-teal-300 font-extrabold text-xs border border-teal-500/30 truncate max-w-[200px]">
+                <span className="px-2.5 py-0.5 rounded-lg bg-primary/10 text-primary font-bold text-xs border border-primary/20 truncate max-w-[200px]">
                   {selectedTab.title} ({selectedTab.columnCount} cột)
                 </span>
               )}
@@ -72,7 +72,7 @@ export function SheetTabManager({
                 if (target) onSelectTab(target);
               }}
               disabled={isAnalyzing}
-              className="bg-background border border-border/90 text-teal-400 font-bold text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary shadow-inner cursor-pointer max-w-[180px] sm:max-w-[220px] truncate"
+              className="bg-background border border-border/90 text-foreground font-semibold text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary shadow-inner cursor-pointer max-w-[180px] sm:max-w-[220px] truncate"
             >
               {availableTabs.map((t) => {
                 const isConfigured = !!tabConfigs[t.title];
@@ -95,7 +95,7 @@ export function SheetTabManager({
               title="Xem dạng Bảng chi tiết"
               className={`p-1.5 rounded-lg text-xs transition-all cursor-pointer ${
                 viewMode === "table" && isExpanded
-                  ? "bg-teal-500/20 text-teal-300 font-bold"
+                  ? "bg-primary text-primary-foreground font-semibold"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -109,7 +109,7 @@ export function SheetTabManager({
               title="Xem dạng Lưới thẻ (Grid)"
               className={`p-1.5 rounded-lg text-xs transition-all cursor-pointer ${
                 viewMode === "grid" && isExpanded
-                  ? "bg-teal-500/20 text-teal-300 font-bold"
+                  ? "bg-primary text-primary-foreground font-semibold"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -123,7 +123,7 @@ export function SheetTabManager({
               type="button"
               onClick={onCopyConfigToAllTabs}
               title="Sao chép cấu hình cột và phạm vi hàng từ tab này sang tất cả các tab khác trong bảng tính"
-              className="px-2.5 py-1.5 rounded-xl border border-teal-500/30 bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+              className="px-2.5 py-1.5 rounded-xl border border-border bg-muted/60 hover:bg-muted text-foreground text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
             >
               <Copy size={13} />
               <span className="hidden sm:inline">Áp dụng cho tất cả Tab</span>
@@ -167,7 +167,7 @@ export function SheetTabManager({
                           key={t.sheetId}
                           className={`transition-colors ${
                             isSelected
-                              ? "bg-teal-500/15 font-semibold text-teal-300"
+                              ? "bg-primary/10 font-semibold text-foreground"
                               : "hover:bg-muted/30 text-foreground"
                           }`}
                         >
@@ -178,7 +178,7 @@ export function SheetTabManager({
                             <div className="flex items-center gap-2">
                               <Table
                                 size={14}
-                                className={isSelected ? "text-teal-400 shrink-0" : "text-muted-foreground shrink-0"}
+                                className={isSelected ? "text-primary shrink-0" : "text-muted-foreground shrink-0"}
                               />
                               <span className="truncate max-w-[240px] font-medium" title={t.title}>
                                 {t.title}
@@ -190,8 +190,8 @@ export function SheetTabManager({
                           </td>
                           <td className="py-2 px-3">
                             {isConfigured ? (
-                              <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold inline-flex items-center gap-1">
-                                <CheckCircle2 size={11} /> Đã có cấu hình riêng
+                              <span className="px-2 py-0.5 rounded-md bg-muted text-foreground border border-border text-[10px] font-medium inline-flex items-center gap-1">
+                                <CheckCircle2 size={11} className="text-emerald-500" /> Đã có cấu hình riêng
                               </span>
                             ) : (
                               <span className="text-muted-foreground text-[10px] italic">
@@ -201,14 +201,14 @@ export function SheetTabManager({
                           </td>
                           <td className="py-2 px-3 text-right">
                             {isSelected ? (
-                              <span className="px-2.5 py-1 rounded-lg bg-teal-500/20 text-teal-300 text-[11px] font-bold border border-teal-500/40 inline-flex items-center gap-1">
+                              <span className="px-2.5 py-1 rounded-lg bg-primary text-primary-foreground text-[11px] font-medium inline-flex items-center gap-1">
                                 <Sparkles size={11} /> Đang chọn
                               </span>
                             ) : (
                               <button
                                 onClick={() => onSelectTab(t)}
                                 disabled={isAnalyzing}
-                                className="px-2.5 py-1 rounded-lg bg-muted/60 hover:bg-teal-500 hover:text-white text-muted-foreground text-[11px] font-semibold border border-border transition-all cursor-pointer disabled:opacity-50"
+                                className="px-2.5 py-1 rounded-lg bg-muted/60 hover:bg-muted text-foreground text-[11px] font-semibold border border-border transition-all cursor-pointer disabled:opacity-50"
                               >
                                 Khảo sát tab này
                               </button>
@@ -234,7 +234,7 @@ export function SheetTabManager({
                     disabled={isAnalyzing}
                     className={`flex flex-col gap-1 p-2.5 rounded-xl border text-left transition-all cursor-pointer min-w-0 overflow-hidden ${
                       isSelected
-                        ? "bg-teal-500/20 border-teal-500/50 shadow-sm text-teal-300"
+                        ? "bg-primary/10 border-primary shadow-sm text-primary font-semibold"
                         : "bg-background/80 hover:bg-muted/50 border-border text-foreground"
                     }`}
                   >
@@ -244,7 +244,7 @@ export function SheetTabManager({
                       </span>
                       {isConfigured && (
                         <span title="Đã có cấu hình riêng" className="shrink-0 flex items-center">
-                          <CheckCircle2 size={12} className="text-emerald-400" />
+                          <CheckCircle2 size={12} className="text-emerald-500" />
                         </span>
                       )}
                     </div>

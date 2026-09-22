@@ -8,11 +8,13 @@ import {
   Search,
   FileSpreadsheet,
   Settings2,
+  Filter,
 } from "lucide-react";
 import type { CustomerCode } from "@/core/types";
 import { useTranslation } from "@/core/lib/i18n";
 import { listen } from "@tauri-apps/api/event";
 import { SheetCodeExtractorModal } from "./SheetCodeExtractorModal";
+import { CheckFilterStatusModal } from "./CheckFilterStatusModal";
 
 const VALID_EXTENSIONS_SET = new Set([
   "jpg", "jpeg", "png", "gif", "bmp", "tiff", "tif", "webp",
@@ -138,6 +140,7 @@ export function CenterPanel() {
   const phase = useAppStore((s) => s.phase);
   const scanOptions = useAppStore((s) => s.scanOptions);
   const setScanOptions = useAppStore((s) => s.setScanOptions);
+  const pickerMode = useAppStore((s) => s.pickerMode);
   const [isParsingDebounced, setIsParsingDebounced] = useState(false);
   const { t } = useTranslation();
 
@@ -146,6 +149,7 @@ export function CenterPanel() {
   // Sheet Code Extractor Modal state
   const [isSheetModalOpen, setIsSheetModalOpen] = useState(false);
   const [sheetModalInitialTab, setSheetModalInitialTab] = useState<"extract" | "config">("extract");
+  const [isCheckStatusModalOpen, setIsCheckStatusModalOpen] = useState(false);
 
   // Debounced parsing
   const parseInput = useCallback(
@@ -264,6 +268,22 @@ export function CenterPanel() {
               />
               <span>Truy xuất trang tính</span>
             </button>
+
+            {/* Check TT Button: Only shown in multi-folder mode as requested */}
+            {pickerMode === "multi" && (
+              <button
+                type="button"
+                onClick={() => setIsCheckStatusModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/35 hover:border-amber-500/60 transition-all cursor-pointer group shadow-2xs animate-fade-in"
+                title="Kiểm tra đối soát trạng thái Chưa lọc trên Google Sheet để giữ lại khách cần lọc"
+              >
+                <Filter
+                  size={12}
+                  className="text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform"
+                />
+                <span>Check TT</span>
+              </button>
+            )}
 
             <button
               type="button"
@@ -401,6 +421,12 @@ export function CenterPanel() {
         isOpen={isSheetModalOpen}
         onClose={() => setIsSheetModalOpen(false)}
         initialTab={sheetModalInitialTab}
+      />
+
+      {/* Check TT Filter Status Modal */}
+      <CheckFilterStatusModal
+        isOpen={isCheckStatusModalOpen}
+        onClose={() => setIsCheckStatusModalOpen(false)}
       />
     </div>
   );

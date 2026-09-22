@@ -17,7 +17,7 @@ export function PreviewPlanModal({ job, plan, onClose }: Props) {
         {/* Header */}
         <div className="px-5 py-4 border-b border-border flex items-center justify-between bg-muted/20">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-teal-500/15 border border-teal-500/30 flex items-center justify-center text-teal-400">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
               <Eye size={16} />
             </div>
             <div>
@@ -26,7 +26,7 @@ export function PreviewPlanModal({ job, plan, onClose }: Props) {
               </h3>
               <p className="text-[11px] text-muted-foreground">
                 Job: <span className="font-bold text-foreground">{job.jobFolderName}</span>
-                {job.targetTabTitle && <> — Tab: <span className="font-bold text-sky-400">{job.targetTabTitle}</span></>}
+                {job.targetTabTitle && <> — Tab: <span className="font-semibold text-foreground">{job.targetTabTitle}</span></>}
                 {" "}— Hàng mục tiêu: <b>{job.targetSheetRow}</b>
               </p>
             </div>
@@ -66,16 +66,16 @@ export function PreviewPlanModal({ job, plan, onClose }: Props) {
                   </div>
 
                   {w.allowed ? (
-                    <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-400">
-                      <CheckCircle2 size={13} /> Được phép ghi
+                    <span className="flex items-center gap-1 text-[11px] font-medium text-foreground">
+                      <CheckCircle2 size={13} className="text-emerald-500" /> Được phép ghi
                     </span>
                   ) : w.oldValue.trim().toLowerCase() === w.newValue.trim().toLowerCase() && w.oldValue.trim().length > 0 ? (
-                    <span className="flex items-center gap-1 text-[11px] font-semibold text-blue-400">
-                      <CheckCircle2 size={13} /> Đã có sẵn giá trị này (Không cần ghi đè)
+                    <span className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+                      <CheckCircle2 size={13} className="text-primary" /> Đã có sẵn giá trị này (Không cần ghi đè)
                     </span>
                   ) : w.blockedReason === "EXISTING_VALUE_CONFLICT" ? (
-                    <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-400">
-                      <ShieldAlert size={13} /> Bảo tồn ô cũ: Ô đã có nội dung (Chỉ ghi nếu trống)
+                    <span className="flex items-center gap-1 text-[11px] font-medium text-foreground">
+                      <ShieldAlert size={13} className="text-amber-500" /> Bảo tồn ô cũ: Ô đã có nội dung (Chỉ ghi nếu trống)
                     </span>
                   ) : (
                     <span className="flex items-center gap-1 text-[11px] font-semibold text-destructive">
@@ -103,11 +103,11 @@ export function PreviewPlanModal({ job, plan, onClose }: Props) {
                     </span>
                   </div>
 
-                  <div className="p-2 bg-teal-500/10 border border-teal-500/30 rounded-lg flex flex-col gap-0.5">
-                    <span className="text-[10px] text-teal-400 font-semibold uppercase">
+                  <div className="p-2 bg-primary/5 border border-primary/20 rounded-lg flex flex-col gap-0.5">
+                    <span className="text-[10px] text-primary font-semibold uppercase">
                       Giá trị mới sẽ cập nhật:
                     </span>
-                    <span className="font-mono text-[11px] text-teal-300 font-medium break-all whitespace-pre-wrap">
+                    <span className="font-mono text-[11px] text-foreground font-medium break-all whitespace-pre-wrap">
                       {w.newValue ? w.newValue : "(Trống)"}
                     </span>
                   </div>
