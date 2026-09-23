@@ -34,6 +34,8 @@ interface FolderCheckResult {
   isKept: boolean;
   matchedRow?: number;
   actualStatus: string;
+  photoCode1Value?: string;
+  photoCode2Value?: string;
   reason: string;
 }
 
@@ -92,6 +94,23 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
     }
   });
 
+  // Photo Code columns — "OFF" means disabled
+  const [photoCode1Column, setPhotoCode1Column] = useState<string>(() => {
+    try {
+      return localStorage.getItem("mvd_check_photo_code1_column") || "OFF";
+    } catch {
+      return "OFF";
+    }
+  });
+
+  const [photoCode2Column, setPhotoCode2Column] = useState<string>(() => {
+    try {
+      return localStorage.getItem("mvd_check_photo_code2_column") || "OFF";
+    } catch {
+      return "OFF";
+    }
+  });
+
   // Processing & Results State
   const [isChecking, setIsChecking] = useState(false);
   const [checkProgress, setCheckProgress] = useState<string>("");
@@ -146,6 +165,8 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
       try {
         localStorage.setItem("mvd_check_status_column", statusColumn);
         localStorage.setItem("mvd_check_status_value", targetStatusValue.trim());
+        localStorage.setItem("mvd_check_photo_code1_column", photoCode1Column);
+        localStorage.setItem("mvd_check_photo_code2_column", photoCode2Column);
       } catch {}
 
       const isMock = Boolean(
@@ -172,6 +193,8 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
       const effectiveProfile = isMock ? { ...targetProfile, isMockSandbox: true } : targetProfile;
       const targetValNorm = targetStatusValue.trim().toLowerCase();
       const colLetter = statusColumn.toUpperCase().trim();
+      const code1Col = photoCode1Column !== "OFF" ? photoCode1Column.toUpperCase().trim() : null;
+      const code2Col = photoCode2Column !== "OFF" ? photoCode2Column.toUpperCase().trim() : null;
 
       const results: FolderCheckResult[] = [];
 
@@ -191,7 +214,33 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
           const actualVal = (matchedRowRecord?.values[colLetter] || "").trim();
           const actualValNorm = actualVal.toLowerCase();
 
-          const isKept = actualValNorm === targetValNorm;
+          // Photo code column values
+          const code1Val = code1Col ? (matchedRowRecord?.values[code1Col] || "").trim() : null;
+          const code2Val = code2Col ? (matchedRowRecord?.values[code2Col] || "").trim() : null;
+
+          // Logic: status must match AND photo code columns (if enabled) must NOT be empty
+          const statusOk = actualValNorm === targetValNorm;
+          const code1Ok = code1Col === null || code1Val !== "";
+          const code2Ok = code2Col === null || code2Val !== "";
+          const isKept = statusOk && code1Ok && code2Ok;
+
+          // Build reason
+          let reason: string;
+          if (isKept) {
+            reason = `Khớp trạng thái "${actualVal}" (Dòng ${match.matchedRow})`;
+          } else {
+            const reasons: string[] = [];
+            if (!statusOk) {
+              reasons.push(`Trạng thái là "${actualVal || "Trống"}" (Dòng ${match.matchedRow}), khác "${targetStatusValue}"`);
+            }
+            if (!code1Ok) {
+              reasons.push(`Cột ${code1Col} (Mã ảnh chọn 1) trống — không có mã ảnh`);
+            }
+            if (!code2Ok) {
+              reasons.push(`Cột ${code2Col} (Mã ảnh chọn 2) trống — không có mã ảnh`);
+            }
+            reason = reasons.join(" • ");
+          }
 
           results.push({
             folderPath,
@@ -199,9 +248,9 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
             isKept,
             matchedRow: match.matchedRow,
             actualStatus: actualVal || "(Trống)",
-            reason: isKept
-              ? `Khớp trạng thái "${actualVal}" (Dòng ${match.matchedRow})`
-              : `Trạng thái là "${actualVal || "Trống"}" (Dòng ${match.matchedRow}), khác "${targetStatusValue}"`,
+            photoCode1Value: code1Val ?? undefined,
+            photoCode2Value: code2Val ?? undefined,
+            reason,
           });
         } else {
           // No match on sheet
@@ -409,6 +458,81 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
             </div>
           </div>
 
+          {/* Config Box: Photo Code Columns */}
+          <div className="p-3.5 rounded-xl bg-card border border-border shadow-xs space-y-3">
+            <div className="flex items-center justify-between text-xs font-semibold text-foreground">
+              <span className="flex items-center gap-1.5">
+                <FileSpreadsheet size={13} className="text-amber-500" />
+                Kiểm tra cột mã ảnh chọn (Tùy chọn)
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                Nếu ô trống → tự động đá ra
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Photo Code 1 Column */}
+              <div>
+                <label className="block text-[11px] text-muted-foreground font-medium mb-1">
+                  Cột mã ảnh chọn 1
+                </label>
+                <div className="relative">
+                  <select
+                    value={photoCode1Column}
+                    onChange={(e) => setPhotoCode1Column(e.target.value)}
+                    className={`w-full appearance-none px-3 py-1.5 text-xs font-semibold rounded-lg bg-background border text-foreground focus:outline-none focus:border-primary cursor-pointer pr-8 ${
+                      photoCode1Column !== "OFF" ? "border-amber-500/40" : "border-border"
+                    }`}
+                  >
+                    <option value="OFF">TẮT — Không kiểm tra</option>
+                    {STANDARD_LETTERS.map((col) => (
+                      <option key={col} value={col}>
+                        Cột {col}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    size={14}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+                  />
+                </div>
+              </div>
+
+              {/* Photo Code 2 Column */}
+              <div>
+                <label className="block text-[11px] text-muted-foreground font-medium mb-1">
+                  Cột mã ảnh chọn 2
+                </label>
+                <div className="relative">
+                  <select
+                    value={photoCode2Column}
+                    onChange={(e) => setPhotoCode2Column(e.target.value)}
+                    className={`w-full appearance-none px-3 py-1.5 text-xs font-semibold rounded-lg bg-background border text-foreground focus:outline-none focus:border-primary cursor-pointer pr-8 ${
+                      photoCode2Column !== "OFF" ? "border-amber-500/40" : "border-border"
+                    }`}
+                  >
+                    <option value="OFF">TẮT — Không kiểm tra</option>
+                    {STANDARD_LETTERS.map((col) => (
+                      <option key={col} value={col}>
+                        Cột {col}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    size={14}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {(photoCode1Column !== "OFF" || photoCode2Column !== "OFF") && (
+              <div className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2.5 py-1.5 leading-relaxed">
+                <strong>Logic:</strong> Nếu ô mã ảnh chọn{photoCode1Column !== "OFF" && ` (Cột ${photoCode1Column})`}{photoCode2Column !== "OFF" && ` (Cột ${photoCode2Column})`} bị <strong>trống</strong>, khách đó sẽ bị <strong>tự động đá ra</strong> kể cả khi trạng thái là "{targetStatusValue}".
+              </div>
+            )}
+          </div>
+
           {/* Error Banner */}
           {errorMessage && (
             <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs flex items-start gap-2 animate-fade-in">
@@ -491,7 +615,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                 <Info size={15} className="shrink-0 mt-0.5" />
                 <div className="leading-relaxed">
                   Bấm nút <strong>"Kiểm tra & Lọc danh sách"</strong> bên dưới. Hệ thống sẽ kết nối với Google Sheet:
-                  những khách có trạng thái là <strong>"{targetStatusValue}"</strong> trên Cột <strong>{statusColumn}</strong> sẽ được <strong>GIỮ LẠI</strong>, các khách đã lọc hoặc không khớp sẽ được <strong>TỰ ĐỘNG ĐÁ RA</strong> khỏi danh sách.
+                  những khách có trạng thái là <strong>"{targetStatusValue}"</strong> trên Cột <strong>{statusColumn}</strong>{photoCode1Column !== "OFF" && <> và cột mã ảnh chọn 1 (<strong>{photoCode1Column}</strong>) có dữ liệu</>}{photoCode2Column !== "OFF" && <> và cột mã ảnh chọn 2 (<strong>{photoCode2Column}</strong>) có dữ liệu</>} sẽ được <strong>GIỮ LẠI</strong>, các khách đã lọc, không khớp hoặc thiếu mã ảnh sẽ được <strong>TỰ ĐỘNG ĐÁ RA</strong> khỏi danh sách.
                 </div>
               </div>
             </div>
@@ -592,7 +716,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0 text-[10px]">
+                      <div className="flex items-center gap-2 shrink-0 text-[10px] flex-wrap justify-end">
                         <span
                           className={`px-1.5 py-0.5 rounded font-mono font-bold ${
                             item.isKept
@@ -602,6 +726,30 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                         >
                           {item.actualStatus}
                         </span>
+                        {item.photoCode1Value !== undefined && (
+                          <span
+                            className={`px-1.5 py-0.5 rounded font-mono ${
+                              item.photoCode1Value
+                                ? "bg-blue-500/10 text-blue-700 dark:text-blue-300"
+                                : "bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold"
+                            }`}
+                            title={`Cột ${photoCode1Column}: ${item.photoCode1Value || "(Trống)"}`}
+                          >
+                            {item.photoCode1Value || "Mã1: ∅"}
+                          </span>
+                        )}
+                        {item.photoCode2Value !== undefined && (
+                          <span
+                            className={`px-1.5 py-0.5 rounded font-mono ${
+                              item.photoCode2Value
+                                ? "bg-blue-500/10 text-blue-700 dark:text-blue-300"
+                                : "bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold"
+                            }`}
+                            title={`Cột ${photoCode2Column}: ${item.photoCode2Value || "(Trống)"}`}
+                          >
+                            {item.photoCode2Value || "Mã2: ∅"}
+                          </span>
+                        )}
                         {item.matchedRow && (
                           <span className="text-muted-foreground">Dòng {item.matchedRow}</span>
                         )}
@@ -623,7 +771,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                 Đã cập nhật hàng đợi còn {keptCount} khách
               </span>
             ) : (
-              <span>Cột {statusColumn} • Trạng thái giữ: "{targetStatusValue}"</span>
+              <span>Cột {statusColumn} • Trạng thái giữ: "{targetStatusValue}"{photoCode1Column !== "OFF" && ` • Mã1: ${photoCode1Column}`}{photoCode2Column !== "OFF" && ` • Mã2: ${photoCode2Column}`}</span>
             )}
           </div>
 
