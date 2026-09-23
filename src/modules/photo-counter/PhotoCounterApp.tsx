@@ -1,4 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
+import { useAuthStore } from "@/core/stores/useAuthStore";
+import { useAppStore } from "@/core/stores/useAppStore";
+import { LicenseManager } from "@/core/license/LicenseManager";
 import { open } from "@tauri-apps/plugin-dialog";
 import { listen } from "@tauri-apps/api/event";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
@@ -24,6 +27,7 @@ import {
   Crown,
   Sparkles,
   ArrowUpRight,
+  ArrowLeft,
   Info,
   Settings2,
   Filter,
@@ -40,6 +44,12 @@ import type { PhotoType } from "./types";
 import { SalaryAiPredictionAssistant } from "./components/SalaryAiPredictionAssistant";
 
 export default function PhotoCounterApp() {
+  const session = useAuthStore((s) => s.session);
+  const setActiveModule = useAppStore((s) => s.setActiveModule);
+  const [showLicenseModal, setShowLicenseModal] = useState(false);
+
+  const isPremium = session?.subscription?.isPremium === true;
+
   const {
     monthPath,
     monthName,
@@ -333,6 +343,67 @@ export default function PhotoCounterApp() {
     link.click();
     document.body.removeChild(link);
   };
+
+  // VIP Premium Gatekeeper Screen
+  if (!isPremium) {
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center bg-card/90 backdrop-blur-md rounded-xl border border-border p-8 text-center relative overflow-hidden animate-fade-in select-none text-foreground">
+        
+        {/* Back Button */}
+        <button
+          onClick={() => setActiveModule("launcher")}
+          className="absolute top-4 left-4 w-7 h-7 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer border border-border"
+          title="Quay lại Launcher"
+        >
+          <ArrowLeft size={14} />
+        </button>
+
+        {/* VIP Crown Box */}
+        <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 mb-3">
+          <Crown size={22} />
+        </div>
+
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] font-semibold mb-2.5">
+          <Sparkles size={11} />
+          <span>ĐẶC QUYỀN VIP STUDIO OPS</span>
+        </div>
+
+        <h2 className="text-base font-semibold text-foreground mb-1.5 tracking-tight">
+          Thống Kê & Tính Lương Dành Riêng Cho Tài Khoản VIP Premium
+        </h2>
+
+        <p className="text-xs text-muted-foreground max-w-md mb-5 leading-relaxed">
+          Tính năng thống kê sản lượng ảnh, đối soát KPI và tính toán lương studio chỉ mở khóa cho tài khoản được cấp quyền <strong>VIP Premium</strong>.
+        </p>
+
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setActiveModule("launcher")}
+            className="h-9 px-3.5 rounded-lg bg-muted hover:bg-muted/80 text-xs font-medium text-foreground border border-border transition-colors cursor-pointer"
+          >
+            Quay lại Launcher
+          </button>
+
+          <button
+            onClick={() => setShowLicenseModal(true)}
+            className="h-9 px-4 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
+          >
+            <Crown size={13} />
+            <span>Đổi quyền lợi / Đăng ký Premium</span>
+          </button>
+        </div>
+
+        {showLicenseModal && (
+          <LicenseManager
+            onClose={() => setShowLicenseModal(false)}
+            initialMode="request"
+            initialIsPremium={true}
+            variant="modal"
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-background text-foreground min-w-0">
