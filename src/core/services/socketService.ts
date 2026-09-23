@@ -116,7 +116,7 @@ class SocketService {
           localStorage.setItem("session_duration_minutes", String(data.sessionDurationMinutes));
         } catch {}
         const currentSession = useAuthStore.getState().session;
-        if (currentSession && !currentSession.subscription?.isPremium && currentSession.subscription?.status !== "LIFETIME") {
+        if (currentSession && !currentSession.subscription?.isPremium) {
           useAuthStore.getState().setSession({
             ...currentSession,
             sessionDurationMinutes: data.sessionDurationMinutes,

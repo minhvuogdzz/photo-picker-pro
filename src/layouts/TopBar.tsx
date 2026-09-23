@@ -161,7 +161,7 @@ export function TopBar() {
         <SubscriptionBadge />
 
         {/* Session Countdown (only for non-premium accounts) */}
-        {session && !(isUnlimited || session.subscription?.isPremium || session.subscription?.status === "LIFETIME") && (
+        {session && !(isUnlimited || session.subscription?.isPremium) && (
           <div
             className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-mono border transition-all select-none ${
               isExpiringSoon

@@ -29,7 +29,7 @@ export function SessionExpiredDialog({
   const { t } = useTranslation();
   const [countdown, setCountdown] = useState(3);
 
-  const isPremium = session?.subscription?.isPremium === true || session?.subscription?.status === "LIFETIME";
+  const isPremium = session?.subscription?.isPremium === true;
 
   useEffect(() => {
     if (reason === "timeout" && isPremium) {

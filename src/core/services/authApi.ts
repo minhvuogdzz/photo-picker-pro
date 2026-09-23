@@ -88,14 +88,14 @@ function fromLocalSession(local: LocalSession): AuthSession {
     subscription: {
       status: local.subscription_status as AuthSession["subscription"]["status"],
       plan: local.subscription_plan as AuthSession["subscription"]["plan"],
-      isPremium: local.is_premium !== undefined ? local.is_premium : isLifetime,
+      isPremium: local.is_premium ?? false,
       expiresAt: local.expires_at,
       daysRemaining,
     },
     deviceId: local.device_id,
     lastSyncAt: local.last_sync_at,
     sessionDurationMinutes: (() => {
-      const isPrem = local.is_premium !== undefined ? local.is_premium : isLifetime;
+      const isPrem = local.is_premium === true;
       if (isPrem) return 0;
       try {
         const s = localStorage.getItem("session_duration_minutes");
@@ -302,8 +302,7 @@ export async function validateSubscription(
     accessToken: session.accessToken,
   });
 
-  const isUpdatedPrem = (partialSession.subscription?.isPremium ?? session.subscription.isPremium) || 
-    (partialSession.subscription?.status === "LIFETIME" || session.subscription.status === "LIFETIME");
+  const isUpdatedPrem = (partialSession.subscription?.isPremium ?? session.subscription?.isPremium) === true;
 
   const updatedSession: AuthSession = {
     ...session,

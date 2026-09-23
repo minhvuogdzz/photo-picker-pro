@@ -83,7 +83,7 @@ export function useSessionTimeoutListener() {
   const sessionTokenRef = useRef(session?.accessToken);
   sessionTokenRef.current = session?.accessToken;
 
-  const isPremium = session?.subscription?.isPremium === true || session?.subscription?.status === "LIFETIME";
+  const isPremium = session?.subscription?.isPremium === true;
 
   useEffect(() => {
     if (!session) {

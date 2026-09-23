@@ -14,7 +14,7 @@ export function SessionExpiringWarningModal() {
   const authLogout = useAuthStore((s) => s.logout);
   const setSessionTimeoutExpired = useAuthStore((s) => s.setSessionTimeoutExpired);
 
-  const isPremium = session?.subscription?.isPremium === true || session?.subscription?.status === "LIFETIME";
+  const isPremium = session?.subscription?.isPremium === true;
 
   if (isPremium || !isWarning30s || hasDismissed30sWarning || !session) {
     return null;
