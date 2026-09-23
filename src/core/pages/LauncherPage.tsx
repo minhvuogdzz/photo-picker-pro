@@ -300,11 +300,11 @@ export function LauncherPage() {
                 {/* Card Footer */}
                 <div className="pt-2.5 border-t border-border/80 flex items-center justify-between relative z-10 text-xs">
                   <span className="text-[11px] text-muted-foreground font-medium">
-                    Tự động hóa Studio
+                    {mod.isPremium && !isPremium ? "Đặc quyền VIP Studio" : "Tự động hóa Studio"}
                   </span>
                   
                   <div className={`flex items-center gap-1 ${accent.primary} text-xs font-semibold group-hover:translate-x-0.5 transition-transform`}>
-                    <span>Mở công cụ</span>
+                    <span>{mod.isPremium && !isPremium ? "Chi tiết VIP" : "Mở công cụ"}</span>
                     <ArrowRight size={13} />
                   </div>
                 </div>

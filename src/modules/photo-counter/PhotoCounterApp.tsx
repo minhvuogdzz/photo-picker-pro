@@ -42,12 +42,17 @@ import {
 } from "./usePhotoCounterStore";
 import type { PhotoType } from "./types";
 import { SalaryAiPredictionAssistant } from "./components/SalaryAiPredictionAssistant";
+import { ExportSpreadsheetModal } from "./components/ExportSpreadsheetModal";
 
 export default function PhotoCounterApp() {
   const session = useAuthStore((s) => s.session);
   const setActiveModule = useAppStore((s) => s.setActiveModule);
   const [showLicenseModal, setShowLicenseModal] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [refreshToast, setRefreshToast] = useState<string | null>(null);
 
+  // Dedicated VIP Premium Permission Check:
+  // Strictly restricted to accounts granted VIP Premium (`session?.subscription?.isPremium === true`).
   const isPremium = session?.subscription?.isPremium === true;
 
   const {
@@ -277,71 +282,26 @@ export default function PhotoCounterApp() {
     }
   };
 
-  // Export report to UTF-8 CSV with BOM for Microsoft Excel
-  const handleExportCSV = () => {
-    let csv = "\uFEFF"; // UTF-8 BOM
-    csv += "BẢNG TỔNG HỢP LƯƠNG VÀ SẢN LƯỢNG STUDIO (THỐNG KÊ)\n";
-    csv += `Tháng/Thư mục;${monthName || "Tháng"}\n`;
-    csv += `Đường dẫn;${monthPath || ""}\n\n`;
+  // Data payload for ExportSpreadsheetModal
+  const exportData = useMemo(() => ({
+    monthName,
+    monthPath,
+    salaryConfig,
+    calc,
+    scanResult,
+    excludedFolderPaths,
+    folderTypeMap,
+  }), [monthName, monthPath, salaryConfig, calc, scanResult, excludedFolderPaths, folderTypeMap]);
 
-    csv += "THÔNG SỐ ĐẦU VÀO & CHỈ SỐ KPI\n";
-    csv += `Số ngày trong tháng;${salaryConfig.daysInMonth}\n`;
-    csv += `Số ngày nghỉ;${salaryConfig.daysOff}\n`;
-    csv += `Ngày công thực tế (A);${calc.actualWorkingDays}\n`;
-    csv += `KPI 1 ngày;${salaryConfig.dailyKpi}\n`;
-    csv += `KPI tháng;${calc.monthKpi}\n`;
-    csv += `Tổng file thực tế (T);${calc.actualPhotos}\n`;
-    csv += `Số file vượt KPI;${calc.excessPhotos}\n`;
-    csv += `Số bộ VIP;${salaryConfig.vipSets}\n\n`;
-
-    csv += "BẢNG KÊ CHI TIẾT CÁC KHOẢN LƯƠNG (VNĐ)\n";
-    csv += `Lương cứng;${calc.baseSalary}\n`;
-    csv += `Lương vượt KPI;${calc.excessSalary}\n`;
-    csv += `Thưởng hiệu suất;${calc.efficiencyBonus}\n`;
-    csv += `Thưởng bộ VIP;${calc.vipBonus}\n`;
-    csv += `Trợ cấp;${calc.allowance}\n`;
-    csv += `Phụ thu khác;${calc.deduction}\n`;
-    csv += `TỔNG LƯƠNG THỰC LĨNH;${calc.totalSalary}\n\n`;
-
-    if (scanResult && scanResult.days) {
-      csv += "BẢNG TỔNG HỢP SẢN LƯỢNG THEO NGÀY\n";
-      csv += "Ngày;Số lượng Job/Khách;Ảnh Loại 1;Ảnh Loại 2;Tổng file quy đổi;Tổng file gốc\n";
-
-      scanResult.days.forEach((day) => {
-        const stats = getDayStats(
-          day,
-          excludedFolderPaths,
-          folderTypeMap,
-          salaryConfig.type1Weight,
-          salaryConfig.type2Weight
-        );
-        csv += `"${day.day_name}";${day.job_count};${stats.type1Photos};${stats.type2Photos};${stats.convertedCount};${stats.rawCount}\n`;
-      });
-
-      csv += "\nCHI TIẾT TỪNG THƯ MỤC SÂU NHẤT (LEAF FOLDERS)\n";
-      csv += "Ngày;Khách/Job;Đường dẫn thư mục;Phân loại;Số ảnh;Trạng thái\n";
-
-      scanResult.days.forEach((day) => {
-        day.deepest_folders.forEach((folder) => {
-          const isExcluded = !!excludedFolderPaths[folder.folder_path];
-          const type = folderTypeMap[folder.folder_path] || "type1";
-          const typeLabel = type === "type2" ? "Loại 2" : "Loại 1";
-          csv += `"${day.day_name}";"${folder.job_name}";"${folder.relative_path}";"${typeLabel}";${folder.photo_count};"${isExcluded ? "Đã loại trừ" : "Hợp lệ"}"\n`;
-        });
-      });
+  // Handle Làm mới dữ liệu button: rescans loaded directory from disk
+  const handleRefreshData = async () => {
+    if (!monthPath) {
+      handleSelectFolder();
+      return;
     }
-
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute(
-      "download",
-      `Bang_Luong_Thong_Ke_${(monthName || "Thang").replace(/\s+/g, "_")}.csv`
-    );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    await rescan();
+    setRefreshToast("Đã làm mới và cập nhật dữ liệu từ ổ đĩa thành công!");
+    setTimeout(() => setRefreshToast(null), 3000);
   };
 
   // VIP Premium Gatekeeper Screen
@@ -429,33 +389,33 @@ export default function PhotoCounterApp() {
 
         {/* Action buttons */}
         <div className="flex items-center gap-2">
-          {monthPath && (
-            <button
-              onClick={rescan}
-              disabled={isScanning}
-              className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium rounded-lg bg-muted hover:bg-accent border border-border text-foreground transition-colors cursor-pointer disabled:opacity-50"
-              title="Quét lại thư mục này"
-            >
-              <RefreshCw size={12} className={isScanning ? "animate-spin" : ""} />
-              <span>Quét lại</span>
-            </button>
-          )}
-
           <button
-            onClick={handleCopyReport}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition-colors cursor-pointer"
+            onClick={handleRefreshData}
+            disabled={isScanning}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium rounded-lg bg-card hover:bg-muted border border-border text-foreground transition-colors cursor-pointer disabled:opacity-50"
+            title="Quét lại toàn bộ các thư mục và ngày đã nạp từ đĩa"
           >
-            {copiedSuccess ? <Check size={12} /> : <Copy size={12} />}
-            <span>{copiedSuccess ? "Đã sao chép!" : "Sao chép báo cáo Zalo"}</span>
+            <RefreshCw size={12} className={isScanning ? "animate-spin text-emerald-500" : "text-emerald-500"} />
+            <span>Làm mới dữ liệu</span>
           </button>
 
           <button
-            onClick={handleExportCSV}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium rounded-lg bg-card hover:bg-muted border border-border text-foreground transition-colors cursor-pointer"
-            title="Xuất file CSV mở trên Excel"
+            onClick={() => setIsExportModalOpen(true)}
+            disabled={!scanResult}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Xuất bảng tính đầy đủ công thức, ngày công và chi tiết sản lượng"
           >
-            <FileSpreadsheet size={12} className="text-emerald-500" />
-            <span>Xuất Excel</span>
+            <FileSpreadsheet size={13} />
+            <span>Xuất sang trang tính</span>
+          </button>
+
+          <button
+            onClick={handleCopyReport}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium rounded-lg bg-card hover:bg-muted border border-border text-foreground transition-colors cursor-pointer"
+            title="Sao chép báo cáo Zalo nhanh"
+          >
+            {copiedSuccess ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+            <span>{copiedSuccess ? "Đã sao chép!" : "Báo cáo Zalo"}</span>
           </button>
         </div>
       </div>
@@ -517,17 +477,33 @@ export default function PhotoCounterApp() {
 
             <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
               {monthPath && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    revealItemInDir(monthPath);
-                  }}
-                  className="px-2.5 py-1 text-[11px] font-medium rounded-md bg-muted hover:bg-accent border border-border text-foreground transition-colors flex items-center gap-1"
-                >
-                  <ExternalLink size={11} />
-                  <span>Finder</span>
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRefreshData();
+                    }}
+                    disabled={isScanning}
+                    className="px-2.5 py-1 text-[11px] font-medium rounded-md bg-muted hover:bg-accent border border-border text-foreground transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                    title="Quét lại thư mục này từ đĩa"
+                  >
+                    <RefreshCw size={11} className={isScanning ? "animate-spin text-emerald-500" : "text-emerald-500"} />
+                    <span>Làm mới</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      revealItemInDir(monthPath);
+                    }}
+                    className="px-2.5 py-1 text-[11px] font-medium rounded-md bg-muted hover:bg-accent border border-border text-foreground transition-colors flex items-center gap-1"
+                  >
+                    <ExternalLink size={11} />
+                    <span>Finder</span>
+                  </button>
+                </>
               )}
               <button
                 type="button"
@@ -538,6 +514,23 @@ export default function PhotoCounterApp() {
               </button>
             </div>
           </div>
+
+          {/* REFRESH NOTIFICATION TOAST */}
+          {refreshToast && (
+            <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between gap-2.5 text-emerald-700 dark:text-emerald-300 text-xs animate-fade-in shadow-2xs">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 size={15} className="shrink-0 text-emerald-500" />
+                <span className="font-medium">{refreshToast}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRefreshToast(null)}
+                className="text-muted-foreground hover:text-foreground text-xs px-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          )}
 
           {/* 3. SCIENTIFIC 2-COLUMN FINANCIAL DASHBOARD */}
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-3.5 items-start min-w-0">
@@ -942,89 +935,196 @@ export default function PhotoCounterApp() {
               </div>
             </div>
 
-            {/* RIGHT COLUMN: FINANCIAL STATEMENT / PAYSLIP (5 COLS) */}
+            {/* RIGHT COLUMN: FINANCIAL STATEMENT & METRICS (5 COLS) */}
             <div className="xl:col-span-5 space-y-3.5 min-w-0">
-              {/* MAIN PAYSLIP CARD */}
-              <div className="rounded-xl border border-emerald-500/30 bg-gradient-to-b from-card via-card to-emerald-500/5 p-4 shadow-sm space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-border/80">
-                  <div>
-                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-                      BẢNG ĐỐI SOÁT LƯƠNG
-                    </span>
-                    <h2 className="text-xs text-muted-foreground mt-0.5">
-                      {monthName || "Tháng này"}
-                    </h2>
+              {/* 1. HERO SALARY CARD */}
+              <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-card via-card to-emerald-500/10 p-4 sm:p-5 shadow-sm space-y-4 relative overflow-hidden">
+                {/* Decorative background glow */}
+                <div className="absolute -top-12 -right-12 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+
+                <div className="flex items-center justify-between relative z-10">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                      <Coins size={16} />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                        TỔNG THU NHẬP THỰC LĨNH
+                      </span>
+                      <span className="text-xs font-semibold text-foreground">
+                        {monthName || "Tháng này"}
+                      </span>
+                    </div>
                   </div>
+
                   <div className="flex items-center gap-1.5">
                     {calc.isKpiAchieved ? (
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                        <Check size={10} />
-                        Đạt KPI tháng
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40 flex items-center gap-1 shadow-2xs">
+                        <Sparkles size={11} className="text-emerald-500" />
+                        ĐẠT KPI
                       </span>
                     ) : (
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 flex items-center gap-1">
-                        <AlertCircle size={10} />
-                        Chưa đạt KPI
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/40 flex items-center gap-1 shadow-2xs">
+                        <AlertCircle size={11} className="text-amber-500" />
+                        CHƯA ĐẠT KPI
                       </span>
                     )}
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-muted border border-border font-bold">
-                      {calc.actualWorkingDays} CÔNG
-                    </span>
                   </div>
                 </div>
 
-                {/* GRAND TOTAL SALARY */}
-                <div className="p-3.5 rounded-xl bg-card border border-border/90 shadow-2xs space-y-1 text-center">
-                  <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide">
-                    TỔNG LƯƠNG THỰC LĨNH
-                  </span>
-                  <div className="text-2xl md:text-3xl font-extrabold tracking-tight text-emerald-600 dark:text-emerald-400">
+                {/* Big Net Salary Display */}
+                <div className="relative z-10 py-1">
+                  <div className="text-3xl sm:text-4xl font-black tracking-tight text-emerald-600 dark:text-emerald-400">
                     {formatMoney(calc.totalSalary)}
                   </div>
-                  <span className="text-[10px] text-muted-foreground block">
-                    Đã cộng thưởng và trừ phụ thu
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Đã bao gồm lương cơ bản/sản lượng, các khoản thưởng vượt và trừ khấu trừ
+                  </p>
+                </div>
+
+                {/* KPI Visual Progress Bar */}
+                <div className="relative z-10 space-y-1.5 pt-2 border-t border-border/60">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground font-medium text-[11px]">
+                      Tiến độ hoàn thành KPI
+                    </span>
+                    <span className="font-mono font-bold text-foreground text-[11px]">
+                      {formatNum(calc.actualPhotos)} / {formatNum(calc.monthKpi)} ảnh ({Math.min(999, Math.round((calc.actualPhotos / (calc.monthKpi || 1)) * 100))}%)
+                    </span>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted/80 overflow-hidden border border-border/40 p-[1px]">
+                    <div
+                      className={`h-full rounded-full transition-all duration-700 ${
+                        calc.isKpiAchieved
+                          ? "bg-gradient-to-r from-emerald-500 to-teal-400"
+                          : "bg-gradient-to-r from-amber-500 to-amber-400"
+                      }`}
+                      style={{
+                        width: `${Math.min(100, Math.max(2, Math.round((calc.actualPhotos / (calc.monthKpi || 1)) * 100)))}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. KPI 4-GRID QUICK METRICS */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="p-2.5 rounded-xl bg-card border border-border shadow-2xs space-y-1">
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <TrendingUp size={12} className="text-primary" />
+                    <span className="text-[10px] font-semibold">Mục tiêu KPI</span>
+                  </div>
+                  <div className="text-sm font-bold font-mono text-foreground">
+                    {formatNum(calc.monthKpi)}
+                  </div>
+                  <span className="text-[9px] text-muted-foreground block">
+                    Định mức tháng
                   </span>
                 </div>
 
-                {/* BREAKDOWN ITEMS */}
-                <div className="space-y-2 text-xs divide-y divide-border/60">
-                  {/* Lương cứng / Lương sản lượng */}
-                  <div className="flex items-center justify-between pt-2">
-                    <div className="pr-2 min-w-0">
-                      <span className="text-muted-foreground font-medium block">
+                <div className="p-2.5 rounded-xl bg-card border border-border shadow-2xs space-y-1">
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <Layers size={12} className="text-emerald-500" />
+                    <span className="text-[10px] font-semibold">Thực tế làm</span>
+                  </div>
+                  <div className="text-sm font-bold font-mono text-emerald-600 dark:text-emerald-400">
+                    {formatNum(calc.actualPhotos)}
+                  </div>
+                  <span className="text-[9px] text-muted-foreground block">
+                    Ảnh quy đổi
+                  </span>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-card border border-border shadow-2xs space-y-1">
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <ArrowUpRight size={12} className={calc.excessPhotos > 0 ? "text-emerald-500" : "text-amber-500"} />
+                    <span className="text-[10px] font-semibold">Chênh lệch</span>
+                  </div>
+                  <div
+                    className={`text-sm font-bold font-mono truncate ${
+                      calc.excessPhotos > 0
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : calc.isKpiAchieved
+                        ? "text-foreground"
+                        : "text-amber-600 dark:text-amber-400"
+                    }`}
+                  >
+                    {calc.excessPhotos > 0
+                      ? `+${formatNum(calc.excessPhotos)}`
+                      : calc.isKpiAchieved
+                      ? "Đạt chuẩn"
+                      : `-${formatNum(calc.monthKpi - calc.actualPhotos)}`}
+                  </div>
+                  <span className="text-[9px] text-muted-foreground block">
+                    {calc.excessPhotos > 0 ? "Vượt định mức" : calc.isKpiAchieved ? "Chuẩn KPI" : "Cần bổ sung"}
+                  </span>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-card border border-border shadow-2xs space-y-1">
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <CalendarDays size={12} className="text-sky-500" />
+                    <span className="text-[10px] font-semibold">Ngày công</span>
+                  </div>
+                  <div className="text-sm font-bold font-mono text-foreground">
+                    {calc.actualWorkingDays} <span className="text-xs font-normal text-muted-foreground">/ {salaryConfig.daysInMonth} ngày</span>
+                  </div>
+                  <span className="text-[9px] text-muted-foreground block">
+                    Công thực tế
+                  </span>
+                </div>
+              </div>
+
+              {/* 3. ITEM-BY-ITEM INCOME BREAKDOWN */}
+              <div className="rounded-xl border border-border bg-card p-4 shadow-2xs space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-border/80">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-foreground">
+                      Bảng kê chi tiết các khoản thu nhập
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground">
+                    Căn cứ tính toán
+                  </span>
+                </div>
+
+                <div className="space-y-2.5 text-xs divide-y divide-border/50">
+                  {/* 1. Lương cơ bản / sản lượng */}
+                  <div className="flex items-start justify-between pt-2">
+                    <div className="pr-3 min-w-0">
+                      <span className="font-semibold text-foreground block">
                         {calc.isKpiAchieved
-                          ? "1. Lương cơ bản (Hưởng trọn lương cứng)"
+                          ? "1. Lương cơ bản theo ngày công"
                           : "1. Lương sản lượng (Chưa đạt KPI)"}
                       </span>
-                      {!calc.isKpiAchieved ? (
-                        <span className="text-[10px] text-amber-700 dark:text-amber-400 block font-medium mt-0.5">
-                          ({formatNum(calc.actualPhotos)} file x {formatMoney(salaryConfig.unitPriceKpi)}) • Thiếu {formatNum(calc.monthKpi - calc.actualPhotos)} file để nhận lương cứng {formatMoney(calc.baseSalary)}
+                      {calc.isKpiAchieved ? (
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block mt-0.5">
+                          Đạt KPI • Hưởng trọn lương cứng {formatMoney(salaryConfig.baseSalary)} ({calc.actualWorkingDays} công thực tế)
                         </span>
                       ) : (
-                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block mt-0.5">
-                          (Đã hoàn thành định mức KPI {formatNum(calc.monthKpi)} file)
+                        <span className="text-[10px] text-amber-700 dark:text-amber-400 block font-medium mt-0.5">
+                          {formatNum(calc.actualPhotos)} file x {formatMoney(salaryConfig.unitPriceKpi)} • Cần thêm {formatNum(calc.monthKpi - calc.actualPhotos)} file để nhận lương cứng {formatMoney(calc.baseSalary)}
                         </span>
                       )}
                     </div>
-                    <span className="font-mono font-semibold text-foreground shrink-0">
+                    <span className="font-mono font-bold text-foreground shrink-0 mt-0.5">
                       {formatMoney(calc.appliedBaseSalary)}
                     </span>
                   </div>
 
-                  {/* Lương vượt KPI */}
-                  <div className="flex items-center justify-between pt-2">
-                    <div>
-                      <span className="text-muted-foreground font-medium block">2. Lương vượt KPI</span>
-                      <span className="text-[10px] text-muted-foreground/70 block mt-0.5">
+                  {/* 2. Lương vượt KPI */}
+                  <div className="flex items-start justify-between pt-2.5">
+                    <div className="pr-3 min-w-0">
+                      <span className="font-semibold text-foreground block">2. Thưởng vượt định mức KPI</span>
+                      <span className="text-[10px] text-muted-foreground block mt-0.5">
                         {calc.isKpiAchieved
-                          ? (calc.excessPhotos > 0
-                              ? `(${formatNum(calc.excessPhotos)} file vượt x ${formatMoney(salaryConfig.unitPriceKpi)})`
-                              : "(Chạm KPI chuẩn - chưa có file vượt)")
-                          : "(Chưa đạt KPI - Không có lương vượt)"}
+                          ? calc.excessPhotos > 0
+                            ? `${formatNum(calc.excessPhotos)} file vượt x ${formatMoney(salaryConfig.unitPriceKpi)}`
+                            : "Đạt chuẩn KPI (chưa có file vượt)"
+                          : "Chưa đạt KPI (không áp dụng thưởng vượt)"}
                       </span>
                     </div>
                     <span
-                      className={`font-mono font-semibold ${
+                      className={`font-mono font-bold shrink-0 mt-0.5 ${
                         calc.excessSalary > 0
                           ? "text-emerald-600 dark:text-emerald-400"
                           : "text-muted-foreground"
@@ -1034,75 +1134,84 @@ export default function PhotoCounterApp() {
                     </span>
                   </div>
 
-                  {/* Thưởng hiệu suất */}
-                  <div className="flex items-center justify-between pt-2">
-                    <div>
-                      <span className="text-muted-foreground">3. Thưởng hiệu suất</span>
-                      <span className="text-[10px] text-muted-foreground/70 block">
-                        (Mỗi 1.000 file +500.000đ)
+                  {/* 3. Thưởng hiệu suất */}
+                  <div className="flex items-start justify-between pt-2.5">
+                    <div className="pr-3 min-w-0">
+                      <span className="font-semibold text-foreground block">3. Thưởng hiệu suất</span>
+                      <span className="text-[10px] text-muted-foreground block mt-0.5">
+                        Cứ mỗi 1.000 file thưởng 500.000đ ({calc.efficiencyBonus > 0 ? `Đạt ${formatNum(Math.floor(calc.actualPhotos / 1000) * 1000)} file` : "Chưa đủ mốc 1.000 file"})
                       </span>
                     </div>
                     <span
-                      className={`font-mono font-semibold ${
+                      className={`font-mono font-bold shrink-0 mt-0.5 ${
                         calc.efficiencyBonus > 0
                           ? "text-emerald-600 dark:text-emerald-400"
                           : "text-muted-foreground"
                       }`}
                     >
-                      +{formatMoney(calc.efficiencyBonus)}
+                      {calc.efficiencyBonus > 0 ? `+${formatMoney(calc.efficiencyBonus)}` : "0 đ"}
                     </span>
                   </div>
 
-                  {/* Thưởng VIP */}
-                  <div className="flex items-center justify-between pt-2">
-                    <div>
-                      <span className="text-muted-foreground">4. Lương thưởng VIP</span>
-                      <span className="text-[10px] text-muted-foreground/70 block">
-                        ({salaryConfig.vipSets} bộ x {formatMoney(salaryConfig.vipPrice)})
+                  {/* 4. Thưởng VIP */}
+                  <div className="flex items-start justify-between pt-2.5">
+                    <div className="pr-3 min-w-0">
+                      <span className="font-semibold text-foreground block">4. Thưởng bộ sản phẩm VIP</span>
+                      <span className="text-[10px] text-muted-foreground block mt-0.5">
+                        {salaryConfig.vipSets} bộ x {formatMoney(salaryConfig.vipPrice)}
                       </span>
                     </div>
                     <span
-                      className={`font-mono font-semibold ${
+                      className={`font-mono font-bold shrink-0 mt-0.5 ${
                         calc.vipBonus > 0
                           ? "text-emerald-600 dark:text-emerald-400"
                           : "text-muted-foreground"
                       }`}
                     >
-                      +{formatMoney(calc.vipBonus)}
+                      {calc.vipBonus > 0 ? `+${formatMoney(calc.vipBonus)}` : "0 đ"}
                     </span>
                   </div>
 
-                  {/* Trợ cấp */}
-                  <div className="flex items-center justify-between pt-2">
-                    <span className="text-muted-foreground">5. Trợ cấp</span>
-                    <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                  {/* 5. Trợ cấp */}
+                  <div className="flex items-start justify-between pt-2.5">
+                    <div className="pr-3 min-w-0">
+                      <span className="font-semibold text-foreground block">5. Trợ cấp & phụ cấp</span>
+                      <span className="text-[10px] text-muted-foreground block mt-0.5">
+                        Hỗ trợ xăng xe, ăn trưa và chuyên cần
+                      </span>
+                    </div>
+                    <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5">
                       +{formatMoney(calc.allowance)}
                     </span>
                   </div>
 
-                  {/* Phụ thu */}
-                  <div className="flex items-center justify-between pt-2">
-                    <span className="text-muted-foreground">6. Phụ thu / Trừ khác</span>
-                    <span className="font-mono font-semibold text-destructive">
-                      -{formatMoney(calc.deduction)}
+                  {/* 6. Phụ thu / Khấu trừ */}
+                  <div className="flex items-start justify-between pt-2.5">
+                    <div className="pr-3 min-w-0">
+                      <span className="font-semibold text-foreground block">6. Khấu trừ & phụ thu</span>
+                      <span className="text-[10px] text-muted-foreground block mt-0.5">
+                        Trừ tạm ứng hoặc vi phạm quy chế
+                      </span>
+                    </div>
+                    <span className={`font-mono font-bold shrink-0 mt-0.5 ${calc.deduction > 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                      {calc.deduction > 0 ? `-${formatMoney(calc.deduction)}` : "0 đ"}
                     </span>
                   </div>
                 </div>
 
-                {/* KPI SUMMARY PILLS */}
-                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/80 text-center text-xs">
-                  <div className="p-2 rounded-lg bg-muted/60 border border-border/60">
-                    <span className="text-[10px] text-muted-foreground block">KPI Mục tiêu</span>
-                    <span className="font-mono font-bold text-foreground">
-                      {formatNum(calc.monthKpi)}
+                {/* Final Net Total Summary Bar */}
+                <div className="pt-3 border-t border-border flex items-center justify-between bg-muted/30 -mx-4 -mb-4 p-3.5 rounded-b-xl">
+                  <div>
+                    <span className="text-xs font-bold text-foreground block">
+                      Thực lĩnh cuối cùng
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      Lương cứng/sản lượng + Thưởng - Khấu trừ
                     </span>
                   </div>
-                  <div className="p-2 rounded-lg bg-muted/60 border border-border/60">
-                    <span className="text-[10px] text-muted-foreground block">Thực tế làm</span>
-                    <span className="font-mono font-bold text-primary">
-                      {formatNum(calc.actualPhotos)}
-                    </span>
-                  </div>
+                  <span className="text-base font-extrabold font-mono text-emerald-600 dark:text-emerald-400">
+                    {formatMoney(calc.totalSalary)}
+                  </span>
                 </div>
               </div>
 
@@ -1521,6 +1630,13 @@ export default function PhotoCounterApp() {
           </div>
         </div>
       )}
+
+      {/* 5. EXPORT SPREADSHEET MODAL */}
+      <ExportSpreadsheetModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        data={exportData}
+      />
     </div>
   );
 }

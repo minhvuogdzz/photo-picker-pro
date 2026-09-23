@@ -17,6 +17,8 @@ import {
   Info,
 } from "lucide-react";
 import { useAppStore } from "@/core/stores/useAppStore";
+import { useAuthStore } from "@/core/stores/useAuthStore";
+import { checkPremiumFeatureAccess } from "@/core/services/premiumFeaturePolicy";
 import { useContactSheetStore } from "@/modules/contact-the-sheet/stores/useContactSheetStore";
 import { sheetDiscoveryService } from "@/modules/contact-the-sheet/services/sheetDiscoveryService";
 import { sheetExtractorService } from "@/modules/contact-the-sheet/services/sheetExtractorService";
@@ -49,6 +51,15 @@ const COMMON_STATUS_SUGGESTIONS = ["Chưa lọc", "Chờ lọc", "Pending", "Đa
 const DEFAULT_TABS = ["Edit 9/2026", "Edit 8/2026", "Edit 10/2026", "DS Khách"];
 
 export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusModalProps) {
+  const session = useAuthStore((s) => s.session);
+  const extractAccess = checkPremiumFeatureAccess(session, "sheet_extract");
+
+  useEffect(() => {
+    if (isOpen && !extractAccess.hasAccess) {
+      onClose();
+    }
+  }, [isOpen, extractAccess.hasAccess, onClose]);
+
   const inputFolders = useAppStore((s) => s.inputFolders);
   const batchCustomerFolders = useAppStore((s) => s.batchCustomerFolders);
 

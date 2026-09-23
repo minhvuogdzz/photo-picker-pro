@@ -361,12 +361,14 @@ export async function getDeviceFingerprint(): Promise<string> {
 }
 
 /** Requests password reset email (mock: always succeeds) */
-export async function requestPasswordReset(email: string): Promise<void> {
+export async function requestPasswordReset(
+  email: string
+): Promise<{ success?: boolean; message?: string; otp?: string } | void> {
   if (USE_MOCK) {
     await new Promise((r) => setTimeout(r, 500));
-    return;
+    return { success: true, message: "Mã xác nhận đã gửi", otp: "123456" };
   }
-  await apiRequest("/auth/forgot-password", {
+  return await apiRequest<{ success?: boolean; message?: string; otp?: string }>("/auth/forgot-password", {
     method: "POST",
     body: { email },
   });
@@ -408,12 +410,15 @@ export async function resetPassword(
 }
 
 /** Đăng ký tài khoản (Gửi mã OTP) */
-export async function register(email: string, username?: string): Promise<void> {
+export async function register(
+  email: string,
+  username?: string
+): Promise<{ message?: string; otp?: string } | void> {
   if (USE_MOCK) {
     await new Promise((r) => setTimeout(r, 500));
-    return;
+    return { message: "Mã xác nhận đã gửi", otp: "123456" };
   }
-  await apiRequest("/auth/register", {
+  return await apiRequest<{ message?: string; otp?: string }>("/auth/register", {
     method: "POST",
     body: { email, username },
   });

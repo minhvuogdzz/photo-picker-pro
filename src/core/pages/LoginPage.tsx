@@ -138,8 +138,11 @@ export function LoginPage() {
 
     setIsSubmitting(true);
     try {
-      await register(email, cleanUsername);
+      const res = await register(email, cleanUsername);
       setResendCooldown(60);
+      if (res && typeof res === 'object' && res.otp) {
+        setCode(res.otp);
+      }
       switchMode("register-verify");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -153,8 +156,11 @@ export function LoginPage() {
     setError(null);
     setIsSubmitting(true);
     try {
-      await register(email, username.trim().toLowerCase());
+      const res = await register(email, username.trim().toLowerCase());
       setResendCooldown(60);
+      if (res && typeof res === 'object' && res.otp) {
+        setCode(res.otp);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -189,8 +195,11 @@ export function LoginPage() {
     setError(null);
     setIsSubmitting(true);
     try {
-      await requestPasswordReset(email);
+      const res = await requestPasswordReset(email);
       setResendCooldown(60);
+      if (res && typeof res === 'object' && res.otp) {
+        setCode(res.otp);
+      }
       switchMode("verify");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -204,8 +213,11 @@ export function LoginPage() {
     setError(null);
     setIsSubmitting(true);
     try {
-      await requestPasswordReset(email);
+      const res = await requestPasswordReset(email);
       setResendCooldown(60);
+      if (res && typeof res === 'object' && res.otp) {
+        setCode(res.otp);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {

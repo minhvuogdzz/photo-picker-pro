@@ -1,5 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "@/core/stores/useAppStore";
+import { useAuthStore } from "@/core/stores/useAuthStore";
+import { checkPremiumFeatureAccess } from "@/core/services/premiumFeaturePolicy";
 import type { CustomerFolderItem } from "@/core/types";
 
 export class BatchFolderService {
@@ -9,6 +11,14 @@ export class BatchFolderService {
    */
   public async expandAndIngestFolders(paths: string[]): Promise<CustomerFolderItem[]> {
     if (!paths || paths.length === 0) return [];
+
+    // Guard: requires VIP Premium or active grace trial for multi_client
+    const session = useAuthStore.getState().session;
+    const access = checkPremiumFeatureAccess(session, "multi_client");
+    if (!access.hasAccess) {
+      console.warn("[BatchFolderService] Blocked unauthorized multi-folder expansion: VIP Premium required.");
+      return [];
+    }
 
     try {
       // Call Rust 2-level parallel scanner

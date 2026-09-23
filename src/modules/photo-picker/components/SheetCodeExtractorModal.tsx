@@ -18,9 +18,17 @@ import {
   CheckSquare,
   Square,
   ArrowRight,
+  Crown,
+  Lock,
 } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useAppStore } from "@/core/stores/useAppStore";
+import { useAuthStore } from "@/core/stores/useAuthStore";
+import {
+  checkPremiumFeatureAccess,
+  type PremiumFeatureKey,
+} from "@/core/services/premiumFeaturePolicy";
+import { PremiumGateModal } from "@/core/components/PremiumGateModal";
 import { useContactSheetStore } from "@/modules/contact-the-sheet/stores/useContactSheetStore";
 import { googleCredentialManager } from "@/modules/contact-the-sheet/services/googleCredentialBridge";
 import { sheetDiscoveryService } from "@/modules/contact-the-sheet/services/sheetDiscoveryService";
@@ -78,6 +86,19 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
   const saveTabConfiguration = useContactSheetStore((s) => s.saveTabConfiguration);
   const saveProfile = useContactSheetStore((s) => s.saveProfile);
   const googleConnection = useContactSheetStore((s) => s.googleConnection);
+
+  // VIP Premium feature access checks
+  const session = useAuthStore((s) => s.session);
+  const extractAccess = checkPremiumFeatureAccess(session, "sheet_extract");
+  const configAccess = checkPremiumFeatureAccess(session, "sheet_config");
+  const [gateFeature, setGateFeature] = useState<PremiumFeatureKey | null>(null);
+
+  // Close modal if neither tab is accessible
+  useEffect(() => {
+    if (isOpen && !extractAccess.hasAccess && !configAccess.hasAccess) {
+      onClose();
+    }
+  }, [isOpen, extractAccess.hasAccess, configAccess.hasAccess, onClose]);
 
   // Active top-level modal tab: 'extract' | 'config'
   const [modalTab, setModalTab] = useState<"extract" | "config">(initialTab);
@@ -171,7 +192,12 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
   // Initialize modal state on open
   useEffect(() => {
     if (isOpen) {
-      setModalTab(initialTab);
+      const targetTab = initialTab === "extract" && !extractAccess.hasAccess && configAccess.hasAccess
+        ? "config"
+        : initialTab === "config" && !configAccess.hasAccess && extractAccess.hasAccess
+        ? "extract"
+        : initialTab;
+      setModalTab(targetTab);
       // Prioritize the currently selected/active folder from checkbox queue
       const activeFolder = selectedInputFolders[0] || inputFolders[0] || "";
       if (activeFolder) {
@@ -391,10 +417,10 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
 
   // Auto-run search when opened or folder changes
   useEffect(() => {
-    if (isOpen && profile && targetFolderName && modalTab === "extract") {
+    if (isOpen && profile && targetFolderName && modalTab === "extract" && extractAccess.hasAccess) {
       runExtraction();
     }
-  }, [isOpen, profile?.id, currentTabTitle, targetFolderName, modalTab]);
+  }, [isOpen, profile?.id, currentTabTitle, targetFolderName, modalTab, extractAccess.hasAccess]);
 
   // Handle picking custom folder from disk
   const handleBrowseFolder = async () => {
@@ -458,6 +484,10 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
 
   // Apply codes to main input and optionally update status on Sheet
   const handleApplyCodes = () => {
+    if (!extractAccess.hasAccess) {
+      setGateFeature("sheet_extract");
+      return;
+    }
     if (!formattedCodePreview) return;
 
     // 1. Set codes into Photo Picker
@@ -555,6 +585,10 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
 
   // Tab 2: Save configuration for selected tab
   const handleSaveTabConfig = () => {
+    if (!configAccess.hasAccess) {
+      setGateFeature("sheet_config");
+      return;
+    }
     const baseProfile = activeProfile || profiles[0];
     if (!baseProfile) return;
 
@@ -721,28 +755,70 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
         <div className="shrink-0 px-5 pt-2.5 pb-0 bg-muted/10 border-b border-border/40 flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setModalTab("extract")}
-            className={`px-3.5 py-1.5 rounded-t-lg text-xs font-medium flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
-              modalTab === "extract"
-                ? "border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-background font-semibold"
-                : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30"
+            onClick={() => {
+              if (!extractAccess.hasAccess) {
+                setGateFeature("sheet_extract");
+                return;
+              }
+              setModalTab("extract");
+            }}
+            className={`px-3.5 py-1.5 rounded-t-lg text-xs font-medium flex items-center gap-2 border-b-2 transition-all select-none ${
+              !extractAccess.hasAccess
+                ? "border-transparent text-muted-foreground/60 hover:text-muted-foreground cursor-not-allowed"
+                : modalTab === "extract"
+                ? "border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-background font-semibold cursor-pointer"
+                : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30 cursor-pointer"
             }`}
           >
             <Sparkles size={13} className={modalTab === "extract" ? "text-emerald-500" : ""} />
             <span>⚡ Truy xuất mã chọn</span>
+            {extractAccess.isPremium && (
+              <span className="text-[9px] font-extrabold px-1 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 flex items-center gap-0.5">
+                <Crown size={8} />
+                <span>VIP</span>
+              </span>
+            )}
+            {extractAccess.isTrial && (
+              <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30 flex items-center gap-0.5">
+                <Crown size={8} />
+                <span>Trial {extractAccess.daysRemaining}N</span>
+              </span>
+            )}
+            {!extractAccess.hasAccess && <Lock size={9} className="text-amber-500/80" />}
           </button>
 
           <button
             type="button"
-            onClick={() => setModalTab("config")}
-            className={`px-3.5 py-1.5 rounded-t-lg text-xs font-medium flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
-              modalTab === "config"
-                ? "border-primary text-primary bg-background font-semibold"
-                : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30"
+            onClick={() => {
+              if (!configAccess.hasAccess) {
+                setGateFeature("sheet_config");
+                return;
+              }
+              setModalTab("config");
+            }}
+            className={`px-3.5 py-1.5 rounded-t-lg text-xs font-medium flex items-center gap-2 border-b-2 transition-all select-none ${
+              !configAccess.hasAccess
+                ? "border-transparent text-muted-foreground/60 hover:text-muted-foreground cursor-not-allowed"
+                : modalTab === "config"
+                ? "border-primary text-primary bg-background font-semibold cursor-pointer"
+                : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30 cursor-pointer"
             }`}
           >
             <Settings2 size={13} className={modalTab === "config" ? "text-primary" : ""} />
             <span>⚙️ Cấu hình Sheet & Cột</span>
+            {configAccess.isPremium && (
+              <span className="text-[9px] font-extrabold px-1 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 flex items-center gap-0.5">
+                <Crown size={8} />
+                <span>VIP</span>
+              </span>
+            )}
+            {configAccess.isTrial && (
+              <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30 flex items-center gap-0.5">
+                <Crown size={8} />
+                <span>Trial {configAccess.daysRemaining}N</span>
+              </span>
+            )}
+            {!configAccess.hasAccess && <Lock size={9} className="text-amber-500/80" />}
           </button>
         </div>
 
@@ -800,9 +876,15 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                     </select>
                     <button
                       type="button"
-                      onClick={() => setModalTab("config")}
+                      onClick={() => {
+                        if (!configAccess.hasAccess) {
+                          setGateFeature("sheet_config");
+                          return;
+                        }
+                        setModalTab("config");
+                      }}
                       className="p-1.5 border border-border/60 hover:bg-muted/50 rounded text-muted-foreground hover:text-foreground cursor-pointer"
-                      title="Cấu hình cột cho Tab này"
+                      title={configAccess.hasAccess ? "Cấu hình cột cho Tab này" : "Yêu cầu VIP Premium: Cấu hình Sheet"}
                     >
                       <Settings2 size={13} />
                     </button>
@@ -1396,7 +1478,13 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setModalTab("config")}
+                onClick={() => {
+                  if (!configAccess.hasAccess) {
+                    setGateFeature("sheet_config");
+                    return;
+                  }
+                  setModalTab("config");
+                }}
                 className="px-3 py-1.5 rounded-lg border border-border/60 hover:bg-muted/40 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer flex items-center gap-1.5"
               >
                 <Settings2 size={13} />
@@ -1425,7 +1513,13 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setModalTab("extract")}
+                onClick={() => {
+                  if (!extractAccess.hasAccess) {
+                    setGateFeature("sheet_extract");
+                    return;
+                  }
+                  setModalTab("extract");
+                }}
                 className="px-3 py-1.5 rounded-lg border border-border/60 hover:bg-muted/40 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer flex items-center gap-1.5"
               >
                 <span>Quay lại truy xuất</span>
@@ -1444,6 +1538,19 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
           )}
         </div>
       </div>
+
+      {/* VIP Premium Gate Modal */}
+      {gateFeature && (
+        <PremiumGateModal
+          featureKey={gateFeature}
+          onClose={() => setGateFeature(null)}
+          reason={
+            gateFeature === "sheet_extract"
+              ? extractAccess.reason
+              : configAccess.reason
+          }
+        />
+      )}
     </div>
   );
 }

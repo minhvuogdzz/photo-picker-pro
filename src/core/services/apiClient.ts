@@ -153,17 +153,26 @@ export async function apiRequest<T>(
   const { method = "GET", body, accessToken } = options;
   const url = `${API_BASE_URL}${endpoint}`;
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
   let response: Response;
   try {
     response = await fetch(url, {
       method,
       headers: createHeaders(accessToken),
       body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
     });
   } catch (netErr: any) {
+    if (netErr.name === "AbortError") {
+      throw new Error("Kết nối tới máy chủ quá thời gian (15s). Vui lòng thử lại!");
+    }
     // Network failure (server unreachable, DNS error, Vercel pause)
     availabilityReporter?.(0);
     throw netErr;
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   if (!response.ok) {
