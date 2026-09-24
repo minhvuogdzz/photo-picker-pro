@@ -170,3 +170,67 @@ test("Photo Picker Sheet Premium Gate: Verifies non-premium user requires licens
   const vipSession = useAuthStore.getState().session;
   assert.equal(vipSession?.subscription?.isPremium, true);
 });
+
+test("Sheet Filter Auto-Update: Disconnects Google and blocks status update when 7-day trial has expired", async () => {
+  const { useAuthStore } = await import("../../src/core/stores/useAuthStore.ts");
+  const { TRIAL_END_TIMESTAMP } = await import("../../src/core/services/premiumFeaturePolicy.ts");
+
+  // Create an active non-premium session with expired trial time (1 day after trial end)
+  const expiredTime = new Date(TRIAL_END_TIMESTAMP + 24 * 60 * 60 * 1000).toISOString();
+  useAuthStore.getState().setSession({
+    accessToken: "tok_test",
+    refreshToken: "ref_test",
+    userId: "user_1",
+    email: "test@studio.com",
+    name: "Studio User",
+    deviceId: "dev_mac",
+    lastSyncAt: expiredTime,
+    subscription: {
+      status: "ACTIVE",
+      plan: "PROFESSIONAL",
+      isPremium: false,
+      daysRemaining: 15,
+      expiresAt: new Date(Date.now() + 15 * 86400000).toISOString(),
+    },
+  });
+
+  // Setup profile (non-mock so Google connection check is performed)
+  const realProfile: WorkspaceProfile = {
+    ...mockProfile,
+    id: "real-profile-test",
+    spreadsheetId: "1RealSpreadsheetIdABCXYZ",
+    isMockSandbox: false,
+  };
+  useContactSheetStore.getState().saveProfile(realProfile);
+  useContactSheetStore.getState().setActiveProfile(realProfile.id);
+
+  // Mark Google as connected in store
+  useContactSheetStore.getState().setGoogleConnection({
+    status: "CONNECTED",
+    accountEmail: "studio@gmail.com",
+    hasSheetsAccess: true,
+    hasDriveAccess: true,
+  });
+
+  // Trigger manual filtering completion
+  const copyResult: CopyResult = {
+    success_count: 5,
+    skipped_count: 0,
+    failed_count: 0,
+    errors: [],
+    output_folder: "/output/test",
+    duration_ms: 120,
+  };
+
+  const res = await sheetFilterAutomationService.updateStatusOnFilterComplete(
+    ["/data/4-9 8h phuog_thyur08 - peppa 2cc"],
+    copyResult
+  );
+
+  // Must fail and inform about 7-day trial expiration
+  assert.equal(res.success, false);
+  assert.ok(res.message.includes("Hết hạn dùng thử VIP 7 ngày"));
+
+  // Google account must have been disconnected
+  assert.equal(useContactSheetStore.getState().googleConnection.status, "DISCONNECTED");
+});

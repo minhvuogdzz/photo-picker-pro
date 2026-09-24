@@ -11,6 +11,7 @@ import MvdConvertApp from "@/modules/mvd-convert/MvdConvertApp";
 import ResourcesApp from "@/modules/resources/ResourcesApp";
 import ContactTheSheetApp from "@/modules/contact-the-sheet";
 import PhotoCounterApp from "@/modules/photo-counter";
+import { DonateModal } from "@/core/components/DonateModal";
 
 export function AppLayout() {
   const activeTab = useAppStore((s) => s.activeTab);
@@ -27,6 +28,7 @@ export function AppLayout() {
     <div className="h-screen flex flex-col overflow-hidden bg-background text-foreground p-2 gap-2 relative select-none">
       
       {!hasSeenWelcome && <WelcomeScreen />}
+      <DonateModal />
       
       {/* TopBar Glass Wrapper */}
       <div className="rounded-xl shrink-0 relative z-50 bg-card/90 backdrop-blur-md border border-border shadow-sm overflow-visible">

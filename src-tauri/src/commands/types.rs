@@ -17,6 +17,8 @@ pub struct PhotoFile {
 pub struct CustomerCode {
     pub raw: String,
     pub normalized: String,
+    #[serde(default)]
+    pub prefix: Option<String>,
 }
 
 /// Options for scanning folders

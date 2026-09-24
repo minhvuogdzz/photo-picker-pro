@@ -1,9 +1,11 @@
 import { useAppStore } from "../../../core/stores/useAppStore.ts";
+import { useAuthStore } from "../../../core/stores/useAuthStore.ts";
 import { useContactSheetStore } from "../stores/useContactSheetStore.ts";
 import { googleCredentialManager } from "./googleCredentialBridge.ts";
 import { sheetDiscoveryService } from "./sheetDiscoveryService.ts";
 import { sheetExtractorService } from "./sheetExtractorService.ts";
 import { sheetUpdateService } from "./sheetUpdateService.ts";
+import { checkPremiumFeatureAccess } from "../../../core/services/premiumFeaturePolicy.ts";
 import type { CopyResult } from "../../../core/types/index.ts";
 
 export class SheetFilterAutomationService {
@@ -37,6 +39,22 @@ export class SheetFilterAutomationService {
     }
 
     const isMock = Boolean(targetProfile.isMockSandbox || targetProfile.spreadsheetId?.startsWith("mock"));
+
+    // 0. Validate VIP Premium / 7-Day Trial permission for Google Sheets automation
+    const session = useAuthStore.getState().session;
+    const access = checkPremiumFeatureAccess(session, "sheet_extract");
+    if (!access.hasAccess && !isMock) {
+      console.warn(
+        `[SheetFilterAutomation] VIP Premium/Trial expired (reason: ${access.reason}). Immediately disconnecting Google account on this device.`
+      );
+      await googleCredentialManager.disconnectGoogle();
+      const msg = "Hết hạn dùng thử VIP 7 ngày tính năng Google Sheet. Tài khoản Google đã được ngắt kết nối tự động trên thiết bị này.";
+      setSheetUpdateStatus({
+        state: "error",
+        message: msg,
+      });
+      return { success: false, message: msg };
+    }
 
     // Check if Google is connected (or in mock sandbox)
     const isConnected = googleCredentialManager.isConnected();

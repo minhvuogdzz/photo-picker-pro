@@ -1,6 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useContactSheetStore } from "../stores/useContactSheetStore.ts";
+import { useAuthStore } from "../../../core/stores/useAuthStore.ts";
+import { checkPremiumFeatureAccess } from "../../../core/services/premiumFeaturePolicy.ts";
 
 /**
  * Standard MVD Photoshop Academy Desktop Google OAuth Client ID & Secret.
@@ -51,6 +53,12 @@ interface GoogleUserInfo {
   picture?: string;
 }
 
+function getUserStorageKey(baseKey: string): string {
+  const session = useAuthStore.getState().session;
+  const uid = session?.userId || session?.email;
+  return uid ? `${baseKey}_${uid}` : baseKey;
+}
+
 function getSafeStorage(key: string): string | null {
   try {
     if (typeof window !== "undefined" && window.localStorage) {
@@ -93,26 +101,89 @@ class GoogleCredentialManager {
   }
 
   public getAccountEmail(): string | null {
-    return this.activeAccountEmail || useContactSheetStore.getState().googleConnection.accountEmail || getSafeStorage("mvd_google_active_email");
+    return (
+      this.activeAccountEmail ||
+      useContactSheetStore.getState().googleConnection.accountEmail ||
+      getSafeStorage(getUserStorageKey("mvd_google_active_email"))
+    );
   }
 
   public isConnected(): boolean {
     return !!this.getAccountEmail();
   }
 
+  public clearActiveSession(): void {
+    this.currentAccessToken = null;
+    this.inMemoryRefreshToken = null;
+    this.tokenExpiresAt = 0;
+    this.activeAccountEmail = null;
+    useContactSheetStore.getState().disconnectGoogle();
+  }
+
   public restoreSavedSession(): void {
-    const savedEmail = getSafeStorage("mvd_google_active_email");
+    const session = useAuthStore.getState().session;
+    if (!session) {
+      this.clearActiveSession();
+      return;
+    }
+
+    const access = checkPremiumFeatureAccess(session, "sheet_extract");
+    if (!access.hasAccess) {
+      const userKey = getUserStorageKey("mvd_google_active_email");
+      const hasSaved = !!getSafeStorage(userKey) || !!this.activeAccountEmail;
+      if (hasSaved) {
+        console.warn("[GoogleCredentialBridge] 7-Day trial expired or unauthenticated. Immediately disconnecting Google account on this device.");
+        this.disconnectGoogle();
+      } else {
+        this.clearActiveSession();
+      }
+      return;
+    }
+
+    const userEmailKey = getUserStorageKey("mvd_google_active_email");
+    let savedEmail = getSafeStorage(userEmailKey);
+
+    // If this user has no scoped key yet, check legacy un-scoped key to migrate
+    if (!savedEmail) {
+      const legacyEmail = getSafeStorage("mvd_google_active_email");
+      if (legacyEmail) {
+        savedEmail = legacyEmail;
+        setSafeStorage(userEmailKey, legacyEmail);
+        const legacyName = getSafeStorage("mvd_google_user_name");
+        if (legacyName) setSafeStorage(getUserStorageKey("mvd_google_user_name"), legacyName);
+        const legacyAvatar = getSafeStorage("mvd_google_avatar");
+        if (legacyAvatar) setSafeStorage(getUserStorageKey("mvd_google_avatar"), legacyAvatar);
+        const legacyToken = getSafeStorage("mvd_google_access_token");
+        if (legacyToken) setSafeStorage(getUserStorageKey("mvd_google_access_token"), legacyToken);
+        const legacyExpires = getSafeStorage("mvd_google_token_expires_at");
+        if (legacyExpires) setSafeStorage(getUserStorageKey("mvd_google_token_expires_at"), legacyExpires);
+        const legacyRefresh = getSafeStorage("mvd_google_refresh_token");
+        if (legacyRefresh) setSafeStorage(getUserStorageKey("mvd_google_refresh_token"), legacyRefresh);
+
+        // Remove legacy un-scoped keys immediately to prevent cross-account leakage
+        removeSafeStorage("mvd_google_active_email");
+        removeSafeStorage("mvd_google_user_name");
+        removeSafeStorage("mvd_google_avatar");
+        removeSafeStorage("mvd_google_access_token");
+        removeSafeStorage("mvd_google_token_expires_at");
+        removeSafeStorage("mvd_google_refresh_token");
+      }
+    }
+
     if (savedEmail) {
       this.activeAccountEmail = savedEmail;
-      const name = getSafeStorage("mvd_google_user_name") || undefined;
-      const avatar = getSafeStorage("mvd_google_avatar") || undefined;
-      const savedToken = getSafeStorage("mvd_google_access_token");
-      const savedExpires = parseInt(getSafeStorage("mvd_google_token_expires_at") || "0", 10);
-      const savedRefresh = getSafeStorage("mvd_google_refresh_token");
+      const name = getSafeStorage(getUserStorageKey("mvd_google_user_name")) || undefined;
+      const avatar = getSafeStorage(getUserStorageKey("mvd_google_avatar")) || undefined;
+      const savedToken = getSafeStorage(getUserStorageKey("mvd_google_access_token"));
+      const savedExpires = parseInt(getSafeStorage(getUserStorageKey("mvd_google_token_expires_at")) || "0", 10);
+      const savedRefresh = getSafeStorage(getUserStorageKey("mvd_google_refresh_token"));
 
       if (savedToken && Date.now() < savedExpires - 60_000) {
         this.currentAccessToken = savedToken;
         this.tokenExpiresAt = savedExpires;
+      } else {
+        this.currentAccessToken = null;
+        this.tokenExpiresAt = 0;
       }
       if (savedRefresh) {
         this.inMemoryRefreshToken = savedRefresh;
@@ -133,11 +204,13 @@ class GoogleCredentialManager {
           .then((token) => {
             if (token) {
               this.inMemoryRefreshToken = token;
-              setSafeStorage("mvd_google_refresh_token", token);
+              setSafeStorage(getUserStorageKey("mvd_google_refresh_token"), token);
             }
           })
           .catch((err) => console.warn("Background refresh token load:", err));
       }
+    } else {
+      this.clearActiveSession();
     }
   }
 
@@ -145,6 +218,15 @@ class GoogleCredentialManager {
    * Returns a valid access token. Automatically refreshes using OS Keychain/secure file storage refresh token if expired.
    */
   public async getValidAccessToken(forceRefresh: boolean = false): Promise<string> {
+    const session = useAuthStore.getState().session;
+    if (session) {
+      const access = checkPremiumFeatureAccess(session, "sheet_extract");
+      if (!access.hasAccess) {
+        await this.disconnectGoogle();
+        throw new Error("TRIAL_EXPIRED: Hết hạn dùng thử VIP 7 ngày tính năng Google Sheet. Tài khoản Google đã được ngắt kết nối tự động trên thiết bị này.");
+      }
+    }
+
     const now = Date.now();
     if (!forceRefresh && this.currentAccessToken && now < this.tokenExpiresAt - 60_000) {
       return this.currentAccessToken;
@@ -177,7 +259,7 @@ class GoogleCredentialManager {
     }
 
     if (!refreshToken) {
-      refreshToken = getSafeStorage("mvd_google_refresh_token");
+      refreshToken = getSafeStorage(getUserStorageKey("mvd_google_refresh_token"));
     }
 
     if (!refreshToken) {
@@ -212,13 +294,13 @@ class GoogleCredentialManager {
       this.tokenExpiresAt = Date.now() + data.expires_in * 1000;
       this.activeAccountEmail = accountEmail;
 
-      setSafeStorage("mvd_google_active_email", accountEmail);
-      setSafeStorage("mvd_google_access_token", data.access_token);
-      setSafeStorage("mvd_google_token_expires_at", String(this.tokenExpiresAt));
+      setSafeStorage(getUserStorageKey("mvd_google_active_email"), accountEmail);
+      setSafeStorage(getUserStorageKey("mvd_google_access_token"), data.access_token);
+      setSafeStorage(getUserStorageKey("mvd_google_token_expires_at"), String(this.tokenExpiresAt));
 
       if (data.refresh_token) {
         this.inMemoryRefreshToken = data.refresh_token;
-        setSafeStorage("mvd_google_refresh_token", data.refresh_token);
+        setSafeStorage(getUserStorageKey("mvd_google_refresh_token"), data.refresh_token);
         try {
           await invoke("save_google_secure_token", {
             accountEmail,
@@ -248,6 +330,14 @@ class GoogleCredentialManager {
    * Starts the Google OAuth 2.0 PKCE flow with native loopback redirect.
    */
   public async connectGoogle(clientId: string = DEFAULT_MVD_GOOGLE_CLIENT_ID): Promise<void> {
+    const session = useAuthStore.getState().session;
+    if (session) {
+      const access = checkPremiumFeatureAccess(session, "sheet_extract");
+      if (!access.hasAccess) {
+        throw new Error("TRIAL_EXPIRED: Tính năng kết nối Google Sheet yêu cầu VIP Premium hoặc thời gian dùng thử 7 ngày hợp lệ.");
+      }
+    }
+
     useContactSheetStore.getState().setGoogleConnection({ status: "CONNECTING", error: undefined });
 
     try {
@@ -308,16 +398,16 @@ class GoogleCredentialManager {
       const accountEmail = userInfo.email || "google-user@studio.com";
       this.activeAccountEmail = accountEmail;
 
-      // 7. Store tokens across all layers: memory, localStorage, and Rust native file storage
-      setSafeStorage("mvd_google_active_email", accountEmail);
-      setSafeStorage("mvd_google_access_token", tokenData.access_token);
-      setSafeStorage("mvd_google_token_expires_at", String(this.tokenExpiresAt));
-      if (userInfo.name) setSafeStorage("mvd_google_user_name", userInfo.name);
-      if (userInfo.picture) setSafeStorage("mvd_google_avatar", userInfo.picture);
+      // 7. Store tokens across all layers: memory, user-scoped localStorage, and Rust native secure storage
+      setSafeStorage(getUserStorageKey("mvd_google_active_email"), accountEmail);
+      setSafeStorage(getUserStorageKey("mvd_google_access_token"), tokenData.access_token);
+      setSafeStorage(getUserStorageKey("mvd_google_token_expires_at"), String(this.tokenExpiresAt));
+      if (userInfo.name) setSafeStorage(getUserStorageKey("mvd_google_user_name"), userInfo.name);
+      if (userInfo.picture) setSafeStorage(getUserStorageKey("mvd_google_avatar"), userInfo.picture);
 
       if (tokenData.refresh_token) {
         this.inMemoryRefreshToken = tokenData.refresh_token;
-        setSafeStorage("mvd_google_refresh_token", tokenData.refresh_token);
+        setSafeStorage(getUserStorageKey("mvd_google_refresh_token"), tokenData.refresh_token);
         try {
           await invoke("save_google_secure_token", {
             accountEmail,
@@ -353,7 +443,7 @@ class GoogleCredentialManager {
    */
   public async disconnectGoogle(): Promise<void> {
     const email = this.getAccountEmail();
-    if (email) {
+    if (email && typeof window !== "undefined") {
       try {
         await invoke("delete_google_secure_token", { accountEmail: email });
       } catch (err) {
@@ -366,6 +456,15 @@ class GoogleCredentialManager {
     this.tokenExpiresAt = 0;
     this.activeAccountEmail = null;
 
+    // Remove user-scoped keys
+    removeSafeStorage(getUserStorageKey("mvd_google_active_email"));
+    removeSafeStorage(getUserStorageKey("mvd_google_user_name"));
+    removeSafeStorage(getUserStorageKey("mvd_google_avatar"));
+    removeSafeStorage(getUserStorageKey("mvd_google_access_token"));
+    removeSafeStorage(getUserStorageKey("mvd_google_token_expires_at"));
+    removeSafeStorage(getUserStorageKey("mvd_google_refresh_token"));
+
+    // Also purge legacy un-scoped keys if any
     removeSafeStorage("mvd_google_active_email");
     removeSafeStorage("mvd_google_user_name");
     removeSafeStorage("mvd_google_avatar");
@@ -378,3 +477,17 @@ class GoogleCredentialManager {
 }
 
 export const googleCredentialManager = new GoogleCredentialManager();
+
+// Automatically react to user login / logout / switch account in useAuthStore
+let lastTrackedUserId: string | null = useAuthStore.getState().session?.userId || null;
+useAuthStore.subscribe((state) => {
+  const currentUserId = state.session?.userId || null;
+  if (currentUserId !== lastTrackedUserId) {
+    lastTrackedUserId = currentUserId;
+    if (!currentUserId) {
+      googleCredentialManager.clearActiveSession();
+    } else {
+      googleCredentialManager.restoreSavedSession();
+    }
+  }
+});

@@ -85,7 +85,7 @@ interface ContactSheetState {
 }
 
 export const DEFAULT_PRODUCTION_DRIVE_CONFIG: DriveConfig = {
-  localRootPath: "/Users/vuongdev/Library/CloudStorage/GoogleDrive-ougn.it2@gmail.com/My Drive",
+  localRootPath: "",
   remoteRootDriveId: "root",
   sharingPolicy: "KEEP_EXISTING",
   sharingAutomationEnabled: false,
@@ -268,8 +268,8 @@ export const STANDARD_19_STUDIO_MAPPINGS: FieldMapping[] = [
 export const DEFAULT_PRODUCTION_PROFILE: WorkspaceProfile = {
   id: "studio-production",
   displayName: "Studio Ops",
-  spreadsheetId: "1mQQ7FeFvy93kked5T_ob7wiiRa8XhX9lC54i6M_J0ak",
-  spreadsheetTitle: "Link edit",
+  spreadsheetId: "",
+  spreadsheetTitle: "Chưa liên kết",
   selectedTabTitle: "Edit 9/2026",
   selectedTabId: 0,
   headerRow: 3,
@@ -323,7 +323,7 @@ export const useContactSheetStore = create<ContactSheetState>()(
       profiles: [DEFAULT_PRODUCTION_PROFILE],
       activeProfile: DEFAULT_PRODUCTION_PROFILE,
 
-      lastSheetUrl: "https://docs.google.com/spreadsheets/d/1mQQ7FeFvy93kked5T_ob7wiiRa8XhX9lC54i6M_J0ak/edit",
+      lastSheetUrl: "",
       setLastSheetUrl: (lastSheetUrl) => set({ lastSheetUrl }),
 
       lastDriveConfig: DEFAULT_PRODUCTION_DRIVE_CONFIG,
@@ -532,10 +532,30 @@ export const useContactSheetStore = create<ContactSheetState>()(
     {
       name: "mvd_contact_the_sheet_store",
       storage: createJSONStorage(getSafeStorage),
+      version: 2,
+      migrate: (persistedState: any) => {
+        if (!persistedState) return persistedState;
+        const purgeId = "1mQQ7FeFvy93kked5T_ob7wiiRa8XhX9lC54i6M_J0ak";
+        if (persistedState.profiles && Array.isArray(persistedState.profiles)) {
+          persistedState.profiles = persistedState.profiles.map((p: any) => {
+            if (p.spreadsheetId === purgeId) {
+              return { ...p, spreadsheetId: "", spreadsheetTitle: "Chưa liên kết" };
+            }
+            return p;
+          });
+        }
+        if (persistedState.activeProfile?.spreadsheetId === purgeId) {
+          persistedState.activeProfile.spreadsheetId = "";
+          persistedState.activeProfile.spreadsheetTitle = "Chưa liên kết";
+        }
+        if (persistedState.lastSheetUrl?.includes(purgeId)) {
+          persistedState.lastSheetUrl = "";
+        }
+        return persistedState;
+      },
       partialize: (state) => ({
         profiles: state.profiles,
         activeProfile: state.activeProfile,
-        googleConnection: state.googleConnection,
         lastSheetUrl: state.lastSheetUrl,
         lastDriveConfig: state.lastDriveConfig,
         lastScannedPaths: state.lastScannedPaths,

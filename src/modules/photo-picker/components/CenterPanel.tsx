@@ -12,12 +12,14 @@ import {
   Filter,
   Crown,
   Lock,
+  HelpCircle,
 } from "lucide-react";
 import type { CustomerCode } from "@/core/types";
 import { useTranslation } from "@/core/lib/i18n";
 import { listen } from "@tauri-apps/api/event";
 import { SheetCodeExtractorModal } from "./SheetCodeExtractorModal";
 import { CheckFilterStatusModal } from "./CheckFilterStatusModal";
+import { FilterSyntaxHelpModal } from "./FilterSyntaxHelpModal";
 import {
   checkPremiumFeatureAccess,
   type PremiumFeatureKey,
@@ -164,6 +166,7 @@ export function CenterPanel() {
   const [isSheetModalOpen, setIsSheetModalOpen] = useState(false);
   const [sheetModalInitialTab, setSheetModalInitialTab] = useState<"extract" | "config">("extract");
   const [isCheckStatusModalOpen, setIsCheckStatusModalOpen] = useState(false);
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
 
   // Debounced parsing
   const parseInput = useCallback(
@@ -396,7 +399,7 @@ export function CenterPanel() {
               )}
             </button>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {isParsingDebounced && (
               <span className="text-[10px] text-muted-foreground animate-pulse">
                 Parsing...
@@ -405,6 +408,14 @@ export function CenterPanel() {
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted/50 text-muted-foreground border border-border/40">
               {parsedCodes.length} {t("codes_count")}
             </span>
+            <button
+              type="button"
+              onClick={() => setIsHelpModalOpen(true)}
+              className="inline-flex items-center justify-center w-6 h-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all border border-border/60 hover:border-primary/50 cursor-pointer shadow-2xs group"
+              title="Hướng dẫn cú pháp & xử lý trùng tiền tố"
+            >
+              <HelpCircle size={13} className="text-muted-foreground group-hover:text-primary transition-colors" />
+            </button>
           </div>
         </div>
 
@@ -522,6 +533,12 @@ export function CenterPanel() {
       <CheckFilterStatusModal
         isOpen={isCheckStatusModalOpen}
         onClose={() => setIsCheckStatusModalOpen(false)}
+      />
+
+      {/* Filter Syntax Help Modal */}
+      <FilterSyntaxHelpModal
+        isOpen={isHelpModalOpen}
+        onClose={() => setIsHelpModalOpen(false)}
       />
 
       {/* VIP Premium Gate Modal */}

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { AuthSession } from "@/core/types/auth";
 import { useAvailabilityStore } from "./useAvailabilityStore.ts";
+import { useContactSheetStore } from "../../modules/contact-the-sheet/stores/useContactSheetStore.ts";
 
 interface AuthState {
   /** Current authenticated session, null if not logged in */
@@ -95,6 +96,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     useAvailabilityStore.getState().setOfflineBypass(false);
     try {
       sessionStorage.removeItem("session_started_at");
+    } catch {}
+    try {
+      useContactSheetStore.getState().disconnectGoogle();
     } catch {}
     set({
       session: null,

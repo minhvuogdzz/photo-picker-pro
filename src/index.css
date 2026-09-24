@@ -45,67 +45,67 @@
 
 @layer base {
   :root {
-    /* Light Theme — Clean, crisp & professional */
-    --color-background: oklch(0.965 0.003 260);
-    --color-foreground: oklch(0.14 0.005 260);
-    --color-card: oklch(1.0 0 0 / 0.98);
-    --color-card-foreground: oklch(0.14 0.005 260);
-    --color-popover: oklch(1.0 0 0);
-    --color-popover-foreground: oklch(0.14 0.005 260);
+    /* Light Theme — Matching CleanMyMac [Image 5]: soft cool sky/ice-gray canvas & pure white elevated cards */
+    --color-background: #e8edf5;
+    --color-foreground: #111827;
+    --color-card: #ffffff;
+    --color-card-foreground: #111827;
+    --color-popover: #ffffff;
+    --color-popover-foreground: #111827;
     
-    --color-primary: oklch(0.55 0.18 255);
-    --color-primary-foreground: oklch(0.99 0 0);
+    --color-primary: #007aff;
+    --color-primary-foreground: #ffffff;
     
-    --color-secondary: oklch(0.92 0.005 260);
-    --color-secondary-foreground: oklch(0.20 0.005 260);
+    --color-secondary: #eef2f8;
+    --color-secondary-foreground: #1e293b;
     
-    --color-muted: oklch(0.93 0.005 260);
-    --color-muted-foreground: oklch(0.38 0.005 260);
+    --color-muted: #edf1f7;
+    --color-muted-foreground: #64748b;
     
-    --color-accent: oklch(0.92 0.008 260);
-    --color-accent-foreground: oklch(0.14 0.005 260);
+    --color-accent: #e2e8f2;
+    --color-accent-foreground: #0f172a;
     
-    --color-destructive: oklch(0.58 0.2 25);
-    --color-destructive-foreground: oklch(0.99 0 0);
-    --color-success: oklch(0.52 0.16 155);
-    --color-warning: oklch(0.62 0.16 70);
-    --color-info: oklch(0.52 0.16 235);
+    --color-destructive: #ef4444;
+    --color-destructive-foreground: #ffffff;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-info: #0284c7;
     
-    --color-border: oklch(0.85 0.005 260);
-    --color-input: oklch(0.98 0.002 260);
-    --color-ring: oklch(0.55 0.18 255);
+    --color-border: #d8e0ec;
+    --color-input: #ffffff;
+    --color-ring: #007aff;
   }
 
   .dark {
-    /* Dark Theme — Deep, Adobe-inspired */
-    --color-background: oklch(0.115 0.008 260);
-    --color-foreground: oklch(0.93 0.005 260);
-    --color-card: oklch(0.155 0.01 260 / 0.9);
-    --color-card-foreground: oklch(0.93 0.005 260);
-    --color-popover: oklch(0.155 0.01 260);
-    --color-popover-foreground: oklch(0.93 0.005 260);
+    /* Dark Theme — Matching CleanMyMac MClean Dark [Image 4]: deep matte slate canvas & sleek layered cards */
+    --color-background: #181b22;
+    --color-foreground: #f3f4f6;
+    --color-card: #20242e;
+    --color-card-foreground: #f3f4f6;
+    --color-popover: #20242e;
+    --color-popover-foreground: #f3f4f6;
     
-    --color-primary: oklch(0.62 0.18 255);
-    --color-primary-foreground: oklch(0.99 0 0);
+    --color-primary: #007aff;
+    --color-primary-foreground: #ffffff;
     
-    --color-secondary: oklch(0.2 0.015 260);
-    --color-secondary-foreground: oklch(0.90 0.005 260);
+    --color-secondary: #282d3a;
+    --color-secondary-foreground: #e2e8f0;
     
-    --color-muted: oklch(0.18 0.01 260);
-    --color-muted-foreground: oklch(0.55 0.015 260);
+    --color-muted: #232734;
+    --color-muted-foreground: #94a3b8;
     
-    --color-accent: oklch(0.2 0.015 260);
-    --color-accent-foreground: oklch(0.93 0.005 260);
+    --color-accent: #2b3040;
+    --color-accent-foreground: #ffffff;
     
-    --color-destructive: oklch(0.58 0.2 25);
-    --color-destructive-foreground: oklch(0.99 0 0);
-    --color-success: oklch(0.60 0.16 155);
-    --color-warning: oklch(0.72 0.16 70);
-    --color-info: oklch(0.60 0.16 235);
+    --color-destructive: #ef4444;
+    --color-destructive-foreground: #ffffff;
+    --color-success: #10b981;
+    --color-warning: #ff9409;
+    --color-info: #38bdf8;
     
-    --color-border: oklch(0.24 0.01 260 / 0.5);
-    --color-input: oklch(0.14 0.01 260 / 0.8);
-    --color-ring: oklch(0.62 0.18 255);
+    --color-border: #2e3444;
+    --color-input: #151720;
+    --color-ring: #007aff;
   }
 }
 
@@ -153,13 +153,13 @@ body {
   background-color: var(--color-card);
   border-radius: var(--radius-xl);
   border: 1px solid var(--color-border);
-  box-shadow: 0 1px 3px oklch(0 0 0 / 0.04);
+  box-shadow: 0 4px 20px -2px rgba(18, 38, 63, 0.05), 0 0 1px rgba(0, 0, 0, 0.06);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
 .dark .panel {
-  box-shadow: 0 1px 3px oklch(0 0 0 / 0.2);
+  box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.35), 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 .panel-header {
@@ -479,6 +479,45 @@ body {
     opacity: 1;
     transform: scale(1);
   }
+}
+
+@keyframes coffeeSteamRise {
+  0% {
+    opacity: 0;
+    transform: translateY(2px) scaleX(0.85);
+  }
+  25% {
+    opacity: 0.9;
+  }
+  60% {
+    opacity: 0.6;
+    transform: translateY(-3.5px) scaleX(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px) scaleX(1.4);
+  }
+}
+
+.coffee-steam-wisp {
+  animation: coffeeSteamRise 2.4s ease-in-out infinite;
+  transform-origin: center bottom;
+  will-change: transform, opacity;
+}
+
+.steam-wisp-1 {
+  animation-delay: 0s;
+  animation-duration: 2.2s;
+}
+
+.steam-wisp-2 {
+  animation-delay: 0.75s;
+  animation-duration: 2.6s;
+}
+
+.steam-wisp-3 {
+  animation-delay: 1.5s;
+  animation-duration: 2.3s;
 }
 
 @keyframes srgb-text-flow {

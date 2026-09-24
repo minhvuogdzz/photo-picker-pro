@@ -111,11 +111,22 @@ pub fn parse_customer_codes(input: String) -> Result<Vec<CustomerCode>, String> 
     }
 
     let mut codes: Vec<CustomerCode> = Vec::new();
+    let mut current_prefix: Option<String> = None;
 
     // Split input by common delimiters: newlines, commas, semicolons, tabs, pipes, slashes, pluses, spaces
     for line in dash_separated.lines() {
         let trimmed = line.trim();
         if trimmed.is_empty() {
+            continue;
+        }
+
+        // Allow explicit reset of active prefix if user types @clear, @none, #none, or #all
+        if trimmed.eq_ignore_ascii_case("@clear")
+            || trimmed.eq_ignore_ascii_case("@none")
+            || trimmed.eq_ignore_ascii_case("#none")
+            || trimmed.eq_ignore_ascii_case("#all")
+        {
+            current_prefix = None;
             continue;
         }
 
@@ -134,9 +145,31 @@ pub fn parse_customer_codes(input: String) -> Result<Vec<CustomerCode>, String> 
 
             for mat in re.find_iter(&without_ext) {
                 let normalized = mat.as_str().to_string();
+                let start_idx = mat.start();
+                let before_digits = &without_ext[..start_idx];
+
+                // Check if this token has its own explicit alphabetic prefix
+                let has_alpha_prefix = before_digits.chars().any(|c| c.is_ascii_alphabetic());
+
+                let prefix = if has_alpha_prefix {
+                    let p = before_digits
+                        .trim_matches(|c: char| !c.is_ascii_alphanumeric() && c != '_')
+                        .trim_end_matches('_')
+                        .to_string();
+                    if !p.is_empty() {
+                        current_prefix = Some(p.clone());
+                        Some(p)
+                    } else {
+                        current_prefix.clone()
+                    }
+                } else {
+                    current_prefix.clone()
+                };
+
                 codes.push(CustomerCode {
                     raw: cleaned.clone(),
                     normalized,
+                    prefix,
                 });
             }
         }
@@ -277,5 +310,42 @@ mod tests {
         assert_eq!(result[0].normalized, "3068");
         assert_eq!(result[1].raw, "HYTU3124.CR3");
         assert_eq!(result[1].normalized, "3124");
+    }
+
+    #[test]
+    fn test_cascading_prefix_inheritance() {
+        let input = "ABC1234\n1235\n1236\nDEF1234\n1235";
+        let result = parse_customer_codes(input.to_string()).unwrap();
+        assert_eq!(result.len(), 5);
+
+        assert_eq!(result[0].raw, "ABC1234");
+        assert_eq!(result[0].normalized, "1234");
+        assert_eq!(result[0].prefix.as_deref(), Some("ABC"));
+
+        assert_eq!(result[1].raw, "1235");
+        assert_eq!(result[1].normalized, "1235");
+        assert_eq!(result[1].prefix.as_deref(), Some("ABC"));
+
+        assert_eq!(result[2].raw, "1236");
+        assert_eq!(result[2].normalized, "1236");
+        assert_eq!(result[2].prefix.as_deref(), Some("ABC"));
+
+        assert_eq!(result[3].raw, "DEF1234");
+        assert_eq!(result[3].normalized, "1234");
+        assert_eq!(result[3].prefix.as_deref(), Some("DEF"));
+
+        assert_eq!(result[4].raw, "1235");
+        assert_eq!(result[4].normalized, "1235");
+        assert_eq!(result[4].prefix.as_deref(), Some("DEF"));
+    }
+
+    #[test]
+    fn test_prefix_reset_command() {
+        let input = "ABC1234\n1235\n@clear\n1236";
+        let result = parse_customer_codes(input.to_string()).unwrap();
+        assert_eq!(result.len(), 3);
+        assert_eq!(result[0].prefix.as_deref(), Some("ABC"));
+        assert_eq!(result[1].prefix.as_deref(), Some("ABC"));
+        assert_eq!(result[2].prefix, None);
     }
 }

@@ -13,7 +13,9 @@ import {
   CheckCircle2,
   Layers,
   ChevronRight,
+  Coffee,
 } from "lucide-react";
+import { CoffeeSteamIcon } from "@/core/components/CoffeeSteamIcon";
 import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { apiRequest } from "@/core/services/apiClient";
@@ -23,6 +25,7 @@ const DEFAULT_COMPANY_URL = "https://mvdphotoshopacademy.com";
 export function LauncherPage() {
   const setActiveModule = useAppStore((s) => s.setActiveModule);
   const setLastClickPos = useAppStore((s) => s.setLastClickPos);
+  const setIsDonateModalOpen = useAppStore((s) => s.setIsDonateModalOpen);
   const session = useAuthStore((s) => s.session);
 
   const [version, setVersion] = useState("2.1.1");
@@ -327,30 +330,51 @@ export function LauncherPage() {
             <span>© {new Date().getFullYear()} MVD Photoshop Academy</span>
           </div>
 
-          {(() => {
-            const effectiveUrl = companyUrl || DEFAULT_COMPANY_URL;
-            const displayUrl = effectiveUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
-            const handleOpenUrl = async (e: React.MouseEvent) => {
-              e.preventDefault();
-              const fullUrl = effectiveUrl.startsWith("http") ? effectiveUrl : `https://${effectiveUrl}`;
-              try {
-                await openUrl(fullUrl);
-              } catch {
-                window.open(fullUrl, "_blank");
-              }
-            };
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsDonateModalOpen(true)}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-card border border-amber-500/35 hover:border-amber-500/65 text-amber-700 dark:text-amber-300 shadow-xs hover:bg-amber-500/10 transition-all cursor-pointer group active:scale-97"
+              title="Ủng hộ tác giả một ly cafe ☕"
+            >
+              <div className="w-5 h-5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                <CoffeeSteamIcon size={13} />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-bold text-foreground group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                  Donate Cafe
+                </span>
+                <span className="text-[10px] text-muted-foreground/80 font-normal hidden md:inline">
+                  · Ủng hộ tác giả ☕
+                </span>
+              </div>
+            </button>
 
-            return (
-              <button
-                onClick={handleOpenUrl}
-                className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors cursor-pointer group"
-                title={`Mở trang web ${displayUrl}`}
-              >
-                <span className="group-hover:underline underline-offset-2">{displayUrl}</span>
-                <ExternalLink size={11} className="text-muted-foreground/70 group-hover:text-primary transition-colors" />
-              </button>
-            );
-          })()}
+            {(() => {
+              const effectiveUrl = companyUrl || DEFAULT_COMPANY_URL;
+              const displayUrl = effectiveUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+              const handleOpenUrl = async (e: React.MouseEvent) => {
+                e.preventDefault();
+                const fullUrl = effectiveUrl.startsWith("http") ? effectiveUrl : `https://${effectiveUrl}`;
+                try {
+                  await openUrl(fullUrl);
+                } catch {
+                  window.open(fullUrl, "_blank");
+                }
+              };
+
+              return (
+                <button
+                  onClick={handleOpenUrl}
+                  className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors cursor-pointer group"
+                  title={`Mở trang web ${displayUrl}`}
+                >
+                  <span className="group-hover:underline underline-offset-2">{displayUrl}</span>
+                  <ExternalLink size={11} className="text-muted-foreground/70 group-hover:text-primary transition-colors" />
+                </button>
+              );
+            })()}
+          </div>
         </div>
       </div>
     </div>

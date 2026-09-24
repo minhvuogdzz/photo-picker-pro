@@ -12,6 +12,7 @@ export interface PhotoFile {
 export interface CustomerCode {
   readonly raw: string;
   readonly normalized: string;
+  readonly prefix?: string;
 }
 
 /** The matching mode */

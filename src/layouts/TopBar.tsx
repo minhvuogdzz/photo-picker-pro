@@ -14,9 +14,12 @@ import {
   ArrowLeft,
   Shield,
   RefreshCw,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useState } from "react";
 import { useUpdaterStore } from "@/core/stores/useUpdaterStore";
+import { useSettingsStore } from "@/core/stores/useSettingsStore";
 import { LicenseManager } from "@/core/license/LicenseManager";
 import { AccountSecurityModal } from "@/core/components/AccountSecurityModal";
 import { SmartSearchBar } from "./SmartSearchBar";
@@ -39,6 +42,8 @@ export function TopBar() {
   const [showLicenseManager, setShowLicenseManager] = useState(false);
   const [showAccountModal, setShowAccountModal] = useState(false);
   const activeModule = useAppStore((s) => s.activeModule);
+  const theme = useSettingsStore((s) => s.settings.theme);
+  const updateSetting = useSettingsStore((s) => s.updateSetting);
 
   let tabs: { id: MainTab; label: string; icon: React.ReactNode }[] = [];
 
@@ -248,6 +253,22 @@ export function TopBar() {
           isOpen={showAccountModal}
           onClose={() => setShowAccountModal(false)}
         />
+
+        {/* Quick Theme Toggle (CleanMyMac style) */}
+        <button
+          onClick={() => {
+            const next = theme === "dark" ? "light" : "dark";
+            updateSetting("theme", next);
+          }}
+          title={theme === "dark" ? "Chuyển sang Giao diện Sáng (Light)" : "Chuyển sang Giao diện Tối (Dark)"}
+          className="flex items-center justify-center w-6 h-6 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+        >
+          {theme === "dark" ? (
+            <Sun size={13} className="text-amber-400 hover:rotate-45 transition-transform" />
+          ) : (
+            <Moon size={13} className="text-slate-700 hover:-rotate-12 transition-transform" />
+          )}
+        </button>
 
         {/* System Menu */}
         <div className="relative">

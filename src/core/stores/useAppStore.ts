@@ -113,6 +113,10 @@ interface AppState {
   readonly sheetUpdateStatus: SheetUpdateStatus | null;
   setSheetUpdateStatus: (status: SheetUpdateStatus | null) => void;
 
+  // Donate modal
+  readonly isDonateModalOpen: boolean;
+  setIsDonateModalOpen: (open: boolean) => void;
+
   // Reset
   resetAll: () => void;
 }
@@ -185,11 +189,13 @@ const initialState = {
   },
   sheetFilterContext: null as SheetFilterContext | null,
   sheetUpdateStatus: null as SheetUpdateStatus | null,
+  isDonateModalOpen: false,
 };
 
 export const useAppStore = create<AppState>((set) => ({
   ...initialState,
 
+  setIsDonateModalOpen: (open) => set({ isDonateModalOpen: open }),
   setActiveTab: (tab) => set({ activeTab: tab }),
   setActiveModule: (module) => set({ activeModule: module }),
   setSidebarCollapsed: (val) => set({ sidebarCollapsed: val }),

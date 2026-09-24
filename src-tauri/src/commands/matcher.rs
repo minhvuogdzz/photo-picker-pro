@@ -46,9 +46,17 @@ where
         _ => MatchMode::ExactNumber,
     };
 
-    let multi_folder = folder_count.unwrap_or(1) >= 2;
+    let _multi_folder = folder_count.unwrap_or(1) >= 2;
 
-    // Build number-based file index for ExactNumber mode
+    // Helper to normalize strings for separator-agnostic matching
+    fn canonicalize(s: &str) -> String {
+        s.chars()
+            .filter(|c| c.is_ascii_alphanumeric())
+            .collect::<String>()
+            .to_lowercase()
+    }
+
+    // Build number-based file index for ExactNumber mode fallback
     let number_index: HashMap<String, Vec<&PhotoFile>> = match match_mode {
         MatchMode::ExactNumber => {
             let mut index: HashMap<String, Vec<&PhotoFile>> = HashMap::new();
@@ -77,6 +85,25 @@ where
                 .to_lowercase();
             if !stem.is_empty() {
                 index.entry(stem).or_default().push(file);
+            }
+        }
+        index
+    } else {
+        HashMap::new()
+    };
+
+    // Build canonical stem index for separator-agnostic matching
+    // Maps canonical alphanumeric stem (e.g. "abc1234") -> list of files
+    let canonical_stem_index: HashMap<String, Vec<&PhotoFile>> = if matches!(match_mode, MatchMode::ExactNumber) {
+        let mut index: HashMap<String, Vec<&PhotoFile>> = HashMap::new();
+        for file in &files {
+            let stem = std::path::Path::new(&file.filename)
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("");
+            let canonical = canonicalize(stem);
+            if !canonical.is_empty() {
+                index.entry(canonical).or_default().push(file);
             }
         }
         index
@@ -125,8 +152,14 @@ where
                 speed: None,
             });
         }
-        // Always use the raw code for deduplication to preserve distinct prefixed queries
-        let dedup_key = code.raw.trim().to_lowercase();
+
+        // Deduplication key respects prefix so identical numbers under different cameras are preserved
+        let dedup_key = match &code.prefix {
+            Some(prefix) if !prefix.is_empty() => {
+                format!("{}:{}", canonicalize(prefix), code.normalized)
+            }
+            _ => code.raw.trim().to_lowercase(),
+        };
 
         if !seen_input_codes.insert(dedup_key) {
             duplicate_count += 1;
@@ -141,8 +174,6 @@ where
 
         let matched_files: Vec<PhotoFile> = match match_mode {
             MatchMode::ExactNumber => {
-                // Try full stem match first
-                // e.g. raw="ABC_01234" matches file "ABC_01234.CR2"
                 let cleaned_raw = super::parser::clean_token(&code.raw);
                 let raw_stem = {
                     let without_ext = std::path::Path::new(&cleaned_raw)
@@ -152,20 +183,43 @@ where
                     without_ext.to_lowercase()
                 };
 
-                let full_matches: Vec<PhotoFile> = stem_index
+                // 1. Try exact stem match first
+                // e.g. raw="ABC_01234" matches file "ABC_01234.CR2"
+                let mut full_matches: Vec<PhotoFile> = stem_index
                     .get(&raw_stem)
                     .map(|fs| fs.iter().map(|f| (*f).clone()).collect())
                     .unwrap_or_default();
+
+                // 2. Try separator-agnostic canonical match
+                // Handles: user typed "ABC1234" but file is "ABC_1234.CR2" or "ABC-1234.JPG"
+                if full_matches.is_empty() {
+                    let canonical_raw = canonicalize(&raw_stem);
+                    if let Some(fs) = canonical_stem_index.get(&canonical_raw) {
+                        full_matches = fs.iter().map(|f| (*f).clone()).collect();
+                    }
+                }
+
+                // 3. Inherited prefix match (Cascading Prefix)
+                // e.g. prefix="ABC", user typed "1235" -> check canonical "abc1235"
+                if full_matches.is_empty() {
+                    if let Some(ref prefix) = code.prefix {
+                        let combined_canonical = format!("{}{}", canonicalize(prefix), code.normalized);
+                        if let Some(fs) = canonical_stem_index.get(&combined_canonical) {
+                            full_matches = fs.iter().map(|f| (*f).clone()).collect();
+                        }
+                    }
+                }
 
                 if !full_matches.is_empty() {
                     full_matches
                 } else {
                     let has_letters = cleaned_raw.to_lowercase() != code.normalized;
-                    if has_letters {
-                        // Strict exact stem match only. No fallback for prefixed codes.
+                    let has_prefix = code.prefix.as_ref().map(|p| !p.is_empty()).unwrap_or(false);
+                    if has_letters || has_prefix {
+                        // Strict prefix match failed. Do not fallback to arbitrary other cameras!
                         Vec::new()
                     } else {
-                        // Fallback: number-only match (user typed just a number)
+                        // Fallback: number-only match (user typed just a number, no prefix anywhere)
                         let mut fallback_matched = Vec::new();
                         for (file_num, files_with_num) in &number_index {
                             if file_num.ends_with(&code.normalized) {
@@ -177,14 +231,46 @@ where
                 }
             }
 
-            MatchMode::Contains => files
-                .iter()
-                .filter(|f| {
-                    let name_lower = f.filename.to_lowercase();
-                    name_lower.contains(&code.normalized)
-                })
-                .cloned()
-                .collect(),
+            MatchMode::Contains => {
+                // Determine effective prefix if available (either explicit in code.prefix, or in code.raw)
+                let effective_prefix: Option<String> = code.prefix.clone().or_else(|| {
+                    let cleaned = super::parser::clean_token(&code.raw);
+                    let without_ext = super::parser::remove_extension(&cleaned);
+                    let re_alpha = Regex::new(r"[a-zA-Z]+").ok()?;
+                    re_alpha.find(&without_ext).map(|mat| mat.as_str().to_string())
+                });
+
+                files
+                    .iter()
+                    .filter(|f| {
+                        let name_lower = f.filename.to_lowercase();
+                        let name_canon = canonicalize(&f.filename);
+
+                        if let Some(ref prefix) = effective_prefix {
+                            let prefix_canon = canonicalize(prefix);
+                            let target_combined = format!("{}{}", prefix_canon, code.normalized);
+
+                            // Priority 1: Canonical filename contains both prefix and number together
+                            // e.g. "ABC_1234.jpg" (canonical "abc1234jpg") contains "abc1234"
+                            if name_canon.contains(&target_combined) {
+                                return true;
+                            }
+
+                            // Priority 2: Filename contains prefix AND contains normalized number anywhere
+                            // e.g. "ABC_wedding_1234.jpg" contains "abc" and "1234"
+                            if name_canon.contains(&prefix_canon) && name_lower.contains(&code.normalized) {
+                                return true;
+                            }
+
+                            false
+                        } else {
+                            // No prefix: standard substring match on normalized number
+                            name_lower.contains(&code.normalized)
+                        }
+                    })
+                    .cloned()
+                    .collect()
+            }
 
             MatchMode::Regex => {
                 let pattern_str = regex_pattern.as_deref().unwrap_or(".*");
@@ -225,8 +311,15 @@ where
 
         let primary_photo = matched_files.first().cloned();
 
+        let display_code = match &code.prefix {
+            Some(prefix) if !prefix.is_empty() && code.raw.trim().chars().all(|c| !c.is_ascii_alphabetic()) => {
+                format!("{}{}", prefix, code.raw.trim())
+            }
+            _ => code.raw.trim().to_string(),
+        };
+
         matches.push(MatchedPhoto {
-            code: code.raw.trim().to_string(),
+            code: display_code,
             photo: primary_photo,
             status,
             all_matches: matched_files,
@@ -271,6 +364,7 @@ mod tests {
         CustomerCode {
             raw: normalized.to_string(),
             normalized: normalized.to_string(),
+            prefix: None,
         }
     }
 
@@ -278,6 +372,15 @@ mod tests {
         CustomerCode {
             raw: raw.to_string(),
             normalized: normalized.to_string(),
+            prefix: None,
+        }
+    }
+
+    fn make_code_with_prefix(raw: &str, normalized: &str, prefix: Option<&str>) -> CustomerCode {
+        CustomerCode {
+            raw: raw.to_string(),
+            normalized: normalized.to_string(),
+            prefix: prefix.map(|s| s.to_string()),
         }
     }
 
@@ -437,5 +540,85 @@ mod tests {
         assert_eq!(result.missing_count, 0);
         assert_eq!(result.matches[0].photo.as_ref().unwrap().filename, "ABC01234.CR2");
         assert_eq!(result.matches[1].photo.as_ref().unwrap().filename, "DEF05678.JPG");
+    }
+
+    #[test]
+    fn test_separator_agnostic_exact_match() {
+        // File has underscore: ABC_1234.jpg, customer typed ABC1234 (no underscore)
+        let files = vec![make_photo("ABC_1234.jpg", "1234")];
+        let codes = vec![make_code_with_raw("ABC1234", "1234")];
+        let result = match_photos_impl(codes, files, "ExactNumber".to_string(), None, None, |_| {}).unwrap();
+        assert_eq!(result.found_count, 1);
+        assert_eq!(result.missing_count, 0);
+        assert_eq!(result.matches[0].photo.as_ref().unwrap().filename, "ABC_1234.jpg");
+    }
+
+    #[test]
+    fn test_cascading_prefix_matches_correct_cameras() {
+        // Scenario from user: Multiple camera bodies with same numbers in same folder
+        let files = vec![
+            make_photo("ABC_1234.jpg", "1234"),
+            make_photo("ABC_1235.jpg", "1235"),
+            make_photo("DEF1234.jpg", "1234"),
+            make_photo("DEF1235.jpg", "1235"),
+        ];
+
+        // Customer inputs: ABC1234, then 1235 (inherits ABC), then DEF1234, then 1235 (inherits DEF)
+        let codes = vec![
+            make_code_with_prefix("ABC1234", "1234", Some("ABC")),
+            make_code_with_prefix("1235", "1235", Some("ABC")),
+            make_code_with_prefix("DEF1234", "1234", Some("DEF")),
+            make_code_with_prefix("1235", "1235", Some("DEF")),
+        ];
+
+        let result = match_photos_impl(codes, files, "ExactNumber".to_string(), None, None, |_| {}).unwrap();
+        assert_eq!(result.found_count, 4);
+        assert_eq!(result.missing_count, 0);
+        assert_eq!(result.duplicate_count, 0);
+
+        assert_eq!(result.matches[0].photo.as_ref().unwrap().filename, "ABC_1234.jpg");
+        assert_eq!(result.matches[1].photo.as_ref().unwrap().filename, "ABC_1235.jpg");
+        assert_eq!(result.matches[2].photo.as_ref().unwrap().filename, "DEF1234.jpg");
+        assert_eq!(result.matches[3].photo.as_ref().unwrap().filename, "DEF1235.jpg");
+
+        // Verify displayed codes have prefix attached
+        assert_eq!(result.matches[0].code, "ABC1234");
+        assert_eq!(result.matches[1].code, "ABC1235");
+        assert_eq!(result.matches[2].code, "DEF1234");
+        assert_eq!(result.matches[3].code, "DEF1235");
+    }
+
+    #[test]
+    fn test_smart_contains_distinguishes_prefixes() {
+        // Files in folder: ABC_1234.jpg and DEF1234.jpg
+        let files = vec![
+            make_photo("ABC_1234.jpg", "1234"),
+            make_photo("DEF1234.jpg", "1234"),
+        ];
+
+        // Customer typed ABC1234 in Contains mode
+        let codes = vec![make_code_with_prefix("ABC1234", "1234", Some("ABC"))];
+        let result = match_photos_impl(codes, files, "Contains".to_string(), None, None, |_| {}).unwrap();
+
+        // Should ONLY match ABC_1234.jpg, NOT DEF1234.jpg!
+        assert_eq!(result.found_count, 1);
+        assert_eq!(result.duplicate_count, 0);
+        assert_eq!(result.matches[0].status, MatchStatus::Found);
+        assert_eq!(result.matches[0].photo.as_ref().unwrap().filename, "ABC_1234.jpg");
+    }
+
+    #[test]
+    fn test_inherited_prefix_missing_does_not_match_wrong_camera() {
+        // Folder only has DEF1235.jpg (no ABC photo)
+        let files = vec![make_photo("DEF1235.jpg", "1235")];
+
+        // User typed 1235 which inherited prefix ABC
+        let codes = vec![make_code_with_prefix("1235", "1235", Some("ABC"))];
+        let result = match_photos_impl(codes, files, "ExactNumber".to_string(), None, None, |_| {}).unwrap();
+
+        // Must report Missing rather than mistakenly picking DEF1235
+        assert_eq!(result.found_count, 0);
+        assert_eq!(result.missing_count, 1);
+        assert_eq!(result.matches[0].status, MatchStatus::Missing);
     }
 }

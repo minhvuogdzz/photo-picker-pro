@@ -20,8 +20,11 @@ import {
   ArrowRight,
   Crown,
   Lock,
+  LogOut,
+  Link,
 } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { useAppStore } from "@/core/stores/useAppStore";
 import { useAuthStore } from "@/core/stores/useAuthStore";
 import {
@@ -29,7 +32,10 @@ import {
   type PremiumFeatureKey,
 } from "@/core/services/premiumFeaturePolicy";
 import { PremiumGateModal } from "@/core/components/PremiumGateModal";
-import { useContactSheetStore } from "@/modules/contact-the-sheet/stores/useContactSheetStore";
+import {
+  useContactSheetStore,
+  DEFAULT_PRODUCTION_PROFILE,
+} from "@/modules/contact-the-sheet/stores/useContactSheetStore";
 import { googleCredentialManager } from "@/modules/contact-the-sheet/services/googleCredentialBridge";
 import { sheetDiscoveryService } from "@/modules/contact-the-sheet/services/sheetDiscoveryService";
 import {
@@ -106,6 +112,10 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
   // Available sheet tabs
   const [availableTabs, setAvailableTabs] = useState<string[]>(DEFAULT_TABS);
   const [isLoadingMetadata, setIsLoadingMetadata] = useState<boolean>(false);
+
+  // Sheet URL input & applying state
+  const [sheetUrlInput, setSheetUrlInput] = useState<string>("");
+  const [isApplyingSheet, setIsApplyingSheet] = useState<boolean>(false);
 
   // Selected folder to extract from
   const [selectedFolder, setSelectedFolder] = useState<string>("");
@@ -213,12 +223,19 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
         const activeTab = profile.selectedTabTitle || "Edit 9/2026";
         setConfigTabTitle(activeTab);
         loadTabConfigIntoForm(activeTab);
-      }
 
-      // Refresh metadata tabs if connected
-      fetchSheetTabsMetadata();
+        if (profile.spreadsheetId) {
+          const fullUrl =
+            useContactSheetStore.getState().lastSheetUrl ||
+            `https://docs.google.com/spreadsheets/d/${profile.spreadsheetId}/edit`;
+          setSheetUrlInput(fullUrl);
+          fetchSheetTabsMetadata(profile.spreadsheetId);
+        } else {
+          setSheetUrlInput("");
+        }
+      }
     }
-  }, [isOpen, initialTab, profile?.id]);
+  }, [isOpen, initialTab, profile?.id, profile?.spreadsheetId]);
 
   // Sync selectedFolder whenever user clicks a different customer checkbox in the queue
   useEffect(() => {
@@ -232,11 +249,12 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
   }, [selectedInputFolders]);
 
   // Fetch real sheet tabs from Google Sheets API
-  const fetchSheetTabsMetadata = async () => {
-    if (!profile || profile.isMockSandbox) return;
+  const fetchSheetTabsMetadata = async (overrideSpreadsheetId?: string) => {
+    const sheetId = overrideSpreadsheetId || profile?.spreadsheetId;
+    if (!profile || !sheetId || profile.isMockSandbox) return;
     try {
       setIsLoadingMetadata(true);
-      const meta = await sheetDiscoveryService.fetchSpreadsheetMetadata(profile.spreadsheetId, false);
+      const meta = await sheetDiscoveryService.fetchSpreadsheetMetadata(sheetId, false);
       if (meta && meta.tabs && meta.tabs.length > 0) {
         const tabTitles = meta.tabs.map((t) => t.title);
         setAvailableTabs(tabTitles);
@@ -332,14 +350,15 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
   };
 
   // Load sheet rows
-  const loadRows = async (tabToLoad?: string) => {
-    if (!profile) return [];
+  const loadRows = async (tabToLoad?: string, overrideSpreadsheetId?: string) => {
+    const sheetId = overrideSpreadsheetId || profile?.spreadsheetId;
+    if (!profile || !sheetId) return [];
     setIsLoadingRows(true);
     setErrorMessage(null);
     const tabName = tabToLoad || currentTabTitle;
     try {
       const rows = await sheetDiscoveryService.fetchSheetRowsForMatching(
-        profile.spreadsheetId,
+        sheetId,
         tabName,
         profile.rowScope?.startRow || 4,
         undefined,
@@ -396,8 +415,8 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
 
   // Run extraction matching
   const runExtraction = async () => {
-    if (!profile) {
-      setErrorMessage("Chưa cấu hình hồ sơ Google Sheet. Vui lòng kiểm tra lại cấu hình.");
+    if (!profile || !profile.spreadsheetId) {
+      setErrorMessage("Chưa liên kết Google Sheet. Vui lòng dán link Google Sheet vào ô trên và nhấn 'Liên kết Sheet'.");
       return;
     }
 
@@ -446,13 +465,137 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
     setErrorMessage(null);
     try {
       await googleCredentialManager.connectGoogle();
-      await fetchSheetTabsMetadata();
-      await loadRows();
+      if (profile?.spreadsheetId) {
+        await fetchSheetTabsMetadata();
+        await loadRows();
+      }
     } catch (err: any) {
       setErrorMessage(`Lỗi kết nối Google: ${err.message || err}`);
     } finally {
       setIsConnectingGoogle(false);
     }
+  };
+
+  // Handle Google OAuth disconnect
+  const handleDisconnectGoogle = async () => {
+    try {
+      await googleCredentialManager.disconnectGoogle();
+      setSheetRows([]);
+      setExtractionResult(null);
+      setSelectedColumnLetters(new Set());
+    } catch (err: any) {
+      console.error("Disconnect Google error:", err);
+      setErrorMessage("Lỗi khi đăng xuất Google: " + (err.message || String(err)));
+    }
+  };
+
+  // Helper to extract spreadsheet ID from URL or raw ID
+  const extractSpreadsheetId = (input: string): string => {
+    const trimmed = input.trim();
+    const match = trimmed.match(/\/spreadsheets(?:\/u\/\d+)?\/d\/([a-zA-Z0-9-_]+)/);
+    if (match && match[1]) {
+      return match[1];
+    }
+    if (/^[a-zA-Z0-9-_]{15,}$/.test(trimmed)) {
+      return trimmed;
+    }
+    return trimmed;
+  };
+
+  // Handle apply new Sheet URL
+  const handleApplySheetUrl = async (customUrl?: string) => {
+    const rawUrl = (customUrl !== undefined ? customUrl : sheetUrlInput).trim();
+    if (!rawUrl) {
+      setErrorMessage("Vui lòng dán link Google Sheet (URL) hoặc nhập mã Spreadsheet ID.");
+      return;
+    }
+
+    const sheetId = extractSpreadsheetId(rawUrl);
+    if (!sheetId || sheetId.length < 15) {
+      setErrorMessage("Link Google Sheet không hợp lệ. Vui lòng dán đầy đủ đường link (ví dụ: https://docs.google.com/spreadsheets/d/...)");
+      return;
+    }
+
+    setErrorMessage(null);
+    setIsApplyingSheet(true);
+
+    try {
+      const baseProfile = activeProfile || profiles[0] || DEFAULT_PRODUCTION_PROFILE;
+      const fullUrl = rawUrl.startsWith("http")
+        ? rawUrl
+        : `https://docs.google.com/spreadsheets/d/${sheetId}/edit`;
+
+      const updatedProfile: WorkspaceProfile = {
+        ...baseProfile,
+        spreadsheetId: sheetId,
+        spreadsheetTitle: "Google Sheet",
+        updatedAt: new Date().toISOString(),
+      };
+
+      saveProfile(updatedProfile);
+      useContactSheetStore.getState().setLastSheetUrl(fullUrl);
+
+      // Fetch remote tabs
+      setIsLoadingMetadata(true);
+      let tabsList: string[] = [];
+      try {
+        const meta = await sheetDiscoveryService.fetchSpreadsheetMetadata(sheetId, false);
+        if (meta && meta.tabs && meta.tabs.length > 0) {
+          tabsList = meta.tabs.map((t) => t.title);
+          setAvailableTabs(tabsList);
+        }
+      } catch (metaErr: any) {
+        console.warn("Could not fetch remote tabs for sheet:", metaErr);
+      } finally {
+        setIsLoadingMetadata(false);
+      }
+
+      const targetTab = tabsList.length > 0
+        ? (tabsList.includes(updatedProfile.selectedTabTitle) ? updatedProfile.selectedTabTitle : tabsList[0])
+        : updatedProfile.selectedTabTitle || "Edit 9/2026";
+
+      if (targetTab !== updatedProfile.selectedTabTitle) {
+        switchActiveTab(targetTab);
+      }
+
+      // Load rows
+      setIsLoadingRows(true);
+      const rows = await sheetDiscoveryService.fetchSheetRowsForMatching(
+        sheetId,
+        targetTab,
+        updatedProfile.rowScope?.startRow || 4,
+        undefined,
+        false
+      );
+      setSheetRows(rows);
+
+      // If target folder is available, run extraction immediately
+      if (targetFolderName) {
+        runExtractionWithRows(rows, targetTab);
+      }
+    } catch (err: any) {
+      console.error("Failed to link Google Sheet:", err);
+      setErrorMessage(
+        err.message || "Không thể kết nối hoặc đọc Google Sheet này. Hãy chắc chắn tài khoản Google của bạn đã được cấp quyền xem/sửa bảng tính."
+      );
+    } finally {
+      setIsApplyingSheet(false);
+      setIsLoadingRows(false);
+    }
+  };
+
+  // Handle Unlink Sheet
+  const handleUnlinkSheet = () => {
+    if (!profile) return;
+    saveProfile({
+      ...profile,
+      spreadsheetId: "",
+      spreadsheetTitle: "Chưa liên kết",
+      updatedAt: new Date().toISOString(),
+    });
+    setSheetUrlInput("");
+    setSheetRows([]);
+    setExtractionResult(null);
   };
 
   // Toggle column selection checkbox
@@ -824,12 +967,12 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
 
         {/* Modal Body */}
         <div className="min-h-0 flex-1 overflow-y-auto p-5 space-y-4 text-xs">
-          {/* Connection status banner */}
+          {/* Connection status banner: Chưa kết nối */}
           {!isConnected && (
             <div className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-lg flex items-center justify-between">
               <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
                 <AlertCircle size={16} className="shrink-0" />
-                <span>Chưa kết nối tài khoản Google Sheet để đọc dữ liệu.</span>
+                <span>Chưa kết nối tài khoản Google để truy xuất Google Sheet.</span>
               </div>
               <button
                 type="button"
@@ -842,6 +985,116 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
               </button>
             </div>
           )}
+
+          {/* Connection status banner: Đã kết nối + Nút Đăng xuất Google */}
+          {isConnected && (
+            <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/25 rounded-lg flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-[10px] shrink-0 overflow-hidden">
+                  {googleConnection.avatarUrl ? (
+                    <img src={googleConnection.avatarUrl} alt="Avatar" className="w-6 h-6 rounded-full object-cover" />
+                  ) : (
+                    <CheckCircle2 size={14} />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-foreground truncate max-w-[220px] sm:max-w-[340px]">
+                      {googleConnection.accountEmail || (profile?.isMockSandbox ? "Sandbox Mode (Mock)" : "Tài khoản Google")}
+                    </span>
+                    <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/30">
+                      Đã kết nối
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleDisconnectGoogle}
+                className="px-2.5 py-1 bg-muted/60 hover:bg-destructive/15 text-muted-foreground hover:text-destructive border border-border/60 hover:border-destructive/30 rounded text-[11px] font-medium transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
+                title="Đăng xuất tài khoản Google này để kết nối tài khoản khác"
+              >
+                <LogOut size={12} />
+                <span>Đăng xuất Google</span>
+              </button>
+            </div>
+          )}
+
+          {/* Google Sheet URL / ID Input Bar */}
+          <div className="p-3 bg-muted/30 border border-border/60 rounded-lg space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
+                <FileSpreadsheet size={13} className="text-emerald-500" />
+                <span>Link Google Sheet (Trang tính cần lấy mã):</span>
+              </label>
+              {profile?.spreadsheetId && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-muted-foreground font-mono truncate max-w-[160px]" title={profile.spreadsheetId}>
+                    ID: {profile.spreadsheetId}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleUnlinkSheet}
+                    className="text-[10px] text-destructive hover:underline cursor-pointer"
+                    title="Gỡ liên kết bảng tính này"
+                  >
+                    Gỡ link
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  placeholder="Dán link Google Sheet (https://docs.google.com/spreadsheets/d/...) hoặc ID tại đây..."
+                  value={sheetUrlInput}
+                  onChange={(e) => setSheetUrlInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleApplySheetUrl()}
+                  className="w-full bg-background border border-border/60 rounded px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary placeholder:text-muted-foreground/60 pr-8 font-mono"
+                />
+                {sheetUrlInput && (
+                  <button
+                    type="button"
+                    onClick={() => setSheetUrlInput("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 cursor-pointer"
+                    title="Xóa ô nhập"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleApplySheetUrl()}
+                disabled={isApplyingSheet || !sheetUrlInput.trim()}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded text-xs transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0 shadow-xs"
+                title="Áp dụng link Sheet và tải các tab & dữ liệu"
+              >
+                {isApplyingSheet ? <RefreshCw size={12} className="animate-spin" /> : <Link size={12} />}
+                <span>{profile?.spreadsheetId ? "Đổi Sheet" : "Liên kết Sheet"}</span>
+              </button>
+
+              {profile?.spreadsheetId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const url = sheetUrlInput.startsWith("http")
+                      ? sheetUrlInput
+                      : `https://docs.google.com/spreadsheets/d/${profile.spreadsheetId}/edit`;
+                    openUrl(url).catch(() => {});
+                  }}
+                  className="p-1.5 border border-border/60 hover:bg-muted/50 rounded text-muted-foreground hover:text-foreground cursor-pointer shrink-0"
+                  title="Mở Google Sheet trên trình duyệt"
+                >
+                  <ExternalLink size={13} />
+                </button>
+              )}
+            </div>
+          </div>
 
           {/* Error Message */}
           {errorMessage && (
@@ -856,62 +1109,76 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
           {/* ========================================================================= */}
           {modalTab === "extract" && (
             <div className="space-y-4">
-              {/* Quick Tab & Account Bar */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-muted/30 border border-border/50 rounded-lg">
-                <div>
-                  <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold block mb-1">
-                    Tab làm việc (Trang tính)
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={currentTabTitle}
-                      onChange={(e) => handleQuickSwitchTab(e.target.value)}
-                      className="flex-1 bg-background border border-border/60 rounded px-2.5 py-1.5 text-xs text-foreground font-semibold focus:outline-none focus:border-primary"
-                    >
-                      {availableTabs.map((t) => (
-                        <option key={t} value={t}>
-                          {t}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!configAccess.hasAccess) {
-                          setGateFeature("sheet_config");
-                          return;
-                        }
-                        setModalTab("config");
-                      }}
-                      className="p-1.5 border border-border/60 hover:bg-muted/50 rounded text-muted-foreground hover:text-foreground cursor-pointer"
-                      title={configAccess.hasAccess ? "Cấu hình cột cho Tab này" : "Yêu cầu VIP Premium: Cấu hình Sheet"}
-                    >
-                      <Settings2 size={13} />
-                    </button>
+              {!profile?.spreadsheetId ? (
+                <div className="p-8 text-center border border-dashed border-border/80 rounded-xl bg-muted/10 flex flex-col items-center justify-center space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+                    <FileSpreadsheet size={24} />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-semibold text-foreground">Chưa liên kết Google Sheet</h4>
+                    <p className="text-xs text-muted-foreground max-w-md">
+                      Vui lòng dán đường link Google Sheet của bạn vào ô bên trên rồi nhấn <strong>"Liên kết Sheet"</strong> để app đọc danh sách mã ảnh và cập nhật trạng thái tự động.
+                    </p>
                   </div>
                 </div>
+              ) : (
+                <>
+                  {/* Quick Tab & Sync status */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-muted/30 border border-border/50 rounded-lg">
+                    <div>
+                      <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold block mb-1">
+                        Tab làm việc (Trang tính)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={currentTabTitle}
+                          onChange={(e) => handleQuickSwitchTab(e.target.value)}
+                          className="flex-1 bg-background border border-border/60 rounded px-2.5 py-1.5 text-xs text-foreground font-semibold focus:outline-none focus:border-primary"
+                        >
+                          {availableTabs.map((t) => (
+                            <option key={t} value={t}>
+                              {t}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!configAccess.hasAccess) {
+                              setGateFeature("sheet_config");
+                              return;
+                            }
+                            setModalTab("config");
+                          }}
+                          className="p-1.5 border border-border/60 hover:bg-muted/50 rounded text-muted-foreground hover:text-foreground cursor-pointer"
+                          title={configAccess.hasAccess ? "Cấu hình cột cho Tab này" : "Yêu cầu VIP Premium: Cấu hình Sheet"}
+                        >
+                          <Settings2 size={13} />
+                        </button>
+                      </div>
+                    </div>
 
-                <div>
-                  <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold block mb-1">
-                    Tài khoản & Bảng tính
-                  </label>
-                  <div className="text-muted-foreground flex items-center justify-between py-1">
-                    <span className="truncate max-w-[200px] text-[11px] font-medium text-foreground">
-                      {googleConnection.accountEmail || (profile?.isMockSandbox ? "Sandbox Mode (Mock)" : "Chưa đăng nhập")}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => loadRows(currentTabTitle).then((r) => runExtractionWithRows(r, currentTabTitle))}
-                      disabled={isLoadingRows}
-                      className="px-2.5 py-1 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-md text-[11px] font-semibold flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
-                      title="Tải lại toàn bộ dữ liệu dòng Google Sheet mới nhất & quét lại"
-                    >
-                      <RefreshCw size={11} className={isLoadingRows ? "animate-spin" : ""} />
-                      <span>Làm mới dữ liệu</span>
-                    </button>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold block mb-1">
+                        Dữ liệu Sheet đã nạp
+                      </label>
+                      <div className="text-muted-foreground flex items-center justify-between py-1">
+                        <span className="text-[11px] font-medium text-foreground">
+                          {sheetRows.length > 0 ? `${sheetRows.length} dòng dữ liệu` : "Chưa tải dòng"}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => loadRows(currentTabTitle).then((r) => runExtractionWithRows(r, currentTabTitle))}
+                          disabled={isLoadingRows}
+                          className="px-2.5 py-1 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-md text-[11px] font-semibold flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
+                          title="Tải lại toàn bộ dữ liệu dòng Google Sheet mới nhất & quét lại"
+                        >
+                          <RefreshCw size={11} className={isLoadingRows ? "animate-spin" : ""} />
+                          <span>Làm mới dữ liệu</span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
 
               {/* Folder Selection */}
               <div className="space-y-1.5">
@@ -1181,14 +1448,23 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                   )}
                 </div>
               ) : null}
-            </div>
+            </>
           )}
+        </div>
+      )}
 
           {/* ========================================================================= */}
           {/* TAB 2: CẤU HÌNH SHEET & CỘT                                              */}
           {/* ========================================================================= */}
           {modalTab === "config" && (
             <div className="space-y-4">
+              {!profile?.spreadsheetId && (
+                <div className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-lg text-amber-600 dark:text-amber-400 text-xs flex items-center gap-2">
+                  <AlertCircle size={15} className="shrink-0" />
+                  <span>Vui lòng dán link Google Sheet vào ô phía trên và nhấn "Liên kết Sheet" trước khi cấu hình cột.</span>
+                </div>
+              )}
+
               {/* Tab Selector & Survey Banner */}
               <div className="p-3 bg-muted/30 border border-border/50 rounded-lg space-y-2.5">
                 <div className="flex items-center justify-between">
