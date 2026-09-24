@@ -11,3 +11,4 @@ pub mod converter;
 pub mod sheet_auth;
 pub mod sheet_fs;
 pub mod photo_counter;
+pub mod preview;

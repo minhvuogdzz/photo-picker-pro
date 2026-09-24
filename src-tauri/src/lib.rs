@@ -41,6 +41,11 @@ pub fn run() {
             commands::sheet_fs::scan_folder_topology,
             commands::photo_counter::scan_month_photos,
             commands::scanner::expand_batch_customer_folders,
+            commands::preview::list_folder_photos,
+            commands::preview::get_photo_thumbnail,
+            commands::preview::get_photo_thumbnails_batch,
+            commands::preview::clear_thumbnail_cache,
+            commands::preview::copy_photo_files,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -28,6 +28,7 @@ import {
   Loader2,
   Crown,
   Lock,
+  Eye,
 } from "lucide-react";
 import { getFolderName } from "@/core/lib/utils";
 import { batchFolderService } from "../services/batchFolderService";
@@ -36,6 +37,7 @@ import {
   type PremiumFeatureKey,
 } from "@/core/services/premiumFeaturePolicy";
 import { PremiumGateModal } from "@/core/components/PremiumGateModal";
+import { FolderPreviewModal } from "./FolderPreviewModal";
 
 export function LeftPanel() {
   const inputFolders = useAppStore((s) => s.inputFolders);
@@ -62,6 +64,13 @@ export function LeftPanel() {
   const [copiedDuplicates, setCopiedDuplicates] = useState(false);
   const [copiedMissing, setCopiedMissing] = useState(false);
   const [copiedAll, setCopiedAll] = useState(false);
+  const [previewFolder, setPreviewFolder] = useState<string | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  const handleOpenPreview = (folder: string) => {
+    setPreviewFolder(folder);
+    setIsPreviewOpen(true);
+  };
 
   // VIP Premium feature access checks
   const session = useAuthStore((s) => s.session);
@@ -534,16 +543,29 @@ export function LeftPanel() {
             inputFolders.map((folder, i) => (
               <div
                 key={i}
-                className="flex items-center gap-2 p-2 rounded-lg border bg-background/50 border-border/30 hover:border-border/60 transition-colors group"
+                onClick={() => handleOpenPreview(folder)}
+                className="flex items-center gap-2 p-2 rounded-lg border bg-background/50 border-border/30 hover:border-border/60 hover:bg-muted/30 transition-colors group cursor-pointer select-none"
+                title="Bấm để mở kho ảnh xem trước"
               >
-                <FolderOpen size={13} className="text-muted-foreground shrink-0" />
+                <FolderOpen size={13} className="text-muted-foreground group-hover:text-primary shrink-0 transition-colors" />
                 <div
-                  className="flex-1 truncate text-[11px] text-foreground/80 font-medium"
+                  className="flex-1 truncate text-[11px] text-foreground/80 font-medium group-hover:text-foreground"
                   title={folder}
                   dir="rtl"
                 >
                   &lrm;{getFolderName(folder)}
                 </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenPreview(folder);
+                  }}
+                  className="p-1 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer shrink-0"
+                  title="Xem toàn bộ ảnh trong thư mục này"
+                >
+                  <Eye size={13} />
+                </button>
               </div>
             ))
           ) : (
@@ -590,6 +612,19 @@ export function LeftPanel() {
                       </span>
                     )}
                   </div>
+
+                  {/* Preview customer folder */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenPreview(folder);
+                    }}
+                    className="p-1 rounded hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all cursor-pointer shrink-0"
+                    title="Xem trước ảnh của khách này"
+                  >
+                    <Eye size={12} />
+                  </button>
 
                   {/* Delete from queue */}
                   <button
@@ -783,6 +818,16 @@ export function LeftPanel() {
           reason={multiAccess.reason}
         />
       )}
+
+      {/* Folder Photo Gallery Preview Modal */}
+      <FolderPreviewModal
+        isOpen={isPreviewOpen}
+        folderPath={previewFolder}
+        onClose={() => {
+          setIsPreviewOpen(false);
+          setPreviewFolder(null);
+        }}
+      />
     </div>
   );
 }
