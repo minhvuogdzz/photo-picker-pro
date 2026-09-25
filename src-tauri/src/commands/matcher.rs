@@ -240,15 +240,17 @@ where
                     re_alpha.find(&without_ext).map(|mat| mat.as_str().to_string())
                 });
 
-                files
-                    .iter()
-                    .filter(|f| {
-                        let name_lower = f.filename.to_lowercase();
-                        let name_canon = canonicalize(&f.filename);
+                let mut matched_with_prefix: Vec<PhotoFile> = Vec::new();
 
-                        if let Some(ref prefix) = effective_prefix {
-                            let prefix_canon = canonicalize(prefix);
-                            let target_combined = format!("{}{}", prefix_canon, code.normalized);
+                if let Some(ref prefix) = effective_prefix {
+                    let prefix_canon = canonicalize(prefix);
+                    let target_combined = format!("{}{}", prefix_canon, code.normalized);
+
+                    matched_with_prefix = files
+                        .iter()
+                        .filter(|f| {
+                            let name_lower = f.filename.to_lowercase();
+                            let name_canon = canonicalize(&f.filename);
 
                             // Priority 1: Canonical filename contains both prefix and number together
                             // e.g. "ABC_1234.jpg" (canonical "abc1234jpg") contains "abc1234"
@@ -263,13 +265,26 @@ where
                             }
 
                             false
-                        } else {
-                            // No prefix: standard substring match on normalized number
+                        })
+                        .cloned()
+                        .collect();
+                }
+
+                if !matched_with_prefix.is_empty() {
+                    matched_with_prefix
+                } else {
+                    // Fallback or standard contains:
+                    // If no file matches the prefix (e.g. customer typed ACB123 instead of ABC123, or IGM0088 instead of IMG0088),
+                    // or if no prefix was provided: simply match any file whose filename contains the normalized number!
+                    files
+                        .iter()
+                        .filter(|f| {
+                            let name_lower = f.filename.to_lowercase();
                             name_lower.contains(&code.normalized)
-                        }
-                    })
-                    .cloned()
-                    .collect()
+                        })
+                        .cloned()
+                        .collect()
+                }
             }
 
             MatchMode::Regex => {
@@ -620,5 +635,56 @@ mod tests {
         assert_eq!(result.found_count, 0);
         assert_eq!(result.missing_count, 1);
         assert_eq!(result.matches[0].status, MatchStatus::Missing);
+    }
+
+    #[test]
+    fn test_clear_mode_matches_in_exact_mode() {
+        // Files on disk from Canon (_MG_0088.CR2) and Sony (DSC0138.JPG)
+        let files = vec![
+            make_photo("_MG_0088.CR2", "0088"),
+            make_photo("DSC0138.JPG", "0138"),
+        ];
+
+        // Customer input was @clear followed by IGM0088, IMG0138
+        let parsed = super::super::parser::parse_customer_codes("@clear\nIGM0088\nIMG0138".to_string()).unwrap();
+        let result = match_photos_impl(parsed, files, "ExactNumber".to_string(), None, None, |_| {}).unwrap();
+
+        assert_eq!(result.found_count, 2);
+        assert_eq!(result.missing_count, 0);
+        assert_eq!(result.matches[0].photo.as_ref().unwrap().filename, "_MG_0088.CR2");
+        assert_eq!(result.matches[0].code, "0088");
+        assert_eq!(result.matches[1].photo.as_ref().unwrap().filename, "DSC0138.JPG");
+        assert_eq!(result.matches[1].code, "0138");
+    }
+
+    #[test]
+    fn test_clear_mode_matches_in_contains_mode() {
+        // Files on disk with arbitrary name structure
+        let files = vec![
+            make_photo("2026_Wedding_0088_retouch.JPG", "0088"),
+            make_photo("DSC_0138_final.CR2", "0138"),
+        ];
+
+        let parsed = super::super::parser::parse_customer_codes("@clear\nIGM0088\nIMG0138".to_string()).unwrap();
+        let result = match_photos_impl(parsed, files, "Contains".to_string(), None, None, |_| {}).unwrap();
+
+        assert_eq!(result.found_count, 2);
+        assert_eq!(result.missing_count, 0);
+        assert_eq!(result.matches[0].photo.as_ref().unwrap().filename, "2026_Wedding_0088_retouch.JPG");
+        assert_eq!(result.matches[0].code, "0088");
+        assert_eq!(result.matches[1].photo.as_ref().unwrap().filename, "DSC_0138_final.CR2");
+        assert_eq!(result.matches[1].code, "0138");
+    }
+
+    #[test]
+    fn test_contains_fallback_when_prefix_is_typo() {
+        // Customer typed ACB123 (typo), but actual file in folder is ABC_123.jpg
+        let files = vec![make_photo("ABC_123.jpg", "123")];
+        let codes = vec![make_code_with_prefix("ACB123", "123", Some("ACB"))];
+
+        let result = match_photos_impl(codes, files, "Contains".to_string(), None, None, |_| {}).unwrap();
+        assert_eq!(result.found_count, 1);
+        assert_eq!(result.missing_count, 0);
+        assert_eq!(result.matches[0].photo.as_ref().unwrap().filename, "ABC_123.jpg");
     }
 }

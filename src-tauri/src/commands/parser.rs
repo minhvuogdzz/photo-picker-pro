@@ -73,6 +73,56 @@ pub fn remove_extension(s: &str) -> String {
     s.to_string()
 }
 
+/// Helper to detect if a string token or line is a command to clear/strip prefixes
+pub fn is_clear_token(s: &str) -> bool {
+    let trimmed = s.trim();
+    if trimmed.is_empty() {
+        return false;
+    }
+    let lower = trimmed.to_lowercase();
+    let cleaned = lower.trim_matches(|c: char| {
+        c == ':' || c == '-' || c == '/' || c == '#' || c == '@' || c == ' ' || c == ',' || c == ';' || c == '.' || c == '='
+    });
+    if cleaned == "clear" || cleaned == "none" || cleaned == "reset" || cleaned == "all" {
+        return true;
+    }
+    if lower.starts_with("@clear")
+        || lower.starts_with("@none")
+        || lower.starts_with("#clear")
+        || lower.starts_with("#none")
+        || lower.starts_with("@reset")
+        || lower.starts_with("#reset")
+    {
+        let rest = lower.trim_start_matches(|c: char| c == '@' || c == '#');
+        let cmd = rest
+            .split(|c: char| c == ' ' || c == ':' || c == '-' || c == ',' || c == ';' || c == '=')
+            .next()
+            .unwrap_or("");
+        if cmd == "clear" || cmd == "none" || cmd == "reset" || cmd == "all" {
+            return true;
+        }
+    }
+    false
+}
+
+/// Helper to detect if a line or token sets an explicit prefix, e.g. @prefix ABC or #prefix: DEF
+pub fn extract_prefix_command(s: &str) -> Option<String> {
+    let trimmed = s.trim();
+    let lower = trimmed.to_lowercase();
+    for kw in &["@prefix", "#prefix", "@set", "#set"] {
+        if lower.starts_with(kw) {
+            let rest = trimmed[kw.len()..]
+                .trim()
+                .trim_matches(|c: char| c == ':' || c == '=' || c == ' ');
+            let cleaned = rest.trim_matches(|c: char| !c.is_ascii_alphanumeric() && c != '_');
+            if !cleaned.is_empty() {
+                return Some(cleaned.to_string());
+            }
+        }
+    }
+    None
+}
+
 /// Parses raw customer code input into normalized numeric codes.
 #[tauri::command]
 pub fn parse_customer_codes(input: String) -> Result<Vec<CustomerCode>, String> {
@@ -110,6 +160,27 @@ pub fn parse_customer_codes(input: String) -> Result<Vec<CustomerCode>, String> 
         dash_separated = re_dash_code.replace_all(&dash_separated, "$1\n$2").into_owned();
     }
 
+    let non_empty_lines: Vec<&str> = dash_separated
+        .lines()
+        .map(|l| l.trim())
+        .filter(|l| !l.is_empty())
+        .collect();
+
+    let has_clear_at_start = non_empty_lines
+        .first()
+        .map(|l| is_clear_token(l))
+        .unwrap_or(false);
+
+    let has_clear_at_end = non_empty_lines
+        .last()
+        .map(|l| is_clear_token(l))
+        .unwrap_or(false);
+
+    let has_any_prefix_cmd = non_empty_lines
+        .iter()
+        .any(|l| extract_prefix_command(l).is_some());
+
+    let mut strip_prefix_mode = has_clear_at_start || (has_clear_at_end && !has_any_prefix_cmd);
     let mut codes: Vec<CustomerCode> = Vec::new();
     let mut current_prefix: Option<String> = None;
 
@@ -121,12 +192,15 @@ pub fn parse_customer_codes(input: String) -> Result<Vec<CustomerCode>, String> 
         }
 
         // Allow explicit reset of active prefix if user types @clear, @none, #none, or #all
-        if trimmed.eq_ignore_ascii_case("@clear")
-            || trimmed.eq_ignore_ascii_case("@none")
-            || trimmed.eq_ignore_ascii_case("#none")
-            || trimmed.eq_ignore_ascii_case("#all")
-        {
+        if is_clear_token(trimmed) {
             current_prefix = None;
+            strip_prefix_mode = true;
+            continue;
+        }
+
+        if let Some(p) = extract_prefix_command(trimmed) {
+            current_prefix = Some(p);
+            strip_prefix_mode = false;
             continue;
         }
 
@@ -135,7 +209,24 @@ pub fn parse_customer_codes(input: String) -> Result<Vec<CustomerCode>, String> 
             .collect();
 
         for part in parts {
-            let cleaned = clean_token(part);
+            let part_trimmed = part.trim();
+            if part_trimmed.is_empty() {
+                continue;
+            }
+
+            if is_clear_token(part_trimmed) {
+                current_prefix = None;
+                strip_prefix_mode = true;
+                continue;
+            }
+
+            if let Some(p) = extract_prefix_command(part_trimmed) {
+                current_prefix = Some(p);
+                strip_prefix_mode = false;
+                continue;
+            }
+
+            let cleaned = clean_token(part_trimmed);
             if cleaned.is_empty() {
                 continue;
             }
@@ -151,23 +242,27 @@ pub fn parse_customer_codes(input: String) -> Result<Vec<CustomerCode>, String> 
                 // Check if this token has its own explicit alphabetic prefix
                 let has_alpha_prefix = before_digits.chars().any(|c| c.is_ascii_alphabetic());
 
-                let prefix = if has_alpha_prefix {
+                let (prefix, raw) = if strip_prefix_mode {
+                    // Under @clear / @none mode:
+                    // Strip the letter prefix completely and only search by number.
+                    (None, normalized.clone())
+                } else if has_alpha_prefix {
                     let p = before_digits
                         .trim_matches(|c: char| !c.is_ascii_alphanumeric() && c != '_')
                         .trim_end_matches('_')
                         .to_string();
                     if !p.is_empty() {
                         current_prefix = Some(p.clone());
-                        Some(p)
+                        (Some(p), cleaned.clone())
                     } else {
-                        current_prefix.clone()
+                        (current_prefix.clone(), cleaned.clone())
                     }
                 } else {
-                    current_prefix.clone()
+                    (current_prefix.clone(), cleaned.clone())
                 };
 
                 codes.push(CustomerCode {
-                    raw: cleaned.clone(),
+                    raw,
                     normalized,
                     prefix,
                 });
@@ -347,5 +442,74 @@ mod tests {
         assert_eq!(result[0].prefix.as_deref(), Some("ABC"));
         assert_eq!(result[1].prefix.as_deref(), Some("ABC"));
         assert_eq!(result[2].prefix, None);
+    }
+
+    #[test]
+    fn test_clear_command_strips_alphabetic_prefixes() {
+        // User scenario: @clear before codes with prefixes IGM, IMG
+        let input = "@clear\n\nIGM0088\nIMG0138\nIMG0175\nIMG0309\nIMG0528\nIMG0561";
+        let result = parse_customer_codes(input.to_string()).unwrap();
+        assert_eq!(result.len(), 6);
+
+        assert_eq!(result[0].raw, "0088");
+        assert_eq!(result[0].normalized, "0088");
+        assert_eq!(result[0].prefix, None);
+
+        assert_eq!(result[1].raw, "0138");
+        assert_eq!(result[1].normalized, "0138");
+        assert_eq!(result[1].prefix, None);
+
+        assert_eq!(result[2].raw, "0175");
+        assert_eq!(result[2].normalized, "0175");
+        assert_eq!(result[2].prefix, None);
+
+        assert_eq!(result[3].raw, "0309");
+        assert_eq!(result[3].normalized, "0309");
+        assert_eq!(result[3].prefix, None);
+
+        assert_eq!(result[4].raw, "0528");
+        assert_eq!(result[4].normalized, "0528");
+        assert_eq!(result[4].prefix, None);
+
+        assert_eq!(result[5].raw, "0561");
+        assert_eq!(result[5].normalized, "0561");
+        assert_eq!(result[5].prefix, None);
+    }
+
+    #[test]
+    fn test_none_command_strips_alphabetic_prefixes() {
+        let input = "@none\nIGM0088\nIMG0138";
+        let result = parse_customer_codes(input.to_string()).unwrap();
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].raw, "0088");
+        assert_eq!(result[0].normalized, "0088");
+        assert_eq!(result[0].prefix, None);
+        assert_eq!(result[1].raw, "0138");
+        assert_eq!(result[1].normalized, "0138");
+        assert_eq!(result[1].prefix, None);
+    }
+
+    #[test]
+    fn test_trailing_clear_command_strips_preceding_prefixes() {
+        let input = "IGM0088\nIMG0138\n@clear";
+        let result = parse_customer_codes(input.to_string()).unwrap();
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].raw, "0088");
+        assert_eq!(result[0].prefix, None);
+        assert_eq!(result[1].raw, "0138");
+        assert_eq!(result[1].prefix, None);
+    }
+
+    #[test]
+    fn test_prefix_switch_after_clear() {
+        let input = "@clear\nIGM0088\n@prefix DEF\n1234\n1235";
+        let result = parse_customer_codes(input.to_string()).unwrap();
+        assert_eq!(result.len(), 3);
+        assert_eq!(result[0].raw, "0088");
+        assert_eq!(result[0].prefix, None);
+        assert_eq!(result[1].raw, "1234");
+        assert_eq!(result[1].prefix.as_deref(), Some("DEF"));
+        assert_eq!(result[2].raw, "1235");
+        assert_eq!(result[2].prefix.as_deref(), Some("DEF"));
     }
 }

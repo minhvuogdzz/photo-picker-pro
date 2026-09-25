@@ -227,13 +227,16 @@ export function FilterSyntaxHelpModal({ isOpen, onClose }: FilterSyntaxHelpModal
               </div>
 
               {/* Reset Prefix Hint */}
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-1 text-[11px] text-amber-700 dark:text-amber-300">
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-1.5 text-[11px] text-amber-700 dark:text-amber-300">
                 <div className="font-semibold flex items-center gap-1.5">
                   <Info size={13} />
-                  <span>Cách ngắt tiền tố (Reset):</span>
+                  <span>Cách ngắt hoặc xoá tiền tố chữ (Chỉ tìm theo số):</span>
                 </div>
                 <p className="leading-relaxed">
-                  Nếu bạn muốn các dòng bên dưới trở về tìm số thuần túy (không ăn theo tiền tố nữa), chỉ cần gõ <code className="bg-amber-500/15 px-1 py-0.2 rounded font-mono font-bold">@clear</code> hoặc <code className="bg-amber-500/15 px-1 py-0.2 rounded font-mono font-bold">@none</code> trên một dòng riêng.
+                  Nếu bạn muốn bỏ qua toàn bộ tiền tố chữ (ví dụ: <code className="bg-amber-500/15 px-1 py-0.2 rounded font-mono font-bold">IGM0088</code>, <code className="bg-amber-500/15 px-1 py-0.2 rounded font-mono font-bold">IMG0138</code>) và chỉ tìm theo số thuần túy (<code className="font-mono font-bold">0088</code>, <code className="font-mono font-bold">0138</code>), chỉ cần gõ <code className="bg-amber-500/15 px-1 py-0.2 rounded font-mono font-bold">@clear</code> hoặc <code className="bg-amber-500/15 px-1 py-0.2 rounded font-mono font-bold">@none</code> trên một dòng riêng.
+                </p>
+                <p className="text-[10px] text-amber-600/90 dark:text-amber-400/90 leading-relaxed">
+                  ✨ Tính năng này hoạt động hiệu quả cho cả chế độ <strong>Chính xác</strong> lẫn <strong>Chứa</strong>, giúp khớp đúng file dù khách gõ sai tiền tố máy ảnh.
                 </p>
               </div>
             </div>
@@ -311,8 +314,13 @@ export function FilterSyntaxHelpModal({ isOpen, onClose }: FilterSyntaxHelpModal
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
                   Trước đây, ở chế độ "Chứa", nếu gõ <code className="font-mono bg-muted/60 px-1 py-0.5 rounded text-foreground">ABC1234</code>, app chỉ tìm mỗi số <code className="font-mono bg-muted/60 px-1 py-0.5 rounded text-foreground">1234</code>, dẫn đến việc cả file <code className="font-mono text-foreground">ABC_1234</code> và <code className="font-mono text-foreground">DEF1234</code> đều bị coi là trùng mã và bốc bừa file đầu tiên.
                 </p>
-                <div className="text-[11px] text-foreground font-medium bg-background/60 p-2.5 rounded-lg border border-border/40">
-                  ✨ <strong>Cập nhật mới:</strong> Khi mã có tiền tố (ví dụ <code className="font-mono font-bold text-primary">ABC1234</code>), chế độ Chứa sẽ kiểm tra tên file phải chứa <strong>cả chữ "ABC" lẫn số "1234"</strong>. Do đó sẽ <strong>chỉ lấy đúng file ABC</strong> và không bao giờ chọn nhầm file DEF!
+                <div className="text-[11px] text-foreground font-medium bg-background/60 p-2.5 rounded-lg border border-border/40 space-y-1">
+                  <div>
+                    ✨ <strong>Ưu tiên thông minh:</strong> Khi mã có tiền tố (ví dụ <code className="font-mono font-bold text-primary">ABC1234</code>), chế độ Chứa sẽ ưu tiên lấy file có chứa cả chữ "ABC" lẫn số "1234" để không chọn nhầm máy khác.
+                  </div>
+                  <div className="text-emerald-600 dark:text-emerald-400">
+                    🛡️ <strong>Chống sót mã khi khách gõ nhầm chữ:</strong> Nếu khách gõ lộn tiền tố (ví dụ: gõ nhầm <code className="font-mono font-bold">ACB1234</code> thay vì <code className="font-mono font-bold">ABC1234</code>, hoặc <code className="font-mono font-bold">IGM0088</code> thay vì <code className="font-mono font-bold">IMG0088</code>), app sẽ <strong>tự động tìm theo số</strong> để vẫn tìm ra ảnh cho bạn!
+                  </div>
                 </div>
               </div>
 
