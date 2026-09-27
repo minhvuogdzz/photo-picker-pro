@@ -105,6 +105,9 @@ export function LoginPage() {
       }
       localStorage.setItem("saved_agree_terms", agreeTerms ? "true" : "false");
       localStorage.setItem("saved_auto_login", autoLogin ? "true" : "false");
+      try {
+        sessionStorage.removeItem("mvd_expiring_notice_dismissed");
+      } catch {}
 
       setSession(session);
     } catch (err) {

@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useCallback, useState, useMemo } from "react";
 import { useAuthStore } from "@/core/stores/useAuthStore";
 import {
   loadSession,
@@ -18,6 +18,9 @@ import { useAppStore } from "@/core/stores/useAppStore";
 import { exit } from '@tauri-apps/plugin-process';
 import { useSessionTimeoutListener } from "@/core/hooks/useSessionTimeout";
 import { SessionExpiringWarningModal } from "./SessionExpiringWarningModal";
+import { AccountExpiringAlertModal } from "./AccountExpiringAlertModal";
+import { checkAccountExpiringNotice } from "@/core/services/accountExpirationService";
+import { LicenseManager } from "@/core/license/LicenseManager";
 
 interface AuthGuardProps {
   readonly children: React.ReactNode;
@@ -54,6 +57,57 @@ export function AuthGuard({ children }: AuthGuardProps) {
   const setActiveTab = useAppStore((s) => s.setActiveTab);
 
   const [initError, setInitError] = useState<string | null>(null);
+  const [showExpiringModal, setShowExpiringModal] = useState(false);
+  const [licenseManagerConfig, setLicenseManagerConfig] = useState<{
+    isOpen: boolean;
+    mode: "activate" | "request";
+    isVip: boolean;
+  }>({
+    isOpen: false,
+    mode: "activate",
+    isVip: false,
+  });
+
+  const expiringNotice = useMemo(() => {
+    return checkAccountExpiringNotice(session);
+  }, [session]);
+
+  // Check on login / app launch:
+  // If account is expiring within 3 days or fewer (<= 3 days) and not dismissed for this login, show popup!
+  useEffect(() => {
+    if (session && expiringNotice?.isExpiringSoon) {
+      let isDismissed = false;
+      try {
+        isDismissed = sessionStorage.getItem("mvd_expiring_notice_dismissed") === "true";
+      } catch {}
+      if (!isDismissed) {
+        setShowExpiringModal(true);
+      }
+    } else {
+      setShowExpiringModal(false);
+    }
+  }, [
+    session?.userId,
+    session?.subscription?.expiresAt,
+    session?.subscription?.status,
+    session?.subscription?.isPremium,
+    expiringNotice,
+  ]);
+
+  const handleDismissExpiringNotice = () => {
+    try {
+      sessionStorage.setItem("mvd_expiring_notice_dismissed", "true");
+    } catch {}
+    setShowExpiringModal(false);
+  };
+
+  const handleOpenLicenseManager = (mode: "activate" | "request", isVip: boolean) => {
+    setLicenseManagerConfig({
+      isOpen: true,
+      mode,
+      isVip,
+    });
+  };
 
   /** Initial session load + validation on mount */
   const initializeAuth = useCallback(async () => {
@@ -250,7 +304,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
         </div>
       )}
 
-      {/* Expiring Soon Warning Dialog (Dismissable) */}
+      {/* Expiring Soon Warning Dialog (Dismissable fallback) */}
       {!!expiringSoonMessage && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
           <div className="panel w-full max-w-sm p-8 space-y-6 text-center animate-scale-in">
@@ -273,7 +327,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
               <button
                 onClick={() => {
                   setExpiringSoonMessage(null);
-                  setActiveTab('settings');
+                  handleOpenLicenseManager("request", session?.subscription?.isPremium === true);
                 }}
                 className="btn-primary flex-1 py-3 text-sm font-bold"
               >
@@ -282,6 +336,26 @@ export function AuthGuard({ children }: AuthGuardProps) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Account Expiring Soon Alert Modal (Appears after each login when <= 3 days remain) */}
+      {expiringNotice && (
+        <AccountExpiringAlertModal
+          info={expiringNotice}
+          isOpen={showExpiringModal}
+          onDismiss={handleDismissExpiringNotice}
+          onOpenLicenseManager={handleOpenLicenseManager}
+        />
+      )}
+
+      {/* Direct License Manager Dialog when requested from Expiring Alert */}
+      {licenseManagerConfig.isOpen && (
+        <LicenseManager
+          variant="modal"
+          initialMode={licenseManagerConfig.mode}
+          initialIsPremium={licenseManagerConfig.isVip}
+          onClose={() => setLicenseManagerConfig((prev) => ({ ...prev, isOpen: false }))}
+        />
       )}
     </>
   );

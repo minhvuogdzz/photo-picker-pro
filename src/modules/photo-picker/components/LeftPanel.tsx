@@ -38,6 +38,7 @@ import {
 } from "@/core/services/premiumFeaturePolicy";
 import { PremiumGateModal } from "@/core/components/PremiumGateModal";
 import { FolderPreviewModal } from "./FolderPreviewModal";
+import { FoundPhotosPreviewModal } from "./FoundPhotosPreviewModal";
 
 export function LeftPanel() {
   const inputFolders = useAppStore((s) => s.inputFolders);
@@ -66,6 +67,18 @@ export function LeftPanel() {
   const [copiedAll, setCopiedAll] = useState(false);
   const [previewFolder, setPreviewFolder] = useState<string | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isFoundPreviewOpen, setIsFoundPreviewOpen] = useState(false);
+  const [foundPreviewIndex, setFoundPreviewIndex] = useState(0);
+
+  const foundMatches = useMemo(() => {
+    if (!matchResult) return [];
+    return matchResult.matches.filter((m) => m.status === "Found" && m.photo);
+  }, [matchResult]);
+
+  const handleOpenFoundPreview = (index: number) => {
+    setFoundPreviewIndex(index);
+    setIsFoundPreviewOpen(true);
+  };
 
   const handleOpenPreview = (folder: string) => {
     setPreviewFolder(folder);
@@ -684,6 +697,17 @@ export function LeftPanel() {
               {matchResult?.found_count ?? 0}
             </span>
           </span>
+          {foundMatches.length > 0 && (
+            <button
+              type="button"
+              onClick={() => handleOpenFoundPreview(0)}
+              className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 border border-emerald-500/20 transition-colors cursor-pointer"
+              title="Xem trước tất cả các ảnh đã tìm thấy"
+            >
+              <Eye size={12} />
+              <span>Xem trước</span>
+            </button>
+          )}
         </div>
         <div className="flex-1 overflow-y-auto p-2.5 space-y-1" style={{ scrollbarWidth: 'thin' }}>
           {(!matchResult || matchResult.found_count === 0) ? (
@@ -691,12 +715,30 @@ export function LeftPanel() {
               Chưa có file nào
             </div>
           ) : (
-            matchResult.matches.filter(m => m.status === "Found").map((match, idx) => (
-              <div key={idx} className="flex flex-col gap-0.5 p-2 rounded-lg border border-border/30 bg-background/50 hover:bg-muted/20 transition-colors">
-                <span className="font-mono text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">{match.code}</span>
-                <span className="text-[10px] text-muted-foreground truncate" title={match.photo?.filename}>
-                  {match.photo?.filename}
-                </span>
+            foundMatches.map((match, idx) => (
+              <div
+                key={idx}
+                className="group relative flex items-center justify-between p-2 rounded-lg border border-border/30 bg-background/50 hover:bg-muted/20 hover:border-emerald-500/30 transition-all"
+              >
+                <div className="flex flex-col gap-0.5 min-w-0 flex-1 pr-2">
+                  <span className="font-mono text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">{match.code}</span>
+                  <span className="text-[10px] text-muted-foreground truncate" title={match.photo?.filename}>
+                    {match.photo?.filename}
+                  </span>
+                </div>
+                {match.photo && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenFoundPreview(idx);
+                    }}
+                    className="p-1 rounded-md text-muted-foreground/60 hover:text-emerald-400 hover:bg-emerald-500/15 transition-all cursor-pointer shrink-0 opacity-80 group-hover:opacity-100"
+                    title={`Xem trước ảnh ${match.photo.filename}`}
+                  >
+                    <Eye size={14} />
+                  </button>
+                )}
               </div>
             ))
           )}
@@ -827,6 +869,14 @@ export function LeftPanel() {
           setIsPreviewOpen(false);
           setPreviewFolder(null);
         }}
+      />
+
+      {/* Found Photos Preview Modal */}
+      <FoundPhotosPreviewModal
+        isOpen={isFoundPreviewOpen}
+        photos={foundMatches}
+        initialIndex={foundPreviewIndex}
+        onClose={() => setIsFoundPreviewOpen(false)}
       />
     </div>
   );

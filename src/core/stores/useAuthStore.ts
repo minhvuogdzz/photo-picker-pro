@@ -61,6 +61,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     } else {
       try {
         sessionStorage.removeItem("session_started_at");
+        sessionStorage.removeItem("mvd_expiring_notice_dismissed");
       } catch {}
     }
     set({
@@ -96,6 +97,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     useAvailabilityStore.getState().setOfflineBypass(false);
     try {
       sessionStorage.removeItem("session_started_at");
+      sessionStorage.removeItem("mvd_expiring_notice_dismissed");
     } catch {}
     try {
       useContactSheetStore.getState().disconnectGoogle();

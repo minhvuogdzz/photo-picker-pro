@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   X,
   Search,
@@ -15,6 +16,8 @@ import {
   Sparkles,
   Loader2,
   ZoomIn,
+  ZoomOut,
+  RotateCcw,
   PanelRight,
   LayoutGrid,
   Star,
@@ -52,6 +55,155 @@ function formatBytes(bytes: number, decimals: number = 1): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
 }
 
+interface FloatingCursorPreviewProps {
+  photo: PhotoFile;
+  thumbnail?: string;
+  highResThumb?: string | null;
+  rating?: number;
+  initialX: number;
+  initialY: number;
+}
+
+function FloatingCursorPreview({
+  photo,
+  thumbnail,
+  highResThumb,
+  rating = 0,
+  initialX,
+  initialY,
+}: FloatingCursorPreviewProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const coordsRef = useRef({ x: initialX, y: initialY });
+
+  const updatePosition = useCallback((clientX: number, clientY: number) => {
+    if (!cardRef.current) return;
+    coordsRef.current = { x: clientX, y: clientY };
+
+    const pad = 14;
+    const maxHeightAvailable = window.innerHeight - 90;
+    const maxAllowedWidth = Math.floor(maxHeightAvailable / 1.5);
+    const targetWidth = Math.min(315, Math.max(220, Math.min(window.innerWidth - pad * 2, maxAllowedWidth)));
+
+    cardRef.current.style.width = `${targetWidth}px`;
+
+    const width = cardRef.current.offsetWidth || targetWidth;
+    const height = cardRef.current.offsetHeight || 320;
+
+    // Smart horizontal placement:
+    // Try placing directly to the right of cursor with 16px gap
+    let x = clientX + 16;
+    // If overflowing right window boundary, flip directly to the left of cursor
+    if (x + width > window.innerWidth - pad) {
+      x = clientX - 16 - width;
+    }
+    // Strict horizontal clamp within safe margins
+    if (x < pad) x = pad;
+    if (x + width > window.innerWidth - pad) {
+      x = Math.max(pad, window.innerWidth - width - pad);
+    }
+
+    // Smart vertical placement:
+    // Center vertically around cursor
+    let y = clientY - height / 2;
+    // Strict vertical clamp within safe margins
+    if (y < pad) y = pad;
+    if (y + height > window.innerHeight - pad) {
+      y = Math.max(pad, window.innerHeight - height - pad);
+    }
+
+    cardRef.current.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+  }, []);
+
+  useEffect(() => {
+    // Position immediately upon mount
+    updatePosition(initialX, initialY);
+
+    const onPointerMove = (e: PointerEvent) => {
+      updatePosition(e.clientX, e.clientY);
+    };
+
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove);
+    };
+  }, [initialX, initialY, updatePosition]);
+
+  const displayImage = highResThumb || thumbnail;
+
+  return createPortal(
+    <div
+      ref={cardRef}
+      className="fixed top-0 left-0 z-[99999] pointer-events-none will-change-transform select-none"
+      style={{
+        transform: `translate3d(${initialX + 16}px, ${Math.max(14, initialY - 175)}px, 0)`,
+        width: "315px",
+        maxWidth: "calc(100vw - 28px)",
+      }}
+    >
+      <div className="rounded-2xl overflow-hidden bg-card/95 text-card-foreground border border-primary/50 shadow-2xl backdrop-blur-xl p-2.5 flex flex-col gap-2 animate-in fade-in duration-75">
+        {/* Photo Image Frame: 100% Fill Edge-to-Edge with Zero Black Borders */}
+        <div className="relative w-full rounded-xl overflow-hidden border border-border/40 shadow-inner bg-muted/20">
+          {displayImage ? (
+            <img
+              src={displayImage}
+              alt={photo.filename}
+              onLoad={() => {
+                updatePosition(coordsRef.current.x, coordsRef.current.y);
+              }}
+              className="w-full h-auto block select-none rounded-lg"
+            />
+          ) : (
+            <div className="w-full h-44 flex flex-col items-center justify-center text-muted-foreground gap-1">
+              <Loader2 size={24} className="animate-spin text-primary" />
+              <span className="text-[11px]">Đang tạo preview...</span>
+            </div>
+          )}
+
+          {/* Top Badges */}
+          <div className="absolute top-2 left-2 z-20 flex items-center gap-1.5 pointer-events-none">
+            <span
+              className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-md shadow-md border ${
+                RAW_EXTS.has(photo.extension.toLowerCase())
+                  ? "bg-purple-900/90 text-purple-200 border-purple-400/50"
+                  : "bg-emerald-900/90 text-emerald-200 border-emerald-400/50"
+              }`}
+            >
+              {photo.extension}
+            </span>
+            {rating > 0 && (
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500 text-black flex items-center gap-0.5">
+                <Star size={9} className="fill-black" />
+                <span>Rate {rating}</span>
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Metadata info */}
+        <div className="flex flex-col gap-1 px-1">
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-xs font-bold text-foreground truncate max-w-[240px]">
+              {photo.filename}
+            </span>
+            <span className="font-mono text-[10px] text-muted-foreground font-semibold">
+              {formatBytes(photo.size)}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+            <span className="font-mono">Mã số: #{photo.normalized_number || "---"}</span>
+            <span className="text-border">·</span>
+            <span className="truncate max-w-[200px]" title={photo.full_path}>
+              {photo.folder}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 export function FolderPreviewModal({
   isOpen,
   folderPath,
@@ -83,12 +235,8 @@ export function FolderPreviewModal({
   // Active & Hovered Photo State
   const [hoveredPhoto, setHoveredPhoto] = useState<PhotoFile | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoFile | null>(null);
-  const [hoverPosition, setHoverPosition] = useState<{
-    x: number;
-    y: number;
-    placeLeft: boolean;
-  } | null>(null);
-  const [highResThumb, setHighResThumb] = useState<string | null>(null);
+  const [initialCursorPos, setInitialCursorPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [highResThumb, setHighResThumb] = useState<{ path: string; dataUrl: string } | null>(null);
   const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isKeyboardNavRef = useRef(false);
 
@@ -104,6 +252,117 @@ export function FolderPreviewModal({
   const [isExporting, setIsExporting] = useState(false);
   const [exportMessage, setExportMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [copiedCodes, setCopiedCodes] = useState(false);
+  const [copiedPath, setCopiedPath] = useState(false);
+
+  const handleCopyPath = (path: string) => {
+    navigator.clipboard.writeText(path);
+    setCopiedPath(true);
+    setTimeout(() => setCopiedPath(false), 2000);
+  };
+
+  // Lightbox Zoom & Pan State
+  const [lightboxZoom, setLightboxZoom] = useState<number>(1);
+  const [lightboxPan, setLightboxPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const panStartRef = useRef<{ startX: number; startY: number; initPanX: number; initPanY: number }>({
+    startX: 0,
+    startY: 0,
+    initPanX: 0,
+    initPanY: 0,
+  });
+
+  const handleResetZoom = useCallback(() => {
+    setLightboxZoom(1);
+    setLightboxPan({ x: 0, y: 0 });
+  }, []);
+
+  const handleZoomIn = useCallback(() => {
+    setLightboxZoom((prev) => Math.min(Number((prev + 0.35).toFixed(2)), 5));
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    setLightboxZoom((prev) => {
+      const next = Math.max(Number((prev - 0.35).toFixed(2)), 0.5);
+      if (next <= 1) setLightboxPan({ x: 0, y: 0 });
+      return next;
+    });
+  }, []);
+
+  const handleToggle100Percent = useCallback(() => {
+    setLightboxZoom((prev) => {
+      if (prev !== 1) {
+        setLightboxPan({ x: 0, y: 0 });
+        return 1;
+      }
+      return 2;
+    });
+  }, []);
+
+  // Reset zoom & pan when navigating to a different photo
+  useEffect(() => {
+    setLightboxZoom(1);
+    setLightboxPan({ x: 0, y: 0 });
+    setIsPanning(false);
+  }, [lightboxIndex]);
+
+  // Window listeners for mouse drag / pan
+  useEffect(() => {
+    if (!isPanning) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      const dx = e.clientX - panStartRef.current.startX;
+      const dy = e.clientY - panStartRef.current.startY;
+      setLightboxPan({
+        x: panStartRef.current.initPanX + dx,
+        y: panStartRef.current.initPanY + dy,
+      });
+    };
+    const handleMouseUp = () => {
+      setIsPanning(false);
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isPanning]);
+
+  const handleLightboxWheel = useCallback((e: React.WheelEvent) => {
+    e.stopPropagation();
+    const delta = -e.deltaY;
+    setLightboxZoom((prev) => {
+      const step = delta > 0 ? 0.25 : -0.25;
+      let next = Number((prev + step).toFixed(2));
+      next = Math.max(0.5, Math.min(5, next));
+      if (next <= 1) {
+        setLightboxPan({ x: 0, y: 0 });
+      }
+      return next;
+    });
+  }, []);
+
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (lightboxZoom <= 1 || e.button !== 0) return;
+      e.preventDefault();
+      setIsPanning(true);
+      panStartRef.current = {
+        startX: e.clientX,
+        startY: e.clientY,
+        initPanX: lightboxPan.x,
+        initPanY: lightboxPan.y,
+      };
+    },
+    [lightboxZoom, lightboxPan]
+  );
+
+  const handleImageDoubleClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      handleToggle100Percent();
+    },
+    [handleToggle100Percent]
+  );
 
   // Load photos & ratings when folderPath changes
   useEffect(() => {
@@ -276,7 +535,7 @@ export function FolderPreviewModal({
     photoPreviewService
       .getThumbnail(activeSidePhoto.full_path, 800)
       .then((dataUrl) => {
-        if (isMounted) setHighResThumb(dataUrl);
+        if (isMounted) setHighResThumb({ path: activeSidePhoto.full_path, dataUrl });
       })
       .catch(() => {
         if (isMounted) setHighResThumb(null);
@@ -310,6 +569,9 @@ export function FolderPreviewModal({
 
   // Scroll handler to load more thumbnails as user scrolls
   const handleScroll = useCallback(() => {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    setHoveredPhoto(null);
+
     const el = containerRef.current;
     if (!el) return;
 
@@ -375,21 +637,47 @@ export function FolderPreviewModal({
         return;
       }
 
-      // 2. Lightbox navigation with arrows
+      // 2. Escape handling (Reset zoom -> close lightbox -> exit fullscreen -> close modal)
+      if (e.key === "Escape") {
+        e.preventDefault();
+        if (isExportModalOpen) {
+          setIsExportModalOpen(false);
+        } else if (lightboxIndex !== null) {
+          if (lightboxZoom > 1) {
+            handleResetZoom();
+          } else {
+            setLightboxIndex(null);
+          }
+        } else if (isFullscreen) {
+          setIsFullscreen(false);
+        } else {
+          onClose();
+        }
+        return;
+      }
+
+      // 3. Lightbox navigation with arrows and zoom shortcuts
       if (lightboxIndex !== null) {
-        if (e.key === "Escape") {
-          setLightboxIndex(null);
-        } else if (e.key === "ArrowLeft") {
+        if (e.key === "ArrowLeft") {
           setLightboxIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : prev));
         } else if (e.key === "ArrowRight") {
           setLightboxIndex((prev) =>
             prev !== null && prev < filteredPhotos.length - 1 ? prev + 1 : prev
           );
+        } else if (e.key === "+" || e.key === "=" || e.code === "NumpadAdd") {
+          e.preventDefault();
+          handleZoomIn();
+        } else if (e.key === "-" || e.key === "_" || e.code === "NumpadSubtract") {
+          e.preventDefault();
+          handleZoomOut();
+        } else if ((e.ctrlKey || e.metaKey) && (e.key === "0" || e.code === "Digit0")) {
+          e.preventDefault();
+          handleResetZoom();
         }
         return;
       }
 
-      // 3. Grid navigation with arrow keys (when not in Lightbox)
+      // 4. Grid navigation with arrow keys (when not in Lightbox)
       if (filteredPhotos.length > 0) {
         let curIdx = selectedPhoto
           ? filteredPhotos.findIndex((p) => p.full_path === selectedPhoto.full_path)
@@ -413,52 +701,53 @@ export function FolderPreviewModal({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, lightboxIndex, filteredPhotos, activeSidePhoto, selectedPhoto, handleSetRating]);
+  }, [
+    isOpen,
+    lightboxIndex,
+    filteredPhotos,
+    activeSidePhoto,
+    selectedPhoto,
+    handleSetRating,
+    isFullscreen,
+    isExportModalOpen,
+    onClose,
+    lightboxZoom,
+    handleResetZoom,
+    handleZoomIn,
+    handleZoomOut,
+  ]);
 
-  // Handle Hover over Photo Card (strictly clamped inside modal)
+  // Handle Hover over Photo Card: updates initial cursor position and photo immediately
   const handleMouseEnterCard = (
     e: React.MouseEvent<HTMLDivElement>,
     photo: PhotoFile
   ) => {
-    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
-
-    const cardRect = e.currentTarget.getBoundingClientRect();
-    const modalEl = modalRef.current;
-
-    if (modalEl) {
-      const modalRect = modalEl.getBoundingClientRect();
-      const cardCenterX = cardRect.left + cardRect.width / 2;
-      const modalCenterX = modalRect.left + modalRect.width / 2;
-      const placeLeft = cardCenterX > modalCenterX;
-
-      let x: number;
-      if (placeLeft) {
-        x = cardRect.left - 12;
-      } else {
-        x = cardRect.right + 12;
-      }
-
-      let y = cardRect.top + cardRect.height / 2;
-      const minY = modalRect.top + 200;
-      const maxY = modalRect.bottom - 200;
-      y = Math.max(minY, Math.min(y, maxY));
-
-      hoverTimerRef.current = setTimeout(() => {
-        setHoveredPhoto(photo);
-        setHoverPosition({ x, y, placeLeft });
-      }, 50);
-    } else {
-      setHoveredPhoto(photo);
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
     }
+    setInitialCursorPos({ x: e.clientX, y: e.clientY });
+    setHoveredPhoto(photo);
   };
 
   const handleMouseLeaveCard = () => {
     if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
     hoverTimerRef.current = setTimeout(() => {
       setHoveredPhoto(null);
-      setHoverPosition(null);
-    }, 50);
+    }, 60);
   };
+
+  // Dismiss hover preview if cursor leaves window entirely
+  useEffect(() => {
+    const onDocMouseLeave = () => {
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+      setHoveredPhoto(null);
+    };
+    document.addEventListener("mouseleave", onDocMouseLeave);
+    return () => {
+      document.removeEventListener("mouseleave", onDocMouseLeave);
+    };
+  }, []);
 
   // Load high-res when lightbox changes
   useEffect(() => {
@@ -472,7 +761,7 @@ export function FolderPreviewModal({
     setLightboxHighRes(null);
 
     photoPreviewService
-      .getThumbnail(currentPhoto.full_path, 1400)
+      .getThumbnail(currentPhoto.full_path, 2048)
       .then((dataUrl) => {
         setLightboxHighRes(dataUrl);
       })
@@ -594,13 +883,17 @@ export function FolderPreviewModal({
   const currentFolderTitle = getFolderName(folderPath);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4 bg-black/80 backdrop-blur-md animate-fade-in select-none">
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center ${
+        isFullscreen ? "p-0" : "p-3 sm:p-5 md:p-6 lg:p-8"
+      } bg-black/80 backdrop-blur-md animate-fade-in select-none transition-all duration-300`}
+    >
       <div
         ref={modalRef}
-        className={`bg-card text-card-foreground border border-border/60 shadow-2xl flex flex-col transition-all duration-300 overflow-hidden relative ${
+        className={`bg-card text-card-foreground shadow-2xl flex flex-col transition-all duration-300 overflow-hidden relative ${
           isFullscreen
-            ? "fixed inset-0 rounded-none w-full h-full"
-            : "w-[96vw] max-w-[1520px] h-[93vh] rounded-2xl"
+            ? "fixed inset-0 rounded-none w-full h-full border-0 shadow-none"
+            : "w-[88vw] max-w-[1260px] xl:max-w-[1340px] h-[84vh] max-h-[840px] min-h-[520px] rounded-2xl border border-border/70 shadow-2xl ring-1 ring-white/10"
         }`}
       >
         {/* ================= HEADER ================= */}
@@ -771,10 +1064,17 @@ export function FolderPreviewModal({
             <button
               type="button"
               onClick={() => setIsFullscreen(!isFullscreen)}
-              className="p-1.5 rounded-lg border border-border/50 bg-background/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer"
-              title={isFullscreen ? "Thu nhỏ lại" : "Mở rộng toàn màn hình"}
+              className={`p-1.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-xs font-medium ${
+                isFullscreen
+                  ? "bg-primary/15 text-primary border-primary/40 hover:bg-primary/25 shadow-2xs"
+                  : "border-border/50 bg-background/60 hover:bg-muted text-muted-foreground hover:text-foreground"
+              }`}
+              title={isFullscreen ? "Thu nhỏ về dạng cửa sổ (Esc)" : "Mở rộng toàn màn hình"}
             >
               {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+              <span className="hidden xl:inline text-[11px]">
+                {isFullscreen ? "Thu lại" : "Toàn màn hình"}
+              </span>
             </button>
 
             {/* Close Button */}
@@ -898,7 +1198,7 @@ export function FolderPreviewModal({
           <div
             ref={containerRef}
             onScroll={handleScroll}
-            className="flex-1 overflow-y-auto p-4 md:p-5"
+            className={`flex-1 overflow-y-auto ${isFullscreen ? "p-5 md:p-6 lg:p-7" : "p-3.5 md:p-4 lg:p-5"}`}
             style={{ scrollbarWidth: "thin" }}
           >
             {isLoading ? (
@@ -938,16 +1238,28 @@ export function FolderPreviewModal({
               <div
                 className={`grid gap-3.5 ${
                   viewMode === "split"
-                    ? gridSize === "sm"
-                      ? "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7"
+                    ? isFullscreen
+                      ? gridSize === "sm"
+                        ? "grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 xl:grid-cols-8 2xl:grid-cols-9"
+                        : gridSize === "md"
+                        ? "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7"
+                        : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-6"
+                      : gridSize === "sm"
+                      ? "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6"
                       : gridSize === "md"
-                      ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+                      ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4"
                       : "grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+                    : isFullscreen
+                    ? gridSize === "sm"
+                      ? "grid-cols-5 sm:grid-cols-7 md:grid-cols-9 lg:grid-cols-11 xl:grid-cols-12"
+                      : gridSize === "md"
+                      ? "grid-cols-3 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-8 xl:grid-cols-10"
+                      : "grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7"
                     : gridSize === "sm"
-                    ? "grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10"
+                    ? "grid-cols-4 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-8"
                     : gridSize === "md"
-                    ? "grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8"
-                    : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+                    ? "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6"
+                    : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4"
                 }`}
               >
                 {filteredPhotos.map((photo, idx) => {
@@ -964,11 +1276,15 @@ export function FolderPreviewModal({
                       onClick={() => {
                         setSelectedPhoto(photo);
                         if (viewMode === "grid") {
+                          if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+                          setHoveredPhoto(null);
                           setLightboxIndex(idx);
                         }
                       }}
                       onDoubleClick={() => {
                         setSelectedPhoto(photo);
+                        if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+                        setHoveredPhoto(null);
                         setLightboxIndex(idx);
                       }}
                       onMouseEnter={(e) => {
@@ -1057,7 +1373,6 @@ export function FolderPreviewModal({
                         <div className="flex items-center justify-between">
                           <span
                             className="text-[11px] font-mono font-semibold text-foreground truncate group-hover:text-primary transition-colors flex-1"
-                            title={photo.filename}
                           >
                             {photo.filename}
                           </span>
@@ -1109,7 +1424,13 @@ export function FolderPreviewModal({
 
           {/* RIGHT: DEDICATED LIVE PREVIEW PANEL (Adobe Bridge / Lightroom Style) */}
           {viewMode === "split" && (
-            <div className="w-[380px] xl:w-[440px] shrink-0 border-l border-border/40 bg-card/40 backdrop-blur-md flex flex-col p-4 gap-3 overflow-y-auto animate-fade-in">
+            <div
+              className={`${
+                isFullscreen
+                  ? "w-[390px] xl:w-[460px] 2xl:w-[520px] p-5 gap-3.5"
+                  : "w-[320px] lg:w-[350px] xl:w-[380px] p-3.5 gap-2.5"
+              } shrink-0 border-l border-border/40 bg-card/50 backdrop-blur-md flex flex-col overflow-y-auto transition-all duration-300 animate-fade-in`}
+            >
               {activeSidePhoto ? (
                 <>
                   {/* Photo Title & Badge */}
@@ -1143,24 +1464,23 @@ export function FolderPreviewModal({
                       const idx = filteredPhotos.findIndex((p) => p.full_path === activeSidePhoto.full_path);
                       if (idx !== -1) setLightboxIndex(idx);
                     }}
-                    className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-black/80 flex items-center justify-center border border-border/50 shadow-inner group cursor-pointer shrink-0"
+                    className={`relative w-full ${
+                      isFullscreen
+                        ? "max-h-[44vh] xl:max-h-[50vh] min-h-[240px]"
+                        : "max-h-[260px] lg:max-h-[300px] xl:max-h-[340px] min-h-[180px]"
+                    } rounded-xl overflow-hidden bg-black/80 flex items-center justify-center border border-border/50 shadow-inner group cursor-pointer shrink-0 transition-all duration-300`}
                     title="Bấm để xem toàn màn hình (Phím Space hoặc Click)"
                   >
-                    {/* Blurred ambient backdrop */}
-                    {(highResThumb || thumbnails[activeSidePhoto.full_path]) && (
+                    {/* Sharp Image with True Aspect Ratio */}
+                    {((highResThumb?.path === activeSidePhoto.full_path ? highResThumb.dataUrl : null) || thumbnails[activeSidePhoto.full_path]) ? (
                       <img
-                        src={highResThumb || thumbnails[activeSidePhoto.full_path]}
-                        alt="bg-ambient"
-                        className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-110"
-                      />
-                    )}
-
-                    {/* Sharp Image */}
-                    {highResThumb || thumbnails[activeSidePhoto.full_path] ? (
-                      <img
-                        src={highResThumb || thumbnails[activeSidePhoto.full_path]}
+                        src={(highResThumb?.path === activeSidePhoto.full_path ? highResThumb.dataUrl : null) || thumbnails[activeSidePhoto.full_path]}
                         alt={activeSidePhoto.filename}
-                        className="relative z-10 max-w-full max-h-full object-contain transition-transform duration-300 group-hover:scale-102"
+                        className={`w-auto h-auto max-w-full ${
+                          isFullscreen
+                            ? "max-h-[44vh] xl:max-h-[50vh]"
+                            : "max-h-[260px] lg:max-h-[300px] xl:max-h-[340px]"
+                        } object-contain transition-transform duration-300 group-hover:scale-102 block mx-auto rounded-lg select-none`}
                       />
                     ) : (
                       <div className="flex flex-col items-center justify-center text-muted-foreground gap-2">
@@ -1258,13 +1578,24 @@ export function FolderPreviewModal({
                     </div>
 
                     <div className="flex flex-col gap-1 py-1">
-                      <span className="text-muted-foreground text-[11px]">Đường dẫn file:</span>
-                      <span
-                        className="font-mono text-[10px] text-foreground/80 break-all bg-muted/40 p-1.5 rounded border border-border/30 select-text"
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                        <span>Đường dẫn file:</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyPath(activeSidePhoto.full_path)}
+                          className="hover:text-foreground text-[10px] flex items-center gap-1 cursor-pointer transition-colors px-1.5 py-0.5 rounded bg-muted/60 hover:bg-muted border border-border/30"
+                          title="Sao chép toàn bộ đường dẫn"
+                        >
+                          {copiedPath ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
+                          <span>{copiedPath ? "Đã chép" : "Sao chép"}</span>
+                        </button>
+                      </div>
+                      <div
+                        className="font-mono text-[10px] text-foreground/80 bg-muted/40 p-1.5 rounded border border-border/30 truncate select-all"
                         title={activeSidePhoto.full_path}
                       >
                         {activeSidePhoto.full_path}
-                      </span>
+                      </div>
                     </div>
 
                     <button
@@ -1273,10 +1604,10 @@ export function FolderPreviewModal({
                         const idx = filteredPhotos.findIndex((p) => p.full_path === activeSidePhoto.full_path);
                         if (idx !== -1) setLightboxIndex(idx);
                       }}
-                      className="mt-auto w-full py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all font-semibold flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                      className="mt-auto w-full py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-xs"
                     >
                       <ZoomIn size={14} />
-                      <span>Phóng to toàn màn hình</span>
+                      <span>Phóng to xem ảnh (Space)</span>
                     </button>
                   </div>
                 </>
@@ -1290,82 +1621,16 @@ export function FolderPreviewModal({
           )}
         </div>
 
-        {/* ================= FLOATING HOVER PREVIEW (Only active in 'grid' viewMode) ================= */}
-        {viewMode === "grid" && hoveredPhoto && hoverPosition && (
-          <div
-            className="fixed z-50 pointer-events-none animate-in fade-in zoom-in-95 duration-100"
-            style={{
-              left: hoverPosition.placeLeft ? undefined : `${hoverPosition.x}px`,
-              right: hoverPosition.placeLeft
-                ? `${window.innerWidth - hoverPosition.x}px`
-                : undefined,
-              top: `${hoverPosition.y}px`,
-              transform: "translateY(-50%)",
-              maxWidth: "min(400px, 32vw)",
-            }}
-          >
-            <div className="rounded-2xl overflow-hidden bg-card/95 text-card-foreground border border-primary/50 shadow-2xl backdrop-blur-xl p-3 flex flex-col gap-2.5">
-              <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-black/85 flex items-center justify-center border border-border/40 shadow-inner">
-                {(highResThumb || thumbnails[hoveredPhoto.full_path]) && (
-                  <img
-                    src={highResThumb || thumbnails[hoveredPhoto.full_path]}
-                    alt="blur-bg"
-                    className="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-110"
-                  />
-                )}
-
-                {highResThumb || thumbnails[hoveredPhoto.full_path] ? (
-                  <img
-                    src={highResThumb || thumbnails[hoveredPhoto.full_path]}
-                    alt={hoveredPhoto.filename}
-                    className="relative z-10 max-w-full max-h-full object-contain"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center text-muted-foreground gap-1">
-                    <Loader2 size={24} className="animate-spin text-primary" />
-                    <span className="text-[11px]">Đang tạo preview...</span>
-                  </div>
-                )}
-
-                <div className="absolute top-2 left-2 z-20 flex items-center gap-1.5">
-                  <span
-                    className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-md shadow-md border ${
-                      RAW_EXTS.has(hoveredPhoto.extension.toLowerCase())
-                        ? "bg-purple-900/90 text-purple-200 border-purple-400/50"
-                        : "bg-emerald-900/90 text-emerald-200 border-emerald-400/50"
-                    }`}
-                  >
-                    {hoveredPhoto.extension}
-                  </span>
-                  {(ratings[hoveredPhoto.full_path] || 0) > 0 && (
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500 text-black flex items-center gap-0.5">
-                      <Star size={9} className="fill-black" />
-                      <span>Rate {ratings[hoveredPhoto.full_path]}</span>
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1 px-1">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs font-bold text-foreground truncate max-w-[260px]">
-                    {hoveredPhoto.filename}
-                  </span>
-                  <span className="font-mono text-[10px] text-muted-foreground font-semibold">
-                    {formatBytes(hoveredPhoto.size)}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                  <span className="font-mono">Mã số: #{hoveredPhoto.normalized_number || "---"}</span>
-                  <span className="text-border">·</span>
-                  <span className="truncate max-w-[220px]" title={hoveredPhoto.full_path}>
-                    {hoveredPhoto.folder}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* ================= FLOATING HOVER PREVIEW (Direct cursor-tracking Portal, only active in 'grid' viewMode) ================= */}
+        {viewMode === "grid" && hoveredPhoto && lightboxIndex === null && !isExportModalOpen && (
+          <FloatingCursorPreview
+            photo={hoveredPhoto}
+            thumbnail={thumbnails[hoveredPhoto.full_path]}
+            highResThumb={highResThumb?.path === hoveredPhoto.full_path ? highResThumb.dataUrl : null}
+            rating={ratings[hoveredPhoto.full_path] || 0}
+            initialX={initialCursorPos.x}
+            initialY={initialCursorPos.y}
+          />
         )}
 
         {/* ================= FULLSCREEN LIGHTBOX WITH 5-STAR RATING ================= */}
@@ -1433,8 +1698,11 @@ export function FolderPreviewModal({
               </div>
             </div>
 
-            {/* Lightbox Main Image Display */}
-            <div className="flex-1 relative flex items-center justify-center p-4 min-h-0">
+            {/* Lightbox Main Image Display with Interactive Zoom & Pan */}
+            <div
+              className="flex-1 relative flex items-center justify-center p-4 min-h-0 overflow-hidden cursor-default select-none"
+              onWheel={handleLightboxWheel}
+            >
               {lightboxIndex > 0 && (
                 <button
                   type="button"
@@ -1459,7 +1727,7 @@ export function FolderPreviewModal({
 
               <div className="relative max-w-full max-h-full flex items-center justify-center">
                 {isLightboxLoading && !lightboxHighRes && (
-                  <div className="absolute inset-0 flex items-center justify-center text-white/70">
+                  <div className="absolute inset-0 flex items-center justify-center text-white/70 z-10">
                     <Loader2 size={36} className="animate-spin text-primary" />
                   </div>
                 )}
@@ -1467,13 +1735,67 @@ export function FolderPreviewModal({
                   <img
                     src={lightboxHighRes || thumbnails[filteredPhotos[lightboxIndex].full_path]}
                     alt={filteredPhotos[lightboxIndex].filename}
-                    className="max-w-[92vw] max-h-[80vh] object-contain rounded-lg shadow-2xl transition-all"
+                    onMouseDown={handleMouseDown}
+                    onDoubleClick={handleImageDoubleClick}
+                    draggable={false}
+                    style={{
+                      transform: `translate3d(${lightboxPan.x}px, ${lightboxPan.y}px, 0px) scale(${lightboxZoom})`,
+                      transition: isPanning ? "none" : "transform 0.15s cubic-bezier(0.2, 0, 0, 1)",
+                      cursor: lightboxZoom > 1 ? (isPanning ? "grabbing" : "grab") : "zoom-in",
+                    }}
+                    className="max-w-[92vw] max-h-[80vh] object-contain rounded-lg shadow-2xl select-none"
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center text-white/50 gap-2">
                     <Loader2 size={32} className="animate-spin text-primary" />
                     <span className="text-xs">Đang tải ảnh HD...</span>
                   </div>
+                )}
+              </div>
+
+              {/* Floating Zoom & Pan Controls Pill */}
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/75 backdrop-blur-md border border-white/20 shadow-2xl text-white select-none">
+                <button
+                  type="button"
+                  onClick={handleZoomOut}
+                  disabled={lightboxZoom <= 0.5}
+                  className="p-1.5 rounded-full hover:bg-white/20 active:scale-95 disabled:opacity-30 disabled:hover:bg-transparent transition-all cursor-pointer"
+                  title="Thu nhỏ (-) hoặc Cuộn chuột xuống"
+                >
+                  <ZoomOut size={16} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleToggle100Percent}
+                  className="px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold hover:bg-white/20 active:scale-95 transition-all cursor-pointer min-w-[56px] text-center"
+                  title="Bấm để chuyển đổi giữa Vừa màn hình (FIT) và Phóng to 200%"
+                >
+                  {lightboxZoom === 1 ? "FIT" : `${Math.round(lightboxZoom * 100)}%`}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleZoomIn}
+                  disabled={lightboxZoom >= 5}
+                  className="p-1.5 rounded-full hover:bg-white/20 active:scale-95 disabled:opacity-30 disabled:hover:bg-transparent transition-all cursor-pointer"
+                  title="Phóng to (+) hoặc Cuộn chuột lên"
+                >
+                  <ZoomIn size={16} />
+                </button>
+
+                {lightboxZoom !== 1 && (
+                  <>
+                    <div className="w-px h-4 bg-white/20 mx-0.5" />
+                    <button
+                      type="button"
+                      onClick={handleResetZoom}
+                      className="p-1.5 rounded-full hover:bg-white/20 active:scale-95 transition-all cursor-pointer text-amber-300 hover:text-amber-200"
+                      title="Đặt lại vừa màn hình (Fit)"
+                    >
+                      <RotateCcw size={14} />
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -1487,6 +1809,10 @@ export function FolderPreviewModal({
                 <span>Phím <strong>1..5</strong>: Đánh dấu sao</span>
                 <span>·</span>
                 <span>Phím <strong>← / →</strong>: Chuyển ảnh</span>
+                <span>·</span>
+                <span><strong>Cuộn chuột / Click đúp</strong>: Zoom</span>
+                <span>·</span>
+                <span><strong>Kéo chuột</strong>: Di chuyển</span>
                 <span>·</span>
                 <span>Phím <strong>ESC</strong>: Đóng</span>
               </div>

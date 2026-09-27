@@ -390,19 +390,20 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
 
       setExtractionResult(result);
 
-      // Default checked columns: select primary column if it has codes, or first column with codes
+      // Default checked columns:
+      // Auto-activate any candidate column that contains photo codes (codeCount > 0).
+      // Specifically for Column 2 (or any column): if empty (codeCount === 0), do NOT check checkbox.
+      // If has content (codeCount > 0), automatically activate checkbox.
       const defaultCols = new Set<string>();
       if (result.candidateColumns.length > 0) {
-        const primary = result.candidateColumns.find((c) => c.isPrimary && c.codeCount > 0);
-        if (primary) {
-          defaultCols.add(primary.columnLetter);
+        const columnsWithCodes = result.candidateColumns.filter((c) => c.codeCount > 0);
+        if (columnsWithCodes.length > 0) {
+          columnsWithCodes.forEach((c) => defaultCols.add(c.columnLetter));
         } else {
-          const firstWithCodes = result.candidateColumns.find((c) => c.codeCount > 0);
-          if (firstWithCodes) {
-            defaultCols.add(firstWithCodes.columnLetter);
-          } else {
-            // Default to primary even if empty so user can see it
-            defaultCols.add(result.candidateColumns[0].columnLetter);
+          // If all candidate columns are empty, default to primary column
+          const primary = result.candidateColumns.find((c) => c.isPrimary) || result.candidateColumns[0];
+          if (primary) {
+            defaultCols.add(primary.columnLetter);
           }
         }
       }
