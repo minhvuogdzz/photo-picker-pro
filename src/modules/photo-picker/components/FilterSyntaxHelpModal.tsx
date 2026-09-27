@@ -351,7 +351,7 @@ export function FilterSyntaxHelpModal({ isOpen, onClose }: FilterSyntaxHelpModal
                 <div className="p-2.5 rounded-xl border border-border bg-card space-y-1">
                   <div className="font-semibold text-xs text-foreground flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    Dấu gạch ngang nối liền
+                    Gạch ngang nối từ 3 mã trở lên
                   </div>
                   <p className="text-[10px] text-muted-foreground font-mono">
                     HPP01099-01006-01078-00987
@@ -397,6 +397,22 @@ export function FilterSyntaxHelpModal({ isOpen, onClose }: FilterSyntaxHelpModal
                   </p>
                   <p className="text-[10px] text-purple-600 dark:text-purple-400">
                     → Tự lọc bỏ chữ thừa, giữ lại đúng mã
+                  </p>
+                </div>
+
+                <div className="p-2.5 rounded-xl border border-border bg-card space-y-1 sm:col-span-2">
+                  <div className="font-semibold text-xs text-foreground flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
+                    Dải số liên tiếp
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-mono">
+                    0450-0465 · 0450..0465 · IMG_0450~0465
+                  </p>
+                  <p className="text-[10px] text-cyan-600 dark:text-cyan-400">
+                    → Tự mở rộng thành đủ 16 mã 0450, 0451 … 0465 (tối đa 500 mã mỗi dải)
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Chỉ áp dụng khi 2 số đứng riêng, cùng số chữ số và số sau lớn hơn số trước.
                   </p>
                 </div>
               </div>

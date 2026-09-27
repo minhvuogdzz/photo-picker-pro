@@ -1,7 +1,9 @@
 use std::fs;
 use std::path::PathBuf;
+use std::sync::OnceLock;
 
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 /// Session data persisted locally on disk.
 /// Contains JWT tokens, user info, subscription state, and offline tracking.
@@ -100,6 +102,16 @@ pub fn load_auth_session() -> Result<Option<LocalSession>, String> {
     let session: LocalSession = serde_json::from_str(&content)
         .map_err(|e| format!("Failed to parse session: {}", e))?;
 
+    // A session file copied over from another machine must not log this one in
+    if !session.device_id.is_empty() {
+        if let Ok(current_device) = get_device_fingerprint() {
+            if current_device != session.device_id {
+                let _ = fs::remove_file(&path);
+                return Ok(None);
+            }
+        }
+    }
+
     Ok(Some(session))
 }
 
@@ -114,54 +126,120 @@ pub fn clear_auth_session() -> Result<(), String> {
     Ok(())
 }
 
-/// Returns a persistent device fingerprint.
-/// Generated once and stored on disk. Uses timestamp + system entropy.
+fn sha256_hex(input: &str) -> String {
+    Sha256::digest(input.as_bytes())
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect()
+}
+
+fn current_username() -> String {
+    std::env::var("USER")
+        .or_else(|_| std::env::var("USERNAME"))
+        .unwrap_or_else(|_| "user".to_string())
+}
+
+/// Hardware identifier of this machine; it survives app reinstalls and differs between machines.
+fn read_hardware_id() -> Option<String> {
+    #[cfg(target_os = "macos")]
+    {
+        let out = std::process::Command::new("ioreg")
+            .args(["-rd1", "-c", "IOPlatformExpertDevice"])
+            .output()
+            .ok()?;
+        String::from_utf8_lossy(&out.stdout)
+            .lines()
+            .find(|line| line.contains("\"IOPlatformUUID\""))
+            .and_then(|line| line.split('"').nth(3))
+            .map(|uuid| uuid.trim().to_string())
+            .filter(|uuid| !uuid.is_empty())
+    }
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        let out = std::process::Command::new("reg")
+            .args(["query", r"HKLM\SOFTWARE\Microsoft\Cryptography", "/v", "MachineGuid"])
+            .creation_flags(CREATE_NO_WINDOW)
+            .output()
+            .ok()?;
+        String::from_utf8_lossy(&out.stdout)
+            .lines()
+            .find(|line| line.contains("MachineGuid"))
+            .and_then(|line| line.split_whitespace().last())
+            .map(|guid| guid.to_string())
+            .filter(|guid| !guid.is_empty())
+    }
+    #[cfg(target_os = "linux")]
+    {
+        ["/etc/machine-id", "/var/lib/dbus/machine-id"]
+            .iter()
+            .find_map(|p| fs::read_to_string(p).ok())
+            .map(|id| id.trim().to_string())
+            .filter(|id| !id.is_empty())
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
+    {
+        None
+    }
+}
+
+fn hardware_id() -> Option<&'static str> {
+    static HARDWARE_ID: OnceLock<Option<String>> = OnceLock::new();
+    HARDWARE_ID.get_or_init(read_hardware_id).as_deref()
+}
+
+/// Picks the device ID given the stored `device.id` content (`<id>\nbind:<machine hash>`).
+/// Returns the ID and whether the file must be rewritten.
+/// - bound to this machine: reuse it
+/// - bound to another machine (the file was copied): switch to this machine's own ID
+/// - legacy file without binding: keep its ID so existing logins stay valid, then bind it
+/// - machine hash unknown (hardware ID unreadable): keep whatever is stored, never reset
+fn resolve_device_id(stored: Option<&str>, binding: Option<&str>, fresh_id: &str) -> (String, bool) {
+    let mut lines = stored
+        .unwrap_or("")
+        .lines()
+        .map(str::trim)
+        .filter(|l| !l.is_empty());
+    let Some(stored_id) = lines.next() else {
+        return (fresh_id.to_string(), true);
+    };
+    let stored_binding = lines.next().and_then(|l| l.strip_prefix("bind:"));
+
+    match (stored_binding, binding) {
+        (_, None) => (stored_id.to_string(), false),
+        (Some(s), Some(b)) if s == b => (stored_id.to_string(), false),
+        (Some(_), Some(_)) => (fresh_id.to_string(), true),
+        (None, Some(_)) => (stored_id.to_string(), true),
+    }
+}
+
+/// Returns this machine's persistent device ID. Derived from the hardware ID, so reinstalling
+/// keeps the same ID, and a `device.id` file copied to another machine is not honoured there.
 #[tauri::command]
 pub fn get_device_fingerprint() -> Result<String, String> {
     let path = get_device_id_path()?;
+    let stored = fs::read_to_string(&path).ok();
 
-    // Return existing device ID if available
-    if path.exists() {
-        return fs::read_to_string(&path)
-            .map(|id| id.trim().to_string())
-            .map_err(|e| format!("Failed to read device ID: {}", e));
+    let hw = hardware_id();
+    let binding = hw.map(|id| sha256_hex(&format!("mvd-device-binding-v2:{id}")));
+    let id_source = hw
+        .map(str::to_string)
+        .unwrap_or_else(|| format!("host:{}:{}", get_hostname(), current_username()));
+    let fresh_id = format!("dvf_{}", &sha256_hex(&format!("mvd-device-id-v2:{id_source}"))[..16]);
+
+    let (device_id, needs_write) = resolve_device_id(stored.as_deref(), binding.as_deref(), &fresh_id);
+
+    if needs_write {
+        if let Some(parent) = path.parent() {
+            let _ = fs::create_dir_all(parent);
+        }
+        let content = match &binding {
+            Some(b) => format!("{device_id}\nbind:{b}\n"),
+            None => format!("{device_id}\n"),
+        };
+        let _ = fs::write(&path, content);
     }
-
-    // Generate new device ID from system info
-    let hostname = get_hostname();
-    let username = std::env::var("USER")
-        .or_else(|_| std::env::var("USERNAME"))
-        .unwrap_or_else(|_| "user".to_string());
-    let os = std::env::consts::OS;
-    let arch = std::env::consts::ARCH;
-    let timestamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default();
-
-    // Create deterministic hash from system info
-    let raw = format!(
-        "{}:{}:{}:{}:{}:{}",
-        hostname,
-        username,
-        os,
-        arch,
-        timestamp.as_millis(),
-        timestamp.subsec_nanos()
-    );
-
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::{Hash, Hasher};
-    let mut hasher = DefaultHasher::new();
-    raw.hash(&mut hasher);
-    let hash = hasher.finish();
-
-    let device_id = format!("dvf_{:016x}", hash);
-
-    // Persist device ID
-    if let Some(parent) = path.parent() {
-        let _ = fs::create_dir_all(parent);
-    }
-    let _ = fs::write(&path, &device_id);
 
     Ok(device_id)
 }
@@ -227,5 +305,43 @@ mod tests {
     fn test_offline_period_boundary() {
         let boundary = (chrono::Utc::now() - chrono::Duration::days(6)).to_rfc3339();
         assert!(is_offline_period_valid(boundary).unwrap());
+    }
+
+    #[test]
+    fn device_file_bound_to_this_machine_is_reused() {
+        let result = resolve_device_id(Some("dvf_aaaa\nbind:m1\n"), Some("m1"), "dvf_fresh");
+        assert_eq!(result, ("dvf_aaaa".to_string(), false));
+    }
+
+    #[test]
+    fn device_file_copied_from_another_machine_is_replaced() {
+        let result = resolve_device_id(Some("dvf_aaaa\nbind:m1\n"), Some("m2"), "dvf_fresh");
+        assert_eq!(result, ("dvf_fresh".to_string(), true));
+    }
+
+    #[test]
+    fn legacy_device_file_keeps_its_id_and_gets_bound() {
+        let result = resolve_device_id(Some("dvf_legacy"), Some("m1"), "dvf_fresh");
+        assert_eq!(result, ("dvf_legacy".to_string(), true));
+    }
+
+    #[test]
+    fn missing_device_file_uses_machine_derived_id() {
+        assert_eq!(resolve_device_id(None, Some("m1"), "dvf_fresh"), ("dvf_fresh".to_string(), true));
+        assert_eq!(resolve_device_id(Some("  \n"), Some("m1"), "dvf_fresh"), ("dvf_fresh".to_string(), true));
+    }
+
+    #[test]
+    fn unreadable_hardware_never_resets_an_existing_id() {
+        let result = resolve_device_id(Some("dvf_aaaa\nbind:m1\n"), None, "dvf_fresh");
+        assert_eq!(result, ("dvf_aaaa".to_string(), false));
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn hardware_id_is_readable_and_stable_on_macos() {
+        let first = read_hardware_id().expect("IOPlatformUUID should be readable");
+        assert_eq!(first.len(), 36, "unexpected UUID format: {first}");
+        assert_eq!(read_hardware_id().as_deref(), Some(first.as_str()));
     }
 }

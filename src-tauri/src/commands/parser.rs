@@ -8,6 +8,121 @@ const VALID_EXTENSIONS_LIST: &[&str] = &[
     "rw2", "dng", "raf", "pef", "srw", "x3f", "psd",
 ];
 
+/// Largest range expanded from one `A-B` expression; wider spans are almost always typos.
+const MAX_RANGE_SPAN: u64 = 500;
+
+const RANGE_DASHES: [char; 3] = ['-', '–', '—'];
+
+fn has_code_digits(token: &str) -> bool {
+    token.split(|c: char| !c.is_ascii_digit()).any(|run| run.len() >= 3)
+}
+
+fn leading_token(s: &str) -> &str {
+    let end = s
+        .find(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
+        .unwrap_or(s.len());
+    &s[..end]
+}
+
+fn trailing_token(s: &str) -> &str {
+    let start = s
+        .char_indices()
+        .rev()
+        .find(|(_, c)| !(c.is_ascii_alphanumeric() || *c == '_'))
+        .map(|(i, c)| i + c.len_utf8())
+        .unwrap_or(0);
+    &s[start..]
+}
+
+fn strip_leading_separator(s: &str) -> Option<&str> {
+    if let Some(rest) = s.strip_prefix("..") {
+        return Some(rest.trim_start_matches('.'));
+    }
+    if let Some(rest) = s.strip_prefix('~') {
+        return Some(rest);
+    }
+    let rest = s.trim_start_matches(RANGE_DASHES);
+    (rest.len() != s.len()).then_some(rest)
+}
+
+fn strip_trailing_separator(s: &str) -> Option<&str> {
+    if let Some(rest) = s.strip_suffix("..") {
+        return Some(rest.trim_end_matches('.'));
+    }
+    if let Some(rest) = s.strip_suffix('~') {
+        return Some(rest);
+    }
+    let rest = s.trim_end_matches(RANGE_DASHES);
+    (rest.len() != s.len()).then_some(rest)
+}
+
+/// True when another code follows through a dash/tilde/`..` (spaces allowed) or an attached dot.
+/// A dot followed by a space is a sentence break, not a chain.
+fn continues_with_code(after: &str) -> bool {
+    if let Some(rest) = after.strip_prefix('.').filter(|r| !r.starts_with('.')) {
+        return has_code_digits(leading_token(rest));
+    }
+    strip_leading_separator(after.trim_start_matches([' ', '\t']))
+        .is_some_and(|rest| has_code_digits(leading_token(rest.trim_start_matches([' ', '\t']))))
+}
+
+fn preceded_by_code(before: &str) -> bool {
+    if let Some(rest) = before.strip_suffix('.').filter(|r| !r.ends_with('.')) {
+        return has_code_digits(trailing_token(rest));
+    }
+    strip_trailing_separator(before.trim_end_matches([' ', '\t']))
+        .is_some_and(|rest| has_code_digits(trailing_token(rest.trim_end_matches([' ', '\t']))))
+}
+
+/// Expands `0450-0465`, `0450..0465`, `0450~0465` and prefixed forms (`IMG_0450-0465`) into one
+/// code per line. Only a standalone pair is a range: dash chains such as `0555-0573-0576` are how
+/// customers list separate photos, so they are left for the normal splitting below.
+fn expand_code_ranges(input: &str) -> Result<String, String> {
+    let re_range = Regex::new(
+        r"(?P<lp>[A-Za-z_]*[A-Za-z][A-Za-z_]*)?(?P<a>\d{3,})[ \t]*(?:\.{2,3}|~|[-–—]+)[ \t]*(?P<rp>[A-Za-z_]*[A-Za-z][A-Za-z_]*)?(?P<b>\d{3,})",
+    )
+    .map_err(|e| e.to_string())?;
+
+    let expanded = re_range.replace_all(input, |caps: &regex::Captures| {
+        let whole = caps.get(0).unwrap();
+        let original = whole.as_str().to_string();
+        let before = &input[..whole.start()];
+        let after = &input[whole.end()..];
+
+        let glued = |c: char| c.is_alphanumeric() || c == '_';
+        if before.chars().next_back().is_some_and(glued) || after.chars().next().is_some_and(glued) {
+            return original;
+        }
+        if preceded_by_code(before) || continues_with_code(after) {
+            return original;
+        }
+
+        let lp = caps.name("lp").map(|m| m.as_str());
+        let rp = caps.name("rp").map(|m| m.as_str());
+        let same_prefix = |l: &str, r: &str| l.trim_matches('_').eq_ignore_ascii_case(r.trim_matches('_'));
+        match (lp, rp) {
+            (_, None) => {}
+            (Some(l), Some(r)) if same_prefix(l, r) => {}
+            _ => return original,
+        }
+
+        let (a, b) = (&caps["a"], &caps["b"]);
+        let (Ok(start), Ok(end)) = (a.parse::<u64>(), b.parse::<u64>()) else {
+            return original;
+        };
+        if a.len() != b.len() || end <= start || end - start + 1 > MAX_RANGE_SPAN {
+            return original;
+        }
+
+        let prefix = lp.unwrap_or("");
+        let width = a.len();
+        let codes: Vec<String> = (start..=end).map(|n| format!("{prefix}{n:0width$}")).collect();
+        format!("\n{}\n", codes.join("\n"))
+    });
+
+    Ok(expanded.into_owned())
+}
+
 /// Cleans a raw code token by:
 /// 1. Stripping all leading non-alphanumeric characters.
 ///    Preserves leading '_' only if immediately followed by an ASCII alphabetic char (e.g. `_MG_1234.CR2`).
@@ -138,9 +253,12 @@ pub fn parse_customer_codes(input: String) -> Result<Vec<CustomerCode>, String> 
         .replace('𝟬', "0") // U+1D7EC Sans-serif Bold
         .replace('〇', "0"); // U+3007 Ideographic
 
+    // 1b. Expand ranges (0450-0465) before dashes/dots are treated as plain separators
+    let range_expanded = expand_code_ranges(&normalized_input)?;
+
     // 2. Pre-split dash/plus joined extensions (e.g. HYTU3068.CR3-HYTU3124.CR3 or zha0401.jpg.zha0407)
     let re_ext_join = Regex::new(r"(\.[a-zA-Z0-9]{2,4})[-+.]+([a-zA-Z0-9])").map_err(|e| e.to_string())?;
-    let ext_separated = re_ext_join.replace_all(&normalized_input, "$1\n$2");
+    let ext_separated = re_ext_join.replace_all(&range_expanded, "$1\n$2");
 
     // 3. Separate dot-joined codes when NOT a valid file extension (e.g. zha0401.zha0407 or 01234.01235)
     let re_dot_code = Regex::new(r"\.([a-zA-Z0-9_]+)").map_err(|e| e.to_string())?;
@@ -498,6 +616,63 @@ mod tests {
         assert_eq!(result[0].prefix, None);
         assert_eq!(result[1].raw, "0138");
         assert_eq!(result[1].prefix, None);
+    }
+
+    fn normalized(input: &str) -> Vec<String> {
+        parse_customer_codes(input.to_string())
+            .unwrap()
+            .into_iter()
+            .map(|c| c.normalized)
+            .collect()
+    }
+
+    #[test]
+    fn test_dash_range_expands() {
+        let codes = normalized("0450-0465");
+        assert_eq!(codes.len(), 16);
+        assert_eq!(codes.first().unwrap(), "0450");
+        assert_eq!(codes.last().unwrap(), "0465");
+    }
+
+    #[test]
+    fn test_dot_tilde_and_spaced_ranges_expand() {
+        assert_eq!(normalized("0450..0455").len(), 6);
+        assert_eq!(normalized("0450 ~ 0452").len(), 3);
+        assert_eq!(normalized("0998 - 1002"), ["0998", "0999", "1000", "1001", "1002"]);
+        assert_eq!(normalized("0450–0452").len(), 3);
+    }
+
+    #[test]
+    fn test_prefixed_range_keeps_prefix() {
+        let result = parse_customer_codes("IMG_0450-0452".to_string()).unwrap();
+        let raws: Vec<&str> = result.iter().map(|c| c.raw.as_str()).collect();
+        assert_eq!(raws, ["IMG_0450", "IMG_0451", "IMG_0452"]);
+        assert!(result.iter().all(|c| c.prefix.as_deref() == Some("IMG")));
+
+        assert_eq!(normalized("IMG_0450-IMG_0452").len(), 3);
+    }
+
+    #[test]
+    fn test_ranges_inside_a_chat_message() {
+        assert_eq!(
+            normalized("chị lấy 0450-0452, 0460-0461 và 0470 nhé."),
+            ["0450", "0451", "0452", "0460", "0461", "0470"]
+        );
+        assert_eq!(normalized("Lấy 0450-0452. 0470 nữa"), ["0450", "0451", "0452", "0470"]);
+    }
+
+    #[test]
+    fn test_dash_chains_stay_separate_codes() {
+        assert_eq!(normalized("0555-0573-0576"), ["0555", "0573", "0576"]);
+        assert_eq!(normalized("0450 - 0465 - 0470"), ["0450", "0465", "0470"]);
+        assert_eq!(normalized("0401.0450-0465"), ["0401", "0450", "0465"]);
+    }
+
+    #[test]
+    fn test_implausible_ranges_stay_two_codes() {
+        for input in ["0465-0450", "450-0465", "0001-0999", "ABC0450-DEF0452", "0450-0465k"] {
+            assert_eq!(normalized(input).len(), 2, "{input}");
+        }
     }
 
     #[test]

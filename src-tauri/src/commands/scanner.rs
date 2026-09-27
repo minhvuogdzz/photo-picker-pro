@@ -9,13 +9,26 @@ use walkdir::WalkDir;
 
 use super::types::{PhotoFile, ProgressEvent, ScanResult};
 
-/// Image file extensions supported by the scanner
-const _IMAGE_EXTENSIONS: &[&str] = &[
-    "jpg", "jpeg", "png", "gif", "bmp", "tiff", "tif", "webp", "heic", "heif",
-    "raw", "cr2", "cr3", "nef", "arw", "orf", "rw2", "dng", "raf", "pef",
-    "srw", "x3f", "3fr", "mef", "erf", "nrw", "rwl", "mrw",
-    "svg", "ico", "psd", "ai", "eps",
+/// Camera RAW extensions (also what the "RAW only" filter accepts)
+const RAW_EXTENSIONS: &[&str] = &[
+    "cr2", "cr3", "crw", "arw", "sr2", "nef", "nrw", "orf", "raf", "dng", "rw2", "raw",
+    "pef", "srw", "x3f", "3fr", "mef", "mos", "erf", "kdc", "mrw", "rwl", "rwz",
 ];
+
+/// Non-JPG, non-RAW formats accepted when no RAW/JPG filter is selected
+const OTHER_IMAGE_EXTENSIONS: &[&str] = &["png", "heic", "heif", "tif", "tiff", "webp", "psd"];
+
+fn accepts_extension(ext_lower: &str, filter_raw: bool, filter_jpg: bool) -> bool {
+    let is_jpg = ext_lower == "jpg" || ext_lower == "jpeg";
+    let is_raw = RAW_EXTENSIONS.contains(&ext_lower);
+
+    // If both options are false, accept all valid images; otherwise only the selected types
+    if filter_raw || filter_jpg {
+        (filter_raw && is_raw) || (filter_jpg && is_jpg)
+    } else {
+        is_jpg || is_raw || OTHER_IMAGE_EXTENSIONS.contains(&ext_lower)
+    }
+}
 
 /// Extracts the numeric portion from a filename for matching purposes.
 /// Example: "IMG01234.JPG" -> "01234", "MVD000123.CR2" -> "000123"
@@ -103,22 +116,7 @@ pub async fn scan_folders(
                     let path = entry.path();
                     if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
                         let ext_lower = ext.to_lowercase();
-                        
-                        let is_jpg = ext_lower == "jpg" || ext_lower == "jpeg";
-                        let is_raw = matches!(
-                            ext_lower.as_str(),
-                            "cr2" | "cr3" | "arw" | "nef" | "orf" | "raf" | "dng" | "rw2"
-                        );
-
-                        // If both options are false, accept all valid images (fallback/default behavior)
-                        // If any option is true, only accept matching types
-                        let valid = if options.filter_raw || options.filter_jpg {
-                            (options.filter_raw && is_raw) || (options.filter_jpg && is_jpg)
-                        } else {
-                            is_jpg || is_raw || matches!(ext_lower.as_str(), "png" | "heic" | "heif" | "tiff")
-                        };
-
-                        if valid {
+                        if accepts_extension(&ext_lower, options.filter_raw, options.filter_jpg) {
                             all_entries.push(entry);
                         }
                     }
@@ -494,6 +492,24 @@ mod tests {
     #[test]
     fn test_extract_number_no_digits() {
         assert_eq!(extract_number_from_filename("photo.jpg"), "");
+    }
+
+    #[test]
+    fn test_all_mode_accepts_retouch_formats() {
+        for ext in ["tif", "tiff", "psd", "webp", "png", "heic", "jpg", "cr3", "pef", "srw", "x3f"] {
+            assert!(accepts_extension(ext, false, false), "{ext} should be accepted");
+        }
+        assert!(!accepts_extension("txt", false, false));
+        assert!(!accepts_extension("xmp", false, false));
+    }
+
+    #[test]
+    fn test_type_filters_stay_strict() {
+        assert!(accepts_extension("pef", true, false));
+        assert!(!accepts_extension("psd", true, false));
+        assert!(!accepts_extension("tif", false, true));
+        assert!(accepts_extension("jpeg", false, true));
+        assert!(!accepts_extension("cr2", false, true));
     }
 
     #[test]

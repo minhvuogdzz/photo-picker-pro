@@ -176,7 +176,7 @@ fn extract_raw_orientation(buf: &[u8]) -> u16 {
 
 /// Extracts embedded JPEG preview from camera RAW files (Canon CR2/CR3, Sony ARW, Nikon NEF, DNG, RAF...)
 /// This is 100x faster than full software decoding because cameras embed full-resolution JPEGs directly inside RAW metadata.
-fn extract_embedded_jpeg(path: &Path, max_size: u32) -> Option<(Vec<u8>, u16)> {
+pub(crate) fn extract_embedded_jpeg(path: &Path, max_size: u32) -> Option<(Vec<u8>, u16)> {
     use std::io::Read;
     let mut file = fs::File::open(path).ok()?;
     // Read up to 16MB from start of file (previews are always stored in the beginning container metadata)
