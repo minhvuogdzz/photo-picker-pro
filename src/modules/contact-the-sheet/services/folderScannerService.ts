@@ -8,6 +8,7 @@ import { finalFolderResolver, FolderTopologyEntry } from "./finalFolderResolver.
 import { folderParserService } from "./folderParserService.ts";
 import { driveResolverService } from "./driveResolverService.ts";
 import { jobMatchingService, SheetRowRecord } from "./jobMatchingService.ts";
+import { useContactSheetStore } from "../stores/useContactSheetStore.ts";
 import folderTreesFixture from "../../../../tests/fixtures/contact-the-sheet/folder-trees.json" with { type: "json" };
 
 export class FolderScannerService {
@@ -128,15 +129,28 @@ export class FolderScannerService {
 
         let driveResult: any = { driveItemId: "", driveWebLink: "" };
         try {
+          const effectiveDriveConfig =
+            profile?.driveConfig?.localRootPath
+              ? profile.driveConfig
+              : useContactSheetStore?.getState?.()?.lastDriveConfig || profile?.driveConfig;
+          const localRootPath = effectiveDriveConfig?.localRootPath || "";
+          const remoteRootDriveId = effectiveDriveConfig?.remoteRootDriveId || "root";
+          const requireOwnerMatch = effectiveDriveConfig?.requireOwnerMatch ?? true;
+          const currentUserEmail =
+            profile.googleAccountEmail ||
+            useContactSheetStore?.getState?.()?.googleConnection?.accountEmail;
+
           driveResult = await driveResolverService.resolveLocalFolderToDriveLink(
             resolved.folderPath,
-            profile.driveConfig.localRootPath,
-            profile.driveConfig.remoteRootDriveId,
+            localRootPath,
+            remoteRootDriveId,
             false,
             {
               finalFolderName: resolved.folderName,
               jobFolderName: rootName,
               customerName: metadata.customerName,
+              requireOwnerMatch,
+              currentUserEmail,
             }
           );
         } catch (err: any) {
@@ -210,15 +224,28 @@ export class FolderScannerService {
 
           let driveResult: any = { driveItemId: "", driveWebLink: "" };
           try {
+            const effectiveDriveConfig =
+              profile?.driveConfig?.localRootPath
+                ? profile.driveConfig
+                : useContactSheetStore?.getState?.()?.lastDriveConfig || profile?.driveConfig;
+            const localRootPath = effectiveDriveConfig?.localRootPath || "";
+            const remoteRootDriveId = effectiveDriveConfig?.remoteRootDriveId || "root";
+            const requireOwnerMatch = effectiveDriveConfig?.requireOwnerMatch ?? true;
+            const currentUserEmail =
+              profile.googleAccountEmail ||
+              useContactSheetStore?.getState?.()?.googleConnection?.accountEmail;
+
             driveResult = await driveResolverService.resolveLocalFolderToDriveLink(
               resolved.folderPath,
-              profile.driveConfig.localRootPath,
-              profile.driveConfig.remoteRootDriveId,
+              localRootPath,
+              remoteRootDriveId,
               false,
               {
                 finalFolderName: resolved.folderName,
                 jobFolderName: jobRoot.folder_name,
                 customerName: metadata.customerName,
+                requireOwnerMatch,
+                currentUserEmail,
               }
             );
           } catch (err: any) {

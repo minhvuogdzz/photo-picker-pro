@@ -89,6 +89,7 @@ export const DEFAULT_PRODUCTION_DRIVE_CONFIG: DriveConfig = {
   remoteRootDriveId: "root",
   sharingPolicy: "KEEP_EXISTING",
   sharingAutomationEnabled: false,
+  requireOwnerMatch: true,
 };
 
 export const STANDARD_19_STUDIO_MAPPINGS: FieldMapping[] = [
@@ -333,6 +334,9 @@ export const useContactSheetStore = create<ContactSheetState>()(
           activeProfile: state.activeProfile
             ? { ...state.activeProfile, driveConfig: lastDriveConfig }
             : state.activeProfile,
+          profiles: state.profiles.map((p) =>
+            p.id === state.activeProfile?.id ? { ...p, driveConfig: lastDriveConfig } : p
+          ),
         })),
 
       setActiveProfile: (id) =>

@@ -62,6 +62,7 @@ export interface DriveConfig {
   remoteRootDriveId: string; // Drive root folder id or 'root'
   sharingPolicy: "KEEP_EXISTING" | "ANYONE_WITH_LINK" | "STUDIO_ACCOUNTS_ONLY";
   sharingAutomationEnabled: boolean; // MVP defaults to false (least privilege)
+  requireOwnerMatch?: boolean; // Ensure resolved folder is owned by current logged in Google account
 }
 
 export type WorkspaceHealthStatus =
