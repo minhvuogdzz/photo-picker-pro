@@ -60,12 +60,12 @@ export function AuthGuard({ children }: AuthGuardProps) {
   const [showExpiringModal, setShowExpiringModal] = useState(false);
   const [licenseManagerConfig, setLicenseManagerConfig] = useState<{
     isOpen: boolean;
-    mode: "activate" | "request";
-    isVip: boolean;
+    mode: "packages" | "activate";
+    targetApp?: string;
   }>({
     isOpen: false,
-    mode: "activate",
-    isVip: false,
+    mode: "packages",
+    targetApp: "ALL",
   });
 
   const expiringNotice = useMemo(() => {
@@ -90,7 +90,6 @@ export function AuthGuard({ children }: AuthGuardProps) {
     session?.userId,
     session?.subscription?.expiresAt,
     session?.subscription?.status,
-    session?.subscription?.isPremium,
     expiringNotice,
   ]);
 
@@ -101,11 +100,11 @@ export function AuthGuard({ children }: AuthGuardProps) {
     setShowExpiringModal(false);
   };
 
-  const handleOpenLicenseManager = (mode: "activate" | "request", isVip: boolean) => {
+  const handleOpenLicenseManager = (mode: "packages" | "activate" = "packages", targetApp: string = "ALL") => {
     setLicenseManagerConfig({
       isOpen: true,
       mode,
-      isVip,
+      targetApp,
     });
   };
 
@@ -327,11 +326,11 @@ export function AuthGuard({ children }: AuthGuardProps) {
               <button
                 onClick={() => {
                   setExpiringSoonMessage(null);
-                  handleOpenLicenseManager("request", session?.subscription?.isPremium === true);
+                  handleOpenLicenseManager("packages", "ALL");
                 }}
                 className="btn-primary flex-1 py-3 text-sm font-bold"
               >
-                Đổi quyền lợi
+                Gia hạn ngay
               </button>
             </div>
           </div>
@@ -353,7 +352,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
         <LicenseManager
           variant="modal"
           initialMode={licenseManagerConfig.mode}
-          initialIsPremium={licenseManagerConfig.isVip}
+          defaultTargetApp={licenseManagerConfig.targetApp}
           onClose={() => setLicenseManagerConfig((prev) => ({ ...prev, isOpen: false }))}
         />
       )}

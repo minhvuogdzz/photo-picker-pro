@@ -1,5 +1,5 @@
 import { ElementType } from "react";
-import { FileImage, Layers, Sparkles, FolderArchive, Palette, FileSpreadsheet, Coins, BarChart3 } from "lucide-react";
+import { FileImage, Layers, FileSpreadsheet, BarChart3 } from "lucide-react";
 import { PhotoPickerIcon } from "@/core/components/PhotoPickerIcon";
 
 export interface AppModule {
@@ -13,7 +13,6 @@ export interface AppModule {
   tags: string[];
   isPinned?: boolean;
   badge?: string;
-  isPremium?: boolean;
   accentColor: {
     primary: string;
     border: string;
@@ -60,7 +59,6 @@ export const modules: AppModule[] = [
       "link edit", "tên edit", "tự động hóa", "studio", "workflow"
     ],
     badge: "Studio Ops",
-    isPremium: true,
     accentColor: {
       primary: "text-emerald-600 dark:text-emerald-400",
       border: "hover:border-emerald-500/50",
@@ -84,7 +82,6 @@ export const modules: AppModule[] = [
       "giáo trình", "retouch", "blend màu"
     ],
     isPinned: true,
-    isPremium: true,
     accentColor: {
       primary: "text-amber-600 dark:text-amber-400",
       border: "hover:border-amber-500/50",
@@ -129,7 +126,6 @@ export const modules: AppModule[] = [
       "retouch", "thư mục sâu nhất", "studio", "thang"
     ],
     badge: "Studio Ops",
-    isPremium: true,
     accentColor: {
       primary: "text-emerald-600 dark:text-emerald-400",
       border: "hover:border-emerald-500/50",
@@ -140,4 +136,3 @@ export const modules: AppModule[] = [
     }
   }
 ];
-

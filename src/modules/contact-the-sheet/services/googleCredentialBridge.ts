@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useContactSheetStore } from "../stores/useContactSheetStore.ts";
 import { useAuthStore } from "../../../core/stores/useAuthStore.ts";
-import { checkPremiumFeatureAccess } from "../../../core/services/premiumFeaturePolicy.ts";
+import { checkAppAccess } from "../../../core/services/appEntitlementPolicy.ts";
 
 /**
  * Standard MVD Photoshop Academy Desktop Google OAuth Client ID & Secret.
@@ -127,7 +127,7 @@ class GoogleCredentialManager {
       return;
     }
 
-    const access = checkPremiumFeatureAccess(session, "sheet_extract");
+    const access = checkAppAccess(session, "contact-the-sheet");
     if (!access.hasAccess) {
       const userKey = getUserStorageKey("mvd_google_active_email");
       const hasSaved = !!getSafeStorage(userKey) || !!this.activeAccountEmail;
@@ -220,10 +220,12 @@ class GoogleCredentialManager {
   public async getValidAccessToken(forceRefresh: boolean = false): Promise<string> {
     const session = useAuthStore.getState().session;
     if (session) {
-      const access = checkPremiumFeatureAccess(session, "sheet_extract");
-      if (!access.hasAccess) {
+      const hasAccess =
+        checkAppAccess(session, "contact-the-sheet").hasAccess ||
+        checkAppAccess(session, "photo-picker").hasAccess;
+      if (!hasAccess) {
         await this.disconnectGoogle();
-        throw new Error("TRIAL_EXPIRED: Hết hạn dùng thử VIP 7 ngày tính năng Google Sheet. Tài khoản Google đã được ngắt kết nối tự động trên thiết bị này.");
+        throw new Error("EXPIRED: Gói sử dụng tính năng Google Sheet đã hết hạn. Tài khoản Google đã được ngắt kết nối tự động.");
       }
     }
 
@@ -332,9 +334,11 @@ class GoogleCredentialManager {
   public async connectGoogle(clientId: string = DEFAULT_MVD_GOOGLE_CLIENT_ID): Promise<void> {
     const session = useAuthStore.getState().session;
     if (session) {
-      const access = checkPremiumFeatureAccess(session, "sheet_extract");
-      if (!access.hasAccess) {
-        throw new Error("TRIAL_EXPIRED: Tính năng kết nối Google Sheet yêu cầu VIP Premium hoặc thời gian dùng thử 7 ngày hợp lệ.");
+      const hasAccess =
+        checkAppAccess(session, "contact-the-sheet").hasAccess ||
+        checkAppAccess(session, "photo-picker").hasAccess;
+      if (!hasAccess) {
+        throw new Error("EXPIRED: Tính năng kết nối Google Sheet yêu cầu kích hoạt gói sử dụng hợp lệ.");
       }
     }
 

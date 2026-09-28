@@ -1,43 +1,44 @@
 import { useAuthStore } from "@/core/stores/useAuthStore";
-import { Crown, Sparkles, Clock, ShieldCheck } from "lucide-react";
+import { getUserPlanInfo } from "@/core/services/appEntitlementPolicy";
+import { Sparkles, Clock, ShieldCheck, FileImage, Layers } from "lucide-react";
+
+interface SubscriptionBadgeProps {
+  onClick?: () => void;
+}
 
 /**
  * Compact badge displayed in TopBar showing subscription status.
- * Shows plan name, days remaining, and Crown icon if user has Premium.
+ * Clearly differentiates between Full App, Photo Picker only, and Trial.
  */
-export function SubscriptionBadge() {
+export function SubscriptionBadge({ onClick }: SubscriptionBadgeProps) {
   const session = useAuthStore((s) => s.session);
   const isOffline = useAuthStore((s) => s.isOffline);
 
   if (!session) return null;
 
-  const { status, plan, isPremium, daysRemaining } = session.subscription;
+  const planInfo = getUserPlanInfo(session);
 
-  const isLifetime = status === "LIFETIME";
-  const isTrial = status === "TRIAL";
-  const isNearExpiry = daysRemaining !== null && daysRemaining <= 7;
-
-  const badgeClass = isLifetime
+  const badgeClass = planInfo.isLifetime
     ? "bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-amber-400 border-amber-500/30"
-    : isTrial
-      ? "bg-info/10 text-info border-info/30"
-      : isNearExpiry
-        ? "bg-warning/10 text-warning border-warning/30"
-        : "bg-success/10 text-success border-success/30";
+    : planInfo.isFullApp && !planInfo.isTrial
+      ? "bg-blue-500/15 text-blue-400 border-blue-500/30 hover:bg-blue-500/25"
+      : planInfo.isPhotoPickerOnly
+        ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25"
+        : planInfo.isTrial
+          ? "bg-amber-500/15 text-amber-400 border-amber-500/30 hover:bg-amber-500/25"
+          : "bg-destructive/15 text-destructive border-destructive/30 hover:bg-destructive/25";
 
-  const icon = isLifetime ? (
-    <Sparkles size={11} />
-  ) : isTrial ? (
-    <Clock size={11} />
+  const icon = planInfo.isLifetime ? (
+    <Sparkles size={11} className="shrink-0" />
+  ) : planInfo.isFullApp && !planInfo.isTrial ? (
+    <Layers size={11} className="shrink-0 text-blue-400" />
+  ) : planInfo.isPhotoPickerOnly ? (
+    <FileImage size={11} className="shrink-0 text-emerald-400" />
+  ) : planInfo.isTrial ? (
+    <Clock size={11} className="shrink-0 text-amber-400" />
   ) : (
-    <ShieldCheck size={11} />
+    <ShieldCheck size={11} className="shrink-0" />
   );
-
-  const label = isLifetime
-    ? "Lifetime"
-    : isTrial
-      ? `Trial · ${daysRemaining ?? 0}d`
-      : `${plan} · ${daysRemaining ?? "∞"}d`;
 
   return (
     <div className="flex items-center gap-1.5">
@@ -48,23 +49,15 @@ export function SubscriptionBadge() {
       )}
 
       {/* Account Subscription Status Badge */}
-      <span
-        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${badgeClass}`}
+      <button
+        type="button"
+        onClick={onClick}
+        title={`${planInfo.planName} - Nhấn để xem quyền lợi chi tiết`}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all cursor-pointer select-none shadow-xs active:scale-95 ${badgeClass}`}
       >
         {icon}
-        {label}
-      </span>
-
-      {/* Crown Icon / Premium Badge for VIP Premium accounts */}
-      {isPremium && (
-        <span
-          className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-extrabold bg-gradient-to-r from-amber-500/25 via-yellow-400/25 to-amber-500/25 text-amber-300 border border-amber-400/40 shadow-[0_0_12px_rgba(245,158,11,0.25)] select-none"
-          title="Tài khoản VIP Premium (Đã mở khóa Kho Tài Nguyên)"
-        >
-          <Crown size={12} className="text-amber-400 fill-amber-400/50" />
-          <span>Premium</span>
-        </span>
-      )}
+        <span>{planInfo.badgeLabel}</span>
+      </button>
     </div>
   );
 }

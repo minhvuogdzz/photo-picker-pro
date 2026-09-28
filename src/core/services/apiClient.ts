@@ -61,6 +61,7 @@ function toLocalSession(session: AuthSession) {
     email: session.email,
     username: session.username || (session.email.includes("@") ? session.email.split("@")[0] : session.email),
     name: session.name,
+    role: session.role,
     subscription_status: session.subscription.status,
     subscription_plan: session.subscription.plan,
     is_premium: session.subscription.isPremium ?? false,

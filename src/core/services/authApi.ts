@@ -49,6 +49,7 @@ export async function canSessionWorkOffline(session: AuthSession | null): Promis
 
 /** Converts AuthSession to LocalSession for Rust storage */
 export function toLocalSession(session: AuthSession): LocalSession {
+  const ents = session.entitlements || session.subscription.entitlements || [];
   return {
     access_token: session.accessToken,
     refresh_token: session.refreshToken,
@@ -56,12 +57,18 @@ export function toLocalSession(session: AuthSession): LocalSession {
     email: session.email,
     username: session.username || (session.email.includes("@") ? session.email.split("@")[0] : session.email),
     name: session.name,
+    role: session.role,
     subscription_status: session.subscription.status,
     subscription_plan: session.subscription.plan,
     is_premium: session.subscription.isPremium ?? false,
     expires_at: session.subscription.expiresAt,
     device_id: session.deviceId,
     last_sync_at: session.lastSyncAt,
+    entitlements: ents.map((e) => ({
+      app: e.app,
+      expires_at: e.expiresAt,
+      is_trial: e.isTrial ?? false,
+    })),
   };
 }
 
@@ -76,7 +83,18 @@ function fromLocalSession(local: LocalSession): AuthSession {
     daysRemaining = Math.max(0, Math.ceil((expiry - now) / (1000 * 60 * 60 * 24)));
   }
 
-  const isLifetime = local.subscription_status === "LIFETIME" || local.subscription_plan === "LIFETIME";
+  const ents: import("@/core/types/auth").Entitlement[] = (local.entitlements || []).map((e) => ({
+    app: e.app,
+    expiresAt: e.expires_at,
+    isTrial: e.is_trial ?? false,
+  }));
+
+  const now = Date.now();
+  // Admin không bị giới hạn thời lượng phiên (giống tài khoản đã mua) để không bị
+  // đá ra khỏi app khi đang làm việc quản trị.
+  const hasPaidPlan =
+    local.role === "ADMIN" ||
+    ents.some((e) => !e.isTrial && new Date(e.expiresAt).getTime() > now);
 
   return {
     accessToken: local.access_token,
@@ -85,18 +103,20 @@ function fromLocalSession(local: LocalSession): AuthSession {
     email: local.email,
     username: local.username || (local.email.includes("@") ? local.email.split("@")[0] : local.email),
     name: local.name,
+    role: local.role,
     subscription: {
       status: local.subscription_status as AuthSession["subscription"]["status"],
       plan: local.subscription_plan as AuthSession["subscription"]["plan"],
       isPremium: local.is_premium ?? false,
       expiresAt: local.expires_at,
       daysRemaining,
+      entitlements: ents,
     },
+    entitlements: ents,
     deviceId: local.device_id,
     lastSyncAt: local.last_sync_at,
     sessionDurationMinutes: (() => {
-      const isPrem = local.is_premium === true;
-      if (isPrem) return 0;
+      if (hasPaidPlan) return 0;
       try {
         const s = localStorage.getItem("session_duration_minutes");
         return s && !isNaN(Number(s)) ? Number(s) : 10;
@@ -304,13 +324,21 @@ export async function validateSubscription(
 
   const isUpdatedPrem = (partialSession.subscription?.isPremium ?? session.subscription?.isPremium) === true;
 
+  const newEntitlements =
+    (partialSession as any).subscription?.entitlements ||
+    (partialSession as any).entitlements ||
+    session.subscription?.entitlements ||
+    session.entitlements;
+
   const updatedSession: AuthSession = {
     ...session,
     ...partialSession,
     subscription: {
       ...session.subscription,
       ...(partialSession.subscription || {}),
+      entitlements: newEntitlements,
     },
+    entitlements: newEntitlements,
     sessionDurationMinutes: isUpdatedPrem 
       ? 0 
       : (partialSession.sessionDurationMinutes ?? session.sessionDurationMinutes),

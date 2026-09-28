@@ -1,3 +1,10 @@
+/** Individual app entitlement */
+export interface Entitlement {
+  readonly app: string;
+  readonly expiresAt: string;
+  readonly isTrial?: boolean;
+}
+
 /** Auth session stored locally and synced with server */
 export interface AuthSession {
   readonly accessToken: string;
@@ -6,10 +13,13 @@ export interface AuthSession {
   readonly email: string;
   readonly username?: string;
   readonly name: string;
+  /** "ADMIN" | "USER" — admin không bao giờ bị chặn khỏi các app/công cụ quản trị. */
+  readonly role?: string;
   readonly subscription: SubscriptionInfo;
   readonly deviceId: string;
   readonly lastSyncAt: string;
   readonly sessionDurationMinutes?: number;
+  readonly entitlements?: Entitlement[];
 }
 
 /** Subscription details */
@@ -19,6 +29,7 @@ export interface SubscriptionInfo {
   readonly isPremium?: boolean;
   readonly expiresAt: string | null;
   readonly daysRemaining: number | null;
+  readonly entitlements?: Entitlement[];
 }
 
 
@@ -74,12 +85,18 @@ export interface LocalSession {
   readonly email: string;
   readonly username?: string;
   readonly name: string;
+  readonly role?: string;
   readonly subscription_status: string;
   readonly subscription_plan: string;
   readonly is_premium?: boolean;
   readonly expires_at: string | null;
   readonly device_id: string;
   readonly last_sync_at: string;
+  readonly entitlements?: Array<{
+    readonly app: string;
+    readonly expires_at: string;
+    readonly is_trial?: boolean;
+  }>;
 }
 
 /** Update user profile request */

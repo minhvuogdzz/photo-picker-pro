@@ -6,7 +6,6 @@ import {
   ArrowRight,
   Shield,
   ExternalLink,
-  Crown,
   Sparkles,
   Zap,
   LayoutGrid,
@@ -19,6 +18,8 @@ import { CoffeeSteamIcon } from "@/core/components/CoffeeSteamIcon";
 import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { apiRequest } from "@/core/services/apiClient";
+import { checkAppAccess, getUserPlanInfo } from "@/core/services/appEntitlementPolicy";
+import { LicenseManager } from "@/core/license/LicenseManager";
 
 const DEFAULT_COMPANY_URL = "https://mvdphotoshopacademy.com";
 
@@ -31,6 +32,7 @@ export function LauncherPage() {
   const [version, setVersion] = useState("2.1.1");
   const [companyUrl, setCompanyUrl] = useState("");
   const [bannerConfig, setBannerConfig] = useState<{ badge?: string; title?: string; subtitle?: string }>({});
+  const [showLicenseManager, setShowLicenseManager] = useState(false);
 
   useEffect(() => {
     getVersion().then(setVersion).catch(console.error);
@@ -86,8 +88,10 @@ export function LauncherPage() {
   }, []);
 
   const userName = session?.name || session?.email?.split("@")[0] || "Quý khách";
-  const isPremium = session?.subscription?.isPremium === true;
-  const isLifetime = session?.subscription?.status === "LIFETIME";
+  const planInfo = getUserPlanInfo(session);
+
+  // Check access to resources app
+  const resourcesAccess = checkAppAccess(session, "resources");
 
   // Compute banner values (admin custom with fallback)
   const displayTitle = useMemo(() => {
@@ -108,7 +112,7 @@ export function LauncherPage() {
       <div className="fixed bottom-[-10%] left-[-5%] w-[40%] h-[40%] bg-amber-500/6 rounded-full blur-[120px] pointer-events-none hidden dark:block" />
       <div className="fixed top-[40%] left-[20%] w-[35%] h-[35%] bg-violet-500/5 rounded-full blur-[140px] pointer-events-none hidden dark:block" />
 
-      {/* HEADER: ADMIN-CONFIGURABLE BANNER & DEDICATED PREMIUM HUB */}
+      {/* HEADER: ADMIN-CONFIGURABLE BANNER & USER ACCOUNT STATUS */}
       <div className="w-full max-w-5xl mx-auto mb-5 relative z-10">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-border/80">
           <div>
@@ -147,32 +151,43 @@ export function LauncherPage() {
             </p>
           </div>
 
-          {/* Right User & Dedicated Premium Hub */}
+          {/* Right User & Account Status */}
           <div className="flex items-center gap-2.5 self-start md:self-center shrink-0">
-            <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-card border border-border shadow-xs hover:border-amber-500/40 transition-colors">
-              <div className={`w-8.5 h-8.5 rounded-lg flex items-center justify-center shrink-0 ${
-                isPremium 
-                  ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30" 
-                  : "bg-primary/10 text-primary border border-primary/20"
-              }`}>
-                {isPremium ? <Crown size={17} /> : <Shield size={17} />}
+            <button
+              type="button"
+              onClick={() => setShowLicenseManager(true)}
+              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-card border border-border shadow-xs hover:border-primary/40 hover:bg-muted/40 transition-all cursor-pointer text-left group"
+              title="Nhấn để xem chi tiết gói và quyền lợi các app"
+            >
+              <div className="w-8.5 h-8.5 rounded-lg flex items-center justify-center shrink-0 bg-primary/10 text-primary border border-primary/20 group-hover:scale-105 transition-transform">
+                <Shield size={17} />
               </div>
               <div className="flex flex-col">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="text-xs font-bold text-foreground">
-                    {isPremium ? "VIP Creative Hub" : "Standard Plan"}
+                    {planInfo.planName}
                   </span>
-                  {isPremium && (
-                    <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/35 uppercase">
-                      {isLifetime ? "LIFETIME" : "PRO"}
+                  {planInfo.isTrial && (
+                    <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-500 border border-amber-500/35 uppercase">
+                      TRIAL
+                    </span>
+                  )}
+                  {planInfo.isPhotoPickerOnly && (
+                    <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-500 border border-emerald-500/35 uppercase">
+                      GÓI LẺ
+                    </span>
+                  )}
+                  {planInfo.isFullApp && !planInfo.isTrial && (
+                    <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-500 border border-blue-500/35 uppercase">
+                      FULL APP
                     </span>
                   )}
                 </div>
-                <span className="text-[10px] text-muted-foreground max-w-[150px] truncate">
-                  {session?.email || "Studio Member"}
+                <span className="text-[10px] text-muted-foreground max-w-[170px] truncate">
+                  {planInfo.badgeLabel} · {session?.email}
                 </span>
               </div>
-            </div>
+            </button>
           </div>
         </div>
       </div>
@@ -194,15 +209,21 @@ export function LauncherPage() {
               <div className="space-y-1.5">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="text-base font-bold text-foreground group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors tracking-tight">
-                    Kho Tài Nguyên Creative · VIP Vault
+                    Kho Tài Nguyên Creative
                   </h3>
                   <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/35 flex items-center gap-1 shadow-xs">
                     <Sparkles size={11} />
-                    <span>Đặc quyền VIP</span>
+                    <span>
+                      {resourcesAccess.hasAccess
+                        ? !resourcesAccess.isTrial
+                          ? `Đã mua · ${resourcesAccess.daysRemaining ?? "∞"} ngày`
+                          : `Dùng thử · ${resourcesAccess.daysRemaining ?? 0} ngày`
+                        : "Chưa kích hoạt"}
+                    </span>
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed max-w-2xl">
-                  Tuyển chọn độc quyền hàng nghìn Presets Lightroom, Actions Photoshop Retouch da chuyên sâu, Brushes cao cấp & LUTs màu ảnh cưới/studio.
+                  Tuyển chọn hàng nghìn Presets Lightroom, Actions Photoshop Retouch da chuyên sâu, Brushes cao cấp & LUTs màu ảnh cưới/studio.
                 </p>
                 <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                   {["10.000+ Tài nguyên", "Presets Lightroom", "Actions Retouch Da", "Brushes & Textures", "LUTs Màu Cinematic"].map((tag, idx) => (
@@ -218,7 +239,7 @@ export function LauncherPage() {
             </div>
 
             <div className="flex items-center gap-2 px-4.5 py-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-800 dark:text-amber-300 font-semibold text-xs transition-all shadow-xs shrink-0 self-end md:self-center group-hover:border-amber-500/50">
-              <span>Mở kho tài nguyên</span>
+              <span>{resourcesAccess.hasAccess ? "Mở kho tài nguyên" : "Kích hoạt gói"}</span>
               <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
             </div>
           </div>
@@ -241,6 +262,7 @@ export function LauncherPage() {
           {workflowApps.map((mod) => {
             const Icon = mod.icon;
             const accent = mod.accentColor;
+            const modAccess = checkAppAccess(session, mod.id);
 
             return (
               <div
@@ -263,15 +285,19 @@ export function LauncherPage() {
                     </div>
 
                     <div className="flex items-center gap-1.5">
-                      {mod.isPremium && (
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/35 flex items-center gap-1 shadow-xs">
-                          <Crown size={10} />
-                          <span>VIP</span>
-                        </span>
-                      )}
-                      {mod.badge && (
-                        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md ${accent.badgeClass}`}>
-                          {mod.badge}
+                      {modAccess.hasAccess ? (
+                        !modAccess.isTrial ? (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+                            Đã mua · {modAccess.daysRemaining ?? "∞"} ngày
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
+                            Dùng thử · {modAccess.daysRemaining ?? 0} ngày
+                          </span>
+                        )
+                      ) : (
+                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-muted text-muted-foreground border border-border">
+                          Chưa kích hoạt
                         </span>
                       )}
                     </div>
@@ -303,11 +329,15 @@ export function LauncherPage() {
                 {/* Card Footer */}
                 <div className="pt-2.5 border-t border-border/80 flex items-center justify-between relative z-10 text-xs">
                   <span className="text-[11px] text-muted-foreground font-medium">
-                    {mod.isPremium && !isPremium ? "Đặc quyền VIP Studio" : "Tự động hóa Studio"}
+                    {modAccess.hasAccess
+                      ? !modAccess.isTrial
+                        ? "Bản quyền đã kích hoạt"
+                        : `Đang dùng thử (${modAccess.daysRemaining ?? 0} ngày)`
+                      : "Cần kích hoạt gói"}
                   </span>
                   
                   <div className={`flex items-center gap-1 ${accent.primary} text-xs font-semibold group-hover:translate-x-0.5 transition-transform`}>
-                    <span>{mod.isPremium && !isPremium ? "Chi tiết VIP" : "Mở công cụ"}</span>
+                    <span>{modAccess.hasAccess ? "Mở công cụ" : "Kích hoạt gói"}</span>
                     <ArrowRight size={13} />
                   </div>
                 </div>
@@ -377,6 +407,15 @@ export function LauncherPage() {
           </div>
         </div>
       </div>
+
+      {/* License Manager Modal */}
+      {showLicenseManager && (
+        <LicenseManager
+          onClose={() => setShowLicenseManager(false)}
+          variant="modal"
+          initialMode="my_plan"
+        />
+      )}
     </div>
   );
 }

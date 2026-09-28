@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAppStore } from "@/core/stores/useAppStore";
 import { useAuthStore } from "@/core/stores/useAuthStore";
-import { LicenseManager } from "@/core/license/LicenseManager";
+import { checkAppAccess } from "@/core/services/appEntitlementPolicy";
+import { AppLockGateScreen } from "@/core/components/AppLockGateScreen";
 import { socketService } from "@/core/services/socketService";
 import { apiRequest, API_BASE_URL } from "@/core/services/apiClient";
 import { save } from "@tauri-apps/plugin-dialog";
@@ -38,6 +39,12 @@ export interface ResourceItem {
   rating: number;
   size: string;
   downloadType: "DIRECT" | "DRIVE";
+  /**
+   * Backend không còn trả link Drive trong danh sách công khai (ai cũng gọi được
+   * GET /resources), chỉ trả cờ này. Link thật lấy qua /resources/:id/download-link
+   * sau khi đã xác thực. `downloadUrl` vẫn giữ optional để tương thích backend cũ.
+   */
+  hasDownloadUrl?: boolean;
   downloadUrl?: string;
   fileName?: string;
   author: string;
@@ -50,8 +57,6 @@ export interface ResourceItem {
 export default function ResourcesApp() {
   const setActiveModule = useAppStore((s) => s.setActiveModule);
   const session = useAuthStore((s) => s.session);
-  const [showLicenseModal, setShowLicenseModal] = useState(false);
-
   const [resources, setResources] = useState<ResourceItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -64,11 +69,11 @@ export default function ResourcesApp() {
   const [savedFilePath, setSavedFilePath] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const isPremium = session?.subscription?.isPremium === true;
+  const appAccess = checkAppAccess(session, "resources");
 
   // Fetch real resources from backend
   const fetchResources = async () => {
-    if (!isPremium) {
+    if (!appAccess.hasAccess) {
       setIsLoading(false);
       return;
     }
@@ -85,12 +90,12 @@ export default function ResourcesApp() {
   };
 
   useEffect(() => {
-    if (isPremium) {
+    if (appAccess.hasAccess) {
       fetchResources();
     }
 
     const handleResourceUpdated = () => {
-      if (isPremium) {
+      if (appAccess.hasAccess) {
         fetchResources();
       }
     };
@@ -99,7 +104,7 @@ export default function ResourcesApp() {
     return () => {
       socketService.off("resource:updated", handleResourceUpdated);
     };
-  }, [isPremium]);
+  }, [appAccess.hasAccess]);
 
   // Compute unique categories dynamically from DB with counts
   const categories = useMemo(() => {
@@ -186,21 +191,49 @@ export default function ResourcesApp() {
 
     // Case 1: Google Drive / Cloud Link
     if (item.downloadType === "DRIVE") {
-      if (!item.downloadUrl) {
+      if (!item.downloadUrl && item.hasDownloadUrl === false) {
         setErrorMessage("Liên kết tải chưa khả dụng.");
         return;
       }
       setDownloadStatus("downloading");
-      setDownloadProgress(60);
+      setDownloadProgress(40);
+
+      let targetUrl = item.downloadUrl;
+      if (!targetUrl) {
+        // Backend mới: link chỉ được cấp qua endpoint có kiểm tra quyền.
+        try {
+          const linkData = await apiRequest<{ downloadUrl: string }>(
+            `/resources/${item.id}/download-link`,
+            { accessToken: session?.accessToken },
+          );
+          targetUrl = linkData?.downloadUrl;
+        } catch (err: any) {
+          setDownloadStatus("error");
+          setErrorMessage(err?.message || "Không lấy được liên kết tải. Vui lòng thử lại.");
+          return;
+        }
+      }
+
+      if (!targetUrl) {
+        setDownloadStatus("error");
+        setErrorMessage("Liên kết tải chưa khả dụng.");
+        return;
+      }
+
+      setDownloadProgress(70);
       try {
-        await openUrl(item.downloadUrl);
+        await openUrl(targetUrl);
         setDownloadProgress(100);
         setDownloadStatus("success");
       } catch {
-        window.open(item.downloadUrl, "_blank");
+        window.open(targetUrl, "_blank");
         setDownloadProgress(100);
         setDownloadStatus("success");
       }
+
+      setResources((prev) =>
+        prev.map((r) => (r.id === item.id ? { ...r, downloads: (r.downloads || 0) + 1 } : r))
+      );
       return;
     }
 
@@ -242,12 +275,24 @@ export default function ResourcesApp() {
         setDownloadProgress((prev) => (prev < 85 ? prev + 15 : prev));
       }, 150);
 
-      // Fetch file from backend
+      // Fetch file from backend — endpoint yêu cầu Bearer token + còn quyền 'resources'
       const downloadEndpoint = `${API_BASE_URL}/resources/${item.id}/download`;
-      const response = await fetch(downloadEndpoint);
+      const response = await fetch(downloadEndpoint, {
+        headers: session?.accessToken
+          ? { Authorization: `Bearer ${session.accessToken}` }
+          : undefined,
+      });
 
       if (!response.ok) {
         clearInterval(progressTimer);
+        if (response.status === 401) {
+          throw new Error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại rồi tải lại.");
+        }
+        if (response.status === 403) {
+          throw new Error(
+            "Bạn cần gia hạn gói Kho Tài Nguyên hoặc Gói Toàn Hệ Sinh Thái để tải tài nguyên này.",
+          );
+        }
         throw new Error(`Tải tệp thất bại (HTTP ${response.status})`);
       }
 
@@ -288,65 +333,9 @@ export default function ResourcesApp() {
     }
   };
 
-  // If user does not have VIP Premium
-  if (!isPremium) {
-    return (
-      <div className="w-full h-full flex flex-col items-center justify-center bg-card/90 backdrop-blur-md rounded-xl border border-border p-8 text-center relative overflow-hidden animate-fade-in select-none text-foreground">
-        
-        {/* Back Button */}
-        <button
-          onClick={() => setActiveModule("launcher")}
-          className="absolute top-4 left-4 w-7 h-7 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer border border-border"
-          title="Quay lại Launcher"
-        >
-          <ArrowLeft size={14} />
-        </button>
-
-        {/* VIP Crown Box */}
-        <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 mb-3">
-          <Crown size={22} />
-        </div>
-
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] font-semibold mb-2.5">
-          <Sparkles size={11} />
-          <span>ĐẶC QUYỀN VIP CREATIVE HUB</span>
-        </div>
-
-        <h2 className="text-base font-semibold text-foreground mb-1.5 tracking-tight">
-          Kho Tài Nguyên Dành Riêng Cho VIP Premium
-        </h2>
-
-        <p className="text-xs text-muted-foreground max-w-md mb-5 leading-relaxed">
-          Kho tài nguyên Actions Retouch, Presets độc quyền, Brushes và giáo trình thực chiến chỉ mở khóa cho tài khoản được cấp quyền <strong>VIP Premium</strong>.
-        </p>
-
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => setActiveModule("launcher")}
-            className="h-9 px-3.5 rounded-lg bg-muted hover:bg-muted/80 text-xs font-medium text-foreground border border-border transition-colors cursor-pointer"
-          >
-            Quay lại Launcher
-          </button>
-
-          <button
-            onClick={() => setShowLicenseModal(true)}
-            className="h-9 px-4 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
-          >
-            <Crown size={13} />
-            <span>Đổi quyền lợi / Đăng ký Premium</span>
-          </button>
-        </div>
-
-        {showLicenseModal && (
-          <LicenseManager
-            onClose={() => setShowLicenseModal(false)}
-            initialMode="request"
-            initialIsPremium={true}
-            variant="modal"
-          />
-        )}
-      </div>
-    );
+  // If user does not have access (trial expired and not purchased)
+  if (!appAccess.hasAccess) {
+    return <AppLockGateScreen appId="resources" appName="Kho Tài Nguyên Creative" />;
   }
 
   return (
@@ -454,7 +443,7 @@ export default function ResourcesApp() {
                     <div className="flex items-center gap-1.5">
                       {item.isVip && (
                         <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-500 border border-amber-500/25">
-                          VIP
+                          PRO
                         </span>
                       )}
                       {item.isHot && (

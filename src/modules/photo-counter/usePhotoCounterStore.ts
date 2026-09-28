@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { useAuthStore } from "@/core/stores/useAuthStore";
+import { checkAppAccess } from "@/core/services/appEntitlementPolicy";
 import type {
   MonthScanResult,
   DayScanResult,
@@ -206,11 +207,12 @@ export const usePhotoCounterStore = create<PhotoCounterState>((set, get) => ({
   },
 
   scanMonth: async (pathInput) => {
-    const isPremium = useAuthStore.getState().session?.subscription?.isPremium === true;
-    if (!isPremium) {
+    const session = useAuthStore.getState().session;
+    const access = checkAppAccess(session, "photo-counter");
+    if (!access.hasAccess) {
       set({
         isScanning: false,
-        error: "Tính năng Thống kê & Tính lương yêu cầu tài khoản được cấp quyền VIP Premium.",
+        error: "Bạn cần kích hoạt gói sử dụng ứng dụng Thống kê & Tính lương.",
       });
       return;
     }

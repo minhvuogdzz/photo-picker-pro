@@ -9,14 +9,12 @@ import { AlertTriangle, Clock, LogIn, X } from "lucide-react";
  * Gives the user immediate notice to save work or renew their session.
  */
 export function SessionExpiringWarningModal() {
-  const { remainingSeconds, isWarning30s, hasDismissed30sWarning, dismiss30sWarning } = useSessionTimeout();
+  const { remainingSeconds, isWarning30s, hasDismissed30sWarning, dismiss30sWarning, isUnlimited } = useSessionTimeout();
   const session = useAuthStore((s) => s.session);
   const authLogout = useAuthStore((s) => s.logout);
   const setSessionTimeoutExpired = useAuthStore((s) => s.setSessionTimeoutExpired);
 
-  const isPremium = session?.subscription?.isPremium === true;
-
-  if (isPremium || !isWarning30s || hasDismissed30sWarning || !session) {
+  if (isUnlimited || !isWarning30s || hasDismissed30sWarning || !session) {
     return null;
   }
 

@@ -10,8 +10,6 @@ import {
   FileSpreadsheet,
   Settings2,
   Filter,
-  Crown,
-  Lock,
   HelpCircle,
 } from "lucide-react";
 import type { CustomerCode } from "@/core/types";
@@ -20,11 +18,6 @@ import { listen } from "@tauri-apps/api/event";
 import { SheetCodeExtractorModal } from "./SheetCodeExtractorModal";
 import { CheckFilterStatusModal } from "./CheckFilterStatusModal";
 import { FilterSyntaxHelpModal } from "./FilterSyntaxHelpModal";
-import {
-  checkPremiumFeatureAccess,
-  type PremiumFeatureKey,
-} from "@/core/services/premiumFeaturePolicy";
-import { PremiumGateModal } from "@/core/components/PremiumGateModal";
 
 export {
   isCommandToken,
@@ -52,11 +45,7 @@ export function CenterPanel() {
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // VIP Premium feature access checks
-  const session = useAuthStore((s) => s.session);
-  const [gateFeature, setGateFeature] = useState<PremiumFeatureKey | null>(null);
-  const extractAccess = checkPremiumFeatureAccess(session, "sheet_extract");
-  const configAccess = checkPremiumFeatureAccess(session, "sheet_config");
+
 
   // Sheet Code Extractor Modal state
   const [isSheetModalOpen, setIsSheetModalOpen] = useState(false);
@@ -169,50 +158,17 @@ export function CenterPanel() {
             <button
               type="button"
               onClick={() => {
-                if (!extractAccess.hasAccess) {
-                  setGateFeature("sheet_extract");
-                  return;
-                }
                 setSheetModalInitialTab("extract");
                 setIsSheetModalOpen(true);
               }}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all group shadow-2xs select-none ${
-                extractAccess.hasAccess
-                  ? "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:border-emerald-500/50 cursor-pointer"
-                  : "bg-muted/40 text-muted-foreground/60 border border-border/40 hover:bg-muted/60 cursor-not-allowed hover:border-amber-500/30"
-              }`}
-              title={
-                extractAccess.hasAccess
-                  ? extractAccess.isTrial
-                    ? `Truy xuất trang tính (Dùng thử VIP còn ${extractAccess.daysRemaining} ngày)`
-                    : "Truy xuất mã chọn của khách từ Google Sheet"
-                  : "Yêu cầu VIP Premium: Truy xuất trang tính (Bấm để xem hướng dẫn nâng cấp)"
-              }
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all group shadow-2xs select-none bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:border-emerald-500/50 cursor-pointer"
+              title="Truy xuất mã chọn của khách từ Google Sheet"
             >
               <FileSpreadsheet
                 size={12}
-                className={extractAccess.hasAccess ? "text-emerald-500 group-hover:scale-110 transition-transform" : "text-muted-foreground/50"}
+                className="text-emerald-500 group-hover:scale-110 transition-transform"
               />
               <span>Truy xuất trang tính</span>
-
-              {extractAccess.isPremium && (
-                <span className="text-[9px] font-extrabold px-1 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 flex items-center gap-0.5">
-                  <Crown size={8} />
-                  <span>VIP</span>
-                </span>
-              )}
-              {extractAccess.isTrial && (
-                <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30 flex items-center gap-0.5" title={`Còn ${extractAccess.daysRemaining} ngày dùng thử`}>
-                  <Crown size={8} />
-                  <span>Trial {extractAccess.daysRemaining}N</span>
-                </span>
-              )}
-              {!extractAccess.hasAccess && (
-                <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-amber-500/10 text-amber-600/70 border border-amber-500/20 flex items-center gap-0.5">
-                  <Lock size={8} />
-                  <span>VIP</span>
-                </span>
-              )}
             </button>
 
             {/* Check TT Button: Only shown in multi-folder mode as requested */}
@@ -220,79 +176,33 @@ export function CenterPanel() {
               <button
                 type="button"
                 onClick={() => {
-                  if (!extractAccess.hasAccess) {
-                    setGateFeature("sheet_extract");
-                    return;
-                  }
                   setIsCheckStatusModalOpen(true);
                 }}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-all group shadow-2xs animate-fade-in select-none ${
-                  extractAccess.hasAccess
-                    ? "bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border-amber-500/35 hover:border-amber-500/60 cursor-pointer"
-                    : "bg-muted/40 text-muted-foreground/60 border-border/40 hover:bg-muted/60 cursor-not-allowed"
-                }`}
-                title={
-                  extractAccess.hasAccess
-                    ? "Kiểm tra đối soát trạng thái Chưa lọc trên Google Sheet để giữ lại khách cần lọc"
-                    : "Yêu cầu VIP Premium: Check TT Sheet (Bấm để xem hướng dẫn nâng cấp)"
-                }
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-all group shadow-2xs animate-fade-in select-none bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border-amber-500/35 hover:border-amber-500/60 cursor-pointer"
+                title="Kiểm tra đối soát trạng thái Chưa lọc trên Google Sheet để giữ lại khách cần lọc"
               >
                 <Filter
                   size={12}
-                  className={extractAccess.hasAccess ? "text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform" : "text-muted-foreground/50"}
+                  className="text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform"
                 />
                 <span>Check TT</span>
-                {!extractAccess.hasAccess && <Lock size={8} className="text-amber-600/70" />}
               </button>
             )}
 
             <button
               type="button"
               onClick={() => {
-                if (!configAccess.hasAccess) {
-                  setGateFeature("sheet_config");
-                  return;
-                }
                 setSheetModalInitialTab("config");
                 setIsSheetModalOpen(true);
               }}
-              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium border transition-all group shadow-2xs select-none ${
-                configAccess.hasAccess
-                  ? "bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground border-border/60 hover:border-border cursor-pointer"
-                  : "bg-muted/40 text-muted-foreground/60 border-border/40 hover:bg-muted/60 cursor-not-allowed hover:border-amber-500/30"
-              }`}
-              title={
-                configAccess.hasAccess
-                  ? configAccess.isTrial
-                    ? `Cấu hình Sheet (Dùng thử VIP còn ${configAccess.daysRemaining} ngày)`
-                    : "Cấu hình cột và Tab Google Sheet cho ứng dụng Lọc ảnh"
-                  : "Yêu cầu VIP Premium: Cấu hình Sheet (Bấm để xem hướng dẫn nâng cấp)"
-              }
+              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium border transition-all group shadow-2xs select-none bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground border-border/60 hover:border-border cursor-pointer"
+              title="Cấu hình cột và Tab Google Sheet cho ứng dụng Lọc ảnh"
             >
               <Settings2
                 size={12}
-                className={configAccess.hasAccess ? "text-muted-foreground group-hover:rotate-45 transition-transform" : "text-muted-foreground/50"}
+                className="text-muted-foreground group-hover:rotate-45 transition-transform"
               />
               <span>Cấu hình Sheet</span>
-
-              {configAccess.isPremium && (
-                <span className="text-[9px] font-extrabold px-1 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 flex items-center gap-0.5">
-                  <Crown size={8} />
-                  <span>VIP</span>
-                </span>
-              )}
-              {configAccess.isTrial && (
-                <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30 flex items-center gap-0.5">
-                  <Crown size={8} />
-                  <span>Trial {configAccess.daysRemaining}N</span>
-                </span>
-              )}
-              {!configAccess.hasAccess && (
-                <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-amber-500/10 text-amber-600/70 border border-amber-500/20 flex items-center gap-0.5">
-                  <Lock size={8} />
-                  <span>VIP</span>
-                </span>
-              )}
             </button>
           </div>
           <div className="flex items-center gap-1.5">
@@ -437,18 +347,6 @@ export function CenterPanel() {
         onClose={() => setIsHelpModalOpen(false)}
       />
 
-      {/* VIP Premium Gate Modal */}
-      {gateFeature && (
-        <PremiumGateModal
-          featureKey={gateFeature}
-          onClose={() => setGateFeature(null)}
-          reason={
-            gateFeature === "sheet_extract"
-              ? extractAccess.reason
-              : configAccess.reason
-          }
-        />
-      )}
     </div>
   );
 }
