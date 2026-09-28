@@ -156,17 +156,19 @@ extern "C" {
     fn macos_is_system_dark_mode() -> i32;
 }
 
+#[cfg(target_os = "macos")]
 const DOCK_ICON_DARK_PNG: &[u8] = include_bytes!("../../../public/brand/mvd_app_icon_dock_dark.png");
+#[cfg(target_os = "macos")]
 const DOCK_ICON_LIGHT_PNG: &[u8] = include_bytes!("../../../public/brand/mvd_app_icon_dock_light.png");
 
 #[tauri::command]
-pub fn update_system_theme_icon(theme: String) -> Result<(), String> {
+pub fn update_system_theme_icon(_theme: String) -> Result<(), String> {
     #[cfg(target_os = "macos")]
     {
-        let is_dark = if theme.to_lowercase() == "system" {
+        let is_dark = if _theme.to_lowercase() == "system" {
             unsafe { macos_is_system_dark_mode() == 1 }
         } else {
-            theme.to_lowercase() == "dark"
+            _theme.to_lowercase() == "dark"
         };
         let bytes = if is_dark {
             DOCK_ICON_DARK_PNG
