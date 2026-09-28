@@ -3,6 +3,7 @@
 void macos_set_dock_icon_png(const unsigned char* png_bytes, size_t length) {
     if (!png_bytes || length == 0) return;
     @autoreleasepool {
+        [[NSProcessInfo processInfo] setProcessName:@"MVD T&D"];
         NSData *data = [NSData dataWithBytes:png_bytes length:length];
         NSImage *image = [[NSImage alloc] initWithData:data];
         if (image && [image isValid]) {

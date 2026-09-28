@@ -1,40 +1,103 @@
 import confetti from "canvas-confetti";
 
 /**
- * Play an optional, gentle celebratory chime using Web Audio API
- * (Synthesized in real-time, zero external asset dependencies, zero lag).
+ * Explosive celebratory party cannon & fanfare sound using Web Audio API.
+ * High-impact "POP/BOOM" explosion blast + sparkling victory fanfare.
+ * Volume tuned to be punchy, clear, and audible at normal speaker volume.
  */
 export function playCelebrationSound() {
   try {
-    const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!AudioContextClass) return;
 
     const ctx = new AudioContextClass();
-    const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6 (Major triad fanfare)
     const now = ctx.currentTime;
 
-    notes.forEach((freq, idx) => {
+    // Helper: create a punchy cannon blast (mortar thump + crackle pop)
+    const fireCannonPop = (startTime: number, volume: number = 0.85, pitch: number = 240) => {
+      // 1. Low-end punchy thump (simulates the pressure chamber release)
+      const subOsc = ctx.createOscillator();
+      const subGain = ctx.createGain();
+
+      subOsc.type = "sine";
+      subOsc.frequency.setValueAtTime(pitch, startTime);
+      subOsc.frequency.exponentialRampToValueAtTime(32, startTime + 0.18);
+
+      subGain.gain.setValueAtTime(volume * 0.9, startTime);
+      subGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.22);
+
+      subOsc.connect(subGain);
+      subGain.connect(ctx.destination);
+
+      subOsc.start(startTime);
+      subOsc.stop(startTime + 0.25);
+
+      // 2. High-energy burst noise (simulates the party popper crack / explosion)
+      const bufferSize = Math.floor(ctx.sampleRate * 0.12); // 120ms burst
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.035));
+      }
+
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = "bandpass";
+      filter.frequency.setValueAtTime(1400, startTime);
+      filter.Q.setValueAtTime(1.8, startTime);
+
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(volume * 0.75, startTime);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.12);
+
+      noise.connect(filter);
+      filter.connect(noiseGain);
+      noiseGain.connect(ctx.destination);
+
+      noise.start(startTime);
+      noise.stop(startTime + 0.14);
+    };
+
+    // Fire main explosion blast instantly
+    fireCannonPop(now, 0.95, 260);
+
+    // Fire two follow-up satellite cannon pops (for multi-directional cannons)
+    fireCannonPop(now + 0.08, 0.65, 220);
+    fireCannonPop(now + 0.16, 0.55, 280);
+
+    // 3. Rich, bright victory fanfare chord (triumphant brass/chime timbre)
+    // Notes: C5 (523.25), E5 (659.25), G5 (783.99), C6 (1046.5)
+    const fanfareNotes = [523.25, 659.25, 783.99, 1046.5];
+    const fanfareStart = now + 0.06;
+
+    fanfareNotes.forEach((freq, idx) => {
       const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+      const oscGain = ctx.createGain();
 
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(freq, now + idx * 0.09);
+      // Triangle wave has rich odd harmonics that sound much fuller and louder than pure sine
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(freq, fanfareStart + idx * 0.07);
 
-      gain.gain.setValueAtTime(0, now + idx * 0.09);
-      gain.gain.linearRampToValueAtTime(0.12, now + idx * 0.09 + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.09 + 0.9);
+      const noteStart = fanfareStart + idx * 0.07;
+      oscGain.gain.setValueAtTime(0, noteStart);
+      oscGain.gain.linearRampToValueAtTime(0.45, noteStart + 0.03);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, noteStart + 0.85);
 
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+      osc.connect(oscGain);
+      oscGain.connect(ctx.destination);
 
-      osc.start(now + idx * 0.09);
-      osc.stop(now + idx * 0.09 + 0.95);
+      osc.start(noteStart);
+      osc.stop(noteStart + 0.9);
     });
 
     // Close audio context after playback
     setTimeout(() => {
       ctx.close().catch(() => {});
-    }, 2000);
+    }, 2500);
   } catch {
     // Audio autoplay restrictions or errors safely ignored
   }
