@@ -18,10 +18,12 @@ export interface BankInfo {
 }
 
 export interface CreateOrderRequest {
-  readonly targetApp: string;
-  readonly packageName: string;
-  readonly amount: number;
-  readonly durationDays: number;
+  /**
+   * Chỉ gửi id gói — server tự tra giá và số ngày trong bảng giá.
+   * KHÔNG gửi amount/durationDays: client mà đặt được giá thì ai cũng mua gói 12 tháng
+   * với giá 1.000đ. Backend đã bỏ các trường đó khỏi DTO nên gửi lên cũng bị loại.
+   */
+  readonly packageId: string;
   readonly buyerName: string;
   readonly buyerEmail: string;
   readonly buyerPhone: string;

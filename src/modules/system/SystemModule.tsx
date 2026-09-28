@@ -29,10 +29,12 @@ import {
 import { useUpdaterStore } from "@/core/stores/useUpdaterStore";
 import { apiRequest } from "@/core/services/apiClient";
 import { TermsDialog } from "@/core/components/TermsDialog";
+import { useSupportZalo } from "@/core/services/supportContact";
 
 type Tab = "general" | "about";
 
 export function SystemModule() {
+  const supportZalo = useSupportZalo();
   const settings = useSettingsStore((s) => s.settings);
   const updateSetting = useSettingsStore((s) => s.updateSetting);
   const session = useAuthStore((s) => s.session);
@@ -443,16 +445,18 @@ export function SystemModule() {
 
               {/* Action Links */}
               <div className="flex w-full max-w-sm gap-2.5 pt-1">
+                {supportZalo && (
+                  <a
+                    href={supportZalo.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex-1 bg-muted hover:bg-muted/80 active:scale-95 text-foreground py-2 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold transition-all border border-border shadow-sm"
+                  >
+                    Zalo: {supportZalo.display}
+                  </a>
+                )}
                 <a 
-                  href="https://zalo.me/0869528304" 
-                  target="_blank" 
-                  rel="noreferrer"
-                  className="flex-1 bg-muted hover:bg-muted/80 active:scale-95 text-foreground py-2 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold transition-all border border-border shadow-sm"
-                >
-                  Zalo: 0869528304
-                </a>
-                <a 
-                  href="https://zalo.me/0869528304" 
+                  href={supportZalo?.href || "https://zalo.me/"} 
                   target="_blank" 
                   rel="noreferrer"
                   className="flex-1 bg-primary/10 hover:bg-primary/20 active:scale-95 text-primary py-2 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold transition-all border border-primary/20 shadow-sm"

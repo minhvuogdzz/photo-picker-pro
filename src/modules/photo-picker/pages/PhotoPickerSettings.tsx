@@ -1,6 +1,7 @@
 import { useSettingsStore } from "@/core/stores/useSettingsStore";
 import { useTranslation } from "@/core/lib/i18n";
 import { invoke } from "@tauri-apps/api/core";
+import { useSupportZalo } from "@/core/services/supportContact";
 import {
   Hash,
   FolderOutput,
@@ -10,6 +11,7 @@ import {
 } from "lucide-react";
 
 export function SettingsPage() {
+  const supportZalo = useSupportZalo();
   const settings = useSettingsStore((s) => s.settings);
   const updateSetting = useSettingsStore((s) => s.updateSetting);
   const { t } = useTranslation();
@@ -57,7 +59,13 @@ export function SettingsPage() {
         {/* Default Output (PRO Feature) */}
         <div
           className="bg-card rounded-xl p-3.5 border border-border shadow-xs space-y-2 opacity-75 cursor-pointer hover:opacity-100 transition-opacity"
-          onClick={() => alert("Vui lòng liên hệ nhà cung cấp để sử dụng tính năng trả phí qua Zalo: 0869528304")}
+          onClick={() =>
+            alert(
+              supportZalo
+                ? `Vui lòng liên hệ nhà cung cấp để sử dụng tính năng trả phí qua Zalo: ${supportZalo.display}`
+                : "Vui lòng liên hệ nhà cung cấp để sử dụng tính năng trả phí.",
+            )
+          }
         >
           <div className="flex items-center justify-between pointer-events-none">
             <div className="flex items-center gap-2 text-xs font-semibold text-foreground">

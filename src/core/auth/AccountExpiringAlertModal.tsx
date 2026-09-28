@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type { ExpiringNoticeInfo } from "../services/accountExpirationService";
 import { getPricingPackages, PricingPackage } from "../services/paymentApi";
+import { useSupportZalo } from "@/core/services/supportContact";
 
 interface AccountExpiringAlertModalProps {
   readonly info: ExpiringNoticeInfo;
@@ -28,6 +29,7 @@ export function AccountExpiringAlertModal({
   onDismiss,
   onOpenLicenseManager,
 }: AccountExpiringAlertModalProps) {
+  const supportZalo = useSupportZalo();
   const [isDismissing, setIsDismissing] = useState(false);
   const [packages, setPackages] = useState<PricingPackage[]>([]);
 
@@ -227,15 +229,19 @@ export function AccountExpiringAlertModal({
 
           {/* Dismiss & Hotline */}
           <div className="flex items-center justify-between pt-1 text-[11px] text-muted-foreground px-1">
-            <a
-              href="https://zalo.me/0981989098"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-amber-400 flex items-center gap-1 transition-colors"
-            >
-              <span>Hỗ trợ Zalo: 0981.989.098</span>
-              <ExternalLink size={10} />
-            </a>
+            {supportZalo ? (
+              <a
+                href={supportZalo.href}
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-amber-400 flex items-center gap-1 transition-colors"
+              >
+                <span>Hỗ trợ Zalo: {supportZalo.display}</span>
+                <ExternalLink size={10} />
+              </a>
+            ) : (
+              <span />
+            )}
 
             <button
               type="button"

@@ -175,10 +175,7 @@ export function LicenseManager({
     try {
       const order = await createPaymentOrder(
         {
-          targetApp: selectedPackage.targetApp,
-          packageName: selectedPackage.name,
-          amount: selectedPackage.price,
-          durationDays: selectedPackage.durationDays,
+          packageId: selectedPackage.id,
           buyerName: buyerName.trim(),
           buyerEmail: buyerEmail.trim(),
           buyerPhone: buyerPhone.trim(),
