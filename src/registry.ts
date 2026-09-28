@@ -58,7 +58,7 @@ export const modules: AppModule[] = [
       "contact the sheet", "google sheet", "google drive", "đối soát", 
       "link edit", "tên edit", "tự động hóa", "studio", "workflow"
     ],
-    badge: "Studio Ops",
+    badge: "Workflow",
     accentColor: {
       primary: "text-emerald-600 dark:text-emerald-400",
       border: "hover:border-emerald-500/50",
@@ -125,7 +125,7 @@ export const modules: AppModule[] = [
       "thống kê", "sản lượng", "kpi", "đếm ảnh", "tiến độ", 
       "retouch", "thư mục sâu nhất", "studio", "thang"
     ],
-    badge: "Studio Ops",
+    badge: "Analytics",
     accentColor: {
       primary: "text-emerald-600 dark:text-emerald-400",
       border: "hover:border-emerald-500/50",

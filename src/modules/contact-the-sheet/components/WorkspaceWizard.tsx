@@ -302,7 +302,7 @@ export function WorkspaceWizard() {
 
     const newProfile: WorkspaceProfile = {
       id: activeProfile?.id || `ws_${Date.now().toString(36)}`,
-      displayName: activeProfile?.displayName || "Studio Ops",
+      displayName: activeProfile?.displayName || "Studio Workspace",
       googleAccountEmail: googleConnection.accountEmail,
       spreadsheetId,
       spreadsheetTitle: analysisResult?.tab.title || activeProfile?.spreadsheetTitle || "Link edit",

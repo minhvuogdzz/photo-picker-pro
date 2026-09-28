@@ -31,7 +31,7 @@ export function EcosystemSidebar() {
         <div className="py-3 pl-3 pr-2.5 border-b border-border flex items-center shrink-0 h-[52px]">
           <div className={`flex flex-col relative z-10 transition-opacity duration-150 ${isCollapsed ? 'opacity-0 delay-0' : 'opacity-100 delay-75'}`}>
             <h2 className="font-semibold text-[11px] leading-tight text-foreground tracking-wide uppercase">Workspace</h2>
-            <p className="text-[9px] text-muted-foreground mt-0.5 font-medium">MVD Photoshop Academy</p>
+            <p className="text-[9px] text-muted-foreground mt-0.5 font-medium truncate max-w-[150px]">MVD Tech & Design Studio</p>
           </div>
         </div>
 

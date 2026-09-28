@@ -42,7 +42,7 @@ export function DonateModal() {
                 <span className="text-amber-500">· Donate Cafe ☕</span>
               </h3>
               <p className="text-[10px] text-muted-foreground mt-0.5">
-                MVD Photoshop Academy & Studio Tools
+                MVD Tech & Design Studio
               </p>
             </div>
           </div>

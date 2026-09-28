@@ -6,6 +6,7 @@ import { ApiErrorResponse } from "@/core/services/apiClient";
 import { Mail, Lock, Loader2, Eye, EyeOff, Camera, ArrowLeft, CheckCircle2, User, RefreshCw } from "lucide-react";
 import { FragmentedImageSlider } from "@/core/components/FragmentedImageSlider";
 import { TermsDialog } from "@/core/components/TermsDialog";
+import { BrandLogo } from "@/core/components/BrandLogo";
 
 type AuthMode = "login" | "forgot" | "verify" | "reset" | "success" | "register" | "register-verify";
 
@@ -289,21 +290,12 @@ export function LoginPage() {
           </button>
         )}
 
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-14 h-14 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-            <img
-              src="/logo.png"
-              alt="Logo"
-              className="w-10 h-10 object-contain"
-              onError={(e) => {
-                e.currentTarget.style.display = "none";
-                e.currentTarget.parentElement?.classList.add("fallback-icon");
-              }}
-            />
-            <Camera size={24} className="text-primary hidden" />
+        <div className="flex flex-col items-center gap-3.5">
+          <div className="w-22 h-22 rounded-3xl bg-muted/30 border border-border/60 flex items-center justify-center p-2 shadow-lg">
+            <BrandLogo variant="icon" className="w-18 h-18 object-contain rounded-2xl drop-shadow-md" />
           </div>
           <div className="text-center">
-            <h1 className="text-base font-semibold text-foreground tracking-tight">MVD PHOTOSHOP ACADEMY</h1>
+            <h1 className="text-lg font-extrabold text-foreground tracking-tight">MVD TECH & DESIGN STUDIO</h1>
             <p className="text-xs text-muted-foreground mt-0.5">
               {mode === "login" && t("login_subtitle")}
               {mode === "register" && "Đăng ký tài khoản mới"}

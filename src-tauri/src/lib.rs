@@ -9,6 +9,10 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .manage(std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)))
+        .setup(|_app| {
+            commands::system_utils::update_system_theme_icon("system".to_string()).ok();
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             commands::auth::save_auth_session,
             commands::auth::load_auth_session,
@@ -32,6 +36,7 @@ pub fn run() {
             commands::system_utils::sync_subfolder_names,
             commands::system_utils::launch_photoshop,
             commands::system_utils::save_file_bytes,
+            commands::system_utils::update_system_theme_icon,
             commands::converter::run_convert_batch,
             commands::sheet_auth::start_google_oauth_loopback,
             commands::sheet_auth::wait_for_google_oauth_code,

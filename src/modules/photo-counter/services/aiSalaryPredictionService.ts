@@ -145,7 +145,7 @@ export function calculatePredictionMetrics(ctx: PredictionContext): PredictionSu
   };
 }
 
-const SYSTEM_INSTRUCTION = `Bạn là "Cố Vấn Hiệu Suất & Thu Nhập Studio" (Studio Performance Coach) cao cấp của hệ thống MVD Studio Ops.
+const SYSTEM_INSTRUCTION = `Bạn là "Cố Vấn Hiệu Suất & Thu Nhập Studio" (Studio Performance Coach) cao cấp của hệ thống MVD Tech & Design Studio.
 
 QUY CHẾ TÍNH LƯƠNG & QUY TẮC HIỆU SUẤT CỐT LÕI:
 1. ĐẠT HOẶC VƯỢT KPI THÁNG (Sản lượng >= KPI tháng):

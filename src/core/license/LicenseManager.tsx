@@ -18,7 +18,9 @@ import {
   User,
   Phone,
   Info,
+  PartyPopper,
 } from "lucide-react";
+import { triggerPaymentSuccessConfetti } from "@/core/lib/confettiCelebration";
 import { apiRequest } from "@/core/services/apiClient";
 import { useAuthStore } from "@/core/stores/useAuthStore";
 import { validateSubscription } from "@/core/services/authApi";
@@ -98,12 +100,20 @@ export function LicenseManager({
     });
   }, [selectedApp]);
 
+  // Trigger celebratory confetti cannon when reaching paid_success or activate_success
+  useEffect(() => {
+    if (mode === "paid_success" || mode === "activate_success") {
+      triggerPaymentSuccessConfetti();
+    }
+  }, [mode]);
+
   // Socket listener for payment success
   useEffect(() => {
     const handlePaymentSuccess = async (data: { orderCode: string; key: string; packageName: string }) => {
       if (orderData && data.orderCode === orderData.orderCode) {
         setGeneratedKey(data.key);
         setMode("paid_success");
+        triggerPaymentSuccessConfetti();
         if (pollingRef.current) clearInterval(pollingRef.current);
 
         // Refresh session
@@ -131,6 +141,7 @@ export function LicenseManager({
           if (status.status === "PAID" && status.generatedKey) {
             setGeneratedKey(status.generatedKey);
             setMode("paid_success");
+            triggerPaymentSuccessConfetti();
             if (pollingRef.current) clearInterval(pollingRef.current);
 
             if (session) {
@@ -784,59 +795,102 @@ export function LicenseManager({
             </div>
 
             {/* Waiting notification */}
-            <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-between text-xs">
+            <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
               <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
-                <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                <Loader2 className="w-4 h-4 animate-spin text-blue-500 shrink-0" />
                 <span>Đang chờ chuyển khoản... Hệ thống sẽ tự động xuất mã key ngay khi nhận được tiền.</span>
               </div>
-              <button
-                type="button"
-                onClick={() => setMode("packages")}
-                className="text-xs text-muted-foreground hover:underline"
-              >
-                Hủy / Đổi gói
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => triggerPaymentSuccessConfetti()}
+                  className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 font-semibold text-[11px] border border-emerald-500/30 flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
+                  title="Kiểm tra hiệu ứng nổ pháo hoa mừng thanh toán"
+                >
+                  <PartyPopper size={12} />
+                  <span>Test pháo hoa 🎉</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode("packages")}
+                  className="text-xs text-muted-foreground hover:underline cursor-pointer"
+                >
+                  Hủy / Đổi gói
+                </button>
+              </div>
             </div>
           </div>
         )}
 
         {/* 3. PAID SUCCESS VIEW */}
         {mode === "paid_success" && generatedKey && (
-          <div className="space-y-6 text-center py-4">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-500/40 text-emerald-500 mx-auto flex items-center justify-center animate-bounce">
-              <CheckCircle2 className="w-8 h-8" />
+          <div className="space-y-6 text-center py-4 relative select-none">
+            {/* Ambient celebration emerald & gold glow */}
+            <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-72 h-72 bg-gradient-to-tr from-emerald-500/20 via-primary/15 to-amber-500/15 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="relative">
+              <div
+                onClick={() => triggerPaymentSuccessConfetti()}
+                className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-emerald-500/25 via-primary/20 to-teal-500/25 border-2 border-emerald-500/50 text-emerald-400 mx-auto flex items-center justify-center shadow-xl shadow-emerald-500/20 cursor-pointer hover:scale-110 active:scale-95 transition-all group"
+                title="Bấm để bắn lại pháo hoa ăn mừng 🎉"
+              >
+                <PartyPopper className="w-10 h-10 group-hover:rotate-12 transition-transform filter drop-shadow" />
+              </div>
+              <div className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[11px] font-bold">
+                <Sparkles size={11} className="text-amber-400" />
+                <span>GIAO DỊCH THÀNH CÔNG RỰC RỠ</span>
+                <Sparkles size={11} className="text-amber-400" />
+              </div>
             </div>
 
             <div>
-              <h3 className="text-lg font-extrabold text-foreground">Thanh Toán Thành Công!</h3>
-              <p className="text-xs text-muted-foreground mt-1">
-                Cảm ơn bạn đã tin dùng MVD Super App. Mã bản quyền của bạn đã được khởi tạo:
+              <h3 className="text-2xl font-black text-foreground tracking-tight flex items-center justify-center gap-2">
+                <span>Thanh Toán Thành Công!</span>
+                <span className="text-2xl animate-bounce">🎉</span>
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1.5 max-w-md mx-auto leading-relaxed">
+                Cảm ơn bạn đã tin dùng <strong className="text-foreground">MVD Tech & Design Studio</strong>. Hệ thống đã xác thực giao dịch qua SePay và tự động kích hoạt quyền lợi gói dịch vụ vào tài khoản của bạn.
               </p>
             </div>
 
-            {/* Key Card */}
-            <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-primary/10 to-emerald-500/10 border-2 border-emerald-500/30 shadow-lg space-y-3">
-              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                MÃ BẢN QUYỀN (LICENSE KEY):
+            {/* Key Card with luxury glowing border */}
+            <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-primary/10 to-teal-500/15 border-2 border-emerald-500/40 shadow-xl shadow-emerald-500/10 space-y-3.5 relative overflow-hidden">
+              <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center justify-center gap-1.5">
+                <Sparkles size={12} className="text-amber-400" />
+                <span>MÃ BẢN QUYỀN (LICENSE KEY)</span>
+                <Sparkles size={12} className="text-amber-400" />
               </div>
-              <div className="font-mono text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-widest select-all">
+
+              <div className="font-mono text-xl sm:text-2xl font-black text-emerald-500 dark:text-emerald-300 tracking-widest select-all bg-card/60 py-2.5 px-4 rounded-xl border border-emerald-500/20 shadow-inner">
                 {generatedKey}
               </div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
+
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/35 text-emerald-300 text-xs font-semibold">
                 <CheckCircle2 size={13} />
-                <span>Đã tự động kích hoạt trực tiếp vào tài khoản này!</span>
+                <span>Đã tự động liên kết trực tiếp vào tài khoản này!</span>
               </div>
+
               <div className="text-[11px] text-muted-foreground">
-                Hóa đơn và mã dự phòng đã gửi tới email: <span className="font-semibold text-foreground">{orderData?.buyerEmail || session?.email}</span>
+                Hóa đơn và mã dự phòng đã gửi tới: <span className="font-bold text-foreground">{orderData?.buyerEmail || session?.email}</span>
               </div>
             </div>
 
-            {/* 2 CTA Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            {/* 3 Celebration CTA Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => triggerPaymentSuccessConfetti()}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs hover:scale-105 active:scale-95"
+                title="Bắn pháo hoa ăn mừng thêm lần nữa"
+              >
+                <PartyPopper className="w-4 h-4 text-amber-400" />
+                <span>Bắn pháo hoa 🎉</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => handleCopy(generatedKey, "genKey")}
-                className="w-full sm:w-auto px-6 py-2.5 rounded-xl border border-border hover:bg-muted font-semibold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-border hover:bg-muted font-semibold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
               >
                 {copiedField === "genKey" ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
                 {copiedField === "genKey" ? "Đã sao chép mã Key!" : "Sao chép mã Key dự phòng"}
@@ -845,10 +899,10 @@ export function LicenseManager({
               <button
                 type="button"
                 onClick={() => setMode("my_plan")}
-                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs shadow-lg hover:from-emerald-500 hover:to-teal-500 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 text-white font-bold text-xs shadow-lg hover:brightness-110 flex items-center justify-center gap-1.5 transition-all cursor-pointer hover:scale-105 active:scale-95"
               >
                 <ShieldCheck className="w-4 h-4" />
-                Xem Gói Đang Dùng
+                <span>Xem Gói Đang Dùng</span>
               </button>
             </div>
           </div>
@@ -893,15 +947,31 @@ export function LicenseManager({
 
         {/* 5. ACTIVATE SUCCESS VIEW */}
         {mode === "activate_success" && (
-          <div className="space-y-5 text-center py-6">
-            <div className="w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-500 mx-auto flex items-center justify-center">
-              <CheckCircle2 className="w-8 h-8" />
+          <div className="space-y-5 text-center py-6 relative select-none">
+            <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-48 h-48 bg-emerald-500/15 rounded-full blur-2xl pointer-events-none" />
+            <div
+              onClick={() => triggerPaymentSuccessConfetti()}
+              className="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 mx-auto flex items-center justify-center cursor-pointer hover:scale-110 active:scale-95 transition-all shadow-lg shadow-emerald-500/20 group"
+              title="Bấm để bắn lại pháo hoa 🎉"
+            >
+              <PartyPopper className="w-8 h-8 group-hover:rotate-12 transition-transform" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-foreground">Kích Hoạt Thành Công!</h3>
-              <p className="text-xs text-muted-foreground mt-1">{activateSuccessMsg}</p>
+              <h3 className="text-lg font-black text-foreground flex items-center justify-center gap-1.5">
+                <span>Kích Hoạt Thành Công!</span>
+                <span>🎉</span>
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">{activateSuccessMsg}</p>
             </div>
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center justify-center gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => triggerPaymentSuccessConfetti()}
+                className="px-4 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-300 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
+              >
+                <PartyPopper size={13} />
+                <span>Bắn pháo hoa 🎉</span>
+              </button>
               <button
                 type="button"
                 onClick={() => setMode("my_plan")}
@@ -912,9 +982,9 @@ export function LicenseManager({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-6 py-2 rounded-xl bg-primary text-primary-foreground font-semibold text-xs shadow-md cursor-pointer"
+                className="px-5 py-2 rounded-xl bg-primary text-primary-foreground font-semibold text-xs shadow-md cursor-pointer hover:bg-primary/90 transition-all"
               >
-                Đóng và tiếp tục làm việc
+                Tiếp tục làm việc
               </button>
             </div>
           </div>

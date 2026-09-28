@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAppStore } from "@/core/stores/useAppStore";
 import { ArrowRight } from "lucide-react";
+import { BrandLogo } from "@/core/components/BrandLogo";
+import { apiRequest } from "@/core/services/apiClient";
 
 interface WelcomeConfig {
   viSubtitle?: string;
@@ -12,7 +14,7 @@ export function WelcomeScreen() {
   const [phase, setPhase] = useState<"vi" | "en" | "done">("vi");
   const setHasSeenWelcome = useAppStore((s) => s.setHasSeenWelcome);
 
-  const [config] = useState<WelcomeConfig>(() => {
+  const [config, setConfig] = useState<WelcomeConfig>(() => {
     try {
       const saved = localStorage.getItem("mvd_welcome_config");
       return saved ? JSON.parse(saved) : {};
@@ -20,6 +22,34 @@ export function WelcomeScreen() {
       return {};
     }
   });
+
+  // Fetch dynamic welcome screen configuration from backend
+  useEffect(() => {
+    let isMounted = true;
+    apiRequest<{ welcomeScreen?: { title?: string; viSubtitle?: string; enSubtitle?: string } }>("/config/public")
+      .then((res) => {
+        if (!isMounted || !res?.welcomeScreen) return;
+        const ws = res.welcomeScreen;
+        const newCfg: WelcomeConfig = {
+          title: ws.title || undefined,
+          viSubtitle: ws.viSubtitle || undefined,
+          enSubtitle: ws.enSubtitle || undefined,
+        };
+        setConfig(newCfg);
+        try {
+          localStorage.setItem("mvd_welcome_config", JSON.stringify(newCfg));
+        } catch {
+          // ignore storage error
+        }
+      })
+      .catch(() => {
+        // Fallback to cached or defaults
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const canSkip = phase === "en";
 
@@ -60,7 +90,7 @@ export function WelcomeScreen() {
 
   const viSubtitle = config.viSubtitle || "Chào mừng bạn đến với hệ sinh thái";
   const enSubtitle = config.enSubtitle || "Welcome to the ecosystem of";
-  const title = config.title || "MVD Photoshop Academy";
+  const title = config.title || "MVD Tech & Design Studio";
 
   return (
     <div
@@ -107,13 +137,14 @@ export function WelcomeScreen() {
             {/* Specular top highlight */}
             <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
 
-            {/* Logo */}
-            <div className="mb-6">
-              <div className="w-20 h-20 rounded-2xl bg-white/[0.04] border border-white/10 p-2.5 shadow-[0_16px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl flex items-center justify-center">
-                <img
-                  src="/logo.png"
+            {/* Company Brand Logo */}
+            <div className="mb-6 flex flex-col items-center">
+              <div className="w-28 h-28 rounded-3xl bg-white/[0.06] border border-white/20 p-2 shadow-[0_20px_50px_rgba(0,0,0,0.6)] backdrop-blur-2xl flex items-center justify-center">
+                <BrandLogo
+                  variant="icon"
+                  forceTheme="dark"
                   alt={title}
-                  className="w-full h-full object-contain filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
+                  className="w-full h-full object-contain filter drop-shadow-[0_8px_20px_rgba(0,0,0,0.6)]"
                 />
               </div>
             </div>

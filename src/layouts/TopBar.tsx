@@ -24,6 +24,7 @@ import { LicenseManager } from "@/core/license/LicenseManager";
 import { AccountSecurityModal } from "@/core/components/AccountSecurityModal";
 import { SmartSearchBar } from "./SmartSearchBar";
 import { useSessionTimeout } from "@/core/hooks/useSessionTimeout";
+import { BrandLogo } from "@/core/components/BrandLogo";
 import type { MainTab } from "@/core/types";
 
 export function TopBar() {
@@ -87,7 +88,7 @@ export function TopBar() {
         )}
         
         <div 
-          className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+          className="flex items-center gap-2.5 cursor-pointer hover:opacity-90 transition-opacity py-0.5"
           onClick={(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
             setLastClickPos({ 
@@ -96,10 +97,11 @@ export function TopBar() {
             });
             setActiveModule("launcher");
           }}
+          title="MVD Tech & Design Studio"
         >
-          <img src="/logo.png" alt="Logo" className="w-5 h-5 object-contain" />
-          <h1 className="text-[11px] font-semibold tracking-wide text-foreground uppercase whitespace-nowrap">
-            MVD Photoshop Academy
+          <BrandLogo variant="icon" className="w-8 h-8 rounded-lg object-contain shadow-sm shrink-0" />
+          <h1 className="text-[13px] font-bold tracking-wide text-foreground uppercase whitespace-nowrap">
+            MVD Tech & Design Studio
           </h1>
         </div>
 

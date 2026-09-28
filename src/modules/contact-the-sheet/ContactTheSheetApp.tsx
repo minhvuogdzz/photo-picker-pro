@@ -68,7 +68,7 @@ export default function ContactTheSheetApp() {
                 Contact the Sheet
               </h1>
               <span className="text-[9px] font-medium px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase tracking-wider shrink-0">
-                Studio Ops
+                Workflow
               </span>
             </div>
             <p className="text-[10px] text-muted-foreground truncate max-w-[200px] sm:max-w-xs md:max-w-sm">

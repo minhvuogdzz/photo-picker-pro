@@ -123,7 +123,7 @@ export function LauncherPage() {
                 <span className="font-semibold text-primary">{displayBadge}</span>
               ) : (
                 <>
-                  <span className="font-semibold text-primary">MVD Studio Suite</span>
+                  <span className="font-semibold text-primary">MVD Tech & Design Studio</span>
                   <span className="text-muted-foreground/60">·</span>
                   <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-[10px] font-medium">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -357,7 +357,7 @@ export function LauncherPage() {
               <span className="font-mono">v{version}</span>
             </div>
             <span className="text-border">·</span>
-            <span>© {new Date().getFullYear()} MVD Photoshop Academy</span>
+            <span>© {new Date().getFullYear()} MVD Tech & Design Studio</span>
           </div>
 
           <div className="flex items-center gap-3">

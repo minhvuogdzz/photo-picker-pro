@@ -268,7 +268,7 @@ export const STANDARD_19_STUDIO_MAPPINGS: FieldMapping[] = [
 
 export const DEFAULT_PRODUCTION_PROFILE: WorkspaceProfile = {
   id: "studio-production",
-  displayName: "Studio Ops",
+  displayName: "Studio Workspace",
   spreadsheetId: "",
   spreadsheetTitle: "Chưa liên kết",
   selectedTabTitle: "Edit 9/2026",

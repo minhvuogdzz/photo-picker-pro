@@ -149,3 +149,35 @@ pub fn save_file_bytes(file_path: String, bytes: Vec<u8>) -> Result<String, Stri
     fs::write(path, bytes).map_err(|e| format!("Không thể ghi tệp vào đĩa: {}", e))?;
     Ok("Đã lưu tệp thành công".to_string())
 }
+
+#[cfg(target_os = "macos")]
+extern "C" {
+    fn macos_set_dock_icon_png(bytes: *const u8, length: usize);
+    fn macos_is_system_dark_mode() -> i32;
+}
+
+const DOCK_ICON_DARK_PNG: &[u8] = include_bytes!("../../../public/brand/mvd_app_icon_dock_dark.png");
+const DOCK_ICON_LIGHT_PNG: &[u8] = include_bytes!("../../../public/brand/mvd_app_icon_dock_light.png");
+
+#[tauri::command]
+pub fn update_system_theme_icon(theme: String) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        let is_dark = if theme.to_lowercase() == "system" {
+            unsafe { macos_is_system_dark_mode() == 1 }
+        } else {
+            theme.to_lowercase() == "dark"
+        };
+        let bytes = if is_dark {
+            DOCK_ICON_DARK_PNG
+        } else {
+            DOCK_ICON_LIGHT_PNG
+        };
+
+        unsafe {
+            macos_set_dock_icon_png(bytes.as_ptr(), bytes.len());
+        }
+    }
+    Ok(())
+}
+

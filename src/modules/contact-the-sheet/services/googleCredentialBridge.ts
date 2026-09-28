@@ -5,7 +5,7 @@ import { useAuthStore } from "../../../core/stores/useAuthStore.ts";
 import { checkAppAccess } from "../../../core/services/appEntitlementPolicy.ts";
 
 /**
- * Standard MVD Photoshop Academy Desktop Google OAuth Client ID & Secret.
+ * Standard MVD Tech & Design Studio Desktop Google OAuth Client ID & Secret.
  * Loaded from environment variables or secure character assembly.
  */
 export const DEFAULT_MVD_GOOGLE_CLIENT_ID =

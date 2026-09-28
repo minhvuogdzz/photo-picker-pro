@@ -25,9 +25,11 @@ import {
   Lock,
   Cpu,
   FileSpreadsheet,
+  Laptop,
 } from "lucide-react";
 import { useUpdaterStore } from "@/core/stores/useUpdaterStore";
 import { apiRequest } from "@/core/services/apiClient";
+import { BrandLogo } from "@/core/components/BrandLogo";
 import { TermsDialog } from "@/core/components/TermsDialog";
 import { useSupportZalo } from "@/core/services/supportContact";
 
@@ -161,9 +163,9 @@ export function SystemModule() {
       {/* Sidebar */}
       <div className="w-56 bg-muted/30 border-r border-border p-3 flex flex-col gap-1 shrink-0">
         <div className="flex items-center gap-2.5 px-2 py-3 mb-2 border-b border-border">
-          <img src="/logo.png" alt="Logo" className="w-6 h-6 object-contain" />
+          <BrandLogo variant="icon" className="w-8 h-8 rounded-lg object-contain shadow-xs shrink-0" />
           <div>
-            <h2 className="text-[11px] font-semibold tracking-tight text-foreground">{t("system")}</h2>
+            <h2 className="text-[12px] font-semibold tracking-tight text-foreground">{t("system")}</h2>
             <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-semibold">{t("general_options")}</p>
           </div>
         </div>
@@ -209,10 +211,11 @@ export function SystemModule() {
               {/* Theme Settings */}
               <div className="space-y-2.5">
                 <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t("theme_section")}</h3>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-2.5">
                   {[
                     { id: "dark", label: t("dark_mode"), icon: Moon },
                     { id: "light", label: t("light_mode"), icon: Sun },
+                    { id: "system", label: "Hệ điều hành", icon: Laptop },
                   ].map((item) => {
                     const Icon = item.icon;
                     const isSelected = settings.theme === item.id;
@@ -220,14 +223,14 @@ export function SystemModule() {
                       <button
                         key={item.id}
                         onClick={() => updateSetting("theme", item.id)}
-                        className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border transition-all cursor-pointer text-xs font-semibold ${
+                        className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border transition-all cursor-pointer text-xs font-semibold ${
                           isSelected 
                             ? "border-primary bg-primary/15 text-primary shadow-sm" 
                             : "border-border bg-card/60 text-muted-foreground hover:border-foreground/20 hover:text-foreground hover:bg-muted/50"
                         }`}
                       >
                         <Icon size={14} className={isSelected ? "text-primary" : "text-muted-foreground"} />
-                        <span>{item.label}</span>
+                        <span className="truncate">{item.label}</span>
                       </button>
                     );
                   })}
@@ -327,13 +330,13 @@ export function SystemModule() {
           {/* TAB 2: THÔNG TIN PHIÊN BẢN & HỆ SINH THÁI MVD */}
           {activeTab === "about" && (
             <div className="flex flex-col items-center justify-start min-h-full space-y-4 animate-slide-up text-center max-w-xl mx-auto w-full py-2 pb-8">
-              <div className="relative mb-0.5">
-                <img src="/logo.png" alt="Logo" className="w-16 h-16 object-contain relative z-10 drop-shadow-lg" />
+              <div className="relative mb-2">
+                <BrandLogo variant="logo" className="h-18 md:h-20 w-auto object-contain relative z-10 drop-shadow-xl" />
               </div>
               
               <div className="space-y-0.5">
                 <h1 className="text-sm md:text-base font-extrabold tracking-wider text-foreground uppercase">
-                  MVD PHOTOSHOP ACADEMY
+                  MVD TECH & DESIGN STUDIO
                 </h1>
                 <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">
                   HỆ SINH THÁI NHIẾP ẢNH & HẬU KỲ CHUYÊN NGHIỆP • PHIÊN BẢN V{version}
@@ -353,7 +356,7 @@ export function SystemModule() {
                 {/* Giới thiệu tổng quan */}
                 <div className="text-xs text-foreground/90 leading-relaxed space-y-2">
                   <p>
-                    <strong className="text-foreground font-extrabold">MVD Photoshop Academy Ecosystem</strong> là hệ sinh thái phần mềm toàn diện được xây dựng chuyên biệt dành cho các Nhiếp ảnh gia, Thợ ảnh sự kiện, Retoucher và Studio ảnh cưới chuyên nghiệp.
+                    <strong className="text-foreground font-extrabold">MVD Tech & Design Studio</strong> là hệ sinh thái phần mềm toàn diện được xây dựng chuyên biệt dành cho các Nhiếp ảnh gia, Thợ ảnh sự kiện, Retoucher và Studio ảnh cưới chuyên nghiệp.
                   </p>
                   <p className="text-muted-foreground text-[11px] leading-relaxed">
                     Hệ sinh thái cung cấp giải pháp đồng bộ từ khâu chọn lọc ảnh thông minh bằng AI, chuyển đổi đa định dạng siêu tốc, tự động hóa Photoshop Actions, cho đến thư viện tài nguyên sáng tạo độc quyền.
@@ -427,7 +430,7 @@ export function SystemModule() {
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-2 text-xs">
                   <div className="flex gap-1.5">
                     <span className="text-muted-foreground">{t("copyright_owner")}:</span>
-                    <span className="font-bold text-foreground">MVD Photoshop Academy</span>
+                    <span className="font-bold text-foreground">MVD Tech & Design Studio</span>
                   </div>
                   <div className="flex gap-1.5">
                     <span className="text-muted-foreground">{t("publisher")}:</span>

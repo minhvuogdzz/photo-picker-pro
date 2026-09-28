@@ -20,19 +20,19 @@ export function TermsDialog({ onClose, onAgree, showAgreeButton = false }: Terms
           {/* PHẦN TIẾNG VIỆT */}
           <div className="space-y-6">
             <div className="border-b border-white/10 pb-4">
-              <p className="font-bold text-foreground text-lg uppercase tracking-wide">MVD PHOTOSHOP ACADEMY</p>
+              <p className="font-bold text-foreground text-lg uppercase tracking-wide">MVD TECH & DESIGN STUDIO</p>
               <p className="text-primary font-semibold">THỎA THUẬN CUNG CẤP VÀ SỬ DỤNG DỊCH VỤ (TERMS OF SERVICE)</p>
               <p className="text-xs mt-2">Cập nhật lần cuối: Tháng 8/2026</p>
             </div>
             
             <div className="space-y-2">
               <h3 className="font-bold text-foreground">Điều 1: Chấp nhận điều khoản</h3>
-              <p>Bằng việc đăng ký, đăng nhập và sử dụng phần mềm MVD Photoshop Academy, bạn (Người dùng) xác nhận đã đọc, hiểu và đồng ý bị ràng buộc bởi các điều khoản, điều kiện này. Nếu bạn không đồng ý với bất kỳ phần nào của thỏa thuận, vui lòng ngưng sử dụng dịch vụ và gỡ cài đặt phần mềm ngay lập tức.</p>
+              <p>Bằng việc đăng ký, đăng nhập và sử dụng phần mềm MVD Tech & Design Studio, bạn (Người dùng) xác nhận đã đọc, hiểu và đồng ý bị ràng buộc bởi các điều khoản, điều kiện này. Nếu bạn không đồng ý với bất kỳ phần nào của thỏa thuận, vui lòng ngưng sử dụng dịch vụ và gỡ cài đặt phần mềm ngay lập tức.</p>
             </div>
 
             <div className="space-y-2">
               <h3 className="font-bold text-foreground">Điều 2: Giấy phép sử dụng & Quyền Sở Hữu Trí Tuệ</h3>
-              <p>2.1. MVD Photoshop Academy cấp cho bạn một giấy phép không độc quyền, không thể chuyển nhượng, và có thể thu hồi để sử dụng phần mềm cho mục đích cá nhân hoặc thương mại (tùy thuộc vào gói dịch vụ bạn đã mua).</p>
+              <p>2.1. MVD Tech & Design Studio cấp cho bạn một giấy phép không độc quyền, không thể chuyển nhượng, và có thể thu hồi để sử dụng phần mềm cho mục đích cá nhân hoặc thương mại (tùy thuộc vào gói dịch vụ bạn đã mua).</p>
               <p>2.2. Toàn bộ nội dung, bộ lọc ảnh (presets), thuật toán, mã nguồn, đồ họa, logo và tài liệu hướng dẫn thuộc sở hữu độc quyền của MVD, được bảo vệ bởi luật Sở hữu trí tuệ Việt Nam và quốc tế.</p>
               <p>2.3. Nghiêm cấm mọi hành vi sao chép, phát tán, bán lại, cho thuê tài khoản hoặc sử dụng công nghệ biên dịch ngược (reverse engineering) đối với bất kỳ thành phần nào của phần mềm.</p>
             </div>
@@ -48,19 +48,19 @@ export function TermsDialog({ onClose, onAgree, showAgreeButton = false }: Terms
               <h3 className="font-bold text-foreground">Điều 4: Thanh Toán, Gia Hạn & Hoàn Tiền</h3>
               <p>4.1. Dịch vụ được cung cấp dựa trên các gói thuê bao (subscription). Phí dịch vụ phải được thanh toán trước qua các cổng thanh toán được hệ thống hỗ trợ.</p>
               <p>4.2. Khách hàng có trách nhiệm tự quản lý việc gia hạn. Dịch vụ có thể bị tạm ngưng nếu quá trình thanh toán gia hạn không thành công.</p>
-              <p>4.3. <b>Chính sách hoàn tiền:</b> MVD Photoshop Academy cung cấp sản phẩm nội dung số. Chúng tôi KHÔNG HỖ TRỢ HOÀN TIỀN cho các giao dịch đã thực hiện thành công, ngoại trừ trường hợp lỗi kỹ thuật nghiêm trọng xuất phát từ phía phần mềm khiến bạn không thể sử dụng dịch vụ trong suốt 7 ngày liên tục kể từ lúc mua.</p>
+              <p>4.3. <b>Chính sách hoàn tiền:</b> MVD Tech & Design Studio cung cấp sản phẩm nội dung số. Chúng tôi KHÔNG HỖ TRỢ HOÀN TIỀN cho các giao dịch đã thực hiện thành công, ngoại trừ trường hợp lỗi kỹ thuật nghiêm trọng xuất phát từ phía phần mềm khiến bạn không thể sử dụng dịch vụ trong suốt 7 ngày liên tục kể từ lúc mua.</p>
             </div>
 
             <div className="space-y-2">
               <h3 className="font-bold text-foreground">Điều 5: Thu Thập Và Bảo Mật Dữ Liệu</h3>
-              <p>5.1. Chúng tôi cam kết tôn trọng quyền riêng tư của bạn. Dữ liệu hình ảnh của bạn chỉ được xử lý cục bộ trên thiết bị của bạn hoặc mã hóa an toàn trên máy chủ đám mây của chúng tôi. MVD Academy không lưu trữ vĩnh viễn và không phân tích hình ảnh của khách hàng phục vụ mục đích khác.</p>
+              <p>5.1. Chúng tôi cam kết tôn trọng quyền riêng tư của bạn. Dữ liệu hình ảnh của bạn chỉ được xử lý cục bộ trên thiết bị của bạn hoặc mã hóa an toàn trên máy chủ đám mây của chúng tôi. MVD Tech & Design Studio không lưu trữ vĩnh viễn và không phân tích hình ảnh của khách hàng phục vụ mục đích khác.</p>
               <p>5.2. Thông tin cá nhân (Email, Tên, Định danh thiết bị phần cứng) chỉ được thu thập nhằm mục đích xác thực tài khoản, chống gian lận và hỗ trợ kỹ thuật.</p>
             </div>
 
             <div className="space-y-2">
               <h3 className="font-bold text-foreground">Điều 6: Tuyên Bố Từ Chối Bảo Đảm & Giới Hạn Trách Nhiệm</h3>
               <p>6.1. Phần mềm được cung cấp ở trạng thái "nguyên bản" (AS IS) và "có sẵn" (AS AVAILABLE). MVD không đảm bảo phần mềm sẽ tương thích 100% với mọi cấu hình phần cứng hoặc hoạt động không có bất kỳ lỗi nhỏ nào.</p>
-              <p>6.2. Trong mọi trường hợp, MVD Academy, bao gồm cả ban giám đốc, nhân viên, và đối tác, sẽ không chịu trách nhiệm đối với bất kỳ thiệt hại gián tiếp, mất mát dữ liệu, mất mát dự án cá nhân hoặc tổn thất lợi nhuận nào phát sinh từ việc sử dụng hoặc không thể sử dụng phần mềm.</p>
+              <p>6.2. Trong mọi trường hợp, MVD Tech & Design Studio, bao gồm cả ban giám đốc, nhân viên, và đối tác, sẽ không chịu trách nhiệm đối với bất kỳ thiệt hại gián tiếp, mất mát dữ liệu, mất mát dự án cá nhân hoặc tổn thất lợi nhuận nào phát sinh từ việc sử dụng hoặc không thể sử dụng phần mềm.</p>
             </div>
 
             <div className="space-y-2">
@@ -70,7 +70,7 @@ export function TermsDialog({ onClose, onAgree, showAgreeButton = false }: Terms
 
             <div className="space-y-2">
               <h3 className="font-bold text-foreground">Điều 8: Sửa Đổi Điều Khoản</h3>
-              <p>MVD Photoshop Academy có quyền sửa đổi các điều khoản này bất cứ lúc nào. Các thay đổi sẽ có hiệu lực ngay khi được cập nhật trên hệ thống. Việc bạn tiếp tục sử dụng dịch vụ đồng nghĩa với việc chấp nhận các điều khoản mới nhất.</p>
+              <p>MVD Tech & Design Studio có quyền sửa đổi các điều khoản này bất cứ lúc nào. Các thay đổi sẽ có hiệu lực ngay khi được cập nhật trên hệ thống. Việc bạn tiếp tục sử dụng dịch vụ đồng nghĩa với việc chấp nhận các điều khoản mới nhất.</p>
             </div>
 
             <div className="space-y-2">
@@ -89,12 +89,12 @@ export function TermsDialog({ onClose, onAgree, showAgreeButton = false }: Terms
             
             <div className="space-y-2">
               <h3 className="font-bold text-foreground">Article 1: Acceptance of Terms</h3>
-              <p>By registering, logging in, and using the MVD Photoshop Academy software, you (the User) acknowledge that you have read, understood, and agreed to be bound by these terms and conditions. If you do not agree with any part of this agreement, please discontinue the use of our services immediately.</p>
+              <p>By registering, logging in, and using the MVD Tech & Design Studio software, you (the User) acknowledge that you have read, understood, and agreed to be bound by these terms and conditions. If you do not agree with any part of this agreement, please discontinue the use of our services immediately.</p>
             </div>
 
             <div className="space-y-2">
               <h3 className="font-bold text-foreground">Article 2: License to Use & Intellectual Property</h3>
-              <p>2.1. MVD Photoshop Academy grants you a non-exclusive, non-transferable, and revocable license to use the software for personal or commercial purposes (depending on your purchased subscription tier).</p>
+              <p>2.1. MVD Tech & Design Studio grants you a non-exclusive, non-transferable, and revocable license to use the software for personal or commercial purposes (depending on your purchased subscription tier).</p>
               <p>2.2. All content, photo presets, algorithms, source code, graphics, logos, and documentation are the exclusive property of MVD and are protected by Vietnamese and international intellectual property laws.</p>
               <p>2.3. Strictly prohibited actions include copying, distributing, reselling, account renting, or reverse engineering any component of the software.</p>
             </div>
@@ -110,19 +110,19 @@ export function TermsDialog({ onClose, onAgree, showAgreeButton = false }: Terms
               <h3 className="font-bold text-foreground">Article 4: Payment, Renewal & Refunds</h3>
               <p>4.1. Services are provided on a subscription basis. Service fees must be paid in advance via our supported payment gateways.</p>
               <p>4.2. Customers are responsible for managing their renewals. Services may be suspended if a renewal payment fails.</p>
-              <p>4.3. <b>Refund Policy:</b> MVD Photoshop Academy provides digital software products. We DO NOT OFFER REFUNDS for successful transactions, except in cases where a critical technical failure on our end prevents you from using the service for 7 consecutive days from the time of purchase.</p>
+              <p>4.3. <b>Refund Policy:</b> MVD Tech & Design Studio provides digital software products. We DO NOT OFFER REFUNDS for successful transactions, except in cases where a critical technical failure on our end prevents you from using the service for 7 consecutive days from the time of purchase.</p>
             </div>
 
             <div className="space-y-2">
               <h3 className="font-bold text-foreground">Article 5: Data Collection & Privacy</h3>
-              <p>5.1. We respect your privacy. Your image data is processed locally on your device or securely encrypted on our cloud servers. MVD Academy does not permanently store or analyze your images for any other purposes.</p>
+              <p>5.1. We respect your privacy. Your image data is processed locally on your device or securely encrypted on our cloud servers. MVD Tech & Design Studio does not permanently store or analyze your images for any other purposes.</p>
               <p>5.2. Personal information (Email, Name, Hardware Device ID) is collected solely for account authentication, fraud prevention, and technical support.</p>
             </div>
 
             <div className="space-y-2">
               <h3 className="font-bold text-foreground">Article 6: Disclaimer of Warranties & Limitation of Liability</h3>
               <p>6.1. The software is provided "AS IS" and "AS AVAILABLE". MVD does not guarantee that the software will be 100% compatible with all hardware configurations or operate completely bug-free.</p>
-              <p>6.2. Under no circumstances shall MVD Academy, its directors, employees, or affiliates be liable for any indirect damages, data loss, personal project loss, or profit loss arising from the use or inability to use the software.</p>
+              <p>6.2. Under no circumstances shall MVD Tech & Design Studio, its directors, employees, or affiliates be liable for any indirect damages, data loss, personal project loss, or profit loss arising from the use or inability to use the software.</p>
             </div>
 
             <div className="space-y-2">
@@ -132,7 +132,7 @@ export function TermsDialog({ onClose, onAgree, showAgreeButton = false }: Terms
 
             <div className="space-y-2">
               <h3 className="font-bold text-foreground">Article 8: Modifications to Terms</h3>
-              <p>MVD Photoshop Academy reserves the right to modify these terms at any time. Changes will take effect immediately upon being updated in the system. Your continued use of the service signifies your acceptance of the latest terms.</p>
+              <p>MVD Tech & Design Studio reserves the right to modify these terms at any time. Changes will take effect immediately upon being updated in the system. Your continued use of the service signifies your acceptance of the latest terms.</p>
             </div>
 
             <div className="space-y-2">

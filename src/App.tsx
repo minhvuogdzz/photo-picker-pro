@@ -158,11 +158,30 @@ function App() {
   // Apply theme globally (even on LoginPage)
   useEffect(() => {
     const html = document.documentElement;
-    if (theme === "dark") {
-      html.classList.add("dark");
-    } else {
-      html.classList.remove("dark");
-    }
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+
+    const applyCurrentTheme = () => {
+      let isDark = false;
+      if (theme === "system") {
+        isDark = media.matches;
+      } else {
+        isDark = theme === "dark";
+      }
+
+      if (isDark) {
+        html.classList.add("dark");
+      } else {
+        html.classList.remove("dark");
+      }
+
+      // Synchronize macOS Dock icon dynamically with light / dark state
+      invoke("update_system_theme_icon", { theme: isDark ? "dark" : "light" }).catch(() => {});
+    };
+
+    applyCurrentTheme();
+
+    media.addEventListener("change", applyCurrentTheme);
+    return () => media.removeEventListener("change", applyCurrentTheme);
   }, [theme]);
 
   // Startup update check with intelligent retry (cold start)
