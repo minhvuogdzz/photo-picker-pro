@@ -68,11 +68,19 @@ jobs:
           updaterJsonPreferNsis: true
           args: ${{ matrix.args }}
 
-      - name: Force upload latest.json
-        if: matrix.platform == 'macos-latest'
+  publish-updater:
+    needs: [release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Generate and upload unified latest.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ -f "src-tauri/target/release/bundle/macos/latest.json" ]; then
-            gh release upload ${{ github.ref_name }} src-tauri/target/release/bundle/macos/latest.json --clobber
-          fi
+          node scripts/generate-updater-json.mjs ${{ github.ref_name }}

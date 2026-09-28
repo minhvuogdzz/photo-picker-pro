@@ -800,24 +800,13 @@ export function LicenseManager({
                 <Loader2 className="w-4 h-4 animate-spin text-blue-500 shrink-0" />
                 <span>Đang chờ chuyển khoản... Hệ thống sẽ tự động xuất mã key ngay khi nhận được tiền.</span>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => triggerPaymentSuccessConfetti()}
-                  className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 font-semibold text-[11px] border border-emerald-500/30 flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
-                  title="Kiểm tra hiệu ứng nổ pháo hoa mừng thanh toán"
-                >
-                  <PartyPopper size={12} />
-                  <span>Test pháo hoa 🎉</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMode("packages")}
-                  className="text-xs text-muted-foreground hover:underline cursor-pointer"
-                >
-                  Hủy / Đổi gói
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setMode("packages")}
+                className="text-xs text-muted-foreground hover:underline cursor-pointer shrink-0"
+              >
+                Hủy / Đổi gói
+              </button>
             </div>
           </div>
         )}
@@ -830,11 +819,9 @@ export function LicenseManager({
 
             <div className="relative">
               <div
-                onClick={() => triggerPaymentSuccessConfetti()}
-                className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-emerald-500/25 via-primary/20 to-teal-500/25 border-2 border-emerald-500/50 text-emerald-400 mx-auto flex items-center justify-center shadow-xl shadow-emerald-500/20 cursor-pointer hover:scale-110 active:scale-95 transition-all group"
-                title="Bấm để bắn lại pháo hoa ăn mừng 🎉"
+                className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-emerald-500/25 via-primary/20 to-teal-500/25 border-2 border-emerald-500/50 text-emerald-400 mx-auto flex items-center justify-center shadow-xl shadow-emerald-500/20"
               >
-                <PartyPopper className="w-10 h-10 group-hover:rotate-12 transition-transform filter drop-shadow" />
+                <PartyPopper className="w-10 h-10 filter drop-shadow animate-bounce" />
               </div>
               <div className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[11px] font-bold">
                 <Sparkles size={11} className="text-amber-400" />
@@ -875,18 +862,8 @@ export function LicenseManager({
               </div>
             </div>
 
-            {/* 3 Celebration CTA Buttons */}
+            {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-2">
-              <button
-                type="button"
-                onClick={() => triggerPaymentSuccessConfetti()}
-                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs hover:scale-105 active:scale-95"
-                title="Bắn pháo hoa ăn mừng thêm lần nữa"
-              >
-                <PartyPopper className="w-4 h-4 text-amber-400" />
-                <span>Bắn pháo hoa 🎉</span>
-              </button>
-
               <button
                 type="button"
                 onClick={() => handleCopy(generatedKey, "genKey")}
@@ -950,11 +927,9 @@ export function LicenseManager({
           <div className="space-y-5 text-center py-6 relative select-none">
             <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-48 h-48 bg-emerald-500/15 rounded-full blur-2xl pointer-events-none" />
             <div
-              onClick={() => triggerPaymentSuccessConfetti()}
-              className="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 mx-auto flex items-center justify-center cursor-pointer hover:scale-110 active:scale-95 transition-all shadow-lg shadow-emerald-500/20 group"
-              title="Bấm để bắn lại pháo hoa 🎉"
+              className="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 mx-auto flex items-center justify-center shadow-lg shadow-emerald-500/20"
             >
-              <PartyPopper className="w-8 h-8 group-hover:rotate-12 transition-transform" />
+              <PartyPopper className="w-8 h-8 animate-bounce" />
             </div>
             <div>
               <h3 className="text-lg font-black text-foreground flex items-center justify-center gap-1.5">
@@ -964,14 +939,6 @@ export function LicenseManager({
               <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">{activateSuccessMsg}</p>
             </div>
             <div className="flex items-center justify-center gap-2.5 pt-2">
-              <button
-                type="button"
-                onClick={() => triggerPaymentSuccessConfetti()}
-                className="px-4 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-300 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
-              >
-                <PartyPopper size={13} />
-                <span>Bắn pháo hoa 🎉</span>
-              </button>
               <button
                 type="button"
                 onClick={() => setMode("my_plan")}
