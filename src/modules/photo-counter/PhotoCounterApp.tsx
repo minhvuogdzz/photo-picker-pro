@@ -1,7 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { useAuthStore } from "@/core/stores/useAuthStore";
 import { useAppStore } from "@/core/stores/useAppStore";
-import { LicenseManager } from "@/core/license/LicenseManager";
+import { checkAppAccess } from "@/core/services/appEntitlementPolicy";
+import { AppLockGateScreen } from "@/core/components/AppLockGateScreen";
 import { open } from "@tauri-apps/plugin-dialog";
 import { listen } from "@tauri-apps/api/event";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
@@ -24,7 +25,6 @@ import {
   Trash2,
   FileSpreadsheet,
   Coins,
-  Crown,
   Sparkles,
   ArrowUpRight,
   ArrowLeft,
@@ -51,9 +51,7 @@ export default function PhotoCounterApp() {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [refreshToast, setRefreshToast] = useState<string | null>(null);
 
-  // Dedicated VIP Premium Permission Check:
-  // Strictly restricted to accounts granted VIP Premium (`session?.subscription?.isPremium === true`).
-  const isPremium = session?.subscription?.isPremium === true;
+  const appAccess = checkAppAccess(session, "photo-counter");
 
   const {
     monthPath,
@@ -304,65 +302,9 @@ export default function PhotoCounterApp() {
     setTimeout(() => setRefreshToast(null), 3000);
   };
 
-  // VIP Premium Gatekeeper Screen
-  if (!isPremium) {
-    return (
-      <div className="w-full h-full flex flex-col items-center justify-center bg-card/90 backdrop-blur-md rounded-xl border border-border p-8 text-center relative overflow-hidden animate-fade-in select-none text-foreground">
-        
-        {/* Back Button */}
-        <button
-          onClick={() => setActiveModule("launcher")}
-          className="absolute top-4 left-4 w-7 h-7 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer border border-border"
-          title="Quay lại Launcher"
-        >
-          <ArrowLeft size={14} />
-        </button>
-
-        {/* VIP Crown Box */}
-        <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 mb-3">
-          <Crown size={22} />
-        </div>
-
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] font-semibold mb-2.5">
-          <Sparkles size={11} />
-          <span>ĐẶC QUYỀN VIP STUDIO OPS</span>
-        </div>
-
-        <h2 className="text-base font-semibold text-foreground mb-1.5 tracking-tight">
-          Thống Kê & Tính Lương Dành Riêng Cho Tài Khoản VIP Premium
-        </h2>
-
-        <p className="text-xs text-muted-foreground max-w-md mb-5 leading-relaxed">
-          Tính năng thống kê sản lượng ảnh, đối soát KPI và tính toán lương studio chỉ mở khóa cho tài khoản được cấp quyền <strong>VIP Premium</strong>.
-        </p>
-
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => setActiveModule("launcher")}
-            className="h-9 px-3.5 rounded-lg bg-muted hover:bg-muted/80 text-xs font-medium text-foreground border border-border transition-colors cursor-pointer"
-          >
-            Quay lại Launcher
-          </button>
-
-          <button
-            onClick={() => setShowLicenseModal(true)}
-            className="h-9 px-4 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
-          >
-            <Crown size={13} />
-            <span>Đổi quyền lợi / Đăng ký Premium</span>
-          </button>
-        </div>
-
-        {showLicenseModal && (
-          <LicenseManager
-            onClose={() => setShowLicenseModal(false)}
-            initialMode="request"
-            initialIsPremium={true}
-            variant="modal"
-          />
-        )}
-      </div>
-    );
+  // Gatekeeper Screen if user has no access (trial expired and not purchased)
+  if (!appAccess.hasAccess) {
+    return <AppLockGateScreen appId="photo-counter" appName="Thống Kê & Tính Lương" />;
   }
 
   return (
@@ -376,10 +318,6 @@ export default function PhotoCounterApp() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-sm font-bold text-foreground tracking-tight">Thống kê</h1>
-              <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 flex items-center gap-1 uppercase">
-                <Crown size={9} />
-                <span>PREMIUM</span>
-              </span>
             </div>
             <p className="text-[11px] text-muted-foreground">
               Đối soát sản lượng ảnh theo ngày, tính toán KPI và tổng lương studio

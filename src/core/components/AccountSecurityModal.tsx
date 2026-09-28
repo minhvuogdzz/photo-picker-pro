@@ -16,7 +16,6 @@ import {
   EyeOff,
   LogOut,
   Save,
-  Crown,
 } from "lucide-react";
 
 interface AccountSecurityModalProps {
@@ -297,11 +296,6 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
                   <div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-bold text-foreground">{session.name}</span>
-                      {session.subscription?.isPremium && (
-                        <span className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
-                          <Crown size={9} /> VIP
-                        </span>
-                      )}
                     </div>
                     <p className="text-[11px] text-muted-foreground">{session.email}</p>
                   </div>

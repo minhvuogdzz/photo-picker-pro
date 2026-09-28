@@ -152,7 +152,6 @@ export function SystemModule() {
     }
   };
 
-  const isPremium = session?.subscription?.isPremium === true;
   const isLifetime = session?.subscription?.status === "LIFETIME";
 
   return (
@@ -344,13 +343,6 @@ export function SystemModule() {
                   <ShieldCheck size={13} />
                   <span>{isLifetime ? "Bản Quyền Vĩnh Viễn (Lifetime)" : "Bản Quyền Hợp Lệ"}</span>
                 </div>
-
-                {isPremium && (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/15 text-amber-400 text-[11px] font-extrabold rounded-full border border-amber-500/30 shadow-[0_0_12px_rgba(245,158,11,0.25)]">
-                    <Crown size={12} className="fill-amber-400/40" />
-                    <span>Đặc Quyền VIP Premium</span>
-                  </div>
-                )}
               </div>
 
               {/* Thông tin hệ sinh thái chi tiết */}
@@ -406,13 +398,13 @@ export function SystemModule() {
                   </div>
 
                   <div className="p-3 rounded-xl bg-muted/40 border border-border/80 flex items-start gap-2.5">
-                    <div className="w-7 h-7 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
-                      <Crown size={14} />
+                    <div className="w-7 h-7 rounded-lg bg-amber-500/15 text-amber-500 flex items-center justify-center shrink-0 mt-0.5">
+                      <Layers size={14} />
                     </div>
                     <div>
                       <h4 className="text-xs font-bold text-foreground">Kho Tài Nguyên Creative</h4>
                       <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">
-                        Tuyển tập Actions D&B, Presets màu, Brushes vẽ tóc và giáo trình Retouch VIP độc quyền.
+                        Tuyển tập Actions D&B, Presets màu, Brushes vẽ tóc và giáo trình Retouch độc quyền.
                       </p>
                     </div>
                   </div>
@@ -445,7 +437,6 @@ export function SystemModule() {
                   <span className="text-muted-foreground">{t("licensed_to")}:</span>
                   <div className="flex items-center gap-1.5">
                     <span className="font-bold text-primary">{session?.name || t("user")}</span>
-                    {isPremium && <Crown size={12} className="text-amber-400" />}
                   </div>
                 </div>
               </div>

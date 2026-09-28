@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { useEffect, useRef } from "react";
 import { useAuthStore } from "@/core/stores/useAuthStore";
 import { logout } from "@/core/services/authApi";
+import { isUnlimitedSession } from "@/core/services/appEntitlementPolicy";
 import {
   DEFAULT_SESSION_DURATION_MINUTES,
   DEFAULT_SESSION_DURATION_MS,
@@ -83,7 +84,7 @@ export function useSessionTimeoutListener() {
   const sessionTokenRef = useRef(session?.accessToken);
   sessionTokenRef.current = session?.accessToken;
 
-  const isPremium = session?.subscription?.isPremium === true;
+  const isUnlimited = isUnlimitedSession(session);
 
   useEffect(() => {
     if (!session) {
@@ -92,8 +93,8 @@ export function useSessionTimeoutListener() {
       return;
     }
 
-    // PREMIUM ACCOUNTS: Unlimited session duration without timeout restriction
-    if (isPremium) {
+    // ACTIVE & TRIAL ACCOUNTS: Unlimited session duration without timeout restriction
+    if (isUnlimited) {
       useSessionTimerStore.setState({
         remainingSeconds: Infinity,
         formattedTime: "Không giới hạn",
@@ -152,7 +153,7 @@ export function useSessionTimeoutListener() {
     return () => clearInterval(interval);
   }, [
     session?.userId, 
-    isPremium, 
+    isUnlimited, 
     session?.sessionDurationMinutes, 
     authLogout, 
     setSessionTimeoutExpired, 

@@ -37,8 +37,7 @@ export function PremiumGateModal({
           setShowLicenseManager(false);
           onClose();
         }}
-        initialMode="request"
-        initialIsPremium={true}
+        initialMode="packages"
         variant="modal"
       />
     );
@@ -107,7 +106,7 @@ export function PremiumGateModal({
               className="flex-[1.5] h-10 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-orange-500 hover:brightness-110 active:scale-[0.98] text-black font-extrabold text-xs shadow-lg shadow-amber-500/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <KeyRound size={13} />
-              <span>Liên hệ cấp Premium</span>
+              <span>Xem gói & Gia hạn</span>
             </button>
           </div>
         </div>

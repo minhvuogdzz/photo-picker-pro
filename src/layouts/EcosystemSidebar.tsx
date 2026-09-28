@@ -1,7 +1,7 @@
 import { useAppStore } from "@/core/stores/useAppStore";
 import { modules } from "@/registry";
 import { SafeLink } from "@/SafeLink";
-import { ChevronLeft, ChevronRight, Crown } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export function EcosystemSidebar() {
   const activeModule = useAppStore((s) => s.activeModule);
@@ -80,12 +80,6 @@ export function EcosystemSidebar() {
                   <span className={`text-[11px] whitespace-nowrap leading-none ${isActive ? "font-semibold text-foreground" : "font-medium"}`}>
                     {mod.shortName || mod.name}
                   </span>
-                  {mod.isPremium && (
-                    <span className="text-[8px] font-medium text-amber-500/80 mt-0.5 uppercase tracking-wider flex items-center gap-0.5">
-                      <Crown size={8} className="text-amber-500" />
-                      <span>VIP</span>
-                    </span>
-                  )}
                 </div>
               </SafeLink>
             );

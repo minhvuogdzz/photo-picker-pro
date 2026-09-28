@@ -164,7 +164,7 @@ export function SmartSearchBar() {
       categoryName: "Công cụ Studio",
       icon: BarChart3,
       tags: ["thống kê", "sản lượng", "kpi", "đếm ảnh", "tháng", "tiến độ"],
-      badge: "VIP Pro",
+      badge: "PRO",
       action: () => {
         setActiveModule("photo-counter");
         setIsOpen(false);
@@ -189,7 +189,7 @@ export function SmartSearchBar() {
           res.author,
           ...(res.hashtags || []),
         ].filter(Boolean),
-        badge: res.isVip ? "VIP" : res.isHot ? "HOT" : res.fileFormat || undefined,
+        badge: res.isVip ? "PRO" : res.isHot ? "HOT" : res.fileFormat || undefined,
         action: () => {
           setActiveModule("resources");
           setIsOpen(false);

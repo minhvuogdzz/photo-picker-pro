@@ -3,6 +3,7 @@ import { useAuthStore } from "@/core/stores/useAuthStore";
 import { logout } from "@/core/services/authApi";
 import { useTranslation } from "@/core/lib/i18n";
 import { useSessionTimeout } from "@/core/hooks/useSessionTimeout";
+import { isUnlimitedSession } from "@/core/services/appEntitlementPolicy";
 import { AlertTriangle, Clock, LogIn, MonitorX, ShieldCheck, Sparkles, WifiOff, XCircle } from "lucide-react";
 
 interface SessionExpiredDialogProps {
@@ -29,10 +30,10 @@ export function SessionExpiredDialog({
   const { t } = useTranslation();
   const [countdown, setCountdown] = useState(3);
 
-  const isPremium = session?.subscription?.isPremium === true;
+  const isUnlimited = isUnlimitedSession(session);
 
   useEffect(() => {
-    if (reason === "timeout" && isPremium) {
+    if (reason === "timeout" && isUnlimited) {
       setSessionTimeoutExpired(false);
       return;
     }
@@ -73,9 +74,9 @@ export function SessionExpiredDialog({
     window.location.hash = "forgot-password";
   };
 
-  // Dedicated Ultra-Premium Glassmorphism view for Session Timeout
+  // Dedicated view for Session Timeout
   if (reason === "timeout") {
-    if (isPremium) return null;
+    if (isUnlimited) return null;
     return (
       <div className="relative min-h-screen w-full flex items-center justify-center bg-[#0d0f14] overflow-hidden p-4 select-none">
         {/* Ambient background glow effects */}

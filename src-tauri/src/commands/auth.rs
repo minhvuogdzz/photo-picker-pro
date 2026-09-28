@@ -5,8 +5,17 @@ use std::sync::OnceLock;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
+/// Individual app entitlement persisted in local session
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LocalEntitlement {
+    pub app: String,
+    pub expires_at: String,
+    #[serde(default)]
+    pub is_trial: bool,
+}
+
 /// Session data persisted locally on disk.
-/// Contains JWT tokens, user info, subscription state, and offline tracking.
+/// Contains JWT tokens, user info, subscription state, entitlements, and offline tracking.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LocalSession {
     pub access_token: String,
@@ -21,6 +30,12 @@ pub struct LocalSession {
     pub last_sync_at: String,
     #[serde(default)]
     pub username: Option<String>,
+    /// "ADMIN" | "USER". Dùng #[serde(default)] để session cũ trên đĩa (chưa có field
+    /// này) vẫn đọc được bình thường, không làm người dùng bị đăng xuất sau khi update.
+    #[serde(default)]
+    pub role: Option<String>,
+    #[serde(default)]
+    pub entitlements: Vec<LocalEntitlement>,
     #[serde(default)]
     pub is_premium: Option<bool>,
 }

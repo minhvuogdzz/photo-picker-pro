@@ -26,17 +26,10 @@ import {
   Users,
   User,
   Loader2,
-  Crown,
-  Lock,
   Eye,
 } from "lucide-react";
 import { getFolderName } from "@/core/lib/utils";
 import { batchFolderService } from "../services/batchFolderService";
-import {
-  checkPremiumFeatureAccess,
-  type PremiumFeatureKey,
-} from "@/core/services/premiumFeaturePolicy";
-import { PremiumGateModal } from "@/core/components/PremiumGateModal";
 import { FolderPreviewModal } from "./FolderPreviewModal";
 import { FoundPhotosPreviewModal } from "./FoundPhotosPreviewModal";
 
@@ -85,33 +78,16 @@ export function LeftPanel() {
     setIsPreviewOpen(true);
   };
 
-  // VIP Premium feature access checks
-  const session = useAuthStore((s) => s.session);
-  const [gateFeature, setGateFeature] = useState<PremiumFeatureKey | null>(null);
-  const multiAccess = checkPremiumFeatureAccess(session, "multi_client");
-
-  // Revert back to single mode if multi permission expired
   useEffect(() => {
-    if (pickerMode === "multi" && !multiAccess.hasAccess) {
-      setPickerMode("single");
-    }
-  }, [pickerMode, multiAccess.hasAccess, setPickerMode]);
-
-  useEffect(() => {
-    let unlistenFileDrop: () => void;
-    let unlistenDragDrop: () => void;
-    let unlistenHover: () => void;
-    let unlistenCancel: () => void;
+    let unlistenFileDrop: (() => void) | null = null;
+    let unlistenDragDrop: (() => void) | null = null;
+    let unlistenHover: (() => void) | null = null;
+    let unlistenCancel: (() => void) | null = null;
 
     const handleDropPaths = async (paths: string[]) => {
       setIsDragging(false);
       if (paths && paths.length > 0) {
         if (pickerMode === "multi" || paths.length > 1) {
-          if (!multiAccess.hasAccess) {
-            setGateFeature("multi_client");
-            if (paths[0]) addInputFolder(paths[0]);
-            return;
-          }
           if (pickerMode !== "multi") {
             setPickerMode("multi");
           }
@@ -185,7 +161,7 @@ export function LeftPanel() {
 
   const handleAddFolder = async () => {
     try {
-      const isMultiAllowed = pickerMode === "multi" && multiAccess.hasAccess;
+      const isMultiAllowed = pickerMode === "multi";
       const selected = await open({
         directory: true,
         multiple: isMultiAllowed,
@@ -195,11 +171,6 @@ export function LeftPanel() {
       if (selected) {
         const folders = Array.isArray(selected) ? selected : [selected];
         if (pickerMode === "multi" || folders.length > 1) {
-          if (!multiAccess.hasAccess) {
-            setGateFeature("multi_client");
-            if (folders[0]) addInputFolder(folders[0]);
-            return;
-          }
           if (pickerMode !== "multi") {
             setPickerMode("multi");
           }
@@ -448,48 +419,16 @@ export function LeftPanel() {
             </button>
             <button
               type="button"
-              onClick={() => {
-                if (!multiAccess.hasAccess) {
-                  setGateFeature("multi_client");
-                  return;
-                }
-                setPickerMode("multi");
-              }}
-              className={`py-1 px-1 rounded-md text-center transition-all flex items-center justify-center gap-1 select-none ${
-                !multiAccess.hasAccess
-                  ? "text-muted-foreground/60 hover:bg-muted/40 cursor-not-allowed hover:text-muted-foreground"
-                  : pickerMode === "multi"
-                  ? "bg-card text-foreground font-bold shadow-xs border border-border/60 cursor-pointer"
-                  : "text-muted-foreground hover:text-foreground cursor-pointer"
+              onClick={() => setPickerMode("multi")}
+              className={`py-1 px-1 rounded-md text-center transition-all flex items-center justify-center gap-1 select-none cursor-pointer ${
+                pickerMode === "multi"
+                  ? "bg-card text-foreground font-bold shadow-xs border border-border/60"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
-              title={
-                multiAccess.hasAccess
-                  ? multiAccess.isTrial
-                    ? `Lọc nhiều khách (Dùng thử VIP còn ${multiAccess.daysRemaining} ngày)`
-                    : "Lọc nhiều khách cùng lúc"
-                  : "Yêu cầu VIP Premium: Lọc nhiều khách (Bấm để xem hướng dẫn nâng cấp)"
-              }
+              title="Lọc nhiều khách cùng lúc"
             >
-              <Users size={11} className={!multiAccess.hasAccess ? "opacity-50" : ""} />
+              <Users size={11} />
               <span>Lọc nhiều khách</span>
-              {multiAccess.isPremium && (
-                <span className="text-[9px] font-extrabold px-1 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 flex items-center gap-0.5">
-                  <Crown size={8} />
-                  <span>VIP</span>
-                </span>
-              )}
-              {multiAccess.isTrial && (
-                <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30 flex items-center gap-0.5" title={`Còn ${multiAccess.daysRemaining} ngày dùng thử`}>
-                  <Crown size={8} />
-                  <span>Trial {multiAccess.daysRemaining}N</span>
-                </span>
-              )}
-              {!multiAccess.hasAccess && (
-                <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-amber-500/10 text-amber-600/70 border border-amber-500/20 flex items-center gap-0.5">
-                  <Lock size={8} />
-                  <span>VIP</span>
-                </span>
-              )}
             </button>
           </div>
 
@@ -851,15 +790,6 @@ export function LeftPanel() {
           )}
         </div>
       </div>
-
-      {/* VIP Premium Gate Modal */}
-      {gateFeature && (
-        <PremiumGateModal
-          featureKey={gateFeature}
-          onClose={() => setGateFeature(null)}
-          reason={multiAccess.reason}
-        />
-      )}
 
       {/* Folder Photo Gallery Preview Modal */}
       <FolderPreviewModal
