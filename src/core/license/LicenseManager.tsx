@@ -258,9 +258,9 @@ export function LicenseManager({
   };
 
   const content = (
-    <div className="flex flex-col h-full max-h-[85vh] w-full max-w-2xl bg-[#13161f] text-foreground border border-border/80 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="flex flex-col h-full max-h-[85vh] w-full max-w-2xl bg-card text-card-foreground border border-border rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border/60 bg-muted/30">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/30 shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
             <Sparkles className="w-5 h-5" />
@@ -276,14 +276,14 @@ export function LicenseManager({
         </div>
         <button
           onClick={onClose}
-          className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+          className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-border/60 px-6 bg-muted/10 overflow-x-auto">
+      <div className="flex border-b border-border px-6 bg-muted/15 overflow-x-auto shrink-0">
         <button
           onClick={() => {
             setError(null);
@@ -340,7 +340,7 @@ export function LicenseManager({
         {mode === "my_plan" && (
           <div className="space-y-5">
             {/* Plan Summary Card */}
-            <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-br from-card/90 via-card/60 to-card/30 p-5 shadow-sm">
+            <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-br from-card via-card to-muted/30 p-5 shadow-xs">
               <div
                 className={`absolute top-0 right-0 w-44 h-44 rounded-full blur-3xl opacity-15 pointer-events-none ${
                   planInfo.isFullApp ? "bg-blue-500" : planInfo.isPhotoPickerOnly ? "bg-emerald-500" : "bg-amber-500"
@@ -352,10 +352,10 @@ export function LicenseManager({
                   <div
                     className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border shadow-xs ${
                       planInfo.isFullApp
-                        ? "bg-blue-500/15 border-blue-500/30 text-blue-400"
+                        ? "bg-blue-500/15 border-blue-500/30 text-blue-600 dark:text-blue-400"
                         : planInfo.isPhotoPickerOnly
-                          ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-                          : "bg-amber-500/15 border-amber-500/30 text-amber-400"
+                          ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+                          : "bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400"
                     }`}
                   >
                     {planInfo.isLifetime ? (
@@ -376,11 +376,11 @@ export function LicenseManager({
                       <span
                         className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                           planInfo.isFullApp && !planInfo.isTrial
-                            ? "bg-blue-500/15 text-blue-400 border-blue-500/30"
+                            ? "bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30"
                             : planInfo.isPhotoPickerOnly
-                              ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                              ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
                               : planInfo.isTrial
-                                ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                                ? "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30"
                                 : "bg-destructive/15 text-destructive border-destructive/30"
                         }`}
                       >
@@ -412,10 +412,10 @@ export function LicenseManager({
 
             {/* Notice & Context Banner */}
             {planInfo.isPhotoPickerOnly && (
-              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-3 text-xs">
-                <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <div className="p-3.5 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 flex items-start gap-3 text-xs">
+                <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-semibold text-amber-400">Chính sách sử dụng gói lẻ:</span>
+                  <span className="font-semibold text-amber-800 dark:text-amber-300">Chính sách sử dụng gói lẻ:</span>
                   <p className="text-muted-foreground mt-0.5 leading-relaxed">
                     Bạn đang đăng ký gói riêng cho <b>App Lọc Ảnh</b>. Các ứng dụng khác trong hệ sinh thái (Kho tài nguyên, Cấu hình Sheet, Đếm ảnh...) đang được mở theo <b>thời gian dùng thử (3 ngày)</b>. Khi hết số ngày dùng thử, các app khác sẽ tự động khoá. Bạn có thể gia hạn hoặc nâng cấp lên gói Full App bất kỳ lúc nào để mở toàn bộ.
                   </p>
@@ -424,10 +424,10 @@ export function LicenseManager({
             )}
 
             {planInfo.isTrial && (
-              <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/25 flex items-start gap-3 text-xs">
-                <Sparkles className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+              <div className="p-3.5 rounded-xl bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/30 flex items-start gap-3 text-xs">
+                <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-semibold text-blue-300">Trải nghiệm Dùng Thử Đầy Đủ:</span>
+                  <span className="font-semibold text-blue-800 dark:text-blue-300">Trải nghiệm Dùng Thử Đầy Đủ:</span>
                   <p className="text-muted-foreground mt-0.5 leading-relaxed">
                     Tài khoản của bạn đang trong thời gian dùng thử 100% tất cả ứng dụng trong Super App. Bạn có thể kích hoạt gói bản quyền bất kỳ lúc nào để làm việc không gián đoạn!
                   </p>
@@ -436,10 +436,10 @@ export function LicenseManager({
             )}
 
             {planInfo.isFullApp && !planInfo.isTrial && (
-              <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-start gap-3 text-xs">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+              <div className="p-3.5 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/30 flex items-start gap-3 text-xs">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-semibold text-emerald-300">Gói Toàn Bộ Super App Siêu Cấp:</span>
+                  <span className="font-semibold text-emerald-800 dark:text-emerald-300">Gói Toàn Bộ Super App Siêu Cấp:</span>
                   <p className="text-muted-foreground mt-0.5 leading-relaxed">
                     Tài khoản của bạn được mở khoá đầy đủ tất cả các module và tính năng hiện tại cũng như các bản cập nhật mới trong tương lai.
                   </p>
@@ -468,10 +468,10 @@ export function LicenseManager({
                       key={app.id}
                       className={`p-3.5 rounded-xl border flex flex-col justify-between transition-all ${
                         isPaid
-                          ? "bg-emerald-500/5 border-emerald-500/25 shadow-2xs"
+                          ? "bg-emerald-500/5 dark:bg-emerald-500/10 border-emerald-500/25 dark:border-emerald-500/30 shadow-2xs"
                           : isTrial
-                            ? "bg-amber-500/5 border-amber-500/25 shadow-2xs"
-                            : "bg-muted/20 border-border/60 opacity-70"
+                            ? "bg-amber-500/5 dark:bg-amber-500/10 border-amber-500/25 dark:border-amber-500/30 shadow-2xs"
+                            : "bg-muted/30 border-border/60 opacity-70"
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2 mb-2">
@@ -481,9 +481,9 @@ export function LicenseManager({
                         <span
                           className={`text-[10px] font-bold px-2 py-0.5 rounded-md border shrink-0 ${
                             isPaid
-                              ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                              ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
                               : isTrial
-                                ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                                ? "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30"
                                 : "bg-muted text-muted-foreground border-border"
                           }`}
                         >
@@ -649,7 +649,7 @@ export function LicenseManager({
                       placeholder="Nguyễn Văn A"
                       value={buyerName}
                       onChange={(e) => setBuyerName(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
                 </div>
@@ -664,7 +664,7 @@ export function LicenseManager({
                       placeholder="email@gmail.com"
                       value={buyerEmail}
                       onChange={(e) => setBuyerEmail(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
                 </div>
@@ -679,7 +679,7 @@ export function LicenseManager({
                       placeholder="0912345678"
                       value={buyerPhone}
                       onChange={(e) => setBuyerPhone(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
                 </div>
@@ -819,14 +819,14 @@ export function LicenseManager({
 
             <div className="relative">
               <div
-                className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-emerald-500/25 via-primary/20 to-teal-500/25 border-2 border-emerald-500/50 text-emerald-400 mx-auto flex items-center justify-center shadow-xl shadow-emerald-500/20"
+                className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-emerald-500/20 via-primary/15 to-teal-500/20 border-2 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 mx-auto flex items-center justify-center shadow-xl shadow-emerald-500/15"
               >
                 <PartyPopper className="w-10 h-10 filter drop-shadow animate-bounce" />
               </div>
-              <div className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[11px] font-bold">
-                <Sparkles size={11} className="text-amber-400" />
+              <div className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-[11px] font-bold">
+                <Sparkles size={11} className="text-amber-500" />
                 <span>GIAO DỊCH THÀNH CÔNG RỰC RỠ</span>
-                <Sparkles size={11} className="text-amber-400" />
+                <Sparkles size={11} className="text-amber-500" />
               </div>
             </div>
 
@@ -841,18 +841,18 @@ export function LicenseManager({
             </div>
 
             {/* Key Card with luxury glowing border */}
-            <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-primary/10 to-teal-500/15 border-2 border-emerald-500/40 shadow-xl shadow-emerald-500/10 space-y-3.5 relative overflow-hidden">
+            <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-primary/5 to-teal-500/10 dark:from-emerald-500/15 dark:via-primary/10 dark:to-teal-500/15 border-2 border-emerald-500/30 dark:border-emerald-500/40 shadow-xl shadow-emerald-500/5 space-y-3.5 relative overflow-hidden">
               <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center justify-center gap-1.5">
-                <Sparkles size={12} className="text-amber-400" />
+                <Sparkles size={12} className="text-amber-500" />
                 <span>MÃ BẢN QUYỀN (LICENSE KEY)</span>
-                <Sparkles size={12} className="text-amber-400" />
+                <Sparkles size={12} className="text-amber-500" />
               </div>
 
-              <div className="font-mono text-xl sm:text-2xl font-black text-emerald-500 dark:text-emerald-300 tracking-widest select-all bg-card/60 py-2.5 px-4 rounded-xl border border-emerald-500/20 shadow-inner">
+              <div className="font-mono text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-300 tracking-widest select-all bg-background dark:bg-card/70 py-2.5 px-4 rounded-xl border border-emerald-500/25 shadow-inner">
                 {generatedKey}
               </div>
 
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/35 text-emerald-300 text-xs font-semibold">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-semibold">
                 <CheckCircle2 size={13} />
                 <span>Đã tự động liên kết trực tiếp vào tài khoản này!</span>
               </div>
@@ -904,7 +904,7 @@ export function LicenseManager({
                   placeholder="MVD-XXXX-XXXX-XXXX"
                   value={manualKey}
                   onChange={(e) => setManualKey(e.target.value.toUpperCase())}
-                  className="w-full pl-9 pr-4 py-2.5 text-xs font-mono font-bold tracking-wider rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary uppercase"
+                  className="w-full pl-9 pr-4 py-2.5 text-xs font-mono font-bold tracking-wider rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary uppercase"
                 />
               </div>
             </div>
@@ -961,7 +961,7 @@ export function LicenseManager({
   );
 
   return createPortal(
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-fade-in select-none">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 backdrop-blur-xs dark:bg-black/75 dark:backdrop-blur-md p-4 animate-fade-in select-none">
       <div className="absolute inset-0" onClick={onClose} />
       <div className="relative z-10 w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
         {content}

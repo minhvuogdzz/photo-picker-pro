@@ -201,15 +201,15 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
   // Render modal directly in document.body using React Portal
   return createPortal(
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 select-none animate-fade-in">
-      {/* Clickable dark backdrop */}
+      {/* Clickable backdrop */}
       <div
-        className="absolute inset-0 bg-black/80 backdrop-blur-md cursor-pointer"
+        className="absolute inset-0 bg-black/50 backdrop-blur-xs dark:bg-black/80 dark:backdrop-blur-md cursor-pointer"
         onClick={onClose}
       />
 
       {/* Centered Popup Modal */}
       <div
-        className="relative z-10 w-full max-w-lg bg-[#141722] border border-white/15 rounded-3xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] flex flex-col max-h-[85vh] overflow-hidden animate-scale-in text-foreground"
+        className="relative z-10 w-full max-w-lg bg-card border border-border rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden animate-scale-in text-foreground"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
@@ -302,7 +302,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
                 </div>
 
                 <div className="text-right">
-                  <span className="text-[10px] px-2 py-0.5 rounded-lg bg-white/10 text-foreground font-semibold">
+                  <span className="text-[10px] px-2 py-0.5 rounded-lg bg-muted text-muted-foreground font-semibold">
                     {session.subscription?.status === "LIFETIME"
                       ? "Vĩnh viễn"
                       : session.subscription?.daysRemaining !== null
@@ -357,9 +357,9 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
                 <label className="text-[11px] font-semibold text-foreground/90 uppercase tracking-wider">
                   Email đăng ký
                 </label>
-                <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-black/30 border border-white/5 text-xs text-muted-foreground">
+                <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-muted/40 border border-border text-xs text-foreground">
                   <span>{session.email}</span>
-                  <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-medium">
+                  <span className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
                     <CheckCircle2 size={11} /> Đã xác minh
                   </span>
                 </div>
@@ -369,7 +369,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
                 <div
                   className={`p-2.5 rounded-xl border text-xs flex items-center gap-2 ${
                     profileMessage.type === "success"
-                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
                       : "bg-destructive/10 border-destructive/30 text-destructive"
                   }`}
                 >
@@ -470,7 +470,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
                 <div
                   className={`p-2.5 rounded-xl border text-xs flex items-center gap-2 ${
                     pwMessage.type === "success"
-                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
                       : "bg-destructive/10 border-destructive/30 text-destructive"
                   }`}
                 >
@@ -515,7 +515,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
                 <label className="text-[11px] font-semibold text-foreground/90 uppercase tracking-wider">Thiết bị hiện tại</label>
                 <div className="p-3 rounded-2xl bg-card border border-border flex items-center justify-between shadow-xs">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                       <Laptop size={16} />
                     </div>
                     <div>
@@ -525,7 +525,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
                       </p>
                     </div>
                   </div>
-                  <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
+                  <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-500/30">
                     Online
                   </span>
                 </div>
@@ -566,7 +566,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
                 <div
                   className={`p-2.5 rounded-xl border text-xs flex items-center gap-2 ${
                     deviceMessage.type === "success"
-                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
                       : "bg-destructive/10 border-destructive/30 text-destructive"
                   }`}
                 >

@@ -88,13 +88,13 @@ export function AccountExpiringAlertModal({
   const displayPackages = highlightedPackages.length > 0 ? highlightedPackages : safePackages.slice(0, 3);
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-fade-in select-none">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 backdrop-blur-xs dark:bg-black/75 dark:backdrop-blur-md p-4 animate-fade-in select-none">
       {/* Background ambient lighting */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] bg-gradient-to-tr from-amber-500/15 via-blue-500/10 to-orange-500/10 rounded-full blur-[110px] pointer-events-none" />
 
       {/* Main Glassmorphic Card */}
       <div
-        className={`relative z-10 w-full max-w-xl rounded-3xl p-6 sm:p-7 border border-amber-500/40 bg-[#13161f]/95 backdrop-blur-2xl shadow-[0_20px_70px_-15px_rgba(245,158,11,0.3)] text-center space-y-4 animate-scale-in transition-opacity ${
+        className={`relative z-10 w-full max-w-xl rounded-3xl p-6 sm:p-7 border border-amber-500/40 bg-card/95 text-card-foreground backdrop-blur-2xl shadow-2xl text-center space-y-4 animate-scale-in transition-opacity ${
           isDismissing ? "opacity-0 scale-95" : "opacity-100 scale-100"
         }`}
       >
@@ -102,7 +102,7 @@ export function AccountExpiringAlertModal({
         <button
           type="button"
           onClick={handleDismiss}
-          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground p-1.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer"
+          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground p-1.5 rounded-xl hover:bg-muted transition-colors cursor-pointer"
           title="Đóng thông báo"
         >
           <X size={18} />
@@ -111,7 +111,7 @@ export function AccountExpiringAlertModal({
         {/* Top Glowing Icon Badge */}
         <div className="flex justify-center">
           <div className="relative">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/10 border-2 border-amber-500/50 flex items-center justify-center text-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.35)] animate-pulse">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/10 border-2 border-amber-500/50 flex items-center justify-center text-amber-500 shadow-[0_0_30px_rgba(245,158,11,0.35)] animate-pulse">
               <AlertTriangle size={28} />
             </div>
             <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-amber-500 text-black flex items-center justify-center shadow-md font-black text-[10px]">
@@ -122,7 +122,7 @@ export function AccountExpiringAlertModal({
 
         {/* Tier Badge & Headline */}
         <div className="space-y-1.5">
-          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[11px] font-extrabold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-[11px] font-extrabold uppercase tracking-wider">
             <Clock size={12} />
             CẢNH BÁO SẮP HẾT HẠN (≤ 3 NGÀY)
           </div>
@@ -136,16 +136,16 @@ export function AccountExpiringAlertModal({
 
         {/* Countdown & Expiration Time Box */}
         <div className="grid grid-cols-2 gap-2.5 text-left">
-          <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/25">
-            <span className="text-[10px] uppercase font-bold text-amber-400 tracking-wider block">
+          <div className="p-3 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/25">
+            <span className="text-[10px] uppercase font-bold text-amber-700 dark:text-amber-400 tracking-wider block">
               Thời gian còn lại
             </span>
-            <span className="text-base font-mono font-black text-amber-300 mt-0.5 block">
+            <span className="text-base font-mono font-black text-amber-800 dark:text-amber-300 mt-0.5 block">
               {info.daysRemaining === 0 ? "Hết hạn hôm nay" : `Còn ${info.daysRemaining} ngày`}
             </span>
           </div>
 
-          <div className="p-3 rounded-2xl bg-white/[0.03] border border-border/50">
+          <div className="p-3 rounded-2xl bg-muted/40 border border-border">
             <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block flex items-center gap-1">
               <Calendar size={11} /> Mốc kết thúc
             </span>
@@ -177,7 +177,7 @@ export function AccountExpiringAlertModal({
                 key={pkg.id}
                 type="button"
                 onClick={() => handleRenewPackage(pkg.targetApp)}
-                className="p-3 rounded-xl border border-border/80 bg-white/[0.02] hover:bg-white/[0.06] hover:border-primary/50 text-left transition-all group flex flex-col justify-between"
+                className="p-3 rounded-xl border border-border bg-card hover:bg-muted/50 hover:border-primary/50 text-left transition-all group flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between">
@@ -185,7 +185,7 @@ export function AccountExpiringAlertModal({
                       {pkg.name.replace(/Gói /i, "")}
                     </span>
                     {pkg.badge && (
-                      <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[9px] font-bold">
+                      <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[9px] font-bold">
                         {pkg.badge}
                       </span>
                     )}
@@ -220,7 +220,7 @@ export function AccountExpiringAlertModal({
             <button
               type="button"
               onClick={handleActivate}
-              className="py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-white/30 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all"
+              className="py-2.5 px-4 rounded-xl bg-muted hover:bg-muted/80 border border-border text-foreground font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all"
             >
               <Key size={15} />
               Đã Có Mã Key

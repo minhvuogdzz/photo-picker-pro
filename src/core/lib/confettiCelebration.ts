@@ -1,11 +1,26 @@
 import confetti from "canvas-confetti";
 
 /**
- * Explosive celebratory party cannon & fanfare sound using Web Audio API.
- * High-impact "POP/BOOM" explosion blast + sparkling victory fanfare.
- * Volume tuned to be punchy, clear, and audible at normal speaker volume.
+ * Explosive celebratory party cannon & fanfare sound.
+ * Plays high-definition punchy audio file with Web Audio synthesis fallback.
  */
 export function playCelebrationSound() {
+  try {
+    const audio = new Audio("/sounds/celebration.wav");
+    audio.volume = 1.0;
+    const p = audio.play();
+    if (p !== undefined) {
+      p.catch(() => {
+        synthesizeCelebrationSound();
+      });
+      return;
+    }
+  } catch {
+    synthesizeCelebrationSound();
+  }
+}
+
+function synthesizeCelebrationSound() {
   try {
     const AudioContextClass =
       window.AudioContext ||

@@ -30,12 +30,12 @@ export function SessionExpiringWarningModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-fade-in">
-      <div className="relative w-full max-w-md panel p-6 md:p-8 space-y-6 text-center border-2 border-amber-500/60 shadow-[0_0_50px_-10px_rgba(245,158,11,0.35)] rounded-2xl bg-[#14161b] animate-scale-in">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 backdrop-blur-xs dark:bg-black/70 dark:backdrop-blur-md p-4 animate-fade-in select-none">
+      <div className="relative w-full max-w-md panel p-6 md:p-8 space-y-6 text-center border-2 border-amber-500/60 shadow-[0_0_50px_-10px_rgba(245,158,11,0.2)] rounded-2xl bg-card text-card-foreground animate-scale-in">
         {/* Close / Dismiss button */}
         <button
           onClick={dismiss30sWarning}
-          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground p-1.5 rounded-lg hover:bg-muted transition-colors cursor-pointer"
           title="Đóng thông báo"
         >
           <X size={18} />
@@ -43,22 +43,22 @@ export function SessionExpiringWarningModal() {
 
         {/* Warning Icon with pulsating ring */}
         <div className="relative flex justify-center">
-          <div className="w-16 h-16 rounded-full bg-amber-500/15 border border-amber-500/40 flex items-center justify-center text-amber-400 shadow-[0_0_25px_rgba(245,158,11,0.3)] animate-pulse">
+          <div className="w-16 h-16 rounded-full bg-amber-500/15 border border-amber-500/40 flex items-center justify-center text-amber-500 shadow-[0_0_25px_rgba(245,158,11,0.3)] animate-pulse">
             <AlertTriangle size={32} />
           </div>
         </div>
 
         {/* Header & Big Countdown */}
         <div className="space-y-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs font-bold uppercase tracking-wider">
             <Clock size={12} />
             Cảnh báo phiên làm việc
           </div>
           <h2 className="text-xl font-extrabold text-foreground">
             Phiên sắp hết hạn trong
           </h2>
-          <div className="text-4xl font-mono font-black text-amber-400 drop-shadow-sm tracking-tight pt-1">
-            {remainingSeconds.toString().padStart(2, "0")}<span className="text-lg font-sans font-medium text-amber-400/80 ml-1">giây</span>
+          <div className="text-4xl font-mono font-black text-amber-600 dark:text-amber-400 drop-shadow-sm tracking-tight pt-1">
+            {remainingSeconds.toString().padStart(2, "0")}<span className="text-lg font-sans font-medium text-amber-700/80 dark:text-amber-400/80 ml-1">giây</span>
           </div>
         </div>
 
@@ -71,7 +71,7 @@ export function SessionExpiringWarningModal() {
         <div className="flex gap-3 pt-2">
           <button
             onClick={dismiss30sWarning}
-            className="btn-outline flex-1 py-3 text-xs sm:text-sm font-bold rounded-xl border-border/80 hover:bg-white/10 transition-colors"
+            className="btn-outline flex-1 py-3 text-xs sm:text-sm font-bold rounded-xl border-border hover:bg-muted transition-colors cursor-pointer"
           >
             Đã hiểu ({remainingSeconds}s)
           </button>
