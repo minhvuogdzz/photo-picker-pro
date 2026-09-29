@@ -12,6 +12,7 @@ import ResourcesApp from "@/modules/resources/ResourcesApp";
 import ContactTheSheetApp from "@/modules/contact-the-sheet";
 import PhotoCounterApp from "@/modules/photo-counter";
 import { DonateModal } from "@/core/components/DonateModal";
+import { AnnouncementPopup } from "@/core/components/AnnouncementPopup";
 
 export function AppLayout() {
   const activeTab = useAppStore((s) => s.activeTab);
@@ -29,6 +30,7 @@ export function AppLayout() {
       
       {!hasSeenWelcome && <WelcomeScreen />}
       <DonateModal />
+      <AnnouncementPopup />
       
       {/* TopBar Glass Wrapper */}
       <div className="rounded-xl shrink-0 relative z-50 bg-card/90 backdrop-blur-md border border-border shadow-sm overflow-visible">

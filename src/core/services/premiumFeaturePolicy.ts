@@ -1,5 +1,5 @@
 import type { AuthSession } from "@/core/types/auth";
-import { checkAppAccess } from "./appEntitlementPolicy";
+import { checkAppAccess } from "./appEntitlementPolicy.ts";
 
 export type PremiumFeatureKey = "sheet_extract" | "sheet_config" | "multi_client" | "photo_counter";
 
@@ -9,6 +9,12 @@ export const PREMIUM_FEATURE_LABELS: Record<PremiumFeatureKey, string> = {
   multi_client: "Lọc nhiều khách",
   photo_counter: "Thống kê & Tính lương",
 };
+
+/** Release date of update: 24/09/2026 00:00:00 GMT+7 */
+export const APP_UPDATE_RELEASE_TIMESTAMP = 1790211600000;
+/** Trial duration: 7 days in milliseconds */
+export const SEVEN_DAYS_TRIAL_MS = 7 * 24 * 60 * 60 * 1000;
+export const TRIAL_END_TIMESTAMP = APP_UPDATE_RELEASE_TIMESTAMP + SEVEN_DAYS_TRIAL_MS;
 
 export interface FeatureAccessResult {
   readonly hasAccess: boolean;
