@@ -27,7 +27,13 @@ pub fn sync_subfolder_names(folder_path: String, mode: String) -> Result<String,
             .map_err(|e| format!("Không thể đọc thư mục: {}", e))?
             .filter_map(|entry| entry.ok())
             .map(|entry| entry.path())
-            .filter(|p| p.is_dir())
+            .filter(|p| {
+                if !p.is_dir() {
+                    return false;
+                }
+                let name = p.file_name().and_then(|n| n.to_str()).unwrap_or("");
+                !name.starts_with('.')
+            })
             .collect();
 
         if subdirs.len() == 1 {
@@ -182,4 +188,126 @@ pub fn update_system_theme_icon(_theme: String) -> Result<(), String> {
     }
     Ok(())
 }
+
+/// Smart folder expansion for Studio workflows (Contact The Sheet / Batch Runner):
+/// For each path in `paths`:
+/// - If the folder contains > 1 immediate non-hidden subdirectories:
+///   expand it into all its immediate non-hidden subdirectories.
+/// - If the folder contains <= 1 immediate non-hidden subdirectories (or 0):
+///   keep the folder itself as the starting point.
+#[tauri::command]
+pub fn resolve_smart_input_folders(paths: Vec<String>) -> Result<Vec<String>, String> {
+    use std::collections::HashSet;
+    let mut resolved_paths: Vec<String> = Vec::new();
+    let mut seen: HashSet<String> = HashSet::new();
+
+    for path_str in paths {
+        let root = Path::new(&path_str);
+        if !root.exists() || !root.is_dir() {
+            continue;
+        }
+
+        // Read immediate non-hidden subdirectories
+        let mut subdirs: Vec<std::path::PathBuf> = match fs::read_dir(root) {
+            Ok(entries) => entries
+                .filter_map(|e| e.ok())
+                .map(|e| e.path())
+                .filter(|p| {
+                    if !p.is_dir() {
+                        return false;
+                    }
+                    let name = p.file_name().and_then(|n| n.to_str()).unwrap_or("");
+                    !name.starts_with('.')
+                })
+                .collect(),
+            Err(_) => Vec::new(),
+        };
+
+        subdirs.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
+
+        if subdirs.len() > 1 {
+            // More than 1 subfolder -> unpack all child subfolders
+            for sub in subdirs {
+                let sub_str = sub.to_string_lossy().to_string();
+                if seen.insert(sub_str.clone()) {
+                    resolved_paths.push(sub_str);
+                }
+            }
+        } else {
+            // <= 1 subfolder (or 0) -> keep the folder itself as starting point
+            let root_str = root.to_string_lossy().to_string();
+            if seen.insert(root_str.clone()) {
+                resolved_paths.push(root_str);
+            }
+        }
+    }
+
+    Ok(resolved_paths)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs::{create_dir_all, File};
+
+    #[test]
+    fn test_resolve_smart_input_folders_expands_multiple_subfolders() {
+        let temp_dir = std::env::temp_dir().join(format!("mvd_smart_test_{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        let parent_folder = temp_dir.join("28-8 V");
+        let cust1 = parent_folder.join("18-8 10h Hoa Anh Nguyễn");
+        let cust2 = parent_folder.join("20-8 8h Lee Thị Thu 1cc");
+        let cust3 = parent_folder.join("22-8 9h Khánh Vy 1cc");
+
+        create_dir_all(&cust1).unwrap();
+        create_dir_all(&cust2).unwrap();
+        create_dir_all(&cust3).unwrap();
+
+        // Also add hidden dir in parent to ensure it is ignored
+        create_dir_all(parent_folder.join(".DS_Store_dir")).unwrap();
+
+        let parent_str = parent_folder.to_string_lossy().to_string();
+        let res = resolve_smart_input_folders(vec![parent_str]).unwrap();
+
+        assert_eq!(res.len(), 3);
+        assert!(res.iter().any(|p| p.ends_with("18-8 10h Hoa Anh Nguyễn")));
+        assert!(res.iter().any(|p| p.ends_with("20-8 8h Lee Thị Thu 1cc")));
+        assert!(res.iter().any(|p| p.ends_with("22-8 9h Khánh Vy 1cc")));
+
+        let _ = fs::remove_dir_all(temp_dir);
+    }
+
+    #[test]
+    fn test_resolve_smart_input_folders_keeps_single_subfolder_as_root() {
+        let temp_dir = std::env::temp_dir().join(format!("mvd_smart_test_single_{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        let cust_folder = temp_dir.join("18-8 10h Hoa Anh Nguyễn");
+        let inner_folder = cust_folder.join("18-8 10h Hoa Anh Nguyễn");
+        create_dir_all(&inner_folder).unwrap();
+
+        let cust_str = cust_folder.to_string_lossy().to_string();
+        let res = resolve_smart_input_folders(vec![cust_str.clone()]).unwrap();
+
+        // Since cust_folder has only 1 subfolder, the starting point is cust_folder itself
+        assert_eq!(res.len(), 1);
+        assert_eq!(res[0], cust_str);
+
+        let _ = fs::remove_dir_all(temp_dir);
+    }
+
+    #[test]
+    fn test_resolve_smart_input_folders_keeps_zero_subfolders_folder() {
+        let temp_dir = std::env::temp_dir().join(format!("mvd_smart_test_zero_{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        let cust_folder = temp_dir.join("20-8 8h Lee Thị Thu 1cc");
+        create_dir_all(&cust_folder).unwrap();
+        File::create(cust_folder.join("IMG_0001.JPG")).unwrap();
+
+        let cust_str = cust_folder.to_string_lossy().to_string();
+        let res = resolve_smart_input_folders(vec![cust_str.clone()]).unwrap();
+
+        assert_eq!(res.len(), 1);
+        assert_eq!(res[0], cust_str);
+
+        let _ = fs::remove_dir_all(temp_dir);
+    }
+}
+
 

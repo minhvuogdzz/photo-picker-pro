@@ -4,14 +4,32 @@ import type {
   WorkspaceProfile,
   ParsedJobMetadata,
 } from "../types/index.ts";
-import { finalFolderResolver, FolderTopologyEntry } from "./finalFolderResolver.ts";
+import { finalFolderResolver, type FolderTopologyEntry } from "./finalFolderResolver.ts";
 import { folderParserService } from "./folderParserService.ts";
 import { driveResolverService } from "./driveResolverService.ts";
-import { jobMatchingService, SheetRowRecord } from "./jobMatchingService.ts";
+import { jobMatchingService, type SheetRowRecord } from "./jobMatchingService.ts";
 import { useContactSheetStore } from "../stores/useContactSheetStore.ts";
 import folderTreesFixture from "../../../../tests/fixtures/contact-the-sheet/folder-trees.json" with { type: "json" };
 
 export class FolderScannerService {
+  /**
+   * Intelligently resolves input folder paths according to studio workflow:
+   * - If a path contains > 1 direct non-hidden subfolders, expands to all those subfolders.
+   * - If a path contains <= 1 direct subfolder (or 0), keeps the path itself as the starting point.
+   */
+  public async resolveSmartInputFolders(paths: string[]): Promise<string[]> {
+    if (!paths || paths.length === 0) return [];
+    try {
+      const resolved = await invoke<string[]>("resolve_smart_input_folders", { paths });
+      if (Array.isArray(resolved) && resolved.length > 0) {
+        return resolved;
+      }
+    } catch (err) {
+      console.warn("Native resolve_smart_input_folders not available, using original paths:", err);
+    }
+    return paths;
+  }
+
   /**
    * Scans a parent dropped directory or selected paths, discovering jobs and resolving deepest folders.
    */
@@ -84,7 +102,8 @@ export class FolderScannerService {
     }
 
     // 2. Live Mode: Native Rust walkdir topology scan
-    for (const rootPath of rootPaths) {
+    const expandedRootPaths = await this.resolveSmartInputFolders(rootPaths);
+    for (const rootPath of expandedRootPaths) {
       if (onProgress) onProgress(`Đang quét cấu trúc thư mục: ${rootPath}...`);
 
       let topology: FolderTopologyEntry[] = [];
@@ -104,7 +123,10 @@ export class FolderScannerService {
       // depth 0 is root itself; depth 1 are individual job folders
       const jobRootEntries = topology.filter((e) => e.depth === 1);
 
-      if (jobRootEntries.length === 0) {
+      // If the folder has <= 1 child (e.g. single customer folder with 0 or 1 subfolder like JPG/Chưa sửa),
+      // the root path itself is the single job folder.
+      // If the folder contains > 1 child folders, each child folder represents an individual job.
+      if (jobRootEntries.length <= 1) {
         // Root path itself is the single job folder
         const resolved = finalFolderResolver.resolveDeepestDeliveryFolder(topology);
         const rootName = topology[0].folder_name;

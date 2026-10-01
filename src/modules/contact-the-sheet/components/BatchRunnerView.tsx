@@ -163,8 +163,22 @@ export function BatchRunnerView({
 
   const handleProcessFolderPaths = async (paths: string[]) => {
     if (!activeProfile) return;
-    if (paths && paths.length > 0) {
-      setLastScannedPaths(paths);
+    
+    // Intelligently resolve input folder paths:
+    // - If a folder contains > 1 subfolders, expands to all child folders.
+    // - If each folder contains <= 1 subfolder, keeps the folder itself.
+    let effectivePaths = paths;
+    try {
+      const resolved = await folderScannerService.resolveSmartInputFolders(paths);
+      if (resolved && resolved.length > 0) {
+        effectivePaths = resolved;
+      }
+    } catch (err) {
+      console.warn("Folder expansion error in BatchRunner:", err);
+    }
+
+    if (effectivePaths && effectivePaths.length > 0) {
+      setLastScannedPaths(effectivePaths);
     }
     setIsScanning(true);
     setScanProgress({ current: 0, total: 100, message: "Đang phân tích cây thư mục..." });
@@ -217,7 +231,7 @@ export function BatchRunnerView({
       });
 
       const jobs = await folderScannerService.scanAndDiscoverJobs(
-        paths,
+        effectivePaths,
         activeProfile,
         allSheetRows,
         isSandbox,

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   FolderSync,
   FolderOpen,
@@ -17,6 +18,7 @@ import {
   Layers,
 } from "lucide-react";
 import { getFolderName } from "@/core/lib/utils";
+import { folderScannerService } from "../services/folderScannerService";
 
 interface FolderItem {
   path: string;
@@ -36,12 +38,30 @@ export function FolderSyncView({ onGoToBatch }: Props) {
   const [syncProgress, setSyncProgress] = useState<{ current: number; total: number; currentName: string } | null>(null);
   const [syncSummary, setSyncSummary] = useState<{ success: number; errors: number; details: string[] } | null>(null);
 
-  // Add folder paths avoiding duplicates
-  const addFolders = useCallback((paths: string[]) => {
+  const [isExpanding, setIsExpanding] = useState(false);
+
+  // Add folder paths avoiding duplicates, with smart folder expansion:
+  // - If a folder has > 1 subfolders (e.g. 28-8 V containing multiple customer folders), expands to all child folders.
+  // - If each folder has <= 1 subfolder, keeps the folder itself as starting point.
+  const addFolders = useCallback(async (paths: string[]) => {
+    if (!paths || paths.length === 0) return;
+    setIsExpanding(true);
+    let resolvedPaths = paths;
+    try {
+      const resolved = await folderScannerService.resolveSmartInputFolders(paths);
+      if (resolved && resolved.length > 0) {
+        resolvedPaths = resolved;
+      }
+    } catch (err) {
+      console.warn("Folder expansion error:", err);
+    } finally {
+      setIsExpanding(false);
+    }
+
     setFolders((prev) => {
       const existing = new Set(prev.map((f) => f.path));
       const newItems: FolderItem[] = [];
-      for (const p of paths) {
+      for (const p of resolvedPaths) {
         if (p && !existing.has(p)) {
           existing.add(p);
           newItems.push({
@@ -65,7 +85,7 @@ export function FolderSyncView({ onGoToBatch }: Props) {
       });
       if (selected) {
         const paths = Array.isArray(selected) ? selected : [selected];
-        addFolders(paths);
+        await addFolders(paths);
       }
     } catch (err) {
       console.error("Open folder dialog error:", err);
@@ -82,29 +102,46 @@ export function FolderSyncView({ onGoToBatch }: Props) {
     setSyncProgress(null);
   };
 
-  // Tauri Native Drag-and-Drop Listener
+  // Tauri Native Drag-and-Drop Listener (using Window onDragDropEvent + tauri://drag-drop fallback)
   useEffect(() => {
-    let unlistenDrop: (() => void) | undefined;
+    let unlisten: (() => void) | undefined;
     let unlistenHover: (() => void) | undefined;
     let unlistenCancel: (() => void) | undefined;
 
     const setupListeners = async () => {
       try {
-        unlistenDrop = await listen<any>("tauri://drag-drop", (event) => {
-          setIsDragging(false);
-          const paths = event.payload?.paths;
-          if (Array.isArray(paths) && paths.length > 0) {
-            addFolders(paths);
-          }
-        });
+        const appWin = getCurrentWindow();
+        if (appWin && typeof appWin.onDragDropEvent === "function") {
+          unlisten = await appWin.onDragDropEvent((event) => {
+            if (event.payload.type === "enter" || event.payload.type === "over") {
+              setIsDragging(true);
+            } else if (event.payload.type === "leave") {
+              setIsDragging(false);
+            } else if (event.payload.type === "drop") {
+              setIsDragging(false);
+              const paths = event.payload.paths;
+              if (paths && paths.length > 0) {
+                addFolders(paths);
+              }
+            }
+          });
+        } else {
+          unlisten = await listen<any>("tauri://drag-drop", (event) => {
+            setIsDragging(false);
+            const paths = event.payload?.paths;
+            if (Array.isArray(paths) && paths.length > 0) {
+              addFolders(paths);
+            }
+          });
 
-        unlistenHover = await listen("tauri://drag-over", () => {
-          setIsDragging(true);
-        });
+          unlistenHover = await listen("tauri://drag-over", () => {
+            setIsDragging(true);
+          });
 
-        unlistenCancel = await listen("tauri://drag-leave", () => {
-          setIsDragging(false);
-        });
+          unlistenCancel = await listen("tauri://drag-leave", () => {
+            setIsDragging(false);
+          });
+        }
       } catch (e) {
         console.warn("Tauri drag-drop events not supported in this runtime:", e);
       }
@@ -113,7 +150,7 @@ export function FolderSyncView({ onGoToBatch }: Props) {
     setupListeners();
 
     return () => {
-      if (unlistenDrop) unlistenDrop();
+      if (unlisten) unlisten();
       if (unlistenHover) unlistenHover();
       if (unlistenCancel) unlistenCancel();
     };
@@ -255,13 +292,21 @@ export function FolderSyncView({ onGoToBatch }: Props) {
         }`}
       >
         <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mb-1.5">
-          <FolderSync size={18} className={isDragging ? "animate-spin" : ""} />
+          {isExpanding ? (
+            <Loader2 size={18} className="animate-spin text-primary" />
+          ) : (
+            <FolderSync size={18} className={isDragging ? "animate-spin" : ""} />
+          )}
         </div>
         <p className="text-xs font-bold text-foreground mb-0.5">
-          Kéo thả các thư mục buổi chụp vào đây hoặc bấm để chọn thư mục
+          {isExpanding
+            ? "Đang phân tích và mở rộng thư mục khách con..."
+            : "Kéo thả các thư mục buổi chụp vào đây hoặc bấm để chọn thư mục"}
         </p>
         <p className="text-[11px] text-muted-foreground max-w-lg">
-          Hỗ trợ chọn nhiều thư mục cùng lúc. Công cụ sẽ tự động rà quét và đổi tên các thư mục con lồng nhau bên trong.
+          {isExpanding
+            ? "Tự động nhận diện tất cả thư mục khách hàng nếu kéo vào thư mục lớn..."
+            : "Hỗ trợ chọn nhiều thư mục cùng lúc. Kéo thư mục lớn chứa nhiều khách sẽ tự động nhận diện tất cả thư mục khách con."}
         </p>
       </div>
 

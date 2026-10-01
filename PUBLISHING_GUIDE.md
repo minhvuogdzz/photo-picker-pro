@@ -26,40 +26,59 @@ Nếu bạn chưa thiết lập khóa trên Github, hãy làm như sau:
 
 ---
 
-## 🚀 Bước 2: Nâng Phiên Bản Ứng Dụng (Mỗi lần có bản cập nhật mới)
+## 🚀 Bước 2: Nâng Phiên Bản & Viết Release Notes Chi Tiết
 
-Mỗi khi bạn sửa lỗi hoặc thêm tính năng xong và muốn phát hành, bạn bắt buộc phải nâng số phiên bản (Version). Nếu không, phần mềm của người dùng sẽ không nhận diện được đây là bản mới.
+Mỗi khi sửa lỗi hoặc thêm tính năng xong và muốn phát hành, bắt buộc phải nâng số phiên bản và **ghi rõ nội dung cập nhật chi tiết** để người dùng biết được những cải tiến trong phiên bản mới.
 
-Mở 2 file sau trong trình soạn thảo code và sửa lại số `"version"` (Ví dụ: từ `"1.0.10"` lên `"1.0.11"`):
-1. File `photo-picker-pro/package.json`
-2. File `photo-picker-pro/src-tauri/tauri.conf.json`
+1. **Cập nhật số phiên bản ở 2 file:**
+   - `photo-picker-pro/package.json`
+   - `photo-picker-pro/src-tauri/tauri.conf.json`
+   *(Lưu ý: Số phiên bản ở cả 2 file phải hoàn toàn khớp nhau, ví dụ: `"2.6.7"`).*
 
-*(Lưu ý: Số phiên bản ở cả 2 file phải hoàn toàn khớp nhau).*
+2. **Cập nhật file `photo-picker-pro/CHANGELOG.md`:**
+   Thêm mục phiên bản mới nhất lên đầu file theo đúng cấu trúc tiêu chuẩn:
+   ```markdown
+   ## [v2.6.7] - YYYY-MM-DD
+
+   ### Trong bản cập nhật này, chúng tôi đã:
+
+   #### 🚀 Tính năng mới
+   - Thêm tính năng A giúp studio xử lý B nhanh hơn...
+
+   #### ⚡ Cải thiện & Tối ưu
+   - Tối ưu hóa hiệu suất lọc ảnh và giảm 30% bộ nhớ...
+
+   #### 🛠️ Sửa lỗi hệ thống
+   - Khắc phục sự cố không thể đồng bộ dữ liệu khi...
+   ```
+
+*(Hệ thống Auto Updater sẽ tự động đọc nội dung này từ `CHANGELOG.md` để hiển thị trực tiếp trong hộp thoại cập nhật của người dùng và cập nhật lên trang GitHub Releases!)*
 
 ---
 
 ## 📦 Bước 3: Đẩy Code và Kích hoạt Build Tự Động
 
-Mở Terminal (hoặc Source Control trên VSCode) và chạy lần lượt các lệnh sau:
+Mở Terminal và chạy lần lượt các lệnh sau:
 
 **1. Lưu tất cả thay đổi (Commit):**
 ```bash
 git add .
-git commit -m "Cập nhật tính năng X, sửa lỗi Y, nâng phiên bản lên v1.0.11"
+git commit -m "chore(release): bump v2.6.7 - cập nhật tính năng và tài liệu phát hành"
 ```
 
-**2. Gắn nhãn phiên bản (Tạo Tag):**
-> [!CAUTION]
-> Tên Tag **bắt buộc** phải bắt đầu bằng chữ `v` và khớp với phiên bản bạn vừa sửa (ví dụ: `v1.0.11`). File cấu hình Github Actions (`release.yml`) của bạn được lập trình để **chỉ chạy khi thấy có Tag bắt đầu bằng chữ v**.
+**2. Gắn nhãn phiên bản (Tạo Tag có chú thích):**
+> [!IMPORTANT]
+> Tên Tag **bắt buộc** phải bắt đầu bằng chữ `v` và khớp với phiên bản bạn vừa sửa (ví dụ: `v2.6.7`).
+> Bạn có thể gắn tag nhanh kèm ghi chú vắn tắt (hệ thống sẽ tự động lấy chi tiết từ `CHANGELOG.md`):
 
 ```bash
-git tag v1.0.11
+git tag -a v2.6.7 -m "Release v2.6.7"
 ```
 
-**3. Đẩy code và Tag lên Github:**
+**3. Đẩy code và Tag lên Github để kích hoạt đóng gói tự động:**
 ```bash
 git push origin main
-git push origin v1.0.11
+git push origin v2.6.7
 ```
 
 ---

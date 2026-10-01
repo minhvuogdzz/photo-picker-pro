@@ -34,6 +34,7 @@ pub fn run() {
             commands::logger::export_log,
             commands::logger::export_missing,
             commands::system_utils::sync_subfolder_names,
+            commands::system_utils::resolve_smart_input_folders,
             commands::system_utils::launch_photoshop,
             commands::system_utils::save_file_bytes,
             commands::system_utils::update_system_theme_icon,
