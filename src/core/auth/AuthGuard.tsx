@@ -235,11 +235,6 @@ export function AuthGuard({ children }: AuthGuardProps) {
     return <SessionExpiredDialog reason="suspended" />;
   }
 
-  // Expired/cancelled/inactive subscriptions are blocked immediately.
-  if (subscriptionExpired) {
-    return <SessionExpiredDialog reason="subscription" />;
-  }
-
   // Offline grace period expired
   if (offlineGracePeriodExpired) {
     return <SessionExpiredDialog reason="offline" />;

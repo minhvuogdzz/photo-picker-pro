@@ -12,11 +12,28 @@ class SocketService {
 
   private invalidateLocalSession(reason: 'device' | 'suspended' | 'subscription') {
     const store = useAuthStore.getState();
-    if (reason === 'device') store.setSessionExpiredByOtherDevice(true);
-    if (reason === 'suspended') store.setAccountSuspended(true);
-    if (reason === 'subscription') store.setSubscriptionExpired(true);
-    void logout().catch(() => undefined);
-    this.disconnect();
+    if (reason === 'device') {
+      store.setSessionExpiredByOtherDevice(true);
+      void logout().catch(() => undefined);
+      this.disconnect();
+    } else if (reason === 'suspended') {
+      store.setAccountSuspended(true);
+      void logout().catch(() => undefined);
+      this.disconnect();
+    } else if (reason === 'subscription') {
+      store.setSubscriptionExpired(true);
+      const currentSession = store.session;
+      if (currentSession) {
+        store.setSession({
+          ...currentSession,
+          subscription: {
+            ...currentSession.subscription,
+            status: 'EXPIRED',
+            daysRemaining: 0,
+          },
+        });
+      }
+    }
   }
 
   public isConnected(): boolean {

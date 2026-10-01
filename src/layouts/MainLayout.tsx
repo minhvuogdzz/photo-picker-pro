@@ -4,7 +4,8 @@ import { LauncherPage } from "@/core/pages/LauncherPage";
 import { SystemModule } from "@/modules/system/SystemModule";
 import { WelcomeScreen } from "@/core/components/WelcomeScreen";
 import { TopBar } from "./TopBar";
-import { AlertCircle } from "lucide-react";
+import { useState } from "react";
+import { AlertCircle, Key } from "lucide-react";
 import { EcosystemSidebar } from "./EcosystemSidebar";
 import PhotoPickerModule from "@/modules/photo-picker";
 import MvdConvertApp from "@/modules/mvd-convert/MvdConvertApp";
@@ -13,6 +14,7 @@ import ContactTheSheetApp from "@/modules/contact-the-sheet";
 import PhotoCounterApp from "@/modules/photo-counter";
 import { DonateModal } from "@/core/components/DonateModal";
 import { AnnouncementPopup } from "@/core/components/AnnouncementPopup";
+import { LicenseManager } from "@/core/license/LicenseManager";
 
 export function AppLayout() {
   const activeTab = useAppStore((s) => s.activeTab);
@@ -20,6 +22,7 @@ export function AppLayout() {
   const hasSeenWelcome = useAppStore((s) => s.hasSeenWelcome);
   const subscriptionExpired = useAuthStore((s) => s.subscriptionExpired);
   const lastClickPos = useAppStore((s) => s.lastClickPos);
+  const [showLicenseModal, setShowLicenseModal] = useState(false);
 
   const originStyle = lastClickPos 
     ? { transformOrigin: `${lastClickPos.x}px ${lastClickPos.y}px` }
@@ -31,6 +34,14 @@ export function AppLayout() {
       {!hasSeenWelcome && <WelcomeScreen />}
       <DonateModal />
       <AnnouncementPopup />
+
+      {showLicenseModal && (
+        <LicenseManager
+          onClose={() => setShowLicenseModal(false)}
+          variant="modal"
+          initialMode="packages"
+        />
+      )}
       
       {/* TopBar Glass Wrapper */}
       <div className="rounded-xl shrink-0 relative z-50 bg-card/90 backdrop-blur-md border border-border shadow-sm overflow-visible">
@@ -40,10 +51,24 @@ export function AppLayout() {
       {/* Pages Container */}
       <div className="flex-1 relative flex flex-col min-h-0 z-10">
         {subscriptionExpired && activeTab !== "settings" && (
-          <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-background/80 backdrop-blur-md rounded-xl border border-destructive/20 pointer-events-auto">
-            <AlertCircle className="w-10 h-10 text-destructive mb-3" />
-            <h2 className="text-[13px] font-semibold mb-1">Gói dịch vụ đã hết hạn</h2>
-            <p className="text-xs text-muted-foreground">Vui lòng vào phần Cài đặt để gia hạn hoặc đổi quyền lợi.</p>
+          <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-background/85 backdrop-blur-md rounded-2xl border border-destructive/30 pointer-events-auto p-6 text-center select-none animate-fade-in shadow-2xl">
+            <div className="w-14 h-14 rounded-2xl bg-destructive/15 border border-destructive/30 flex items-center justify-center text-destructive mb-3.5 shadow-inner">
+              <AlertCircle className="w-8 h-8" />
+            </div>
+            <h2 className="text-base font-bold text-foreground mb-1">Gói dịch vụ đã hết hạn</h2>
+            <p className="text-xs text-muted-foreground max-w-sm mb-4 leading-relaxed">
+              Các tính năng xử lý ảnh tạm thời bị vô hiệu hoá. Bạn có thể gia hạn gói ngay hoặc nhập mã License Key để tiếp tục sử dụng.
+            </p>
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setShowLicenseModal(true)}
+                className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold text-xs shadow-lg hover:bg-primary/90 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+              >
+                <Key size={14} />
+                Gia Hạn / Kích Hoạt Key Ngay
+              </button>
+            </div>
           </div>
         )}
 
