@@ -1,22 +1,24 @@
-import React from "react";
 import { useSessionTimeout } from "@/core/hooks/useSessionTimeout";
+import { computeSecondsUntilVnMidnight } from "@/core/services/sessionTimeoutPolicy";
 import { useAuthStore } from "@/core/stores/useAuthStore";
 import { logout } from "@/core/services/authApi";
-import { AlertTriangle, Clock, LogIn, X } from "lucide-react";
+import { AlertTriangle, Clock, LogIn, Moon, X } from "lucide-react";
 
 /**
- * Modal shown when 30 seconds or less remain in the active working session.
+ * Modal shown when 30 seconds or less remain in the active working session or before 0h00 VN midnight.
  * Gives the user immediate notice to save work or renew their session.
  */
 export function SessionExpiringWarningModal() {
-  const { remainingSeconds, isWarning30s, hasDismissed30sWarning, dismiss30sWarning, isUnlimited } = useSessionTimeout();
+  const { remainingSeconds, isWarning30s, hasDismissed30sWarning, dismiss30sWarning } = useSessionTimeout();
   const session = useAuthStore((s) => s.session);
   const authLogout = useAuthStore((s) => s.logout);
   const setSessionTimeoutExpired = useAuthStore((s) => s.setSessionTimeoutExpired);
 
-  if (isUnlimited || !isWarning30s || hasDismissed30sWarning || !session) {
+  if (!isWarning30s || hasDismissed30sWarning || !session) {
     return null;
   }
+
+  const isNearMidnight = computeSecondsUntilVnMidnight() <= 35;
 
   const handleLogoutAndRenew = async () => {
     try {
@@ -51,11 +53,11 @@ export function SessionExpiringWarningModal() {
         {/* Header & Big Countdown */}
         <div className="space-y-2">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs font-bold uppercase tracking-wider">
-            <Clock size={12} />
-            Cảnh báo phiên làm việc
+            {isNearMidnight ? <Moon size={12} /> : <Clock size={12} />}
+            {isNearMidnight ? "Cảnh báo bước sang ngày mới (0h00)" : "Cảnh báo phiên làm việc"}
           </div>
           <h2 className="text-xl font-extrabold text-foreground">
-            Phiên sắp hết hạn trong
+            {isNearMidnight ? "Bước sang ngày mới sau" : "Phiên sắp hết hạn trong"}
           </h2>
           <div className="text-4xl font-mono font-black text-amber-600 dark:text-amber-400 drop-shadow-sm tracking-tight pt-1">
             {remainingSeconds.toString().padStart(2, "0")}<span className="text-lg font-sans font-medium text-amber-700/80 dark:text-amber-400/80 ml-1">giây</span>
@@ -64,7 +66,9 @@ export function SessionExpiringWarningModal() {
 
         {/* Message */}
         <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed px-2">
-          Phiên làm việc của bạn sắp chạm giới hạn thời gian. Hệ thống sẽ tự động đăng xuất khi hết giờ để làm mới phiên. Vui lòng lưu các thao tác dang dở!
+          {isNearMidnight
+            ? "Hệ thống sắp bước sang ngày mới lúc 00:00:00 (theo giờ Việt Nam). Phiên làm việc sẽ tự động kết thúc để làm mới bản quyền. Vui lòng lưu các công việc dang dở ngay!"
+            : "Phiên làm việc của bạn sắp chạm giới hạn thời gian. Hệ thống sẽ tự động đăng xuất khi hết giờ để làm mới phiên. Vui lòng lưu các thao tác dang dở!"}
         </p>
 
         {/* Buttons */}

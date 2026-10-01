@@ -9,6 +9,10 @@ import {
   computeRemainingSeconds,
   isSessionExpiringSoon,
   isSessionWarning30s,
+  getNextVnMidnightTimestamp,
+  getVnStartOfDayTimestamp,
+  isTimestampBeforeTodayVnMidnight,
+  computeSecondsUntilVnMidnight,
 } from "../src/core/services/sessionTimeoutPolicy.ts";
 
 test("Session Timeout Constant: Exactly 10 minutes default duration", () => {
@@ -92,4 +96,28 @@ test("Session Timeout 30s Warning: Triggers 30s emergency warning modal only whe
   assert.strictEqual(isSessionWarning30s(1), true);
   assert.strictEqual(isSessionWarning30s(0), false);
   assert.strictEqual(isSessionWarning30s(-5), false);
+});
+
+test("Vietnam Midnight Policy: Computes start of day and next midnight accurately in GMT+7", () => {
+  // Oct 1, 2026 15:30:00 VN time (UTC+7) = Oct 1, 2026 08:30:00 UTC
+  const testNow = Date.UTC(2026, 9, 1, 8, 30, 0);
+
+  const startOfDay = getVnStartOfDayTimestamp(testNow);
+  // Start of Oct 1 VN = 2026-10-01 00:00:00 VN = 2026-09-30 17:00:00 UTC
+  const expectedStart = Date.UTC(2026, 8, 30, 17, 0, 0);
+  assert.strictEqual(startOfDay, expectedStart);
+
+  const nextMidnight = getNextVnMidnightTimestamp(testNow);
+  // Next midnight VN = 2026-10-02 00:00:00 VN = 2026-10-01 17:00:00 UTC
+  const expectedNextMidnight = Date.UTC(2026, 9, 1, 17, 0, 0);
+  assert.strictEqual(nextMidnight, expectedNextMidnight);
+
+  // Remaining seconds: 17:00:00 - 08:30:00 = 8.5 hours = 30600s
+  const remainingSecs = computeSecondsUntilVnMidnight(testNow);
+  assert.strictEqual(remainingSecs, 8.5 * 3600);
+
+  // 1 second before 0h00 VN -> is before today
+  assert.strictEqual(isTimestampBeforeTodayVnMidnight(expectedStart - 1000, testNow), true);
+  // 1 second after 0h00 VN -> is during today
+  assert.strictEqual(isTimestampBeforeTodayVnMidnight(expectedStart + 1000, testNow), false);
 });

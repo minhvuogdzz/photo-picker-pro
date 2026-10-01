@@ -28,6 +28,7 @@ export {
   canSessionWorkOfflineSync,
 } from "./subscriptionPolicy";
 import { canSessionWorkOfflineSync } from "./subscriptionPolicy";
+import { isTimestampBeforeTodayVnMidnight } from "./sessionTimeoutPolicy";
 
 /**
  * Rigorously checks whether a session is permitted to work in Offline Mode.
@@ -224,12 +225,43 @@ export async function refreshAuthToken(refreshToken: string): Promise<AuthSessio
   return session;
 }
 
+function getTokenIssuedAtMs(token?: string): number | null {
+  if (!token) return null;
+  try {
+    const parts = token.split(".");
+    if (parts.length < 2) return null;
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const jsonStr = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    const payload = JSON.parse(jsonStr);
+    if (typeof payload.iat === "number") {
+      return payload.iat * 1000;
+    }
+  } catch {}
+  return null;
+}
+
 /** Loads existing session from disk or sessionStorage */
 export async function loadSession(): Promise<AuthSession | null> {
   const memSession = sessionStorage.getItem("temp_auth_session");
   if (memSession) {
     try {
-      return JSON.parse(memSession);
+      const parsed: AuthSession = JSON.parse(memSession);
+      const syncTs = parsed.lastSyncAt ? new Date(parsed.lastSyncAt).getTime() : 0;
+      const iatTs = getTokenIssuedAtMs(parsed.accessToken);
+      if (
+        (syncTs > 0 && isTimestampBeforeTodayVnMidnight(syncTs)) ||
+        (iatTs !== null && isTimestampBeforeTodayVnMidnight(iatTs))
+      ) {
+        sessionStorage.removeItem("temp_auth_session");
+        sessionStorage.removeItem("auto_login");
+        return null;
+      }
+      return parsed;
     } catch {
       // Ignore parse error
     }
@@ -237,7 +269,18 @@ export async function loadSession(): Promise<AuthSession | null> {
 
   try {
     const local = await invoke<LocalSession | null>("load_auth_session");
-    if (local) return fromLocalSession(local);
+    if (local) {
+      const syncTs = local.last_sync_at ? new Date(local.last_sync_at).getTime() : 0;
+      const iatTs = getTokenIssuedAtMs(local.access_token);
+      if (
+        (syncTs > 0 && isTimestampBeforeTodayVnMidnight(syncTs)) ||
+        (iatTs !== null && isTimestampBeforeTodayVnMidnight(iatTs))
+      ) {
+        await invoke("clear_auth_session").catch(() => {});
+        return null;
+      }
+      return fromLocalSession(local);
+    }
   } catch {
     // In browser or non-tauri environment
   }

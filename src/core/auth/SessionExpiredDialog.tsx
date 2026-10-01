@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useAuthStore } from "@/core/stores/useAuthStore";
 import { logout } from "@/core/services/authApi";
 import { useTranslation } from "@/core/lib/i18n";
-import { useSessionTimeout } from "@/core/hooks/useSessionTimeout";
+import { useSessionTimeout, useSessionTimerStore } from "@/core/hooks/useSessionTimeout";
 import { isUnlimitedSession } from "@/core/services/appEntitlementPolicy";
 import { AlertTriangle, Clock, LogIn, MonitorX, ShieldCheck, Sparkles, WifiOff, XCircle } from "lucide-react";
 
@@ -13,7 +13,7 @@ interface SessionExpiredDialogProps {
 
 /**
  * Full-screen dialog shown when the user's session is invalid or timeout reached.
- * Features a high-end Glassmorphic UI for session timeout auto-logout.
+ * Features a high-end Glassmorphic UI for session timeout auto-logout and 0h00 midnight reset.
  */
 export function SessionExpiredDialog({
   reason,
@@ -26,14 +26,14 @@ export function SessionExpiredDialog({
   const setAccountSuspended = useAuthStore((s) => s.setAccountSuspended);
   const setOfflineGracePeriodExpired = useAuthStore((s) => s.setOfflineGracePeriodExpired);
   const setSessionTimeoutExpired = useAuthStore((s) => s.setSessionTimeoutExpired);
-  const { totalDurationMinutes } = useSessionTimeout();
+  const { totalDurationMinutes, isMidnightLogout } = useSessionTimeout();
   const { t } = useTranslation();
   const [countdown, setCountdown] = useState(3);
 
   const isUnlimited = isUnlimitedSession(session);
 
   useEffect(() => {
-    if (reason === "timeout" && isUnlimited) {
+    if (reason === "timeout" && isUnlimited && !isMidnightLogout) {
       setSessionTimeoutExpired(false);
       return;
     }
@@ -50,7 +50,7 @@ export function SessionExpiredDialog({
       }, 1000);
       return () => clearInterval(timer);
     }
-  }, [reason]);
+  }, [reason, isUnlimited, isMidnightLogout]);
 
   const handleLoginAgain = async () => {
     try {
@@ -58,6 +58,7 @@ export function SessionExpiredDialog({
     } catch {
       // Best effort
     }
+    useSessionTimerStore.getState().setIsMidnightLogout(false);
     authLogout();
     setSessionExpiredByOtherDevice(false);
     setSubscriptionExpired(false);
@@ -74,9 +75,83 @@ export function SessionExpiredDialog({
     window.location.hash = "forgot-password";
   };
 
-  // Dedicated view for Session Timeout
+  // Dedicated view for Session Timeout / Midnight Reset
   if (reason === "timeout") {
-    if (isUnlimited) return null;
+    if (isUnlimited && !isMidnightLogout) return null;
+
+    if (isMidnightLogout) {
+      return (
+        <div className="relative min-h-screen w-full flex items-center justify-center bg-background overflow-hidden p-4 select-none">
+          {/* Ambient background glow effects */}
+          <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-tr from-indigo-500/10 to-purple-500/5 rounded-full blur-[100px] pointer-events-none" />
+
+          {/* Card Container */}
+          <div className="relative z-10 w-full max-w-md rounded-3xl p-8 sm:p-10 border border-indigo-500/30 bg-card/95 text-card-foreground backdrop-blur-2xl shadow-[0_20px_70px_-15px_rgba(99,102,241,0.2)] text-center space-y-7 animate-scale-in">
+            {/* Glowing Moon / Clock Icon Badge */}
+            <div className="flex justify-center">
+              <div className="relative">
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/10 border-2 border-indigo-500/50 flex items-center justify-center text-indigo-400 shadow-[0_0_35px_rgba(99,102,241,0.35)]">
+                  <Clock size={42} className="animate-pulse" />
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center shadow-md">
+                  <Sparkles size={14} />
+                </div>
+              </div>
+            </div>
+
+            {/* Header Info */}
+            <div className="space-y-2.5">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 text-[11px] font-extrabold uppercase tracking-widest">
+                <Sparkles size={12} />
+                Làm mới phiên ngày (0h00 VN)
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
+                Kết Thúc Phiên Ngày 0h00
+              </h1>
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed px-1">
+                Hệ thống đã bước sang ngày mới lúc <span className="font-bold text-indigo-600 dark:text-indigo-400">00:00:00 (giờ Việt Nam)</span>. Phiên làm việc trong ngày đã kết thúc tự động để làm mới tài nguyên và bảo vệ bản quyền. Vui lòng đăng nhập lại để bắt đầu ngày mới.
+              </p>
+            </div>
+
+            {/* Session Overview Mini Grid */}
+            <div className="grid grid-cols-2 gap-2.5 py-1">
+              <div className="p-3 rounded-xl bg-muted/40 border border-border/80 text-left">
+                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">
+                  Thời điểm kết thúc
+                </span>
+                <span className="text-sm font-mono font-black text-foreground mt-0.5 block">
+                  00:00:00 (GMT+7)
+                </span>
+              </div>
+              <div className="p-3 rounded-xl bg-muted/40 border border-border/80 text-left">
+                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">
+                  Trạng thái
+                </span>
+                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 flex items-center gap-1">
+                  <ShieldCheck size={14} /> Sẵn sàng ngày mới
+                </span>
+              </div>
+            </div>
+
+            {/* Primary Action Button */}
+            <div className="space-y-3 pt-1">
+              <button
+                onClick={handleLoginAgain}
+                className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600 hover:from-indigo-400 hover:via-purple-400 hover:to-indigo-500 text-white font-extrabold text-sm sm:text-base shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 cursor-pointer"
+              >
+                <LogIn size={18} />
+                Đăng nhập lại ngay
+              </button>
+              <p className="text-[11px] text-muted-foreground/80">
+                Thông tin tài khoản đã được lưu sẵn để bạn đăng nhập nhanh cho ngày mới.
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="relative min-h-screen w-full flex items-center justify-center bg-background overflow-hidden p-4 select-none">
         {/* Ambient background glow effects */}

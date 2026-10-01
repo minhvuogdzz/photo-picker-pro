@@ -2,6 +2,7 @@ import { io, Socket } from 'socket.io-client';
 import { AuthSession } from '@/core/types/auth';
 import { logout } from './authApi';
 import { useAuthStore } from '@/core/stores/useAuthStore';
+import { useSessionTimerStore } from '@/core/hooks/useSessionTimeout';
 import { API_BASE_URL } from './apiClient';
 
 class SocketService {
@@ -97,6 +98,14 @@ class SocketService {
 
     this.socket.on('subscriptionExpired', () => {
       this.invalidateLocalSession('subscription');
+    });
+
+    this.socket.on('midnightReset', () => {
+      useSessionTimerStore.setState({ isMidnightLogout: true });
+      useAuthStore.getState().logout();
+      useAuthStore.getState().setSessionTimeoutExpired(true);
+      void logout(session.accessToken).catch(() => undefined);
+      this.disconnect();
     });
 
     this.socket.on('copyrightWarning', (data: { message: string }) => {

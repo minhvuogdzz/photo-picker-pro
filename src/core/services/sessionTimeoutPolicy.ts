@@ -36,3 +36,63 @@ export function isSessionExpiringSoon(remainingSeconds: number): boolean {
 export function isSessionWarning30s(remainingSeconds: number): boolean {
   return remainingSeconds > 0 && remainingSeconds <= 30;
 }
+
+/** Vietnam Timezone Offset: UTC+7 in milliseconds */
+export const VN_TIMEZONE_OFFSET_MS = 7 * 60 * 60 * 1000;
+
+/**
+ * Computes the epoch timestamp (ms) of the next 00:00:00 (midnight) in Vietnam time (UTC+7).
+ */
+export function getNextVnMidnightTimestamp(nowMs: number = Date.now()): number {
+  const vnNow = new Date(nowMs + VN_TIMEZONE_OFFSET_MS);
+  const nextMidUtc = Date.UTC(
+    vnNow.getUTCFullYear(),
+    vnNow.getUTCMonth(),
+    vnNow.getUTCDate() + 1,
+    0, 0, 0, 0
+  );
+  return nextMidUtc - VN_TIMEZONE_OFFSET_MS;
+}
+
+/**
+ * Computes the epoch timestamp (ms) of the start of the current day (00:00:00) in Vietnam time (UTC+7).
+ */
+export function getVnStartOfDayTimestamp(nowMs: number = Date.now()): number {
+  const vnNow = new Date(nowMs + VN_TIMEZONE_OFFSET_MS);
+  const startOfDayUtc = Date.UTC(
+    vnNow.getUTCFullYear(),
+    vnNow.getUTCMonth(),
+    vnNow.getUTCDate(),
+    0, 0, 0, 0
+  );
+  return startOfDayUtc - VN_TIMEZONE_OFFSET_MS;
+}
+
+/**
+ * Checks whether a given timestamp was created on a previous day in Vietnam time (before today's 0h00 VN).
+ */
+export function isTimestampBeforeTodayVnMidnight(timestampMs: number, nowMs: number = Date.now()): boolean {
+  return timestampMs < getVnStartOfDayTimestamp(nowMs);
+}
+
+/**
+ * Computes remaining seconds from now until the next 00:00:00 (midnight) in Vietnam time.
+ */
+export function computeSecondsUntilVnMidnight(nowMs: number = Date.now()): number {
+  const nextMidnight = getNextVnMidnightTimestamp(nowMs);
+  return Math.max(0, Math.floor((nextMidnight - nowMs) / 1000));
+}
+
+/**
+ * Formats seconds into "HH:mm:ss" or "mm:ss" string.
+ */
+export function formatHoursMinutesSeconds(totalSeconds: number): string {
+  const safeSecs = Math.max(0, totalSeconds);
+  const hours = Math.floor(safeSecs / 3600);
+  const mins = Math.floor((safeSecs % 3600) / 60);
+  const secs = safeSecs % 60;
+  if (hours > 0) {
+    return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  }
+  return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+}
