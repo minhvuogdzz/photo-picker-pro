@@ -382,7 +382,7 @@ export function SmartSearchBar() {
               <span><kbd className="px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[9px]">↑</kbd> <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[9px]">↓</kbd> di chuyển</span>
               <span><kbd className="px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[9px]">↵</kbd> chọn</span>
             </div>
-            <span className="text-muted-foreground/70">MVD Tech & Design Studio</span>
+            <span className="text-muted-foreground/70">DH Studio Pro · DevHouse Software</span>
           </div>
         </div>
       )}

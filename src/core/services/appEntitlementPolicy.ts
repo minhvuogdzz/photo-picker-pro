@@ -363,8 +363,8 @@ export function getUserPlanInfo(session: AuthSession | null | undefined): UserPl
       shortBadgeLabel: isAdmin ? "Quản trị viên" : "Full App",
       planName: isAdmin ? "Tài khoản Quản trị (Admin)" : "Gói Toàn Bộ Super App",
       description: isAdmin
-        ? "Tài khoản quản trị có toàn quyền truy cập mọi ứng dụng trong hệ sinh thái MVD Super App."
-        : "Bạn đang sở hữu bản quyền toàn bộ hệ sinh thái ứng dụng MVD Super App.",
+        ? "Tài khoản quản trị có toàn quyền truy cập mọi ứng dụng trong hệ sinh thái DH Studio Pro."
+        : "Bạn đang sở hữu bản quyền toàn bộ hệ sinh thái ứng dụng DH Studio Pro.",
       isFullApp: true,
       isPhotoPickerOnly: false,
       isTrial: false,
@@ -433,7 +433,7 @@ export function getUserPlanInfo(session: AuthSession | null | undefined): UserPl
       badgeLabel: `Dùng thử Full App · ${days} ngày`,
       shortBadgeLabel: "Dùng thử Full App",
       planName: "Gói Dùng Thử Trải Nghiệm (Full App)",
-      description: "Tài khoản đang trong thời gian trải nghiệm miễn phí toàn bộ hệ sinh thái MVD Super App.",
+      description: "Tài khoản đang trong thời gian trải nghiệm miễn phí toàn bộ hệ sinh thái DH Studio Pro.",
       isFullApp: true,
       isPhotoPickerOnly: false,
       isTrial: true,

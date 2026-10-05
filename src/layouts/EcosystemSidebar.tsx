@@ -31,7 +31,7 @@ export function EcosystemSidebar() {
         <div className="py-3 pl-3 pr-2.5 border-b border-border flex items-center shrink-0 h-[52px]">
           <div className={`flex flex-col relative z-10 transition-opacity duration-150 ${isCollapsed ? 'opacity-0 delay-0' : 'opacity-100 delay-75'}`}>
             <h2 className="font-semibold text-[11px] leading-tight text-foreground tracking-wide uppercase">Workspace</h2>
-            <p className="text-[9px] text-muted-foreground mt-0.5 font-medium truncate max-w-[150px]">MVD Tech & Design Studio</p>
+            <p className="text-[9px] text-muted-foreground mt-0.5 font-medium truncate max-w-[150px]">DH Studio Pro</p>
           </div>
         </div>
 
@@ -89,7 +89,7 @@ export function EcosystemSidebar() {
         {/* Footer */}
         <div className="p-2 border-t border-border shrink-0">
           <p className={`text-[9px] text-center text-muted-foreground/60 font-medium whitespace-nowrap transition-opacity duration-150 ${isCollapsed ? 'opacity-0 delay-0' : 'opacity-100 delay-75'}`}>
-            MVD Pro v1.0.0
+            DevHouse Software
           </p>
         </div>
 

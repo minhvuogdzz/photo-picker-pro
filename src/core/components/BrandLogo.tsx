@@ -75,27 +75,22 @@ export function useIsDarkMode(forceTheme?: "light" | "dark"): boolean {
 export function BrandLogo({
   variant = "logo",
   className = "h-7 w-auto object-contain",
-  alt = "MVD Tech & Design Studio",
+  alt = "DH Studio Pro",
   forceTheme,
 }: BrandLogoProps) {
   const isDark = useIsDarkMode(forceTheme);
 
   let src = "";
-  if (variant === "logo") {
-    // Brand wordmark/logo: White for dark background/mode, Black for light background/mode
-    src = isDark
-      ? "/brand/mvd_brand_logo_minimal_white.png"
-      : "/brand/mvd_brand_logo_minimal_black.png";
-  } else if (variant === "icon") {
+  if (variant === "logo" || variant === "icon") {
     // Squircle app icon: Dark squircle for dark mode, Light squircle for light mode
     src = isDark
-      ? "/brand/mvd_app_icon_minimal_dark_squircle.png"
-      : "/brand/mvd_app_icon_minimal_light_squircle.png";
+      ? "/brand/dh_app_icon_dark_squircle.png"
+      : "/brand/dh_app_icon_light_squircle.png";
   } else if (variant === "transparent-icon") {
     // Transparent icon
     src = isDark
-      ? "/brand/mvd_app_icon_minimal_white_transparent.png"
-      : "/brand/mvd_app_icon_minimal_transparent.png";
+      ? "/brand/dh_app_icon_white_transparent.png"
+      : "/brand/dh_app_icon_transparent.png";
   }
 
   return (

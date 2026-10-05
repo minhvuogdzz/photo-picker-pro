@@ -327,19 +327,19 @@ export function SystemModule() {
             </div>
           )}
 
-          {/* TAB 2: THÔNG TIN PHIÊN BẢN & HỆ SINH THÁI MVD */}
+          {/* TAB 2: THÔNG TIN PHIÊN BẢN & HỆ SINH THÁI DH STUDIO PRO */}
           {activeTab === "about" && (
             <div className="flex flex-col items-center justify-start min-h-full space-y-4 animate-slide-up text-center max-w-xl mx-auto w-full py-2 pb-8">
               <div className="relative mb-2">
-                <BrandLogo variant="logo" className="h-18 md:h-20 w-auto object-contain relative z-10 drop-shadow-xl" />
+                <BrandLogo variant="icon" className="h-18 md:h-20 w-auto object-contain relative z-10 drop-shadow-xl" />
               </div>
               
               <div className="space-y-0.5">
                 <h1 className="text-sm md:text-base font-extrabold tracking-wider text-foreground uppercase">
-                  MVD TECH & DESIGN STUDIO
+                  DH STUDIO PRO
                 </h1>
                 <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">
-                  HỆ SINH THÁI NHIẾP ẢNH & HẬU KỲ CHUYÊN NGHIỆP • PHIÊN BẢN V{version}
+                  HỆ SINH THÁI STUDIO CHUYÊN NGHIỆP • DEVHOUSE SOFTWARE • PHIÊN BẢN V{version}
                 </p>
               </div>
               
@@ -356,7 +356,7 @@ export function SystemModule() {
                 {/* Giới thiệu tổng quan */}
                 <div className="text-xs text-foreground/90 leading-relaxed space-y-2">
                   <p>
-                    <strong className="text-foreground font-extrabold">MVD Tech & Design Studio</strong> là hệ sinh thái phần mềm toàn diện được xây dựng chuyên biệt dành cho các Nhiếp ảnh gia, Thợ ảnh sự kiện, Retoucher và Studio ảnh cưới chuyên nghiệp.
+                    <strong className="text-foreground font-extrabold">DH Studio Pro</strong> là hệ sinh thái phần mềm toàn diện thuộc bản quyền và sở hữu của <strong className="text-foreground font-extrabold">DevHouse Software</strong>, được xây dựng chuyên biệt dành cho các Nhiếp ảnh gia, Thợ ảnh sự kiện, Retoucher và Studio ảnh cưới chuyên nghiệp.
                   </p>
                   <p className="text-muted-foreground text-[11px] leading-relaxed">
                     Hệ sinh thái cung cấp giải pháp đồng bộ từ khâu chọn lọc ảnh thông minh bằng AI, chuyển đổi đa định dạng siêu tốc, tự động hóa Photoshop Actions, cho đến thư viện tài nguyên sáng tạo độc quyền.
@@ -430,11 +430,11 @@ export function SystemModule() {
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-2 text-xs">
                   <div className="flex gap-1.5">
                     <span className="text-muted-foreground">{t("copyright_owner")}:</span>
-                    <span className="font-bold text-foreground">MVD Tech & Design Studio</span>
+                    <span className="font-bold text-foreground">DevHouse Software</span>
                   </div>
                   <div className="flex gap-1.5">
                     <span className="text-muted-foreground">{t("publisher")}:</span>
-                    <span className="font-bold text-foreground">Minh Vương Dev</span>
+                    <span className="font-bold text-foreground">DevHouse Software</span>
                   </div>
                 </div>
 

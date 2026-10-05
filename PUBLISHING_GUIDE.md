@@ -1,6 +1,6 @@
-# Hướng Dẫn Đóng Gói Và Xuất Bản Ứng Dụng (Tauri + Github Actions)
+# Hướng Dẫn Đóng Gói Và Xuất Bản Ứng Dụng DH Studio Pro (DevHouse Software)
 
-Tài liệu này hướng dẫn bạn cách tạo ra một phiên bản mới của ứng dụng **Photo Picker Pro**, đóng gói nó cho Windows/MacOS và xuất bản lên Github để tính năng **Tự động cập nhật (Auto Updater)** có thể nhận diện và tải về cho người dùng.
+Tài liệu này hướng dẫn bạn cách tạo ra một phiên bản mới của ứng dụng **DH Studio Pro** (DevHouse Software), đóng gói nó cho Windows/MacOS và xuất bản lên Github để tính năng **Tự động cập nhật (Auto Updater)** có thể nhận diện và tải về cho người dùng.
 
 > [!IMPORTANT]
 > Toàn bộ quá trình build và đóng gói sẽ được chạy tự động trên máy chủ của Github thông qua tính năng Github Actions. Bạn không cần phải treo máy để tự build!

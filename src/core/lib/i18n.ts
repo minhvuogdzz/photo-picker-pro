@@ -2,7 +2,7 @@ import { useSettingsStore } from "@/core/stores/useSettingsStore";
 
 const translations = {
   en: {
-    app_title: "MVD TECH & DESIGN STUDIO",
+    app_title: "DH STUDIO PRO",
     input_folders: "Input Folders",
     no_folders_added: "No folders added",
     click_add_folder: "Click Add Folder or drag and drop folders here",
@@ -104,8 +104,8 @@ const translations = {
     send_feedback: "Send Feedback",
     version_info: "Version Information",
     valid_license: "Valid License",
-    software_description_1: "MVD Tech & Design Studio is a comprehensive software ecosystem designed specifically for photographers, event photographers, and professional wedding studios. We provide optimal solutions to automate workflows, from management and selection to post-processing.",
-    software_description_2: "With powerful tools like Photo Picker Pro (AI-powered smart photo filtering), the MVD ecosystem delivers superior performance, saving up to 80% of manual processing time while ensuring absolute data security (100% Offline - No data leaves your computer without your permission).",
+    software_description_1: "DH Studio Pro is a comprehensive software suite developed by DevHouse Software, designed specifically for photographers, event photographers, and professional wedding studios. We provide optimal solutions to automate workflows, from management and selection to post-processing.",
+    software_description_2: "With powerful tools like Photo Picker Pro (AI-powered smart photo filtering), the DH Studio Pro suite delivers superior performance, saving up to 80% of manual processing time while ensuring absolute data security (100% Offline - No data leaves your computer without your permission).",
     software_description_3: "The software is continuously updated with the latest AI algorithms and listens to feedback from the photography community to keep improving, making it an indispensable assistant for every Photographer.",
     designed_for: "Optimized for Wedding Studios, Event Photographers & Freelancers",
     high_performance: "High performance, processing thousands of photos in the blink of an eye",
@@ -133,7 +133,7 @@ const translations = {
     feedback_error: "Error sending feedback: ",
   },
   vi: {
-    app_title: "MVD TECH & DESIGN STUDIO",
+    app_title: "DH STUDIO PRO",
     input_folders: "Thư mục đầu vào",
     no_folders_added: "Chưa có thư mục",
     click_add_folder: "Bấm Thêm Thư mục hoặc kéo thả vào đây",
@@ -235,8 +235,8 @@ const translations = {
     send_feedback: "Gửi phản hồi",
     version_info: "Thông tin phiên bản",
     valid_license: "Bản quyền hợp lệ",
-    software_description_1: "MVD Tech & Design Studio là hệ sinh thái phần mềm toàn diện được thiết kế chuyên biệt dành cho các nhiếp ảnh gia, thợ ảnh sự kiện và các Studio ảnh cưới chuyên nghiệp. Chúng tôi cung cấp các giải pháp tối ưu giúp tự động hóa quy trình làm việc, từ khâu quản lý, chọn lọc đến xử lý hậu kỳ.",
-    software_description_2: "Với các công cụ mạnh mẽ như Photo Picker Pro (Lọc ảnh thông minh bằng AI), hệ sinh thái MVD cam kết mang lại hiệu suất vượt trội, tiết kiệm lên đến 80% thời gian xử lý thủ công, đồng thời đảm bảo tính bảo mật dữ liệu tuyệt đối (100% Offline - Không có dữ liệu nào rời khỏi máy tính của bạn nếu bạn không cho phép).",
+    software_description_1: "DH Studio Pro là hệ sinh thái phần mềm toàn diện được phát triển bởi DevHouse Software chuyên biệt dành cho các nhiếp ảnh gia, thợ ảnh sự kiện và các Studio ảnh cưới chuyên nghiệp. Chúng tôi cung cấp các giải pháp tối ưu giúp tự động hóa quy trình làm việc, từ khâu quản lý, chọn lọc đến xử lý hậu kỳ.",
+    software_description_2: "Với các công cụ mạnh mẽ như Photo Picker Pro (Lọc ảnh thông minh bằng AI), hệ sinh thái DH Studio Pro của DevHouse Software cam kết mang lại hiệu suất vượt trội, tiết kiệm lên đến 80% thời gian xử lý thủ công, đồng thời đảm bảo tính bảo mật dữ liệu tuyệt đối (100% Offline - Không có dữ liệu nào rời khỏi máy tính của bạn nếu bạn không cho phép).",
     software_description_3: "Phần mềm liên tục được cập nhật các thuật toán AI mới nhất và lắng nghe ý kiến phản hồi từ cộng đồng nhiếp ảnh để ngày càng hoàn thiện hơn, xứng đáng là trợ thủ đắc lực không thể thiếu của mọi Photographer.",
     designed_for: "Thiết kế tối ưu cho Wedding Studios, Event Photographers & Freelancers",
     high_performance: "Hiệu suất cao, xử lý hàng nghìn ảnh chỉ trong chớp mắt",

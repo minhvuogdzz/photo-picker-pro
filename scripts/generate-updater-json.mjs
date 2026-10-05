@@ -30,10 +30,10 @@ function getReleaseNotes() {
   if (fs.existsSync("CHANGELOG.md")) {
     const changelog = fs.readFileSync("CHANGELOG.md", "utf8");
     const escapedVersion = version.replace(/\./g, "\\.");
-    const regex = new RegExp(`##\\s*\\[?v?${escapedVersion}\\]?[^\\n]*\\n([\\s\\S]*?)(?=\\n##\\s*\\[|$)`, "i");
+    const regex = new RegExp(`##\\s*\\[?v?${escapedVersion}\\]?[^\\n]*\\n([\\s\\S]*?)(?=\\n---\\s*\\n|\\n##\\s*\\[|$)`, "i");
     const match = changelog.match(regex);
     if (match && match[1]?.trim()) {
-      return match[1].trim();
+      return match[1].trim().replace(/\n---\s*$/, "").trim();
     }
   }
 

@@ -1,6 +1,23 @@
 # 📋 Lịch Sử Cập Nhật & Phát Hành (Changelog)
 
-Tất cả các bản phát hành của **MVD Studio Suite / Photo Picker Pro** đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
+Tất cả các bản phát hành của **DH Studio Pro** (phát triển & thuộc sở hữu bản quyền của **DevHouse Software**) đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
+
+## [v2.7.0] - 2026-10-05
+
+### Trong bản cập nhật này, chúng tôi đã:
+
+#### 🚀 Chuyển đổi thương hiệu & Nâng cấp nhận diện (Rebranding)
+- **Chính thức đổi tên thành DH Studio Pro:** Ứng dụng chính thức chuyển giao về công ty chủ quản **DevHouse Software**, mang tên gọi mới **DH Studio Pro** (DevHouse Studio Pro) - khẳng định vị thế bộ giải pháp phần mềm chuyên nghiệp, toàn diện cho Studio & Photographer.
+- **Biểu tượng Logo & Bộ Icon ứng dụng hoàn toàn mới:**
+  - Thiết kế logo mới mô phỏng trọn vẹn chu trình làm việc Studio khép kín: Khách hàng 🔁 Lọc ảnh AI 🔁 Quản lý kho ảnh 🔁 Tối ưu quy trình & Cài đặt.
+  - Bộ icon ứng dụng phong cách Squircle sang trọng, hiển thị sắc nét trên thanh Dock macOS và Windows Taskbar.
+- **Đồng bộ toàn diện giao diện & Pháp lý:** Cập nhật thương hiệu **DH Studio Pro** và bản quyền chính thức thuộc **DevHouse Software** trên toàn bộ hệ thống: TopBar, Workspace Sidebar, Launcher, Trang đăng nhập, Bảng điều khiển tài khoản và Điều khoản dịch vụ.
+
+#### ⚡ Cải thiện & Tối ưu
+- **Tối ưu hóa tài nguyên đồ họa:** Tách nền trong suốt chuẩn nét, hiển thị tương thích hoàn hảo trên cả chế độ Sáng (Light Mode) và Tối (Dark Mode).
+- **Hệ thống phát hành & Auto-updater:** Đảm bảo gói cài đặt installer (macOS DMG & Windows NSIS) mang tên thương hiệu mới và tự động cập nhật mượt mà.
+
+---
 
 ## [v2.6.7] - 2026-10-01
 

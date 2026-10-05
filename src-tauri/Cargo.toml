@@ -1,8 +1,8 @@
 [package]
 name = "photo-picker-pro"
-version = "2.6.7"
-description = "Photo Picker Pro - Smart photo filtering for photography studios"
-authors = ["Photo Picker Pro"]
+version = "2.7.0"
+description = "DH Studio Pro - Professional studio suite by DevHouse Software"
+authors = ["DevHouse Software"]
 edition = "2021"
 
 [lib]

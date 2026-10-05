@@ -295,7 +295,8 @@ export function LoginPage() {
             <BrandLogo variant="icon" className="w-18 h-18 object-contain rounded-2xl drop-shadow-md" />
           </div>
           <div className="text-center">
-            <h1 className="text-lg font-extrabold text-foreground tracking-tight">MVD TECH & DESIGN STUDIO</h1>
+            <h1 className="text-lg font-extrabold text-foreground tracking-tight">DH STUDIO PRO</h1>
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">DevHouse Software</span>
             <p className="text-xs text-muted-foreground mt-0.5">
               {mode === "login" && t("login_subtitle")}
               {mode === "register" && "Đăng ký tài khoản mới"}

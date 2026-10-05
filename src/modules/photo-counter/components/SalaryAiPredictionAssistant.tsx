@@ -745,7 +745,7 @@ export function SalaryAiPredictionAssistant({
             <div className="p-2.5 rounded-lg bg-primary/10 border border-primary/20 text-foreground text-[11px] leading-relaxed">
               💡 <strong>Lưu ý:</strong> API Key được lưu tập trung trong bộ nhớ máy (
               <code>localStorage</code>) và sẽ được dùng chung cho tính năng Dự đoán lương cũng như
-              toàn bộ các dịch vụ AI tương lai của MVD SuperApp.
+              toàn bộ các dịch vụ AI tương lai của DH Studio Pro (DevHouse Software).
             </div>
 
             {/* API Key Input */}

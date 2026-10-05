@@ -97,12 +97,17 @@ export function TopBar() {
             });
             setActiveModule("launcher");
           }}
-          title="MVD Tech & Design Studio"
+          title="DH Studio Pro · DevHouse Software"
         >
           <BrandLogo variant="icon" className="w-8 h-8 rounded-lg object-contain shadow-sm shrink-0" />
-          <h1 className="text-[13px] font-bold tracking-wide text-foreground uppercase whitespace-nowrap">
-            MVD Tech & Design Studio
-          </h1>
+          <div className="flex flex-col">
+            <h1 className="text-[13px] font-bold tracking-wide text-foreground uppercase whitespace-nowrap leading-tight">
+              DH Studio Pro
+            </h1>
+            <span className="text-[9px] font-medium text-muted-foreground tracking-wider leading-none">
+              DevHouse Software
+            </span>
+          </div>
         </div>
 
         {/* Update badge — flat subtle */}
