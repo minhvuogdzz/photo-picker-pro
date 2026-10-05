@@ -163,9 +163,9 @@ extern "C" {
 }
 
 #[cfg(target_os = "macos")]
-const DOCK_ICON_DARK_PNG: &[u8] = include_bytes!("../../../public/brand/mvd_app_icon_dock_dark.png");
+const DOCK_ICON_DARK_PNG: &[u8] = include_bytes!("../../../public/brand/dh_app_icon_dark_squircle.png");
 #[cfg(target_os = "macos")]
-const DOCK_ICON_LIGHT_PNG: &[u8] = include_bytes!("../../../public/brand/mvd_app_icon_dock_light.png");
+const DOCK_ICON_LIGHT_PNG: &[u8] = include_bytes!("../../../public/brand/dh_app_icon_light_squircle.png");
 
 #[tauri::command]
 pub fn update_system_theme_icon(_theme: String) -> Result<(), String> {
