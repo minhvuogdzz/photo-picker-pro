@@ -2,6 +2,21 @@
 
 Tất cả các bản phát hành của **DH Studio Pro** (phát triển & thuộc sở hữu bản quyền của **DevHouse Software**) đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
 
+## [v2.7.1] - 2026-10-05
+
+### Trong bản cập nhật này, chúng tôi đã:
+
+#### ⚡ Cải thiện & Tối ưu hóa giao diện (UI & Dock Icon)
+- **Chuẩn hóa kích thước Icon App trên macOS Dock theo chuẩn Apple HIG:**
+  - Căn chỉnh tỷ lệ khối Squircle về kích thước chuẩn `824x824 px` trên canvas `1024x1024 px` (tương đương với các ứng dụng hệ thống macOS như Safari, Finder, Photos).
+  - Tích hợp hiệu ứng đổ bóng tự nhiên nhiều tầng (ambient shadow + direct key shadow) giúp icon đặt trên thanh Dock có độ nổi khối và chiều sâu sang trọng.
+  - Tối ưu khoảng thở (padding) cho biểu tượng logo studio bên trong, đảm bảo icon vừa vặn, không bị bè to.
+- **Nâng cấp cơ chế hiển thị Dock Icon Native:**
+  - Đồng bộ việc nạp icon thời gian thực từ mã nguồn Native Cocoa (`dock_icon.m` và `system_utils.rs`) trên macOS, tự động chuyển đổi giao diện Dock sắc nét theo Dark Mode / Light Mode của hệ thống.
+  - Cập nhật định danh tiến trình hiển thị trên macOS thành chính thức **DH Studio Pro**.
+
+---
+
 ## [v2.7.0] - 2026-10-05
 
 ### Trong bản cập nhật này, chúng tôi đã:
