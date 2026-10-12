@@ -178,10 +178,19 @@ export async function login(request: LoginRequest, autoLogin: boolean = true): P
     return session;
   }
 
-  // Real API call
+  // Real API call — scope deviceFingerprint with account so switching accounts on the same Mac
+  // never hits the global Device_deviceFingerprint_key unique constraint on the backend.
+  const accountTag = request.email.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+  const scopedFingerprint = accountTag
+    ? `${request.deviceFingerprint}_${accountTag}`
+    : request.deviceFingerprint;
+
   const session = await apiRequest<AuthSession>("/auth/login", {
     method: "POST",
-    body: request,
+    body: {
+      ...request,
+      deviceFingerprint: scopedFingerprint,
+    },
   });
   
   if (autoLogin) {

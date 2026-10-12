@@ -15,9 +15,9 @@ const USE_MOCK = false;
 /** Backend API base URL — defaults to local backend in DEV or when configured */
 const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
-  (import.meta.env.VITE_USE_LOCAL_BACKEND === "true" || import.meta.env.DEV
+  (import.meta.env.VITE_USE_LOCAL_BACKEND === "true"
     ? "http://localhost:3000"
-    : "https://photo-picker-backend.onrender.com");
+    : "https://apidhstudio.devhouse.vn");
 
 interface ApiResponse<T> {
   readonly data: T;

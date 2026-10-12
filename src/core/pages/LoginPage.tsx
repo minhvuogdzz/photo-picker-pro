@@ -291,9 +291,7 @@ export function LoginPage() {
         )}
 
         <div className="flex flex-col items-center gap-3.5">
-          <div className="w-22 h-22 rounded-3xl bg-muted/30 border border-border/60 flex items-center justify-center p-2 shadow-lg">
-            <BrandLogo variant="icon" className="w-18 h-18 object-contain rounded-2xl drop-shadow-md" />
-          </div>
+          <BrandLogo variant="icon" className="w-22 h-22 object-contain drop-shadow-lg" />
           <div className="text-center">
             <h1 className="text-lg font-extrabold text-foreground tracking-tight">DH STUDIO PRO</h1>
             <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">DevHouse Software</span>

@@ -139,14 +139,12 @@ export function WelcomeScreen() {
 
             {/* Company Brand Logo */}
             <div className="mb-6 flex flex-col items-center">
-              <div className="w-28 h-28 rounded-3xl bg-white/[0.06] border border-white/20 p-2 shadow-[0_20px_50px_rgba(0,0,0,0.6)] backdrop-blur-2xl flex items-center justify-center">
-                <BrandLogo
-                  variant="icon"
-                  forceTheme="dark"
-                  alt={title}
-                  className="w-full h-full object-contain filter drop-shadow-[0_8px_20px_rgba(0,0,0,0.6)]"
-                />
-              </div>
+              <BrandLogo
+                variant="icon"
+                forceTheme="dark"
+                alt={title}
+                className="w-28 h-28 object-contain filter drop-shadow-[0_16px_36px_rgba(0,0,0,0.65)]"
+              />
             </div>
 
             {/* Dynamic Titles with Soft Animated sRGB Gradient */}

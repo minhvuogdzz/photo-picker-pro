@@ -155,11 +155,10 @@ export function FragmentedImageSlider() {
     return (
       <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-slate-950 via-zinc-900 to-black flex items-center justify-center">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.08),transparent_70%)]" />
-        <div className="text-center px-6 z-10 opacity-30 select-none">
-          <div className="w-12 h-12 rounded-full border border-white/20 mx-auto mb-3 flex items-center justify-center">
-            <span className="text-xl">✨</span>
-          </div>
-          <p className="text-xs tracking-widest uppercase text-white/60">Photo Picker Pro</p>
+        <div className="text-center px-6 z-10 opacity-45 select-none flex flex-col items-center">
+          <img src="/brand/dh_app_icon_dark_squircle.png" alt="DH Studio Pro" className="w-16 h-16 mb-3 object-contain" />
+          <p className="text-xs font-bold tracking-widest uppercase text-white/75">DH Studio Pro</p>
+          <p className="text-[10px] tracking-wider uppercase text-white/40 mt-1">DevHouse Software</p>
         </div>
       </div>
     );
