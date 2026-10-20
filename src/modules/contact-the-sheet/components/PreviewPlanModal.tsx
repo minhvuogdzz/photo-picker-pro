@@ -1,5 +1,5 @@
-import React from "react";
-import { Eye, X, CheckCircle2, ShieldAlert, ArrowRight } from "lucide-react";
+import React, { useState } from "react";
+import { Eye, X, CheckCircle2, ShieldAlert, Copy, Check } from "lucide-react";
 import type { DiscoveredJob, UpdatePlan } from "../types";
 
 interface Props {
@@ -10,6 +10,17 @@ interface Props {
 
 export function PreviewPlanModal({ job, plan, onClose }: Props) {
   const writes = plan?.writes || [];
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+
+  const handleCopy = async (value: string, idx: number) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedIdx(idx);
+      setTimeout(() => setCopiedIdx((cur) => (cur === idx ? null : cur)), 1500);
+    } catch (err) {
+      console.warn("Copy failed:", err);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
@@ -104,9 +115,21 @@ export function PreviewPlanModal({ job, plan, onClose }: Props) {
                   </div>
 
                   <div className="p-2 bg-primary/5 border border-primary/20 rounded-lg flex flex-col gap-0.5">
-                    <span className="text-[10px] text-primary font-semibold uppercase">
-                      Giá trị mới sẽ cập nhật:
-                    </span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] text-primary font-semibold uppercase">
+                        Giá trị mới sẽ cập nhật:
+                      </span>
+                      {w.newValue && (
+                        <button
+                          onClick={() => handleCopy(w.newValue, idx)}
+                          className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+                          title="Sao chép giá trị mới"
+                        >
+                          {copiedIdx === idx ? <Check size={11} /> : <Copy size={11} />}
+                          <span>{copiedIdx === idx ? "Đã chép" : "Sao chép"}</span>
+                        </button>
+                      )}
+                    </div>
                     <span className="font-mono text-[11px] text-foreground font-medium break-all whitespace-pre-wrap">
                       {w.newValue ? w.newValue : "(Trống)"}
                     </span>

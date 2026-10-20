@@ -120,7 +120,7 @@ pub fn load_auth_session() -> Result<Option<LocalSession>, String> {
     // A session file copied over from another machine must not log this one in
     if !session.device_id.is_empty() {
         if let Ok(current_device) = get_device_fingerprint() {
-            if current_device != session.device_id {
+            if !session_belongs_to_device(&session.device_id, &current_device) {
                 let _ = fs::remove_file(&path);
                 return Ok(None);
             }
@@ -128,6 +128,15 @@ pub fn load_auth_session() -> Result<Option<LocalSession>, String> {
     }
 
     Ok(Some(session))
+}
+
+/// Login scopes the device ID per account (`<device>_<account tag>`), so the stored ID is
+/// either this machine's ID or that ID plus a suffix.
+fn session_belongs_to_device(session_device_id: &str, current_device: &str) -> bool {
+    session_device_id == current_device
+        || session_device_id
+            .strip_prefix(current_device)
+            .is_some_and(|rest| rest.starts_with('_'))
 }
 
 /// Clears the auth session from disk (logout).
@@ -139,6 +148,37 @@ pub fn clear_auth_session() -> Result<(), String> {
             .map_err(|e| format!("Failed to delete session: {}", e))?;
     }
     Ok(())
+}
+
+const LOGIN_KEYRING_SERVICE: &str = "com.minhvuong.photopicker.login";
+
+/// Stores the "remember password" credential in the OS keychain instead of plain localStorage.
+#[tauri::command]
+pub fn save_login_password(email: String, password: String) -> Result<(), String> {
+    keyring::Entry::new(LOGIN_KEYRING_SERVICE, &email)
+        .and_then(|entry| entry.set_password(&password))
+        .map_err(|e| format!("Failed to save password to keychain: {}", e))
+}
+
+#[tauri::command]
+pub fn get_login_password(email: String) -> Result<Option<String>, String> {
+    let entry = keyring::Entry::new(LOGIN_KEYRING_SERVICE, &email)
+        .map_err(|e| format!("Failed to open keychain: {}", e))?;
+    match entry.get_password() {
+        Ok(password) => Ok(Some(password)),
+        Err(keyring::Error::NoEntry) => Ok(None),
+        Err(e) => Err(format!("Failed to read password from keychain: {}", e)),
+    }
+}
+
+#[tauri::command]
+pub fn delete_login_password(email: String) -> Result<(), String> {
+    let entry = keyring::Entry::new(LOGIN_KEYRING_SERVICE, &email)
+        .map_err(|e| format!("Failed to open keychain: {}", e))?;
+    match entry.delete_credential() {
+        Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
+        Err(e) => Err(format!("Failed to delete password from keychain: {}", e)),
+    }
 }
 
 fn sha256_hex(input: &str) -> String {
@@ -320,6 +360,19 @@ mod tests {
     fn test_offline_period_boundary() {
         let boundary = (chrono::Utc::now() - chrono::Duration::days(6)).to_rfc3339();
         assert!(is_offline_period_valid(boundary).unwrap());
+    }
+
+    #[test]
+    fn session_scoped_to_this_device_is_accepted() {
+        assert!(session_belongs_to_device("dvf_abc", "dvf_abc"));
+        assert!(session_belongs_to_device("dvf_abc_userexamplecom", "dvf_abc"));
+    }
+
+    #[test]
+    fn session_from_another_device_is_rejected() {
+        assert!(!session_belongs_to_device("dvf_xyz_userexamplecom", "dvf_abc"));
+        assert!(!session_belongs_to_device("dvf_abcd", "dvf_abc"));
+        assert!(!session_belongs_to_device("dvf_ab", "dvf_abc"));
     }
 
     #[test]

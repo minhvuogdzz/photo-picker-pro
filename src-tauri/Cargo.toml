@@ -1,6 +1,6 @@
 [package]
 name = "photo-picker-pro"
-version = "2.7.2"
+version = "2.8.0"
 description = "DH Studio Pro - Professional studio suite by DevHouse Software"
 authors = ["DevHouse Software"]
 edition = "2021"
@@ -29,7 +29,7 @@ tauri-plugin-updater = "2.10.1"
 tauri-plugin-process = "2.3.1"
 image = "0.25"
 dirs = "5"
-keyring = "3"
+keyring = { version = "3", features = ["apple-native", "windows-native", "linux-native"] }
 sha2 = "0.10"
 base64 = "0.22"
 

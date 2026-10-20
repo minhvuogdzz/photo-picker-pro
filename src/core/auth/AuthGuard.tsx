@@ -4,10 +4,11 @@ import {
   loadSession,
   logout,
   validateSubscription,
+  refreshAuthToken,
   checkOfflinePeriod,
   isSubscriptionActive,
 } from "@/core/services/authApi";
-import { isOnline } from "@/core/services/apiClient";
+import { ApiErrorResponse, isOnline } from "@/core/services/apiClient";
 import { LoginPage } from "@/core/pages/LoginPage";
 import { SessionExpiredDialog } from "./SessionExpiredDialog";
 import { MaintenanceScreen } from "@/core/components/MaintenanceScreen";
@@ -31,7 +32,7 @@ interface AuthGuardProps {
  * - Initial session load from disk
  * - Online/offline subscription validation
  * - Backend availability & maintenance screen rendering
- * - 10-minute session timeout enforcement
+ * - Free-plan session timeout enforcement
  * - Rendering LoginPage when not authenticated
  * - Showing SessionExpiredDialog when kicked by another device or timeout
  */
@@ -127,9 +128,23 @@ export function AuthGuard({ children }: AuthGuardProps) {
           return;
         }
 
-        // Online: validate subscription with server
+        // Online: renew the token pair first so the refresh window keeps sliding forward
+        let currentSession = savedSession;
         try {
-          const updated = await validateSubscription(savedSession);
+          currentSession = await refreshAuthToken(savedSession);
+        } catch (err) {
+          if (err instanceof ApiErrorResponse && err.statusCode === 401) {
+            // Refresh token rejected: logged out elsewhere, kicked, or unused for 90+ days
+            await logout();
+            setLoading(false);
+            return;
+          }
+          // Network / server error: keep the saved session and let validation decide below
+        }
+
+        // Validate subscription with server
+        try {
+          const updated = await validateSubscription(currentSession);
           if (!isSubscriptionActive(updated.subscription.status)) {
             setSubscriptionExpired(true);
             setSession(updated); // Allow session so user can access settings
@@ -148,9 +163,9 @@ export function AuthGuard({ children }: AuthGuardProps) {
             await logout();
             setSubscriptionExpired(true);
             setSession({
-              ...savedSession,
+              ...currentSession,
               subscription: {
-                ...savedSession.subscription,
+                ...currentSession.subscription,
                 status: "EXPIRED",
                 daysRemaining: 0
               }
@@ -160,11 +175,11 @@ export function AuthGuard({ children }: AuthGuardProps) {
           }
           // Server unreachable — fallback to offline mode
           setOffline(true);
-          if (isSubscriptionActive(savedSession.subscription.status)) {
-            setSession(savedSession);
+          if (isSubscriptionActive(currentSession.subscription.status)) {
+            setSession(currentSession);
           } else {
             setSubscriptionExpired(true);
-            setSession(savedSession);
+            setSession(currentSession);
           }
         }
       } else {

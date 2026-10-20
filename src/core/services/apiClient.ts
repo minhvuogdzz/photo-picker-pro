@@ -6,8 +6,7 @@
  */
 
 import { useAuthStore } from "@/core/stores/useAuthStore";
-import { invoke } from "@tauri-apps/api/core";
-import type { AuthSession } from "@/core/types/auth";
+import { mergeSession, persistSession } from "./sessionPersistence";
 
 /** Set to true to use local mock API (no backend required) */
 const USE_MOCK = false;
@@ -53,24 +52,6 @@ export class ApiErrorResponse extends Error {
   }
 }
 
-function toLocalSession(session: AuthSession) {
-  return {
-    access_token: session.accessToken,
-    refresh_token: session.refreshToken,
-    user_id: session.userId,
-    email: session.email,
-    username: session.username || (session.email.includes("@") ? session.email.split("@")[0] : session.email),
-    name: session.name,
-    role: session.role,
-    subscription_status: session.subscription.status,
-    subscription_plan: session.subscription.plan,
-    is_premium: session.subscription.isPremium ?? false,
-    expires_at: session.subscription.expiresAt,
-    device_id: session.deviceId,
-    last_sync_at: session.lastSyncAt,
-  };
-}
-
 let isRefreshing = false;
 let refreshPromise: Promise<string | null> | null = null;
 
@@ -102,21 +83,13 @@ async function refreshAccessToken(): Promise<string | null> {
         return null;
       }
 
-      const updatedSession: AuthSession = {
-        ...currentSession,
-        ...json.data,
-      };
+      // The store may have changed while the request was in flight; merge into the latest copy
+      const latest = useAuthStore.getState().session;
+      const base = latest?.userId === currentSession.userId ? latest : currentSession;
+      const updatedSession = mergeSession(base, json.data);
 
-      // Update zustand store
       useAuthStore.getState().setSession(updatedSession);
-
-      // Persist to storage
-      const autoLogin = sessionStorage.getItem("auto_login") !== "false";
-      if (autoLogin) {
-        await invoke("save_auth_session", { session: toLocalSession(updatedSession) }).catch(() => {});
-      } else {
-        sessionStorage.setItem("temp_auth_session", JSON.stringify(updatedSession));
-      }
+      await persistSession(updatedSession);
 
       return json.data.accessToken as string;
     } catch {

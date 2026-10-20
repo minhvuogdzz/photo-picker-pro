@@ -13,6 +13,9 @@ import {
   getVnStartOfDayTimestamp,
   isTimestampBeforeTodayVnMidnight,
   computeSecondsUntilVnMidnight,
+  readSessionStart,
+  writeSessionStart,
+  clearSessionStart,
 } from "../src/core/services/sessionTimeoutPolicy.ts";
 
 test("Session Timeout Constant: Exactly 10 minutes default duration", () => {
@@ -120,4 +123,39 @@ test("Vietnam Midnight Policy: Computes start of day and next midnight accuratel
   assert.strictEqual(isTimestampBeforeTodayVnMidnight(expectedStart - 1000, testNow), true);
   // 1 second after 0h00 VN -> is during today
   assert.strictEqual(isTimestampBeforeTodayVnMidnight(expectedStart + 1000, testNow), false);
+});
+
+function createMemoryStorage() {
+  const data: Record<string, string> = {};
+  return {
+    data,
+    getItem: (key: string) => (key in data ? data[key] : null),
+    setItem: (key: string, value: string) => {
+      data[key] = value;
+    },
+    removeItem: (key: string) => {
+      delete data[key];
+    },
+  };
+}
+
+test("Session Start Persistence: survives a restart for the same user only", () => {
+  const storage = createMemoryStorage();
+  assert.strictEqual(readSessionStart("user_a", storage), null);
+
+  writeSessionStart("user_a", 1_000, storage);
+  assert.strictEqual(readSessionStart("user_a", storage), 1_000);
+  // Another account on the same machine gets its own fresh countdown
+  assert.strictEqual(readSessionStart("user_b", storage), null);
+
+  clearSessionStart(storage);
+  assert.strictEqual(readSessionStart("user_a", storage), null);
+});
+
+test("Session Start Persistence: ignores legacy or corrupt values", () => {
+  const storage = createMemoryStorage();
+  storage.setItem(SESSION_START_KEY, "1700000000000");
+  assert.strictEqual(readSessionStart("user_a", storage), null);
+  storage.setItem(SESSION_START_KEY, "{not json");
+  assert.strictEqual(readSessionStart("user_a", storage), null);
 });

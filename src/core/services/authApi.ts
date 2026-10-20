@@ -8,6 +8,9 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { apiRequest, USE_MOCK, isOnline } from "./apiClient";
+import { mergeSession, persistSession, toLocalSession } from "./sessionPersistence";
+import { clearSessionStart } from "./sessionTimeoutPolicy";
+import { useAuthStore } from "@/core/stores/useAuthStore";
 import type {
   AuthSession,
   LocalSession,
@@ -28,7 +31,8 @@ export {
   canSessionWorkOfflineSync,
 } from "./subscriptionPolicy";
 import { canSessionWorkOfflineSync } from "./subscriptionPolicy";
-import { isTimestampBeforeTodayVnMidnight } from "./sessionTimeoutPolicy";
+
+export { toLocalSession };
 
 /**
  * Rigorously checks whether a session is permitted to work in Offline Mode.
@@ -46,31 +50,6 @@ export async function canSessionWorkOffline(session: AuthSession | null): Promis
     const diff = Date.now() - new Date(lastSync).getTime();
     return diff >= 0 && diff < 7 * 24 * 60 * 60 * 1000;
   });
-}
-
-/** Converts AuthSession to LocalSession for Rust storage */
-export function toLocalSession(session: AuthSession): LocalSession {
-  const ents = session.entitlements || session.subscription.entitlements || [];
-  return {
-    access_token: session.accessToken,
-    refresh_token: session.refreshToken,
-    user_id: session.userId,
-    email: session.email,
-    username: session.username || (session.email.includes("@") ? session.email.split("@")[0] : session.email),
-    name: session.name,
-    role: session.role,
-    subscription_status: session.subscription.status,
-    subscription_plan: session.subscription.plan,
-    is_premium: session.subscription.isPremium ?? false,
-    expires_at: session.subscription.expiresAt,
-    device_id: session.deviceId,
-    last_sync_at: session.lastSyncAt,
-    entitlements: ents.map((e) => ({
-      app: e.app,
-      expires_at: e.expiresAt,
-      is_trial: e.isTrial ?? false,
-    })),
-  };
 }
 
 /** Converts LocalSession from Rust storage to AuthSession */
@@ -193,8 +172,12 @@ export async function login(request: LoginRequest, autoLogin: boolean = true): P
     },
   });
   
+  // A new login starts a new free-plan countdown
+  clearSessionStart();
+
   if (autoLogin) {
-    localStorage.setItem("saved_auth_session", JSON.stringify(session));
+    sessionStorage.removeItem("auto_login");
+    sessionStorage.removeItem("temp_auth_session");
     if (isTauri()) {
       await invoke("save_auth_session", { session: toLocalSession(session) }).catch(() => {});
     }
@@ -214,63 +197,37 @@ export async function login(request: LoginRequest, autoLogin: boolean = true): P
   return session;
 }
 
-/** Refreshes access token using refresh token */
-export async function refreshAuthToken(refreshToken: string): Promise<AuthSession> {
+/**
+ * Exchanges the refresh token for a new token pair and persists it.
+ * Called on every launch, so the 90-day refresh window slides: a user who keeps opening
+ * the app never has to log in again unless they log out or are kicked.
+ */
+export async function refreshAuthToken(session: AuthSession): Promise<AuthSession> {
   if (USE_MOCK) {
     throw new Error("MOCK_MODE");
   }
 
-  const session = await apiRequest<AuthSession>("/auth/refresh", {
+  const fresh = await apiRequest<Partial<AuthSession>>("/auth/refresh", {
     method: "POST",
-    body: { refreshToken },
+    body: { refreshToken: session.refreshToken },
   });
 
-  const autoLogin = sessionStorage.getItem("auto_login") !== "false";
-  if (autoLogin) {
-    await invoke("save_auth_session", { session: toLocalSession(session) });
-  } else {
-    sessionStorage.setItem("temp_auth_session", JSON.stringify(session));
-  }
-  return session;
-}
-
-function getTokenIssuedAtMs(token?: string): number | null {
-  if (!token) return null;
-  try {
-    const parts = token.split(".");
-    if (parts.length < 2) return null;
-    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const jsonStr = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
-    );
-    const payload = JSON.parse(jsonStr);
-    if (typeof payload.iat === "number") {
-      return payload.iat * 1000;
-    }
-  } catch {}
-  return null;
+  const updated = mergeSession(session, fresh);
+  await persistSession(updated);
+  return updated;
 }
 
 /** Loads existing session from disk or sessionStorage */
 export async function loadSession(): Promise<AuthSession | null> {
+  // Older builds kept a plaintext copy of the session here; it was never read back.
+  try {
+    localStorage.removeItem("saved_auth_session");
+  } catch {}
+
   const memSession = sessionStorage.getItem("temp_auth_session");
   if (memSession) {
     try {
-      const parsed: AuthSession = JSON.parse(memSession);
-      const syncTs = parsed.lastSyncAt ? new Date(parsed.lastSyncAt).getTime() : 0;
-      const iatTs = getTokenIssuedAtMs(parsed.accessToken);
-      if (
-        (syncTs > 0 && isTimestampBeforeTodayVnMidnight(syncTs)) ||
-        (iatTs !== null && isTimestampBeforeTodayVnMidnight(iatTs))
-      ) {
-        sessionStorage.removeItem("temp_auth_session");
-        sessionStorage.removeItem("auto_login");
-        return null;
-      }
-      return parsed;
+      return JSON.parse(memSession) as AuthSession;
     } catch {
       // Ignore parse error
     }
@@ -279,15 +236,6 @@ export async function loadSession(): Promise<AuthSession | null> {
   try {
     const local = await invoke<LocalSession | null>("load_auth_session");
     if (local) {
-      const syncTs = local.last_sync_at ? new Date(local.last_sync_at).getTime() : 0;
-      const iatTs = getTokenIssuedAtMs(local.access_token);
-      if (
-        (syncTs > 0 && isTimestampBeforeTodayVnMidnight(syncTs)) ||
-        (iatTs !== null && isTimestampBeforeTodayVnMidnight(iatTs))
-      ) {
-        await invoke("clear_auth_session").catch(() => {});
-        return null;
-      }
       return fromLocalSession(local);
     }
   } catch {
@@ -318,6 +266,7 @@ export async function loadSession(): Promise<AuthSession | null> {
 
 /** Clears session from disk and server */
 export async function logout(accessToken?: string): Promise<void> {
+  clearSessionStart();
   sessionStorage.removeItem("temp_auth_session");
   sessionStorage.removeItem("auto_login");
   await invoke("clear_auth_session").catch(() => {});
@@ -382,26 +331,25 @@ export async function validateSubscription(
     session.subscription?.entitlements ||
     session.entitlements;
 
+  // A 401 during the request triggers a silent refresh that rotates the tokens in the store;
+  // build on that copy so the stale tokens in `session` are not written back to disk.
+  const latest = useAuthStore.getState().session;
+  const base = latest?.userId === session.userId ? latest : session;
+
   const updatedSession: AuthSession = {
-    ...session,
-    ...partialSession,
+    ...mergeSession(base, partialSession),
     subscription: {
-      ...session.subscription,
+      ...base.subscription,
       ...(partialSession.subscription || {}),
       entitlements: newEntitlements,
     },
     entitlements: newEntitlements,
-    sessionDurationMinutes: isUpdatedPrem 
-      ? 0 
-      : (partialSession.sessionDurationMinutes ?? session.sessionDurationMinutes),
+    sessionDurationMinutes: isUpdatedPrem
+      ? 0
+      : (partialSession.sessionDurationMinutes ?? base.sessionDurationMinutes),
   };
 
-  const autoLogin = sessionStorage.getItem("auto_login") !== "false";
-  if (autoLogin) {
-    await invoke("save_auth_session", { session: toLocalSession(updatedSession) });
-  } else {
-    sessionStorage.setItem("temp_auth_session", JSON.stringify(updatedSession));
-  }
+  await persistSession(updatedSession);
 
   if (!isUpdatedPrem && updatedSession.sessionDurationMinutes && updatedSession.sessionDurationMinutes > 0) {
     try {
@@ -515,6 +463,7 @@ export async function verifyRegister(
     method: "POST",
     body: request,
   });
+  clearSessionStart();
   await invoke("save_auth_session", { session: toLocalSession(session) });
   return session;
 }

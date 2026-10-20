@@ -3,6 +3,7 @@ import { useAuthStore } from "@/core/stores/useAuthStore";
 import { useTranslation } from "@/core/lib/i18n";
 import { login, getDeviceFingerprint, requestPasswordReset, verifyResetCode, resetPassword, register, verifyRegister } from "@/core/services/authApi";
 import { ApiErrorResponse } from "@/core/services/apiClient";
+import { forgetLoginPassword, loadLoginPassword, saveLoginPassword } from "@/core/services/savedCredentials";
 import { Mail, Lock, Loader2, Eye, EyeOff, Camera, ArrowLeft, CheckCircle2, User, RefreshCw } from "lucide-react";
 import { FragmentedImageSlider } from "@/core/components/FragmentedImageSlider";
 import { TermsDialog } from "@/core/components/TermsDialog";
@@ -17,10 +18,7 @@ export function LoginPage() {
   const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState(() => localStorage.getItem("saved_login_account") || "");
   const [username, setUsername] = useState("");
-  const [password, setPassword] = useState(() => {
-    const rememberPass = localStorage.getItem("saved_remember_password") !== "false";
-    return rememberPass ? (localStorage.getItem("saved_login_password") || "") : "";
-  });
+  const [password, setPassword] = useState("");
   const [rememberPassword, setRememberPassword] = useState(() => localStorage.getItem("saved_remember_password") !== "false");
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
@@ -38,6 +36,19 @@ export function LoginPage() {
 
   const [showConflictDialog, setShowConflictDialog] = useState(false);
   const [showTermsDialog, setShowTermsDialog] = useState(false);
+
+  // Prefill the remembered password from the OS keychain
+  useEffect(() => {
+    if (!rememberPassword || !email) return;
+    let cancelled = false;
+    void loadLoginPassword(email).then((saved) => {
+      if (!cancelled && saved) setPassword((current) => current || saved);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // Only on mount: later edits to the email field must not pull another account's password
+  }, []);
 
   // Sync mode with URL hash if redirected from SessionExpiredDialog or external links
   useEffect(() => {
@@ -100,9 +111,11 @@ export function LoginPage() {
       localStorage.setItem("saved_login_account", email);
       localStorage.setItem("saved_remember_password", rememberPassword ? "true" : "false");
       if (rememberPassword) {
-        localStorage.setItem("saved_login_password", password);
+        void saveLoginPassword(email, password).catch((err) =>
+          console.warn("Could not save password to keychain:", err)
+        );
       } else {
-        localStorage.removeItem("saved_login_password");
+        void forgetLoginPassword(email);
       }
       localStorage.setItem("saved_agree_terms", agreeTerms ? "true" : "false");
       localStorage.setItem("saved_auto_login", autoLogin ? "true" : "false");
@@ -355,7 +368,7 @@ export function LoginPage() {
                         setRememberPassword(e.target.checked);
                         localStorage.setItem("saved_remember_password", e.target.checked ? "true" : "false");
                         if (!e.target.checked) {
-                          localStorage.removeItem("saved_login_password");
+                          void forgetLoginPassword(email);
                         }
                       }} 
                       className="w-4 h-4 rounded border-border text-primary focus:ring-primary bg-input cursor-pointer" 

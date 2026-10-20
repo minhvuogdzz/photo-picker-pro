@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { AuthSession } from "@/core/types/auth";
 import { useAvailabilityStore } from "./useAvailabilityStore.ts";
 import { useContactSheetStore } from "../../modules/contact-the-sheet/stores/useContactSheetStore.ts";
+import { clearSessionStart } from "../services/sessionTimeoutPolicy.ts";
 
 interface AuthState {
   /** Current authenticated session, null if not logged in */
@@ -22,7 +23,7 @@ interface AuthState {
   readonly copyrightWarningMessage: string | null;
   /** Expiring soon warning message */
   readonly expiringSoonMessage: string | null;
-  /** Whether the 10-minute session timeout expired */
+  /** Whether the free-plan session timeout expired */
   readonly sessionTimeoutExpired: boolean;
 
   setSession: (session: AuthSession | null) => void;
@@ -52,15 +53,9 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   setSession: (session) => {
     useAvailabilityStore.getState().setOfflineBypass(false);
-    if (session) {
+    if (!session) {
+      clearSessionStart();
       try {
-        if (!sessionStorage.getItem("session_started_at")) {
-          sessionStorage.setItem("session_started_at", String(Date.now()));
-        }
-      } catch {}
-    } else {
-      try {
-        sessionStorage.removeItem("session_started_at");
         sessionStorage.removeItem("mvd_expiring_notice_dismissed");
       } catch {}
     }
@@ -95,8 +90,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: () => {
     useAvailabilityStore.getState().setOfflineBypass(false);
+    clearSessionStart();
     try {
-      sessionStorage.removeItem("session_started_at");
       sessionStorage.removeItem("mvd_expiring_notice_dismissed");
     } catch {}
     try {

@@ -9,6 +9,55 @@ export const DEFAULT_SESSION_DURATION_MS = DEFAULT_SESSION_DURATION_MINUTES * 60
 export const MAX_SESSION_DURATION_MS = DEFAULT_SESSION_DURATION_MS; // Alias for backward compatibility
 export const SESSION_START_KEY = "session_started_at";
 
+interface KeyValueStorage {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+}
+
+function defaultStorage(): KeyValueStorage | null {
+  try {
+    return typeof localStorage !== "undefined" ? localStorage : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Start time of the current limited (free) session for `userId`.
+ * Kept in localStorage rather than sessionStorage so restarting the app does not reset the countdown.
+ */
+export function readSessionStart(
+  userId: string,
+  storage: KeyValueStorage | null = defaultStorage()
+): number | null {
+  try {
+    const raw = storage?.getItem(SESSION_START_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { userId?: unknown; startedAt?: unknown };
+    if (parsed.userId !== userId || typeof parsed.startedAt !== "number") return null;
+    return parsed.startedAt;
+  } catch {
+    return null;
+  }
+}
+
+export function writeSessionStart(
+  userId: string,
+  startedAt: number,
+  storage: KeyValueStorage | null = defaultStorage()
+): void {
+  try {
+    storage?.setItem(SESSION_START_KEY, JSON.stringify({ userId, startedAt }));
+  } catch {}
+}
+
+export function clearSessionStart(storage: KeyValueStorage | null = defaultStorage()): void {
+  try {
+    storage?.removeItem(SESSION_START_KEY);
+  } catch {}
+}
+
 /** Formats remaining seconds to "mm:ss" string */
 export function formatSessionRemaining(totalSeconds: number): string {
   const safeSecs = Math.max(0, totalSeconds);

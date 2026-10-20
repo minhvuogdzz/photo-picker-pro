@@ -2,6 +2,29 @@
 
 Tất cả các bản phát hành của **DH Studio Pro** (phát triển & thuộc sở hữu bản quyền của **DevHouse Software**) đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
 
+## [v2.8.0] - 2026-10-20
+
+### Trong bản cập nhật này, chúng tôi đã:
+
+#### 🔐 Giữ đăng nhập ổn định
+- **Không còn phải đăng nhập lại mỗi lần mở app:** Khắc phục lỗi phiên đăng nhập bị xoá khi tắt và mở lại ứng dụng dù đã chọn "Tự động đăng nhập".
+- **Bỏ đăng xuất tự động lúc 0h00:** Tài khoản giữ đăng nhập cho tới khi bạn chủ động đăng xuất, hoặc khi tài khoản được đăng nhập trên thiết bị khác. Mỗi lần mở app, phiên được tự động gia hạn.
+- **Tài khoản miễn phí:** Vẫn giữ giới hạn phiên làm việc 10 phút; thời gian còn lại được giữ nguyên khi mở lại app.
+- **Không bị đăng xuất khi máy chủ gặp sự cố tạm thời** hoặc khi mạng chập chờn.
+
+#### 🛡️ Bảo mật
+- **Mật khẩu "Lưu mật khẩu" được cất trong Keychain của hệ điều hành** (macOS Keychain / Windows Credential Manager) thay vì lưu dạng văn bản thường. Mật khẩu đã lưu từ phiên bản cũ được chuyển sang tự động.
+- Gỡ bỏ bản sao phiên đăng nhập không cần thiết lưu trên máy.
+
+#### 📊 Contact The Sheet
+- **Giữ kết nối tài khoản Google sau khi khởi động lại máy:** Khắc phục lỗi một số máy bị mất kết nối Google (Sheet & Drive) khi tắt hẳn rồi bật lại. Khi vừa bật máy chưa có mạng, ứng dụng tự kết nối lại khi mạng sẵn sàng thay vì bắt đăng nhập Google lại.
+- **Sao chép nhanh link Drive:** Trong cửa sổ "Xem thay đổi" khi quét và thực thi batch, có thêm nút **Sao chép** cạnh giá trị mới để copy ngay link Drive cần điền.
+
+#### 🛠️ Sửa lỗi hệ thống
+- Giữ nguyên quyền gói trả phí sau khi làm mới phiên, kể cả khi mở app lúc đang offline.
+
+---
+
 ## [v2.7.1] - 2026-10-05
 
 ### Trong bản cập nhật này, chúng tôi đã:

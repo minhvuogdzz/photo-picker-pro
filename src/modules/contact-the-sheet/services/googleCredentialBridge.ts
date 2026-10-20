@@ -53,6 +53,22 @@ interface GoogleUserInfo {
   picture?: string;
 }
 
+/**
+ * The plan in the local session is only trusted to revoke Google access once the server has
+ * confirmed it. Offline (e.g. network not up yet right after the machine boots) the session
+ * comes from disk and may be stale, so a "no access" result there must not wipe the tokens.
+ */
+function isAccessStateConfirmed(): boolean {
+  return !useAuthStore.getState().isOffline;
+}
+
+class GoogleNetworkError extends Error {
+  constructor() {
+    super("GOOGLE_NETWORK_ERROR: Không kết nối được tới Google. Vui lòng kiểm tra mạng rồi thử lại.");
+    this.name = "GoogleNetworkError";
+  }
+}
+
 function getUserStorageKey(baseKey: string): string {
   const session = useAuthStore.getState().session;
   const uid = session?.userId || session?.email;
@@ -129,6 +145,10 @@ class GoogleCredentialManager {
 
     const access = checkAppAccess(session, "contact-the-sheet");
     if (!access.hasAccess) {
+      if (!isAccessStateConfirmed()) {
+        this.clearActiveSession();
+        return;
+      }
       const userKey = getUserStorageKey("mvd_google_active_email");
       const hasSaved = !!getSafeStorage(userKey) || !!this.activeAccountEmail;
       if (hasSaved) {
@@ -224,6 +244,9 @@ class GoogleCredentialManager {
         checkAppAccess(session, "contact-the-sheet").hasAccess ||
         checkAppAccess(session, "photo-picker").hasAccess;
       if (!hasAccess) {
+        if (!isAccessStateConfirmed()) {
+          throw new Error("EXPIRED: Chưa xác minh được gói sử dụng khi đang offline. Vui lòng kết nối mạng rồi thử lại.");
+        }
         await this.disconnectGoogle();
         throw new Error("EXPIRED: Gói sử dụng tính năng Google Sheet đã hết hạn. Tài khoản Google đã được ngắt kết nối tự động.");
       }
@@ -280,14 +303,24 @@ class GoogleCredentialManager {
         refresh_token: refreshToken,
       });
 
-      const res = await fetch("https://oauth2.googleapis.com/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: params.toString(),
-      });
+      let res: Response;
+      try {
+        res = await fetch("https://oauth2.googleapis.com/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: params.toString(),
+        });
+      } catch {
+        // No network yet (common right after boot): the refresh token is still valid
+        throw new GoogleNetworkError();
+      }
 
       if (!res.ok) {
         const errText = await res.text();
+        // Only 400/401 (invalid_grant, revoked consent...) mean the Google login is really gone
+        if (res.status !== 400 && res.status !== 401) {
+          throw new GoogleNetworkError();
+        }
         throw new Error(`Google token refresh failed (HTTP ${res.status}): ${errText}`);
       }
 
@@ -320,6 +353,14 @@ class GoogleCredentialManager {
 
       return data.access_token;
     } catch (err) {
+      if (err instanceof GoogleNetworkError) {
+        useContactSheetStore.getState().setGoogleConnection({
+          status: "CONNECTED",
+          accountEmail,
+          error: err.message,
+        });
+        throw err;
+      }
       useContactSheetStore.getState().setGoogleConnection({
         status: "AUTHORIZATION_EXPIRED",
         error: String(err),
@@ -482,13 +523,21 @@ class GoogleCredentialManager {
 
 export const googleCredentialManager = new GoogleCredentialManager();
 
-// Automatically react to user login / logout / switch account in useAuthStore
-let lastTrackedUserId: string | null = useAuthStore.getState().session?.userId || null;
+// Automatically react to user login / logout / switch account in useAuthStore, and to the
+// plan being (re)confirmed by the server, e.g. when the app started offline and came back online.
+function trackedAuthKey(state: ReturnType<typeof useAuthStore.getState>): string | null {
+  const session = state.session;
+  if (!session?.userId) return null;
+  const hasAccess = checkAppAccess(session, "contact-the-sheet").hasAccess;
+  return `${session.userId}:${hasAccess}:${state.isOffline}`;
+}
+
+let lastTrackedKey: string | null = trackedAuthKey(useAuthStore.getState());
 useAuthStore.subscribe((state) => {
-  const currentUserId = state.session?.userId || null;
-  if (currentUserId !== lastTrackedUserId) {
-    lastTrackedUserId = currentUserId;
-    if (!currentUserId) {
+  const currentKey = trackedAuthKey(state);
+  if (currentKey !== lastTrackedKey) {
+    lastTrackedKey = currentKey;
+    if (!currentKey) {
       googleCredentialManager.clearActiveSession();
     } else {
       googleCredentialManager.restoreSavedSession();

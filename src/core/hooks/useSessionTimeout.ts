@@ -12,7 +12,9 @@ import {
   computeRemainingSeconds,
   isSessionExpiringSoon,
   isSessionWarning30s,
-  computeSecondsUntilVnMidnight,
+  readSessionStart,
+  writeSessionStart,
+  clearSessionStart,
 } from "../services/sessionTimeoutPolicy.ts";
 
 export {
@@ -24,7 +26,6 @@ export {
   computeRemainingSeconds,
   isSessionExpiringSoon,
   isSessionWarning30s,
-  computeSecondsUntilVnMidnight,
 };
 
 interface SessionTimerState {
@@ -35,8 +36,6 @@ interface SessionTimerState {
   isWarning30s: boolean;
   hasDismissed30sWarning: boolean;
   isUnlimited: boolean;
-  isMidnightLogout: boolean;
-  setIsMidnightLogout: (isMidnight: boolean) => void;
   dismiss30sWarning: () => void;
   setRemainingSeconds: (seconds: number) => void;
   setTotalDurationMinutes: (minutes: number) => void;
@@ -51,8 +50,6 @@ export const useSessionTimerStore = create<SessionTimerState>((set) => ({
   isWarning30s: false,
   hasDismissed30sWarning: false,
   isUnlimited: false,
-  isMidnightLogout: false,
-  setIsMidnightLogout: (isMidnightLogout) => set({ isMidnightLogout }),
   dismiss30sWarning: () => set({ hasDismissed30sWarning: true }),
   setRemainingSeconds: (remainingSeconds) =>
     set({
@@ -72,15 +69,13 @@ export const useSessionTimerStore = create<SessionTimerState>((set) => ({
       isWarning30s: false,
       hasDismissed30sWarning: false,
       isUnlimited: false,
-      isMidnightLogout: false,
     }),
 }));
 
 /**
- * Global listener hook that enforces the session duration limit and daily midnight reset.
+ * Global listener hook that enforces the session duration limit for free accounts.
  * Mounted once inside AuthGuard to ensure the timer runs continuously.
- * Premium accounts have unlimited session duration during the day,
- * BUT are automatically logged out at 00:00:00 Vietnam time (GMT+7) every day.
+ * Paid accounts have an unlimited session and stay logged in until they log out or are kicked.
  */
 export function useSessionTimeoutListener() {
   const session = useAuthStore((s) => s.session);
@@ -100,67 +95,25 @@ export function useSessionTimeoutListener() {
       useSessionTimerStore.setState({
         hasDismissed30sWarning: false,
         isUnlimited: false,
-        isMidnightLogout: false,
       });
       return;
     }
 
-    // ACTIVE & TRIAL PAID ACCOUNTS: Unlimited session duration during the day,
-    // but MUST automatically log out at 00:00:00 VN time (GMT+7).
     if (isUnlimited) {
+      clearSessionStart();
       useSessionTimerStore.setState({
         totalDurationMinutes: 0,
         isUnlimited: true,
-        isMidnightLogout: false,
+        remainingSeconds: Infinity,
+        formattedTime: "Không giới hạn",
+        isExpiringSoon: false,
+        isWarning30s: false,
       });
-
-      try {
-        sessionStorage.removeItem(SESSION_START_KEY);
-      } catch {}
-
-      const checkMidnight = () => {
-        const secondsUntilMidnight = computeSecondsUntilVnMidnight();
-
-        if (secondsUntilMidnight <= 0) {
-          // 0h00 Vietnam time reached!
-          useSessionTimerStore.setState({
-            isMidnightLogout: true,
-            remainingSeconds: 0,
-            formattedTime: "00:00",
-            isExpiringSoon: false,
-            isWarning30s: false,
-          });
-
-          void logout(sessionTokenRef.current).catch(() => {});
-          authLogout();
-          setSessionTimeoutExpired(true);
-          return;
-        }
-
-        if (secondsUntilMidnight <= 30) {
-          useSessionTimerStore.setState({
-            remainingSeconds: secondsUntilMidnight,
-            formattedTime: formatSessionRemaining(secondsUntilMidnight),
-            isExpiringSoon: true,
-            isWarning30s: true,
-          });
-        } else {
-          useSessionTimerStore.setState({
-            remainingSeconds: Infinity,
-            formattedTime: "Không giới hạn",
-            isExpiringSoon: false,
-            isWarning30s: false,
-          });
-        }
-      };
-
-      checkMidnight();
-      const interval = setInterval(checkMidnight, 1000);
-      return () => clearInterval(interval);
+      return;
     }
 
-    // STANDARD / FREE ACCOUNTS: Enforce session countdown (e.g. 10 mins) AND midnight limit
-    useSessionTimerStore.setState({ isUnlimited: false, isMidnightLogout: false });
+    // STANDARD / FREE ACCOUNTS: Enforce session countdown (e.g. 10 mins)
+    useSessionTimerStore.setState({ isUnlimited: false });
 
     const durationMinutes = (typeof session.sessionDurationMinutes === "number" && session.sessionDurationMinutes > 0)
       ? session.sessionDurationMinutes
@@ -169,33 +122,20 @@ export function useSessionTimeoutListener() {
     setTotalDurationMinutes(durationMinutes);
     const maxDurationMs = durationMinutes * 60 * 1000;
 
-    let startedAt = Date.now();
-    try {
-      const saved = sessionStorage.getItem(SESSION_START_KEY);
-      if (saved && !isNaN(Number(saved))) {
-        startedAt = Number(saved);
-      } else {
-        sessionStorage.setItem(SESSION_START_KEY, String(startedAt));
-      }
-    } catch {
-      // Ignore storage errors
+    const userId = session.userId;
+    let startedAt = readSessionStart(userId);
+    if (startedAt === null) {
+      startedAt = Date.now();
+      writeSessionStart(userId, startedAt);
     }
+    const sessionStartedAt = startedAt;
 
     const checkTime = () => {
-      const standardLeft = computeRemainingSeconds(startedAt, maxDurationMs);
-      const secondsUntilMidnight = computeSecondsUntilVnMidnight();
-      const left = Math.min(standardLeft, secondsUntilMidnight);
-      const isMidnight = secondsUntilMidnight <= standardLeft && secondsUntilMidnight <= 0;
-
+      const left = computeRemainingSeconds(sessionStartedAt, maxDurationMs);
       setRemainingSeconds(left);
 
       if (left <= 0) {
-        // Session duration or midnight reached -> trigger logout and show expiration modal
-        try {
-          sessionStorage.removeItem(SESSION_START_KEY);
-        } catch {}
-
-        useSessionTimerStore.setState({ isMidnightLogout: isMidnight });
+        clearSessionStart();
         void logout(sessionTokenRef.current).catch(() => {});
         authLogout();
         setSessionTimeoutExpired(true);
@@ -206,12 +146,12 @@ export function useSessionTimeoutListener() {
     const interval = setInterval(checkTime, 1000);
     return () => clearInterval(interval);
   }, [
-    session?.userId, 
-    isUnlimited, 
-    session?.sessionDurationMinutes, 
-    authLogout, 
-    setSessionTimeoutExpired, 
-    setRemainingSeconds, 
+    session?.userId,
+    isUnlimited,
+    session?.sessionDurationMinutes,
+    authLogout,
+    setSessionTimeoutExpired,
+    setRemainingSeconds,
     setTotalDurationMinutes
   ]);
 }
