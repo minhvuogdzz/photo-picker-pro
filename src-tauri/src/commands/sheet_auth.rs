@@ -242,6 +242,52 @@ pub fn delete_google_secure_token(account_email: String) -> Result<(), String> {
     Ok(())
 }
 
+fn get_active_accounts_path() -> Result<std::path::PathBuf, String> {
+    let base = dirs_next().ok_or_else(|| "Cannot determine config directory".to_string())?;
+    Ok(base.join("google_active_accounts.json"))
+}
+
+fn read_active_accounts() -> std::collections::HashMap<String, String> {
+    get_active_accounts_path()
+        .ok()
+        .and_then(|path| std::fs::read_to_string(path).ok())
+        .and_then(|content| serde_json::from_str(&content).ok())
+        .unwrap_or_default()
+}
+
+fn write_active_accounts(accounts: &std::collections::HashMap<String, String>) -> Result<(), String> {
+    let path = get_active_accounts_path()?;
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let content = serde_json::to_string_pretty(accounts)
+        .map_err(|e| format!("Failed to serialize google accounts: {}", e))?;
+    std::fs::write(&path, content).map_err(|e| format!("Failed to write google accounts: {}", e))
+}
+
+/// Remembers which Google account an app user connected, on disk next to the refresh tokens,
+/// so the connection can be restored even if the WebView's localStorage is lost.
+#[tauri::command]
+pub fn save_google_active_account(user_id: String, account_email: String) -> Result<(), String> {
+    let mut accounts = read_active_accounts();
+    accounts.insert(user_id, account_email);
+    write_active_accounts(&accounts)
+}
+
+#[tauri::command]
+pub fn get_google_active_account(user_id: String) -> Result<Option<String>, String> {
+    Ok(read_active_accounts().get(&user_id).filter(|e| !e.is_empty()).cloned())
+}
+
+#[tauri::command]
+pub fn clear_google_active_account(user_id: String) -> Result<(), String> {
+    let mut accounts = read_active_accounts();
+    if accounts.remove(&user_id).is_some() {
+        write_active_accounts(&accounts)?;
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

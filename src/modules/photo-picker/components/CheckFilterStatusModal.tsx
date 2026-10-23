@@ -15,6 +15,7 @@ import {
   Users,
   Check,
   Info,
+  CalendarClock,
 } from "lucide-react";
 import { useAppStore } from "@/core/stores/useAppStore";
 import { useContactSheetStore } from "@/modules/contact-the-sheet/stores/useContactSheetStore";
@@ -33,9 +34,11 @@ interface FolderCheckResult {
   folderName: string;
   isKept: boolean;
   matchedRow?: number;
+  tabTitle?: string;
   actualStatus: string;
   photoCode1Value?: string;
   photoCode2Value?: string;
+  dueDateValue?: string;
   reason: string;
 }
 
@@ -47,6 +50,36 @@ const STANDARD_LETTERS = [
 
 const COMMON_STATUS_SUGGESTIONS = ["Chưa lọc", "Chờ lọc", "Pending", "Đang lọc", "Chưa chụp"];
 const DEFAULT_TABS = ["Edit 9/2026", "Edit 8/2026", "Edit 10/2026", "DS Khách"];
+
+// Today's date in Vietnam (GMT+7) as a comparable yyyymmdd number, independent of the machine timezone
+function getVietnamTodayKey(): number {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  return get("year") * 10000 + get("month") * 100 + get("day");
+}
+
+function formatDateKey(key: number): string {
+  const d = key % 100;
+  const m = Math.floor(key / 100) % 100;
+  const y = Math.floor(key / 10000);
+  return `${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}/${y}`;
+}
+
+// Parse a sheet cell in dd/mm/yyyy (also accepts d/m/yyyy, "-" or "." separators) into a yyyymmdd number
+function parseDueDateKey(raw: string): number | null {
+  const m = raw.trim().match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/);
+  if (!m) return null;
+  const day = Number(m[1]);
+  const month = Number(m[2]);
+  const year = Number(m[3]);
+  if (month < 1 || month > 12 || day < 1 || day > new Date(year, month, 0).getDate()) return null;
+  return year * 10000 + month * 100 + day;
+}
 
 export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusModalProps) {
   const inputFolders = useAppStore((s) => s.inputFolders);
@@ -69,14 +102,29 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
     return DEFAULT_TABS;
   }, [targetProfile]);
 
-  // Config State
-  const [selectedTab, setSelectedTab] = useState<string>(() => {
-    return (
-      targetProfile?.selectedTabTitle ||
-      (targetProfile?.tabConfigurations ? Object.keys(targetProfile.tabConfigurations)[0] : "") ||
-      "Edit 9/2026"
-    );
+  const defaultTab =
+    targetProfile?.selectedTabTitle ||
+    (targetProfile?.tabConfigurations ? Object.keys(targetProfile.tabConfigurations)[0] : "") ||
+    "Edit 9/2026";
+
+  // Config State — multiple tabs can be checked at once
+  const [selectedTabs, setSelectedTabs] = useState<string[]>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("mvd_check_selected_tabs") || "[]");
+      if (Array.isArray(saved) && saved.length > 0) return saved;
+    } catch {}
+    return [defaultTab];
   });
+
+  // Only keep checked tabs that still exist in the profile
+  const activeSelectedTabs = useMemo(
+    () => availableTabs.filter((t) => selectedTabs.includes(t)),
+    [availableTabs, selectedTabs]
+  );
+
+  const toggleTab = (tab: string) => {
+    setSelectedTabs((prev) => (prev.includes(tab) ? prev.filter((t) => t !== tab) : [...prev, tab]));
+  };
 
   const [statusColumn, setStatusColumn] = useState<string>(() => {
     try {
@@ -111,6 +159,25 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
     }
   });
 
+  // Due date scan ("Quét file tới hạn") — keep only rows whose "Hẹn trả ảnh" date is today (VN) or earlier
+  const [dueDateEnabled, setDueDateEnabled] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("mvd_check_due_date_enabled") === "1";
+    } catch {
+      return false;
+    }
+  });
+
+  const [dueDateColumn, setDueDateColumn] = useState<string>(() => {
+    try {
+      return localStorage.getItem("mvd_check_due_date_column") || "L";
+    } catch {
+      return "L";
+    }
+  });
+
+  const todayLabel = useMemo(() => formatDateKey(getVietnamTodayKey()), [isOpen]);
+
   // Processing & Results State
   const [isChecking, setIsChecking] = useState(false);
   const [checkProgress, setCheckProgress] = useState<string>("");
@@ -119,22 +186,18 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
   const [activeResultTab, setActiveResultTab] = useState<"all" | "kept" | "removed">("kept");
   const [searchPreview, setSearchPreview] = useState<string>("");
 
-  // Init tab from profile when profile updates
+  // Fall back to the profile's active tab when none of the saved tabs exist in this profile
   useEffect(() => {
-    if (targetProfile) {
-      const tab =
-        targetProfile.selectedTabTitle ||
-        (targetProfile.tabConfigurations ? Object.keys(targetProfile.tabConfigurations)[0] : "") ||
-        "Edit 9/2026";
-      if (tab) setSelectedTab(tab);
+    if (targetProfile && activeSelectedTabs.length === 0 && availableTabs.includes(defaultTab)) {
+      setSelectedTabs([defaultTab]);
     }
-  }, [targetProfile]);
+  }, [targetProfile, availableTabs]);
 
   // Suggest status column from profile if not yet saved in localStorage
   useEffect(() => {
     if (targetProfile && !localStorage.getItem("mvd_check_status_column")) {
       const mappings =
-        targetProfile.tabConfigurations?.[selectedTab]?.fieldMappings ||
+        targetProfile.tabConfigurations?.[activeSelectedTabs[0]]?.fieldMappings ||
         targetProfile.fieldMappings ||
         [];
       const statusMapping = mappings.find((m) => m.semanticField === "PHOTO_PICK_STATUS");
@@ -142,7 +205,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
         setStatusColumn(statusMapping.columnLetter);
       }
     }
-  }, [targetProfile, selectedTab]);
+  }, [targetProfile, activeSelectedTabs]);
 
   const handleRunCheck = async () => {
     if (!targetProfile) {
@@ -152,6 +215,11 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
 
     if (inputFolders.length === 0) {
       setErrorMessage("Danh sách thư mục đầu vào đang trống! Vui lòng thêm thư mục khách trước khi kiểm tra.");
+      return;
+    }
+
+    if (activeSelectedTabs.length === 0) {
+      setErrorMessage("Vui lòng tích chọn ít nhất một Tab làm việc để đối soát.");
       return;
     }
 
@@ -167,34 +235,54 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
         localStorage.setItem("mvd_check_status_value", targetStatusValue.trim());
         localStorage.setItem("mvd_check_photo_code1_column", photoCode1Column);
         localStorage.setItem("mvd_check_photo_code2_column", photoCode2Column);
+        localStorage.setItem("mvd_check_due_date_enabled", dueDateEnabled ? "1" : "0");
+        localStorage.setItem("mvd_check_due_date_column", dueDateColumn);
+        localStorage.setItem("mvd_check_selected_tabs", JSON.stringify(activeSelectedTabs));
       } catch {}
 
       const isMock = Boolean(
         targetProfile.isMockSandbox || targetProfile.spreadsheetId?.startsWith("mock")
       );
 
-      const tabTitle = selectedTab || targetProfile.selectedTabTitle || "Edit 9/2026";
-      const startRow =
-        targetProfile.tabConfigurations?.[tabTitle]?.rowScope?.startRow ||
-        targetProfile.rowScope?.startRow ||
-        4;
+      // Load rows of every checked tab; a tab that fails to load is skipped unless all fail
+      const tabRows: Array<{ tabTitle: string; rows: SheetRowRecord[] }> = [];
+      const failedTabs: string[] = [];
+      for (const tabTitle of activeSelectedTabs) {
+        const startRow =
+          targetProfile.tabConfigurations?.[tabTitle]?.rowScope?.startRow ||
+          targetProfile.rowScope?.startRow ||
+          4;
 
-      setCheckProgress(`Đang tải các dòng trên Tab "${tabTitle}"...`);
-      const rows: SheetRowRecord[] = await sheetDiscoveryService.fetchSheetRowsForMatching(
-        targetProfile.spreadsheetId,
-        tabTitle,
-        startRow,
-        undefined,
-        isMock
-      );
+        setCheckProgress(`Đang tải các dòng trên Tab "${tabTitle}" (${tabRows.length + failedTabs.length + 1}/${activeSelectedTabs.length})...`);
+        try {
+          const rows: SheetRowRecord[] = await sheetDiscoveryService.fetchSheetRowsForMatching(
+            targetProfile.spreadsheetId,
+            tabTitle,
+            startRow,
+            undefined,
+            isMock
+          );
+          tabRows.push({ tabTitle, rows });
+        } catch (err) {
+          console.warn(`[CheckFilterStatusModal] Could not load tab "${tabTitle}":`, err);
+          failedTabs.push(tabTitle);
+        }
+      }
 
-      setCheckProgress(`Đang đối soát ${inputFolders.length} thư mục khách với Sheet...`);
+      if (tabRows.length === 0) {
+        throw new Error(`Không tải được dữ liệu từ Tab: ${failedTabs.join(", ")}`);
+      }
+
+      setCheckProgress(`Đang đối soát ${inputFolders.length} thư mục khách với ${tabRows.length} Tab...`);
 
       const effectiveProfile = isMock ? { ...targetProfile, isMockSandbox: true } : targetProfile;
       const targetValNorm = targetStatusValue.trim().toLowerCase();
       const colLetter = statusColumn.toUpperCase().trim();
       const code1Col = photoCode1Column !== "OFF" ? photoCode1Column.toUpperCase().trim() : null;
       const code2Col = photoCode2Column !== "OFF" ? photoCode2Column.toUpperCase().trim() : null;
+      const dueCol = dueDateEnabled ? dueDateColumn.toUpperCase().trim() : null;
+      const todayKey = getVietnamTodayKey();
+      const todayStr = formatDateKey(todayKey);
 
       const results: FolderCheckResult[] = [];
 
@@ -202,66 +290,98 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
         const folderPath = inputFolders[i];
         const folderName = getFolderName(folderPath);
 
-        const match = sheetExtractorService.extractCodesForFolder(
-          folderName,
-          folderPath,
-          rows,
-          effectiveProfile
-        );
-
-        if (match.matchedRow) {
-          const matchedRowRecord = rows.find((r) => r.row === match.matchedRow);
-          const actualVal = (matchedRowRecord?.values[colLetter] || "").trim();
-          const actualValNorm = actualVal.toLowerCase();
-
-          // Photo code column values
-          const code1Val = code1Col ? (matchedRowRecord?.values[code1Col] || "").trim() : null;
-          const code2Val = code2Col ? (matchedRowRecord?.values[code2Col] || "").trim() : null;
-
-          // Logic: status must match AND photo code columns (if enabled) must NOT be empty
-          const statusOk = actualValNorm === targetValNorm;
-          const code1Ok = code1Col === null || code1Val !== "";
-          const code2Ok = code2Col === null || code2Val !== "";
-          const isKept = statusOk && code1Ok && code2Ok;
-
-          // Build reason
-          let reason: string;
-          if (isKept) {
-            reason = `Khớp trạng thái "${actualVal}" (Dòng ${match.matchedRow})`;
-          } else {
-            const reasons: string[] = [];
-            if (!statusOk) {
-              reasons.push(`Trạng thái là "${actualVal || "Trống"}" (Dòng ${match.matchedRow}), khác "${targetStatusValue}"`);
-            }
-            if (!code1Ok) {
-              reasons.push(`Cột ${code1Col} (Mã ảnh chọn 1) trống — không có mã ảnh`);
-            }
-            if (!code2Ok) {
-              reasons.push(`Cột ${code2Col} (Mã ảnh chọn 2) trống — không có mã ảnh`);
-            }
-            reason = reasons.join(" • ");
-          }
-
-          results.push({
-            folderPath,
+        // Evaluate the folder on every checked tab: keep it if any tab qualifies,
+        // otherwise report the first tab where it was found
+        const tabResults: FolderCheckResult[] = [];
+        for (const { tabTitle, rows } of tabRows) {
+          const match = sheetExtractorService.extractCodesForFolder(
             folderName,
-            isKept,
-            matchedRow: match.matchedRow,
-            actualStatus: actualVal || "(Trống)",
-            photoCode1Value: code1Val ?? undefined,
-            photoCode2Value: code2Val ?? undefined,
-            reason,
-          });
+            folderPath,
+            rows,
+            effectiveProfile
+          );
+
+          if (match.matchedRow) {
+            const matchedRowRecord = rows.find((r) => r.row === match.matchedRow);
+            const actualVal = (matchedRowRecord?.values[colLetter] || "").trim();
+            const actualValNorm = actualVal.toLowerCase();
+
+            // Photo code column values
+            const code1Val = code1Col ? (matchedRowRecord?.values[code1Col] || "").trim() : null;
+            const code2Val = code2Col ? (matchedRowRecord?.values[code2Col] || "").trim() : null;
+
+            // Due date column value (if due date scan enabled)
+            const dueVal = dueCol ? (matchedRowRecord?.values[dueCol] || "").trim() : null;
+            const dueKey = dueVal ? parseDueDateKey(dueVal) : null;
+
+            // Logic: status must match AND photo code columns (if enabled) must NOT be empty
+            // AND due date (if enabled) must be today or earlier (Vietnam time)
+            const statusOk = actualValNorm === targetValNorm;
+            const code1Ok = code1Col === null || code1Val !== "";
+            const code2Ok = code2Col === null || code2Val !== "";
+            const dueOk = dueCol === null || (dueKey !== null && dueKey <= todayKey);
+            const isKept = statusOk && code1Ok && code2Ok && dueOk;
+
+            // Build reason
+            let reason: string;
+            if (isKept) {
+              reason = `Khớp trạng thái "${actualVal}" (Dòng ${match.matchedRow})`;
+              if (dueCol) reason += ` • Tới hạn trả ${dueVal}`;
+            } else {
+              const reasons: string[] = [];
+              if (!statusOk) {
+                reasons.push(`Trạng thái là "${actualVal || "Trống"}" (Dòng ${match.matchedRow}), khác "${targetStatusValue}"`);
+              }
+              if (!code1Ok) {
+                reasons.push(`Cột ${code1Col} (Mã ảnh chọn 1) trống — không có mã ảnh`);
+              }
+              if (!code2Ok) {
+                reasons.push(`Cột ${code2Col} (Mã ảnh chọn 2) trống — không có mã ảnh`);
+              }
+              if (!dueOk) {
+                if (!dueVal) {
+                  reasons.push(`Cột ${dueCol} (Hẹn trả ảnh) trống`);
+                } else if (dueKey === null) {
+                  reasons.push(`Cột ${dueCol} (Hẹn trả ảnh) "${dueVal}" không đúng định dạng dd/mm/yyyy`);
+                } else {
+                  reasons.push(`Hẹn trả ${dueVal} — chưa tới hạn (hôm nay ${todayStr})`);
+                }
+              }
+              reason = reasons.join(" • ");
+            }
+
+            tabResults.push({
+              folderPath,
+              folderName,
+              isKept,
+              matchedRow: match.matchedRow,
+              tabTitle,
+              actualStatus: actualVal || "(Trống)",
+              photoCode1Value: code1Val ?? undefined,
+              photoCode2Value: code2Val ?? undefined,
+              dueDateValue: dueVal ?? undefined,
+              reason: `[${tabTitle}] ${reason}`,
+            });
+          }
+        }
+
+        const best = tabResults.find((r) => r.isKept) || tabResults[0];
+        if (best) {
+          results.push(best);
         } else {
-          // No match on sheet
+          // No match on any checked tab
           results.push({
             folderPath,
             folderName,
             isKept: false,
             actualStatus: "Không tìm thấy trên Sheet",
-            reason: "Tên thư mục không khớp với dòng nào trên bảng tính",
+            reason: `Tên thư mục không khớp với dòng nào trên Tab: ${tabRows.map((t) => t.tabTitle).join(", ")}`,
           });
         }
+      }
+
+      if (failedTabs.length > 0) {
+        setErrorMessage(`Bỏ qua Tab không tải được: ${failedTabs.join(", ")}. Kết quả chỉ tính trên các Tab còn lại.`);
       }
 
       setCheckResults(results);
@@ -349,25 +469,42 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
           {/* Top Bar: Sheet Account & Tab Selection */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-muted/30 border border-border/60 rounded-xl">
             <div>
-              <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold block mb-1">
-                Tab làm việc (Trang tính)
-              </label>
-              <div className="relative">
-                <select
-                  value={selectedTab}
-                  onChange={(e) => setSelectedTab(e.target.value)}
-                  className="w-full appearance-none bg-background border border-border/70 rounded-lg px-3 py-1.5 text-xs text-foreground font-semibold focus:outline-none focus:border-primary pr-8 cursor-pointer"
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                  Tab làm việc (Trang tính) · {activeSelectedTabs.length}/{availableTabs.length}
+                </label>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedTabs(activeSelectedTabs.length === availableTabs.length ? [] : [...availableTabs])
+                  }
+                  className="text-[10px] font-medium text-primary hover:underline cursor-pointer"
                 >
-                  {availableTabs.map((t) => (
-                    <option key={t} value={t}>
+                  {activeSelectedTabs.length === availableTabs.length ? "Bỏ chọn" : "Chọn tất cả"}
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto custom-scrollbar">
+                {availableTabs.map((t) => {
+                  const checked = activeSelectedTabs.includes(t);
+                  return (
+                    <label
+                      key={t}
+                      className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[11px] font-semibold cursor-pointer transition-colors ${
+                        checked
+                          ? "bg-primary/10 border-primary/50 text-foreground"
+                          : "bg-background border-border/70 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleTab(t)}
+                        className="w-3 h-3 accent-primary cursor-pointer"
+                      />
                       {t}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown
-                  size={14}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
-                />
+                    </label>
+                  );
+                })}
               </div>
             </div>
 
@@ -533,6 +670,63 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
             )}
           </div>
 
+          {/* Config Box: Due Date Scan (Advanced, checkbox) */}
+          <div
+            className={`p-3.5 rounded-xl bg-card border shadow-xs space-y-3 transition-colors ${
+              dueDateEnabled ? "border-violet-500/40" : "border-border"
+            }`}
+          >
+            <label className="flex items-center justify-between gap-2 text-xs font-semibold text-foreground cursor-pointer">
+              <span className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={dueDateEnabled}
+                  onChange={(e) => setDueDateEnabled(e.target.checked)}
+                  className="w-3.5 h-3.5 accent-violet-600 cursor-pointer"
+                />
+                <CalendarClock size={13} className="text-violet-500" />
+                Quét file tới hạn (Nâng cao)
+              </span>
+              <span className="text-[10px] text-muted-foreground font-normal">
+                Hôm nay (GMT+7): <strong className="font-mono text-foreground">{todayLabel}</strong>
+              </span>
+            </label>
+
+            {dueDateEnabled && (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] text-muted-foreground font-medium mb-1">
+                      Cột "Hẹn trả ảnh" trên Sheet (dd/mm/yyyy)
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={dueDateColumn}
+                        onChange={(e) => setDueDateColumn(e.target.value)}
+                        className="w-full appearance-none px-3 py-1.5 text-xs font-semibold rounded-lg bg-background border border-violet-500/40 text-foreground focus:outline-none focus:border-primary cursor-pointer pr-8"
+                      >
+                        {STANDARD_LETTERS.map((col) => (
+                          <option key={col} value={col}>
+                            Cột {col} {col === "L" ? "(Cột L - Hẹn trả ảnh)" : ""}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown
+                        size={14}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-[10px] text-violet-600 dark:text-violet-400 bg-violet-500/10 border border-violet-500/20 rounded-lg px-2.5 py-1.5 leading-relaxed">
+                  <strong>Logic:</strong> Chỉ giữ khách khi đồng thời <strong>(1)</strong> ngày hẹn trả ở Cột {dueDateColumn} là{" "}
+                  <strong>{todayLabel} hoặc trước đó</strong> và <strong>(2)</strong> Cột {statusColumn} là "{targetStatusValue}". Ô hẹn trả trống hoặc sai định dạng sẽ bị đá ra.
+                </div>
+              </>
+            )}
+          </div>
+
           {/* Error Banner */}
           {errorMessage && (
             <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs flex items-start gap-2 animate-fade-in">
@@ -615,7 +809,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                 <Info size={15} className="shrink-0 mt-0.5" />
                 <div className="leading-relaxed">
                   Bấm nút <strong>"Kiểm tra & Lọc danh sách"</strong> bên dưới. Hệ thống sẽ kết nối với Google Sheet:
-                  những khách có trạng thái là <strong>"{targetStatusValue}"</strong> trên Cột <strong>{statusColumn}</strong>{photoCode1Column !== "OFF" && <> và cột mã ảnh chọn 1 (<strong>{photoCode1Column}</strong>) có dữ liệu</>}{photoCode2Column !== "OFF" && <> và cột mã ảnh chọn 2 (<strong>{photoCode2Column}</strong>) có dữ liệu</>} sẽ được <strong>GIỮ LẠI</strong>, các khách đã lọc, không khớp hoặc thiếu mã ảnh sẽ được <strong>TỰ ĐỘNG ĐÁ RA</strong> khỏi danh sách.
+                  những khách có trạng thái là <strong>"{targetStatusValue}"</strong> trên Cột <strong>{statusColumn}</strong>{photoCode1Column !== "OFF" && <> và cột mã ảnh chọn 1 (<strong>{photoCode1Column}</strong>) có dữ liệu</>}{photoCode2Column !== "OFF" && <> và cột mã ảnh chọn 2 (<strong>{photoCode2Column}</strong>) có dữ liệu</>}{dueDateEnabled && <> và ngày hẹn trả ở Cột <strong>{dueDateColumn}</strong> từ <strong>{todayLabel}</strong> trở về trước</>} sẽ được <strong>GIỮ LẠI</strong>, các khách đã lọc, không khớp hoặc thiếu mã ảnh sẽ được <strong>TỰ ĐỘNG ĐÁ RA</strong> khỏi danh sách.
                 </div>
               </div>
             </div>
@@ -750,8 +944,22 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                             {item.photoCode2Value || "Mã2: ∅"}
                           </span>
                         )}
+                        {item.dueDateValue !== undefined && (
+                          <span
+                            className={`px-1.5 py-0.5 rounded font-mono ${
+                              item.isKept
+                                ? "bg-violet-500/10 text-violet-700 dark:text-violet-300"
+                                : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                            }`}
+                            title={`Cột ${dueDateColumn} (Hẹn trả ảnh): ${item.dueDateValue || "(Trống)"}`}
+                          >
+                            {item.dueDateValue || "Hẹn: ∅"}
+                          </span>
+                        )}
                         {item.matchedRow && (
-                          <span className="text-muted-foreground">Dòng {item.matchedRow}</span>
+                          <span className="text-muted-foreground" title={item.reason}>
+                            {item.tabTitle && activeSelectedTabs.length > 1 ? `${item.tabTitle} · ` : ""}Dòng {item.matchedRow}
+                          </span>
                         )}
                       </div>
                     </div>
@@ -771,7 +979,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                 Đã cập nhật hàng đợi còn {keptCount} khách
               </span>
             ) : (
-              <span>Cột {statusColumn} • Trạng thái giữ: "{targetStatusValue}"{photoCode1Column !== "OFF" && ` • Mã1: ${photoCode1Column}`}{photoCode2Column !== "OFF" && ` • Mã2: ${photoCode2Column}`}</span>
+              <span>{activeSelectedTabs.length} Tab • Cột {statusColumn} • Trạng thái giữ: "{targetStatusValue}"{photoCode1Column !== "OFF" && ` • Mã1: ${photoCode1Column}`}{photoCode2Column !== "OFF" && ` • Mã2: ${photoCode2Column}`}{dueDateEnabled && ` • Tới hạn: ${dueDateColumn} ≤ ${todayLabel}`}</span>
             )}
           </div>
 
@@ -786,7 +994,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
 
             <button
               type="button"
-              disabled={isChecking || inputFolders.length === 0}
+              disabled={isChecking || inputFolders.length === 0 || activeSelectedTabs.length === 0}
               onClick={handleRunCheck}
               className="px-4 py-1.5 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-colors cursor-pointer shadow-sm flex items-center gap-1.5 disabled:opacity-50"
             >

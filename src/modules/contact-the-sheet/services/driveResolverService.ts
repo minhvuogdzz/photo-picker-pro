@@ -163,8 +163,10 @@ export class DriveResolverService {
   private folderMetadataCache = new Map<string, DriveFolderItem>();
   private childFoldersCache = new Map<string, DriveFolderItem[]>();
   private localRootToDriveIdCache = new Map<string, string>();
+  private leafFolderCache = new Map<string, boolean>();
 
   public clearCache(): void {
+    this.leafFolderCache.clear();
     this.parentNameCache.clear();
     this.folderMetadataCache.clear();
     this.childFoldersCache.clear();
@@ -495,17 +497,12 @@ export class DriveResolverService {
       return null;
     }
 
-    // Inspect if current matched folder has an immediate child with delivery keywords
-    const subChildren = await this.getChildFolders(token, currentId);
-    const validDeliveryChild = subChildren
-      .filter((c) => !isRawFolder(c.name))
-      .find((c) =>
-        targetFolderName && areFolderNamesEqual(c.name, targetFolderName)
-          ? true
-          : isDeliveryFolder(c.name)
-      );
-
-    const candidate = validDeliveryChild || lastMatchedFolder;
+    // Resolve to a leaf folder (no sub-folders, contains files): the matched folder itself
+    // or one of its immediate children (exact name / delivery keywords first)
+    const candidate = await this.pickLeafDeliveryFolder(token, lastMatchedFolder, targetFolderName);
+    if (!candidate) {
+      return null;
+    }
 
     // Check ownership if required
     if (requireOwnerMatch && currentUserEmail) {
@@ -559,48 +556,16 @@ export class DriveResolverService {
           if (!isDesc) continue;
         }
 
-        // Query child folders inside this job folder
-        const children = await this.getChildFolders(token, jobFolder.id);
-        const validChildren = children.filter((c) => !isRawFolder(c.name));
-
-        if (validChildren.length > 0) {
-          // Check for exact targetFolderName match
-          const exactChild = validChildren.find((c) => areFolderNamesEqual(c.name, cleanTargetName));
-          if (exactChild) {
-            return {
-              id: exactChild.id,
-              name: exactChild.name,
-              webViewLink: exactChild.webViewLink,
-              ownedByMe: exactChild.ownedByMe ?? this.isFolderOwnedByCurrentUser(exactChild, currentUserEmail),
-            };
-          }
-
-          // Check for finished keywords: "hoàn thiện", "thành phẩm", "final", "jpg"
-          const keywordChild = validChildren.find((c) => isDeliveryFolder(c.name));
-          if (keywordChild) {
-            return {
-              id: keywordChild.id,
-              name: keywordChild.name,
-              webViewLink: keywordChild.webViewLink,
-              ownedByMe: keywordChild.ownedByMe ?? this.isFolderOwnedByCurrentUser(keywordChild, currentUserEmail),
-            };
-          }
-
+        // Pick a leaf folder inside (or equal to) this job folder; otherwise try the next older job folder
+        const leaf = await this.pickLeafDeliveryFolder(token, jobFolder, cleanTargetName);
+        if (leaf) {
           return {
-            id: validChildren[0].id,
-            name: validChildren[0].name,
-            webViewLink: validChildren[0].webViewLink,
-            ownedByMe: validChildren[0].ownedByMe ?? this.isFolderOwnedByCurrentUser(validChildren[0], currentUserEmail),
+            id: leaf.id,
+            name: leaf.name,
+            webViewLink: leaf.webViewLink,
+            ownedByMe: leaf.ownedByMe ?? this.isFolderOwnedByCurrentUser(leaf, currentUserEmail),
           };
         }
-
-        // If no child folders exist, job folder itself is the delivery folder
-        return {
-          id: jobFolder.id,
-          name: jobFolder.name,
-          webViewLink: jobFolder.webViewLink,
-          ownedByMe: jobFolder.ownedByMe ?? this.isFolderOwnedByCurrentUser(jobFolder, currentUserEmail),
-        };
       }
     }
 
@@ -626,6 +591,9 @@ export class DriveResolverService {
         const isDesc = await this.isDescendantOf(token, c.id, targetRootFolderId);
         if (!isDesc) continue;
       }
+
+      // Only leaf folders (no sub-folders, contains files) are delivery folders
+      if (!(await this.isLeafFolderWithFiles(token, c.id))) continue;
 
       eligibleCandidates.push(c);
     }
@@ -692,48 +660,71 @@ export class DriveResolverService {
           if (!isDesc) continue;
         }
 
-        const children = await this.getChildFolders(token, custFolder.id);
-        const validChildren = children.filter((c) => !isRawFolder(c.name));
-
-        if (validChildren.length > 0) {
-          const exactChild = validChildren.find((c) => areFolderNamesEqual(c.name, cleanTargetName));
-          if (exactChild) {
-            return {
-              id: exactChild.id,
-              name: exactChild.name,
-              webViewLink: exactChild.webViewLink,
-              ownedByMe: exactChild.ownedByMe ?? this.isFolderOwnedByCurrentUser(exactChild, currentUserEmail),
-            };
-          }
-
-          const deliveryChild = validChildren.find((c) => isDeliveryFolder(c.name));
-          if (deliveryChild) {
-            return {
-              id: deliveryChild.id,
-              name: deliveryChild.name,
-              webViewLink: deliveryChild.webViewLink,
-              ownedByMe: deliveryChild.ownedByMe ?? this.isFolderOwnedByCurrentUser(deliveryChild, currentUserEmail),
-            };
-          }
-
+        const leaf = await this.pickLeafDeliveryFolder(token, custFolder, cleanTargetName);
+        if (leaf) {
           return {
-            id: validChildren[0].id,
-            name: validChildren[0].name,
-            webViewLink: validChildren[0].webViewLink,
-            ownedByMe: validChildren[0].ownedByMe ?? this.isFolderOwnedByCurrentUser(validChildren[0], currentUserEmail),
+            id: leaf.id,
+            name: leaf.name,
+            webViewLink: leaf.webViewLink,
+            ownedByMe: leaf.ownedByMe ?? this.isFolderOwnedByCurrentUser(leaf, currentUserEmail),
           };
         }
-
-        return {
-          id: custFolder.id,
-          name: custFolder.name,
-          webViewLink: custFolder.webViewLink,
-          ownedByMe: custFolder.ownedByMe ?? this.isFolderOwnedByCurrentUser(custFolder, currentUserEmail),
-        };
       }
     }
 
     return null;
+  }
+
+  /**
+   * Picks the delivery folder for a container (job / customer / matched folder).
+   * Only a leaf folder qualifies: it has no sub-folders and contains at least one file.
+   * Order: the container itself, then immediate children by exact target name,
+   * delivery keywords, then the rest (latest modified first). Raw folders are skipped.
+   */
+  public async pickLeafDeliveryFolder(
+    token: string,
+    container: DriveFolderItem,
+    targetFolderName?: string
+  ): Promise<DriveFolderItem | null> {
+    if (await this.isLeafFolderWithFiles(token, container.id)) {
+      return container;
+    }
+
+    const children = await this.getChildFolders(token, container.id);
+    const validChildren = children.filter((c) => !isRawFolder(c.name));
+    const ordered = [
+      ...validChildren.filter((c) => targetFolderName && areFolderNamesEqual(c.name, targetFolderName)),
+      ...validChildren.filter((c) => isDeliveryFolder(c.name)),
+      ...validChildren,
+    ].filter((c, idx, arr) => arr.findIndex((x) => x.id === c.id) === idx);
+
+    for (const child of ordered) {
+      if (await this.isLeafFolderWithFiles(token, child.id)) {
+        return child;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Returns true when the folder has no sub-folders and contains at least one file.
+   */
+  public async isLeafFolderWithFiles(token: string, folderId: string): Promise<boolean> {
+    if (this.leafFolderCache.has(folderId)) {
+      return this.leafFolderCache.get(folderId)!;
+    }
+
+    const subFolders = await this.getChildFolders(token, folderId);
+    let isLeaf = false;
+    if (subFolders.length === 0) {
+      const fileQuery = `'${folderId}' in parents and mimeType != 'application/vnd.google-apps.folder' and trashed = false`;
+      const files = await this.queryDriveFiles(token, fileQuery, "modifiedTime desc", 1);
+      isLeaf = files.length > 0;
+    }
+
+    this.leafFolderCache.set(folderId, isLeaf);
+    return isLeaf;
   }
 
   private async findMatchingParentCandidate(

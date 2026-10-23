@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useContactSheetStore } from "../stores/useContactSheetStore.ts";
 import { useAuthStore } from "../../../core/stores/useAuthStore.ts";
-import { checkAppAccess } from "../../../core/services/appEntitlementPolicy.ts";
+import { hasGoogleFeatureAccess } from "../../../core/services/appEntitlementPolicy.ts";
 
 /**
  * Standard MVD Tech & Design Studio Desktop Google OAuth Client ID & Secret.
@@ -53,15 +53,6 @@ interface GoogleUserInfo {
   picture?: string;
 }
 
-/**
- * The plan in the local session is only trusted to revoke Google access once the server has
- * confirmed it. Offline (e.g. network not up yet right after the machine boots) the session
- * comes from disk and may be stale, so a "no access" result there must not wipe the tokens.
- */
-function isAccessStateConfirmed(): boolean {
-  return !useAuthStore.getState().isOffline;
-}
-
 class GoogleNetworkError extends Error {
   constructor() {
     super("GOOGLE_NETWORK_ERROR: Không kết nối được tới Google. Vui lòng kiểm tra mạng rồi thử lại.");
@@ -106,6 +97,20 @@ function removeSafeStorage(key: string): void {
   }
 }
 
+function currentUserId(): string | null {
+  const session = useAuthStore.getState().session;
+  return session?.userId || session?.email || null;
+}
+
+/** Backup of "which Google account this app user connected", kept by Rust on disk. */
+function rememberActiveAccountNatively(accountEmail: string): void {
+  const userId = currentUserId();
+  if (!userId) return;
+  void invoke("save_google_active_account", { userId, accountEmail }).catch((err) =>
+    console.warn("Failed to remember Google account natively:", err)
+  );
+}
+
 class GoogleCredentialManager {
   private currentAccessToken: string | null = null;
   private inMemoryRefreshToken: string | null = null;
@@ -143,20 +148,11 @@ class GoogleCredentialManager {
       return;
     }
 
-    const access = checkAppAccess(session, "contact-the-sheet");
-    if (!access.hasAccess) {
-      if (!isAccessStateConfirmed()) {
-        this.clearActiveSession();
-        return;
-      }
-      const userKey = getUserStorageKey("mvd_google_active_email");
-      const hasSaved = !!getSafeStorage(userKey) || !!this.activeAccountEmail;
-      if (hasSaved) {
-        console.warn("[GoogleCredentialBridge] 7-Day trial expired or unauthenticated. Immediately disconnecting Google account on this device.");
-        this.disconnectGoogle();
-      } else {
-        this.clearActiveSession();
-      }
+    // Without a licence the connection is only paused; the saved Google login is kept so it
+    // comes back by itself once the plan is renewed. Credentials are deleted only when the
+    // user presses "Ngắt kết nối".
+    if (!hasGoogleFeatureAccess(session)) {
+      this.clearActiveSession();
       return;
     }
 
@@ -192,6 +188,7 @@ class GoogleCredentialManager {
 
     if (savedEmail) {
       this.activeAccountEmail = savedEmail;
+      rememberActiveAccountNatively(savedEmail);
       const name = getSafeStorage(getUserStorageKey("mvd_google_user_name")) || undefined;
       const avatar = getSafeStorage(getUserStorageKey("mvd_google_avatar")) || undefined;
       const savedToken = getSafeStorage(getUserStorageKey("mvd_google_access_token"));
@@ -231,7 +228,30 @@ class GoogleCredentialManager {
       }
     } else {
       this.clearActiveSession();
+      this.restoreFromNativeRecord();
     }
+  }
+
+  /**
+   * localStorage can be lost (WebView data reset, reinstall); the refresh token and the
+   * account it belongs to are also kept by Rust on disk, so reconnect silently from there.
+   */
+  private restoreFromNativeRecord(): void {
+    const userId = currentUserId();
+    if (!userId) return;
+    void (async () => {
+      try {
+        const email = await invoke<string | null>("get_google_active_account", { userId });
+        if (!email || currentUserId() !== userId) return;
+        const token = await invoke<string | null>("get_google_secure_token", { accountEmail: email });
+        if (!token || currentUserId() !== userId) return;
+        setSafeStorage(getUserStorageKey("mvd_google_active_email"), email);
+        setSafeStorage(getUserStorageKey("mvd_google_refresh_token"), token);
+        this.restoreSavedSession();
+      } catch (err) {
+        console.warn("Native Google account restore failed:", err);
+      }
+    })();
   }
 
   /**
@@ -239,17 +259,9 @@ class GoogleCredentialManager {
    */
   public async getValidAccessToken(forceRefresh: boolean = false): Promise<string> {
     const session = useAuthStore.getState().session;
-    if (session) {
-      const hasAccess =
-        checkAppAccess(session, "contact-the-sheet").hasAccess ||
-        checkAppAccess(session, "photo-picker").hasAccess;
-      if (!hasAccess) {
-        if (!isAccessStateConfirmed()) {
-          throw new Error("EXPIRED: Chưa xác minh được gói sử dụng khi đang offline. Vui lòng kết nối mạng rồi thử lại.");
-        }
-        await this.disconnectGoogle();
-        throw new Error("EXPIRED: Gói sử dụng tính năng Google Sheet đã hết hạn. Tài khoản Google đã được ngắt kết nối tự động.");
-      }
+    if (session && !hasGoogleFeatureAccess(session)) {
+      this.clearActiveSession();
+      throw new Error("EXPIRED: Gói sử dụng tính năng Google Sheet đã hết hạn. Vui lòng gia hạn để tiếp tục (tài khoản Google vẫn được giữ).");
     }
 
     const now = Date.now();
@@ -330,6 +342,7 @@ class GoogleCredentialManager {
       this.activeAccountEmail = accountEmail;
 
       setSafeStorage(getUserStorageKey("mvd_google_active_email"), accountEmail);
+      rememberActiveAccountNatively(accountEmail);
       setSafeStorage(getUserStorageKey("mvd_google_access_token"), data.access_token);
       setSafeStorage(getUserStorageKey("mvd_google_token_expires_at"), String(this.tokenExpiresAt));
 
@@ -374,13 +387,8 @@ class GoogleCredentialManager {
    */
   public async connectGoogle(clientId: string = DEFAULT_MVD_GOOGLE_CLIENT_ID): Promise<void> {
     const session = useAuthStore.getState().session;
-    if (session) {
-      const hasAccess =
-        checkAppAccess(session, "contact-the-sheet").hasAccess ||
-        checkAppAccess(session, "photo-picker").hasAccess;
-      if (!hasAccess) {
-        throw new Error("EXPIRED: Tính năng kết nối Google Sheet yêu cầu kích hoạt gói sử dụng hợp lệ.");
-      }
+    if (session && !hasGoogleFeatureAccess(session)) {
+      throw new Error("EXPIRED: Tính năng kết nối Google Sheet yêu cầu kích hoạt gói sử dụng hợp lệ.");
     }
 
     useContactSheetStore.getState().setGoogleConnection({ status: "CONNECTING", error: undefined });
@@ -463,6 +471,8 @@ class GoogleCredentialManager {
         }
       }
 
+      rememberActiveAccountNatively(accountEmail);
+
       // 8. Update store state
       useContactSheetStore.getState().setGoogleConnection({
         status: "CONNECTED",
@@ -494,6 +504,10 @@ class GoogleCredentialManager {
       } catch (err) {
         console.warn("Failed to delete token from native storage:", err);
       }
+    }
+    const userId = currentUserId();
+    if (userId) {
+      await invoke("clear_google_active_account", { userId }).catch(() => {});
     }
 
     this.currentAccessToken = null;
@@ -528,8 +542,7 @@ export const googleCredentialManager = new GoogleCredentialManager();
 function trackedAuthKey(state: ReturnType<typeof useAuthStore.getState>): string | null {
   const session = state.session;
   if (!session?.userId) return null;
-  const hasAccess = checkAppAccess(session, "contact-the-sheet").hasAccess;
-  return `${session.userId}:${hasAccess}:${state.isOffline}`;
+  return `${session.userId}:${hasGoogleFeatureAccess(session)}`;
 }
 
 let lastTrackedKey: string | null = trackedAuthKey(useAuthStore.getState());

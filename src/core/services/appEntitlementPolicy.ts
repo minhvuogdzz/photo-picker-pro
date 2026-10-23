@@ -154,6 +154,14 @@ export function checkAppAccess(
  * còn hạn đều được coi là không giới hạn (daysRemaining là số ngày còn lại của gói,
  * không phân biệt trial/paid) — tính năng giới hạn phiên vì thế không bao giờ chạy.
  */
+/**
+ * Google Sheet / Drive features are part of both Contact The Sheet and Photo Picker
+ * (sheet code extractor, filter status sync), so either licence allows the Google connection.
+ */
+export function hasGoogleFeatureAccess(session: AuthSession | null | undefined): boolean {
+  return checkAppAccess(session, "contact-the-sheet").hasAccess || checkAppAccess(session, "photo-picker").hasAccess;
+}
+
 export function isUnlimitedSession(session: AuthSession | null | undefined): boolean {
   if (!session) return false;
   if (session.role === "ADMIN") return true;

@@ -2,6 +2,24 @@
 
 Tất cả các bản phát hành của **DH Studio Pro** (phát triển & thuộc sở hữu bản quyền của **DevHouse Software**) đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
 
+## [v2.8.1] - 2026-10-23
+
+### Trong bản cập nhật này, chúng tôi đã:
+
+#### 🔗 Giữ kết nối tài khoản Google ổn định (Sheet & Drive)
+- **Khắc phục triệt để lỗi bị đăng xuất tài khoản Google sau khi tắt máy hoặc thoát app:** Trước đây, tài khoản chỉ sở hữu một trong hai gói (Contact The Sheet hoặc Photo Picker) bị ngắt kết nối Google mỗi lần mở lại ứng dụng. Nay kết nối Google được giữ nguyên cho cả hai gói.
+- **Không còn tự động xoá kết nối Google:** Khi gói hết hạn, tính năng Google chỉ tạm khoá và tự hoạt động lại ngay sau khi gia hạn, không cần đăng nhập Google lại. Kết nối chỉ bị xoá khi bạn chủ động bấm "Ngắt kết nối".
+- **Lưu dự phòng an toàn trên máy:** Thông tin kết nối Google được lưu thêm một bản trong thư mục ứng dụng, giúp tự khôi phục kết nối kể cả khi dữ liệu tạm của ứng dụng bị xoá.
+
+#### 📁 Contact The Sheet — Điền link Drive chính xác hơn
+- **Chỉ chọn thư mục giao ảnh cuối cùng có chứa file:** Khi quét để điền link Drive, hệ thống bỏ qua thư mục còn thư mục con hoặc thư mục rỗng, tự lùi về thư mục giao ảnh gần nhất hợp lệ, tránh điền nhầm link thư mục cha hay thư mục trống.
+
+#### ✅ Photo Picker — Kiểm tra trạng thái lọc
+- **Kiểm tra nhiều tab cùng lúc:** Chọn được nhiều tab Google Sheet trong một lần kiểm tra; lựa chọn được ghi nhớ cho lần sau.
+- **Quét file tới hạn:** Tuỳ chọn chỉ hiển thị các khách có ngày "Hẹn trả ảnh" từ hôm nay (giờ Việt Nam) trở về trước, cấu hình được cột ngày hẹn.
+
+---
+
 ## [v2.8.0] - 2026-10-20
 
 ### Trong bản cập nhật này, chúng tôi đã:

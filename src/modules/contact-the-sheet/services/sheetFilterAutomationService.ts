@@ -5,7 +5,7 @@ import { googleCredentialManager } from "./googleCredentialBridge.ts";
 import { sheetDiscoveryService } from "./sheetDiscoveryService.ts";
 import { sheetExtractorService } from "./sheetExtractorService.ts";
 import { sheetUpdateService } from "./sheetUpdateService.ts";
-import { checkAppAccess } from "../../../core/services/appEntitlementPolicy.ts";
+import { hasGoogleFeatureAccess } from "../../../core/services/appEntitlementPolicy.ts";
 import type { CopyResult } from "../../../core/types/index.ts";
 
 export class SheetFilterAutomationService {
@@ -42,11 +42,9 @@ export class SheetFilterAutomationService {
 
     // 0. Validate permission for Google Sheets automation
     const session = useAuthStore.getState().session;
-    const hasSheetAccess =
-      checkAppAccess(session, "contact-the-sheet").hasAccess ||
-      checkAppAccess(session, "photo-picker").hasAccess;
+    const hasSheetAccess = hasGoogleFeatureAccess(session);
     if (!hasSheetAccess && !isMock) {
-      await googleCredentialManager.disconnectGoogle();
+      googleCredentialManager.clearActiveSession();
       const msg = "Gói sử dụng tính năng Google Sheet đã hết hạn. Vui lòng kích hoạt gói để tiếp tục.";
       setSheetUpdateStatus({
         state: "error",

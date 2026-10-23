@@ -1,8 +1,6 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { useAppStore } from "@/core/stores/useAppStore";
 import { useAuthStore } from "@/core/stores/useAuthStore";
-import { checkAppAccess } from "@/core/services/appEntitlementPolicy";
-import { googleCredentialManager } from "@/modules/contact-the-sheet/services/googleCredentialBridge";
 import { LeftPanel } from "./components/LeftPanel";
 import { CenterPanel } from "./components/CenterPanel";
 import { RightPanel } from "./components/RightPanel";
@@ -14,14 +12,6 @@ import { RemoveCompletedCustomerDialog } from "./components/RemoveCompletedCusto
 
 export function PhotoPickerModule() {
   const activeTab = useAppStore((s) => s.activeTab);
-  const session = useAuthStore((s) => s.session);
-
-  useEffect(() => {
-    const pickerAccess = checkAppAccess(session, "photo-picker");
-    if (!pickerAccess.hasAccess && googleCredentialManager.isConnected()) {
-      googleCredentialManager.disconnectGoogle();
-    }
-  }, [session]);
 
   return (
     <div className="flex-1 flex flex-col min-h-0 w-full h-full gap-2">

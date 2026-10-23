@@ -50,6 +50,9 @@ test("Drive Resolver: searchDriveForDeliveryFolder selects candidate matching jo
     orderBy: string,
     pageSize: number
   ) => {
+    // Every folder contains files unless a test says otherwise (leaf-folder check)
+    if (query.includes("mimeType != ")) return [{ id: "file_img_1", name: "IMG_0001.jpg" }];
+
     // If querying by job folder name
     if (query.includes("5-9 18h Huyền Phan 1cc")) {
       return []; // simulate job folder not found directly
@@ -102,6 +105,9 @@ test("Drive Resolver: searchDriveForDeliveryFolder picks latest modified folder 
     orderBy: string,
     pageSize: number
   ) => {
+    // Every folder contains files unless a test says otherwise (leaf-folder check)
+    if (query.includes("mimeType != ")) return [{ id: "file_img_1", name: "IMG_0001.jpg" }];
+
     if (query.includes("File hoàn thiện")) {
       return [
         {
@@ -141,6 +147,9 @@ test("Drive Resolver: searchDriveForDeliveryFolder finds finished subfolder insi
     orderBy: string,
     pageSize: number
   ) => {
+    // Every folder contains files unless a test says otherwise (leaf-folder check)
+    if (query.includes("mimeType != ")) return [{ id: "file_img_1", name: "IMG_0001.jpg" }];
+
     // Found job folder
     if (query.includes("10-9 15h Huy hoàng")) {
       return [
@@ -251,6 +260,9 @@ test("Drive Resolver (CRITICAL BUG FIX): Hierarchical walk down from configured 
 
   // Simulate Drive structure
   (service as any).queryDriveFiles = async (token: string, query: string) => {
+    // Every folder contains files unless a test says otherwise (leaf-folder check)
+    if (query.includes("mimeType != ")) return [{ id: "file_img_1", name: "IMG_0001.jpg" }];
+
     // 1. Children of shortcut base: 1wmPRksbQLAUMq5SnBi7TazBZ7ax5WuYI
     if (query.includes("'1wmPRksbQLAUMq5SnBi7TazBZ7ax5WuYI' in parents")) {
       return [
@@ -367,3 +379,85 @@ test("Drive Resolver: Scoped search strictly excludes folders outside configured
   assert.equal(match2, null, "Must reject raw photo folder or folder outside root");
 });
 
+
+test("Drive Resolver: skips latest folder that still has sub-folders and picks older leaf folder", async () => {
+  const service = new DriveResolverService();
+
+  (service as any).queryDriveFiles = async (token: string, query: string) => {
+    if (query.includes("mimeType != ")) return [{ id: "file_img_1", name: "IMG_0001.jpg" }];
+    // Latest candidate still contains a sub-folder (not finished yet)
+    if (query.includes("'folder_latest_with_sub' in parents")) {
+      return [{ id: "nested_sub", name: "Chọn lại", parents: ["folder_latest_with_sub"] }];
+    }
+    if (query.includes("File hoàn thiện")) {
+      return [
+        { id: "folder_latest_with_sub", name: "File hoàn thiện", parents: ["p1"], modifiedTime: "2026-09-11T01:30:00Z" },
+        { id: "folder_older_leaf", name: "File hoàn thiện", parents: ["p2"], modifiedTime: "2026-09-08T10:00:00Z" },
+      ];
+    }
+    return [];
+  };
+  (service as any).getFolderNameById = async () => null;
+
+  const match = await service.searchDriveForDeliveryFolder("mock_token", "File hoàn thiện");
+
+  assert.ok(match);
+  assert.equal(match.id, "folder_older_leaf", "Folder with sub-folders must be skipped");
+});
+
+test("Drive Resolver: skips empty folder (no files) even if it is the latest", async () => {
+  const service = new DriveResolverService();
+
+  (service as any).queryDriveFiles = async (token: string, query: string) => {
+    if (query.includes("mimeType != ")) {
+      return query.includes("'folder_latest_empty' in parents") ? [] : [{ id: "file_img_1", name: "IMG_0001.jpg" }];
+    }
+    if (query.includes("File hoàn thiện")) {
+      return [
+        { id: "folder_latest_empty", name: "File hoàn thiện", parents: ["p1"], modifiedTime: "2026-09-11T01:30:00Z" },
+        { id: "folder_older_with_files", name: "File hoàn thiện", parents: ["p2"], modifiedTime: "2026-09-08T10:00:00Z" },
+      ];
+    }
+    return [];
+  };
+  (service as any).getFolderNameById = async () => null;
+
+  const match = await service.searchDriveForDeliveryFolder("mock_token", "File hoàn thiện");
+
+  assert.ok(match);
+  assert.equal(match.id, "folder_older_with_files", "Empty folder must be skipped");
+});
+
+test("Drive Resolver: job folder whose children all have sub-folders falls back to older job folder", async () => {
+  const service = new DriveResolverService();
+
+  (service as any).queryDriveFiles = async (token: string, query: string) => {
+    if (query.includes("mimeType != ")) return [{ id: "file_img_1", name: "IMG_0001.jpg" }];
+    if (query.includes("'job_new' in parents")) {
+      return [{ id: "job_new_final", name: "File hoàn thiện", parents: ["job_new"] }];
+    }
+    if (query.includes("'job_new_final' in parents")) {
+      return [{ id: "job_new_final_nested", name: "Bản 2", parents: ["job_new_final"] }];
+    }
+    if (query.includes("'job_old' in parents")) {
+      return [{ id: "job_old_final", name: "File hoàn thiện", parents: ["job_old"] }];
+    }
+    if (query.includes("12-9 9h Lan Anh")) {
+      return [
+        { id: "job_new", name: "12-9 9h Lan Anh", modifiedTime: "2026-09-12T10:00:00Z" },
+        { id: "job_old", name: "12-9 9h Lan Anh", modifiedTime: "2026-09-12T08:00:00Z" },
+      ];
+    }
+    return [];
+  };
+
+  const match = await service.searchDriveForDeliveryFolder(
+    "mock_token",
+    "File hoàn thiện",
+    "12-9 9h Lan Anh",
+    "Lan Anh"
+  );
+
+  assert.ok(match);
+  assert.equal(match.id, "job_old_final", "Must pick leaf folder from older job folder");
+});
