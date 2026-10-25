@@ -67,7 +67,7 @@ export default function ContactTheSheetApp() {
               <h1 className="font-semibold text-xs tracking-tight text-foreground truncate">
                 Contact the Sheet
               </h1>
-              <span className="text-[9px] font-medium px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase tracking-wider shrink-0">
+              <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase tracking-wider shrink-0">
                 Workflow
               </span>
             </div>

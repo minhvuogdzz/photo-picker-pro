@@ -297,7 +297,7 @@ export function LoginPage() {
             type="button"
             onClick={() => switchMode("login")} 
             className="absolute top-6 left-6 text-muted-foreground hover:text-foreground p-1 transition-colors"
-            title="Quay lại đăng nhập"
+            title="Quay lại đăng nhập" aria-label="Quay lại đăng nhập"
           >
             <ArrowLeft size={18} />
           </button>
@@ -323,25 +323,25 @@ export function LoginPage() {
         {mode === "login" && (
           <form onSubmit={handleLogin} className="space-y-5 animate-slide-up">
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tên tài khoản hoặc Email</label>
+              <label htmlFor="login-field-1" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tên tài khoản hoặc Email</label>
               <div className="relative">
                 <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input type="text" className="input-field pl-10" placeholder="username hoặc email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus disabled={isSubmitting} />
+                <input id="login-field-1" type="text" className="input-field pl-10" placeholder="username hoặc email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus disabled={isSubmitting} />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("password")}</label>
+              <label htmlFor="login-field-2" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("password")}</label>
               <div className="relative">
                 <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input type={showPassword ? "text" : "password"} className="input-field pl-10 pr-10" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} disabled={isSubmitting} />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
+                <input id="login-field-2" type={showPassword ? "text" : "password"} className="input-field pl-10 pr-10" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} disabled={isSubmitting} />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
 
-            {error && <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 animate-slide-up"><p className="text-xs text-destructive font-medium">{error}</p></div>}
+            {error && <div role="alert" className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 animate-slide-up"><p className="text-xs text-destructive font-medium">{error}</p></div>}
 
             <div className="space-y-3 pb-1 animate-slide-up">
               <div className="flex items-center justify-between">
@@ -420,10 +420,10 @@ export function LoginPage() {
             </p>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tên tài khoản / Your Username</label>
+              <label htmlFor="login-field-3" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tên tài khoản / Your Username</label>
               <div className="relative">
                 <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input 
+                <input id="login-field-3" 
                   type="text" 
                   className="input-field pl-10" 
                   placeholder="vd: hoanghan03, nguyenvana..." 
@@ -442,10 +442,10 @@ export function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email</label>
+              <label htmlFor="login-field-4" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email</label>
               <div className="relative">
                 <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input type="email" className="input-field pl-10" placeholder="email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isSubmitting} />
+                <input id="login-field-4" type="email" className="input-field pl-10" placeholder="email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isSubmitting} />
               </div>
             </div>
 
@@ -456,7 +456,7 @@ export function LoginPage() {
               </label>
             </div>
 
-            {error && <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 animate-slide-up"><p className="text-xs text-destructive font-medium">{error}</p></div>}
+            {error && <div role="alert" className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 animate-slide-up"><p className="text-xs text-destructive font-medium">{error}</p></div>}
             <button type="submit" disabled={isSubmitting || !email || !username || !agreeTerms} className="btn-base btn-primary w-full py-3.5 text-sm font-bold shadow-lg shadow-primary/20">
               {isSubmitting ? <><Loader2 size={18} className="animate-spin inline mr-2" />Đang gửi mã...</> : "Tiếp tục"}
             </button>
@@ -469,27 +469,27 @@ export function LoginPage() {
               Mã xác nhận 6 chữ số đã gửi tới <b>{email}</b> cho tài khoản <b>@{username}</b>.
             </p>
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Mã OTP</label>
+              <label htmlFor="login-field-5" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Mã OTP</label>
               <div className="relative">
                 <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input type="text" maxLength={6} className="input-field pl-10 text-center tracking-[0.5em] font-mono text-lg" placeholder="000000" value={code} onChange={(e) => setCode(e.target.value)} required autoFocus disabled={isSubmitting} />
+                <input id="login-field-5" type="text" maxLength={6} className="input-field pl-10 text-center tracking-[0.5em] font-mono text-lg" placeholder="000000" value={code} onChange={(e) => setCode(e.target.value)} required autoFocus disabled={isSubmitting} />
               </div>
             </div>
             
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Họ và tên</label>
+              <label htmlFor="login-field-6" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Họ và tên</label>
               <div className="relative">
                 <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input type="text" className="input-field pl-10" placeholder="Nguyễn Văn A" value={name} onChange={(e) => setName(e.target.value)} required disabled={isSubmitting} />
+                <input id="login-field-6" type="text" className="input-field pl-10" placeholder="Nguyễn Văn A" value={name} onChange={(e) => setName(e.target.value)} required disabled={isSubmitting} />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Mật khẩu</label>
+              <label htmlFor="login-field-7" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Mật khẩu</label>
               <div className="relative">
                 <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input type={showPassword ? "text" : "password"} className="input-field pl-10 pr-10" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} disabled={isSubmitting} />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
+                <input id="login-field-7" type={showPassword ? "text" : "password"} className="input-field pl-10 pr-10" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} disabled={isSubmitting} />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
@@ -507,7 +507,7 @@ export function LoginPage() {
               </button>
             </div>
 
-            {error && <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 animate-slide-up"><p className="text-xs text-destructive font-medium">{error}</p></div>}
+            {error && <div role="alert" className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 animate-slide-up"><p className="text-xs text-destructive font-medium">{error}</p></div>}
             
             <button type="submit" disabled={isSubmitting || code.length !== 6 || !name || password.length < 6} className="btn-base btn-primary w-full py-3.5 text-sm font-bold shadow-lg shadow-primary/20">
               {isSubmitting ? <><Loader2 size={18} className="animate-spin inline mr-2" />Đang đăng ký...</> : "Đăng ký & Đăng nhập"}
@@ -521,13 +521,13 @@ export function LoginPage() {
               Nhập email của bạn để nhận mã xác nhận gồm 6 chữ số khôi phục mật khẩu.
             </p>
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email</label>
+              <label htmlFor="login-field-8" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email</label>
               <div className="relative">
                 <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input type="email" className="input-field pl-10" placeholder="email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus disabled={isSubmitting} />
+                <input id="login-field-8" type="email" className="input-field pl-10" placeholder="email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus disabled={isSubmitting} />
               </div>
             </div>
-            {error && <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 animate-slide-up"><p className="text-xs text-destructive font-medium">{error}</p></div>}
+            {error && <div role="alert" className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 animate-slide-up"><p className="text-xs text-destructive font-medium">{error}</p></div>}
             <button type="submit" disabled={isSubmitting || !email} className="btn-base btn-primary w-full py-3.5 text-sm font-bold shadow-lg shadow-primary/20">
               {isSubmitting ? <><Loader2 size={18} className="animate-spin inline mr-2" />Đang gửi mã...</> : "Gửi mã xác nhận"}
             </button>
@@ -540,10 +540,10 @@ export function LoginPage() {
               Mã xác nhận đã được gửi tới <b>{email}</b>. Vui lòng kiểm tra hộp thư (và thư mục rác).
             </p>
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Mã xác nhận OTP</label>
+              <label htmlFor="login-field-9" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Mã xác nhận OTP</label>
               <div className="relative">
                 <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input type="text" maxLength={6} className="input-field pl-10 text-center tracking-[0.5em] font-mono text-lg" placeholder="000000" value={code} onChange={(e) => setCode(e.target.value)} required autoFocus disabled={isSubmitting} />
+                <input id="login-field-9" type="text" maxLength={6} className="input-field pl-10 text-center tracking-[0.5em] font-mono text-lg" placeholder="000000" value={code} onChange={(e) => setCode(e.target.value)} required autoFocus disabled={isSubmitting} />
               </div>
             </div>
 
@@ -559,7 +559,7 @@ export function LoginPage() {
               </button>
             </div>
 
-            {error && <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 animate-slide-up"><p className="text-xs text-destructive font-medium">{error}</p></div>}
+            {error && <div role="alert" className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 animate-slide-up"><p className="text-xs text-destructive font-medium">{error}</p></div>}
             <button type="submit" disabled={isSubmitting || code.length !== 6} className="btn-base btn-primary w-full py-3.5 text-sm font-bold shadow-lg shadow-primary/20">
               {isSubmitting ? <><Loader2 size={18} className="animate-spin inline mr-2" />Đang kiểm tra...</> : "Xác nhận"}
             </button>
@@ -569,16 +569,16 @@ export function LoginPage() {
         {mode === "reset" && (
           <form onSubmit={handleResetPassword} className="space-y-5 animate-slide-up">
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Mật khẩu mới</label>
+              <label htmlFor="login-field-10" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Mật khẩu mới</label>
               <div className="relative">
                 <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input type={showPassword ? "text" : "password"} className="input-field pl-10 pr-10" placeholder="••••••••" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={6} autoFocus disabled={isSubmitting} />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
+                <input id="login-field-10" type={showPassword ? "text" : "password"} className="input-field pl-10 pr-10" placeholder="••••••••" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={6} autoFocus disabled={isSubmitting} />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
-            {error && <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 animate-slide-up"><p className="text-xs text-destructive font-medium">{error}</p></div>}
+            {error && <div role="alert" className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 animate-slide-up"><p className="text-xs text-destructive font-medium">{error}</p></div>}
             <button type="submit" disabled={isSubmitting || newPassword.length < 6} className="btn-base btn-primary w-full py-3.5 text-sm font-bold shadow-lg shadow-primary/20">
               {isSubmitting ? <><Loader2 size={18} className="animate-spin inline mr-2" />Đang đổi mật khẩu...</> : "Lưu mật khẩu mới"}
             </button>
@@ -602,9 +602,9 @@ export function LoginPage() {
       </div>
       
       {showConflictDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+        <div role="dialog" aria-modal="true" aria-labelledby="dlg-LoginPage-1" className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
           <div className="panel w-full max-w-sm p-6 space-y-6 text-center animate-fade-in shadow-2xl">
-            <h2 className="text-lg font-bold text-foreground">Tài khoản đang được sử dụng</h2>
+            <h2 id="dlg-LoginPage-1" className="text-lg font-bold text-foreground">Tài khoản đang được sử dụng</h2>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Tài khoản này đang được đăng nhập ở thiết bị khác. Bạn có muốn kick thiết bị kia ra và đăng nhập ở đây không?
             </p>

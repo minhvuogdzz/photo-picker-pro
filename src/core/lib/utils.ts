@@ -26,7 +26,8 @@ export function formatDuration(seconds: number): string {
 
 /** Extracts folder name from full path */
 export function getFolderName(path: string): string {
-  const parts = path.replace(/\\/g, "/").split("/");
+  // filter(Boolean) so a trailing slash ("D:\\Khach\\An\\") still yields "An", not the whole path
+  const parts = path.replace(/\\/g, "/").split("/").filter(Boolean);
   return parts[parts.length - 1] || path;
 }
 

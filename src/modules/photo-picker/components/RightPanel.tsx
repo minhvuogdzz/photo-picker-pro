@@ -11,13 +11,13 @@ import {
   FolderOutput,
   HardDrive,
   Timer,
-  Zap,
   ScanSearch,
   Ban,
   Clipboard,
   ClipboardCheck,
   FileSpreadsheet,
   Loader2,
+  Gauge,
 } from "lucide-react";
 import { formatDuration, getFolderName } from "@/core/lib/utils";
 import { useTranslation } from "@/core/lib/i18n";
@@ -315,7 +315,7 @@ export function RightPanel() {
               <div className="flex items-center gap-3">
                 {progress.speed && (
                   <span className="flex items-center gap-1">
-                    <Zap size={9} />
+                    <Gauge size={11} />
                     {progress.speed}
                   </span>
                 )}

@@ -25,7 +25,6 @@ import {
   Trash2,
   FileSpreadsheet,
   Coins,
-  Sparkles,
   ArrowUpRight,
   ArrowLeft,
   Info,
@@ -34,6 +33,8 @@ import {
   CheckCircle2,
   Sliders,
   CalendarDays,
+  Target,
+  X,
 } from "lucide-react";
 import {
   usePhotoCounterStore,
@@ -464,8 +465,9 @@ export default function PhotoCounterApp() {
                 type="button"
                 onClick={() => setRefreshToast(null)}
                 className="text-muted-foreground hover:text-foreground text-xs px-1 cursor-pointer"
+                aria-label="Đóng"
               >
-                ✕
+                <X size={14} aria-hidden="true" />
               </button>
             </div>
           )}
@@ -617,7 +619,7 @@ export default function PhotoCounterApp() {
                         <button
                           type="button"
                           onClick={() => setSalaryConfig({ manualPhotos: null })}
-                          className="text-[9px] text-primary hover:underline"
+                          className="text-[10px] text-primary hover:underline"
                           title="Khôi phục số ảnh đếm từ hệ thống"
                         >
                           Dùng đếm tự động
@@ -797,7 +799,7 @@ export default function PhotoCounterApp() {
                           efficiencyFormula: "Math.floor(T / 1000) * 500000",
                         })
                       }
-                      className="text-[9px] text-primary hover:underline"
+                      className="text-[10px] text-primary hover:underline"
                     >
                       Mặc định (T // 1000 * 500k)
                     </button>
@@ -898,7 +900,7 @@ export default function PhotoCounterApp() {
                   <div className="flex items-center gap-1.5">
                     {calc.isKpiAchieved ? (
                       <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40 flex items-center gap-1 shadow-2xs">
-                        <Sparkles size={11} className="text-emerald-500" />
+                        <Target size={11} className="text-emerald-500" />
                         ĐẠT KPI
                       </span>
                     ) : (
@@ -955,7 +957,7 @@ export default function PhotoCounterApp() {
                   <div className="text-sm font-bold font-mono text-foreground">
                     {formatNum(calc.monthKpi)}
                   </div>
-                  <span className="text-[9px] text-muted-foreground block">
+                  <span className="text-[10px] text-muted-foreground block">
                     Định mức tháng
                   </span>
                 </div>
@@ -968,7 +970,7 @@ export default function PhotoCounterApp() {
                   <div className="text-sm font-bold font-mono text-emerald-600 dark:text-emerald-400">
                     {formatNum(calc.actualPhotos)}
                   </div>
-                  <span className="text-[9px] text-muted-foreground block">
+                  <span className="text-[10px] text-muted-foreground block">
                     Ảnh quy đổi
                   </span>
                 </div>
@@ -993,7 +995,7 @@ export default function PhotoCounterApp() {
                       ? "Đạt chuẩn"
                       : `-${formatNum(calc.monthKpi - calc.actualPhotos)}`}
                   </div>
-                  <span className="text-[9px] text-muted-foreground block">
+                  <span className="text-[10px] text-muted-foreground block">
                     {calc.excessPhotos > 0 ? "Vượt định mức" : calc.isKpiAchieved ? "Chuẩn KPI" : "Cần bổ sung"}
                   </span>
                 </div>
@@ -1006,7 +1008,7 @@ export default function PhotoCounterApp() {
                   <div className="text-sm font-bold font-mono text-foreground">
                     {calc.actualWorkingDays} <span className="text-xs font-normal text-muted-foreground">/ {salaryConfig.daysInMonth} ngày</span>
                   </div>
-                  <span className="text-[9px] text-muted-foreground block">
+                  <span className="text-[10px] text-muted-foreground block">
                     Công thực tế
                   </span>
                 </div>
@@ -1182,7 +1184,7 @@ export default function PhotoCounterApp() {
                     placeholder="Tìm theo ngày hoặc tên khách..."
                     value={searchFilter}
                     onChange={(e) => setSearchFilter(e.target.value)}
-                    className="px-2.5 py-1 text-xs rounded-lg bg-card border border-border text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary w-48"
+                    className="px-2.5 py-1 text-xs rounded-lg bg-card border border-border text-foreground placeholder:text-muted-foreground/85 focus:outline-none focus:border-primary w-48"
                   />
 
                   <button
@@ -1302,7 +1304,7 @@ export default function PhotoCounterApp() {
                               revealItemInDir(day.day_path);
                             }}
                             className="w-6 h-6 rounded hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors"
-                            title="Mở thư mục ngày trong Finder"
+                            title="Mở thư mục ngày trong Finder" aria-label="Mở thư mục ngày trong Finder"
                           >
                             <ExternalLink size={12} />
                           </button>
@@ -1395,13 +1397,13 @@ export default function PhotoCounterApp() {
                                     {/* Sample files */}
                                     {folder.sample_files && folder.sample_files.length > 0 && (
                                       <div className="flex items-center gap-1 flex-wrap mt-1">
-                                        <span className="text-[9px] text-muted-foreground/70">
+                                        <span className="text-[10px] text-muted-foreground/85">
                                           Mẫu:
                                         </span>
                                         {folder.sample_files.slice(0, 3).map((fName, sIdx) => (
                                           <span
                                             key={sIdx}
-                                            className="text-[9px] font-mono px-1 py-0.2 rounded bg-muted/80 text-muted-foreground border border-border/60"
+                                            className="text-[10px] font-mono px-1 py-0.2 rounded bg-muted/80 text-muted-foreground border border-border/60"
                                           >
                                             {fName}
                                           </span>
@@ -1455,7 +1457,7 @@ export default function PhotoCounterApp() {
                                     type="button"
                                     onClick={() => revealItemInDir(folder.folder_path)}
                                     className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                    title="Mở thư mục trong Finder"
+                                    title="Mở thư mục trong Finder" aria-label="Mở thư mục trong Finder"
                                   >
                                     <ExternalLink size={12} />
                                   </button>
@@ -1471,7 +1473,7 @@ export default function PhotoCounterApp() {
                                       });
                                     }}
                                     className="p-1 rounded hover:bg-destructive/15 text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
-                                    title="Xoá thư mục con này ra khỏi hệ thống thống kê"
+                                    title="Xoá thư mục con này ra khỏi hệ thống thống kê" aria-label="Xoá thư mục con này ra khỏi hệ thống thống kê"
                                   >
                                     <Trash2 size={12} />
                                   </button>
@@ -1492,7 +1494,7 @@ export default function PhotoCounterApp() {
 
       {/* 5. REMOVE FROM SYSTEM MODAL (100% IN-APP, NO DISK MODIFICATION) */}
       {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs animate-in fade-in duration-150">
+        <div role="dialog" aria-modal="true" aria-labelledby="dlg-PhotoCounterApp-1" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="bg-card border border-border shadow-2xl rounded-2xl max-w-md w-full p-5 space-y-4">
             {/* Header */}
             <div className="flex items-center gap-3">
@@ -1500,7 +1502,7 @@ export default function PhotoCounterApp() {
                 <Trash2 size={20} />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-foreground">
+                <h3 id="dlg-PhotoCounterApp-1" className="text-sm font-bold text-foreground">
                   Xoá khỏi hệ thống thống kê
                 </h3>
                 <p className="text-xs text-muted-foreground">

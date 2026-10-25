@@ -195,33 +195,36 @@ export function BatchRunnerView({
 
       const allSheetRows: SheetRowRecord[] = [];
 
-      for (let i = 0; i < tabsToScan.length; i++) {
-        const tabTitle = tabsToScan[i];
-        const tabConfig = activeProfile.tabConfigurations?.[tabTitle];
-        const startRow = tabConfig?.rowScope?.startRow ?? activeProfile.rowScope.startRow;
+      setScanProgress({
+        current: 30,
+        total: 100,
+        message: isSandbox
+          ? "Đang nạp dữ liệu bảng tính mẫu..."
+          : `Đang tải dữ liệu Google Sheet (${tabsToScan.length} tab song song)...`,
+      });
 
-        setScanProgress({
-          current: 10 + Math.round(((i + 1) / tabsToScan.length) * 35),
-          total: 100,
-          message: isSandbox
-            ? `Đang nạp dữ liệu bảng tính mẫu (Tab "${tabTitle}")...`
-            : `Đang tải dữ liệu Google Sheet tab "${tabTitle}" (từ dòng ${startRow})...`,
-        });
-
-        try {
-          const rows = await sheetDiscoveryService.fetchSheetRowsForMatching(
-            activeProfile.spreadsheetId,
-            tabTitle,
-            startRow,
-            undefined,
-            isSandbox
-          );
-          for (const r of rows) {
-            allSheetRows.push({ ...r, tabTitle });
+      // Fetch all tabs in parallel; keep rows in tab order
+      const perTabRows = await Promise.all(
+        tabsToScan.map(async (tabTitle) => {
+          const tabConfig = activeProfile.tabConfigurations?.[tabTitle];
+          const startRow = tabConfig?.rowScope?.startRow ?? activeProfile.rowScope.startRow;
+          try {
+            const rows = await sheetDiscoveryService.fetchSheetRowsForMatching(
+              activeProfile.spreadsheetId,
+              tabTitle,
+              startRow,
+              undefined,
+              isSandbox
+            );
+            return rows.map((r) => ({ ...r, tabTitle }));
+          } catch (tabErr) {
+            console.warn(`Lỗi khi nạp dữ liệu tab ${tabTitle}:`, tabErr);
+            return [];
           }
-        } catch (tabErr) {
-          console.warn(`Lỗi khi nạp dữ liệu tab ${tabTitle}:`, tabErr);
-        }
+        })
+      );
+      for (const rows of perTabRows) {
+        allSheetRows.push(...rows);
       }
 
       setScanProgress({

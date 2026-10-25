@@ -717,7 +717,7 @@ export function WorkspaceWizard() {
                   <Plus size={14} className="text-primary" />
                   <span>Thêm cột mapping tùy chỉnh vào bảng</span>
                 </h4>
-                <button
+                <button aria-label="Đóng"
                   onClick={() => setIsAddingColumn(false)}
                   className="text-muted-foreground hover:text-foreground p-1 rounded-lg"
                 >
@@ -897,7 +897,7 @@ export function WorkspaceWizard() {
                           <button
                             type="button"
                             onClick={() => handleRemoveColumn(m.columnIndex)}
-                            title="Xóa cột này khỏi danh sách mapping"
+                            title="Xóa cột này khỏi danh sách mapping" aria-label="Xóa cột này khỏi danh sách mapping"
                             className="p-1 hover:bg-destructive/15 text-muted-foreground hover:text-destructive rounded-lg transition-colors cursor-pointer"
                           >
                             <Trash2 size={13} />

@@ -18,17 +18,17 @@ export function ConflictResolverDialog({ job, onResolve, onClose }: Props) {
   const proposedValue = job.conflictDetails?.proposedValue || job.driveWebLink || "";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
+    <div role="dialog" aria-modal="true" aria-labelledby="dlg-ConflictResolverDialog-1" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
       <div className="bg-card border border-border shadow-2xl rounded-2xl w-full max-w-lg overflow-hidden flex flex-col animate-scale-in">
         {/* Header */}
         <div className="px-5 py-4 border-b border-border flex items-center justify-between bg-muted/20">
           <div className="flex items-center gap-2.5">
             <AlertCircle size={18} className="text-amber-500" />
-            <h3 className="font-extrabold text-sm text-foreground">
+            <h3 id="dlg-ConflictResolverDialog-1" className="font-extrabold text-sm text-foreground">
               Xử lý xung đột ô {fieldName}
             </h3>
           </div>
-          <button
+          <button aria-label="Đóng"
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted transition-colors cursor-pointer"
           >

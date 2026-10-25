@@ -3,7 +3,6 @@ import { createPortal } from "react-dom";
 import {
   X,
   HelpCircle,
-  Sparkles,
   Copy,
   Check,
   Layers,
@@ -63,7 +62,7 @@ export function FilterSyntaxHelpModal({ isOpen, onClose }: FilterSyntaxHelpModal
   const sampleDashCode = `HPP01099-01006-01078-00987\nZHA_0555-0573-0576`;
 
   return createPortal(
-    <div
+    <div role="dialog" aria-modal="true" aria-labelledby="dlg-FilterSyntaxHelpModal-1"
       className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm animate-fade-in select-none"
       onClick={onClose}
     >
@@ -75,11 +74,11 @@ export function FilterSyntaxHelpModal({ isOpen, onClose }: FilterSyntaxHelpModal
         <div className="shrink-0 px-5 py-3.5 border-b border-border/80 flex items-center justify-between bg-muted/20">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary border border-primary/25 flex items-center justify-center shrink-0">
-              <Sparkles size={16} />
+              <BookOpen size={16} />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-foreground">
+                <h3 id="dlg-FilterSyntaxHelpModal-1" className="text-sm font-bold text-foreground">
                   Hướng dẫn cú pháp & Xử lý mã trùng tiền tố
                 </h3>
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/25">
@@ -96,7 +95,7 @@ export function FilterSyntaxHelpModal({ isOpen, onClose }: FilterSyntaxHelpModal
             type="button"
             onClick={onClose}
             className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors cursor-pointer"
-            title="Đóng (Esc)"
+            title="Đóng (Esc)" aria-label="Đóng (Esc)"
           >
             <X size={16} />
           </button>
@@ -171,7 +170,7 @@ export function FilterSyntaxHelpModal({ isOpen, onClose }: FilterSyntaxHelpModal
                   Khi khách hàng chọn ảnh từ nhiều máy (ví dụ Máy 1 - <strong className="text-foreground">ABC</strong> và Máy 2 - <strong className="text-foreground">DEF</strong>). Khách thường chỉ gõ đầu mã ở ảnh đầu tiên, các ảnh sau chỉ ghi số đuôi.
                 </p>
                 <div className="text-[11px] text-foreground font-medium bg-background/60 p-2.5 rounded-lg border border-border/40">
-                  👉 <strong>Cơ chế tự động:</strong> App sẽ ghi nhớ tiền tố của mã đầu tiên và <span className="text-primary font-semibold">tự động áp tiền tố đó cho tất cả các mã số thuần túy bên dưới</span> cho đến khi gặp một đầu mã mới!
+                  <strong>Cơ chế tự động:</strong> App sẽ ghi nhớ tiền tố của mã đầu tiên và <span className="text-primary font-semibold">tự động áp tiền tố đó cho tất cả các mã số thuần túy bên dưới</span> cho đến khi gặp một đầu mã mới!
                 </div>
               </div>
 
@@ -236,7 +235,7 @@ export function FilterSyntaxHelpModal({ isOpen, onClose }: FilterSyntaxHelpModal
                   Nếu bạn muốn bỏ qua toàn bộ tiền tố chữ (ví dụ: <code className="bg-amber-500/15 px-1 py-0.2 rounded font-mono font-bold">IGM0088</code>, <code className="bg-amber-500/15 px-1 py-0.2 rounded font-mono font-bold">IMG0138</code>) và chỉ tìm theo số thuần túy (<code className="font-mono font-bold">0088</code>, <code className="font-mono font-bold">0138</code>), chỉ cần gõ <code className="bg-amber-500/15 px-1 py-0.2 rounded font-mono font-bold">@clear</code> hoặc <code className="bg-amber-500/15 px-1 py-0.2 rounded font-mono font-bold">@none</code> trên một dòng riêng.
                 </p>
                 <p className="text-[10px] text-amber-600/90 dark:text-amber-400/90 leading-relaxed">
-                  ✨ Tính năng này hoạt động hiệu quả cho cả chế độ <strong>Chính xác</strong> lẫn <strong>Chứa</strong>, giúp khớp đúng file dù khách gõ sai tiền tố máy ảnh.
+                  Tính năng này hoạt động hiệu quả cho cả chế độ <strong>Chính xác</strong> lẫn <strong>Chứa</strong>, giúp khớp đúng file dù khách gõ sai tiền tố máy ảnh.
                 </p>
               </div>
             </div>
@@ -298,7 +297,7 @@ export function FilterSyntaxHelpModal({ isOpen, onClose }: FilterSyntaxHelpModal
               </div>
 
               <div className="text-[11px] text-muted-foreground leading-relaxed p-2.5 rounded-lg bg-muted/20 border border-border/50">
-                💡 <strong>Lời khuyên:</strong> Hãy giữ chế độ <strong>Chính xác (Exact)</strong> vì app đã tự động bỏ qua các ký tự phân cách này. Bạn không cần phải chuyển sang chế độ "Chứa" nữa!
+                <strong>Lời khuyên:</strong> Hãy giữ chế độ <strong>Chính xác (Exact)</strong> vì app đã tự động bỏ qua các ký tự phân cách này. Bạn không cần phải chuyển sang chế độ "Chứa" nữa!
               </div>
             </div>
           )}
@@ -316,10 +315,10 @@ export function FilterSyntaxHelpModal({ isOpen, onClose }: FilterSyntaxHelpModal
                 </p>
                 <div className="text-[11px] text-foreground font-medium bg-background/60 p-2.5 rounded-lg border border-border/40 space-y-1">
                   <div>
-                    ✨ <strong>Ưu tiên thông minh:</strong> Khi mã có tiền tố (ví dụ <code className="font-mono font-bold text-primary">ABC1234</code>), chế độ Chứa sẽ ưu tiên lấy file có chứa cả chữ "ABC" lẫn số "1234" để không chọn nhầm máy khác.
+                    <strong>Ưu tiên thông minh:</strong> Khi mã có tiền tố (ví dụ <code className="font-mono font-bold text-primary">ABC1234</code>), chế độ Chứa sẽ ưu tiên lấy file có chứa cả chữ "ABC" lẫn số "1234" để không chọn nhầm máy khác.
                   </div>
                   <div className="text-emerald-600 dark:text-emerald-400">
-                    🛡️ <strong>Chống sót mã khi khách gõ nhầm chữ:</strong> Nếu khách gõ lộn tiền tố (ví dụ: gõ nhầm <code className="font-mono font-bold">ACB1234</code> thay vì <code className="font-mono font-bold">ABC1234</code>, hoặc <code className="font-mono font-bold">IGM0088</code> thay vì <code className="font-mono font-bold">IMG0088</code>), app sẽ <strong>tự động tìm theo số</strong> để vẫn tìm ra ảnh cho bạn!
+                    <strong>Chống sót mã khi khách gõ nhầm chữ:</strong> Nếu khách gõ lộn tiền tố (ví dụ: gõ nhầm <code className="font-mono font-bold">ACB1234</code> thay vì <code className="font-mono font-bold">ABC1234</code>, hoặc <code className="font-mono font-bold">IGM0088</code> thay vì <code className="font-mono font-bold">IMG0088</code>), app sẽ <strong>tự động tìm theo số</strong> để vẫn tìm ra ảnh cho bạn!
                   </div>
                 </div>
               </div>

@@ -260,11 +260,11 @@ export function SmartSearchBar() {
           }}
           onKeyDown={handleKeyDown}
           placeholder="Tìm app, công cụ... (⌘K)"
-          className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground/70 focus:outline-none"
+          className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground/85 focus:outline-none"
         />
 
         {query ? (
-          <button
+          <button aria-label="Đóng"
             onClick={() => {
               setQuery("");
               inputRef.current?.focus();
@@ -274,7 +274,7 @@ export function SmartSearchBar() {
             <X size={10} />
           </button>
         ) : (
-          <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1 py-0.2 text-[9px] font-medium font-mono text-muted-foreground bg-muted border border-border rounded">
+          <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1 py-0.2 text-[10px] font-medium font-mono text-muted-foreground bg-muted border border-border rounded">
             ⌘K
           </kbd>
         )}
@@ -315,7 +315,7 @@ export function SmartSearchBar() {
             {filteredItems.length === 0 ? (
               <div className="py-8 text-center text-muted-foreground">
                 <p className="text-xs font-medium text-foreground/80">Không tìm thấy kết quả cho "{query}"</p>
-                <p className="text-[11px] text-muted-foreground/70 mt-1">
+                <p className="text-[11px] text-muted-foreground/85 mt-1">
                   Thử tìm "lọc ảnh", "contact sheet", "convert", "tài nguyên"
                 </p>
               </div>
@@ -351,11 +351,11 @@ export function SmartSearchBar() {
                           {item.name}
                         </span>
                         {item.badge && (
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border font-mono uppercase">
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border font-mono uppercase">
                             {item.badge}
                           </span>
                         )}
-                        <span className="text-[10px] text-muted-foreground/70 ml-auto shrink-0 font-medium">
+                        <span className="text-[10px] text-muted-foreground/85 ml-auto shrink-0 font-medium">
                           {item.categoryName}
                         </span>
                       </div>
@@ -379,10 +379,10 @@ export function SmartSearchBar() {
           {/* Footer hints */}
           <div className="px-4 py-2 border-t border-border/70 bg-muted/20 flex items-center justify-between text-[10px] text-muted-foreground">
             <div className="flex items-center gap-3">
-              <span><kbd className="px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[9px]">↑</kbd> <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[9px]">↓</kbd> di chuyển</span>
-              <span><kbd className="px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[9px]">↵</kbd> chọn</span>
+              <span><kbd className="px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px]">↑</kbd> <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px]">↓</kbd> di chuyển</span>
+              <span><kbd className="px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px]">↵</kbd> chọn</span>
             </div>
-            <span className="text-muted-foreground/70">DH Studio Pro · DevHouse Software</span>
+            <span className="text-muted-foreground/85">DH Studio Pro · DevHouse Software</span>
           </div>
         </div>
       )}

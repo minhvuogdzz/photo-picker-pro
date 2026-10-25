@@ -9,7 +9,7 @@ import {
   UserCheck,
   Loader2,
   CheckCircle2,
-  Sparkles,
+  Link2,
 } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useContactSheetStore } from "../stores/useContactSheetStore";
@@ -133,7 +133,7 @@ export function DriveConfigModal({ onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
+    <div role="dialog" aria-modal="true" aria-labelledby="dlg-DriveConfigModal-1" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
       <div className="bg-card border border-border shadow-2xl rounded-2xl w-full max-w-lg overflow-hidden flex flex-col animate-scale-in max-h-[90vh]">
         {/* Header */}
         <div className="px-5 py-4 border-b border-border flex items-center justify-between bg-muted/20 shrink-0">
@@ -142,7 +142,7 @@ export function DriveConfigModal({ onClose }: Props) {
               <HardDrive size={16} />
             </div>
             <div>
-              <h3 className="font-extrabold text-sm text-foreground">
+              <h3 id="dlg-DriveConfigModal-1" className="font-extrabold text-sm text-foreground">
                 Cấu hình Google Drive Desktop
               </h3>
               <p className="text-[11px] text-muted-foreground">
@@ -150,7 +150,7 @@ export function DriveConfigModal({ onClose }: Props) {
               </p>
             </div>
           </div>
-          <button
+          <button aria-label="Đóng"
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted transition-colors cursor-pointer"
           >
@@ -192,7 +192,7 @@ export function DriveConfigModal({ onClose }: Props) {
             {/* Shortcut Target Detection Badge */}
             {shortcutTargetMatch && (
               <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20 flex items-center gap-2 text-primary text-[11px]">
-                <Sparkles size={14} className="shrink-0" />
+                <Link2 size={14} className="shrink-0" />
                 <span className="truncate">
                   Nhận diện lối tắt Google Drive (.shortcut-targets-by-id): ID gốc <strong>{shortcutTargetMatch[1]}</strong>
                 </span>
@@ -239,7 +239,7 @@ export function DriveConfigModal({ onClose }: Props) {
                       <span className="text-[10px] opacity-90">
                         Chứa {testResult.childCount ?? 0} thư mục con •{" "}
                         {testResult.isOwnerMatched
-                          ? "✓ Khớp chủ sở hữu tài khoản đăng nhập"
+                          ? "Khớp chủ sở hữu tài khoản đăng nhập"
                           : "Thư mục dùng chung / chia sẻ"}
                       </span>
                     </>

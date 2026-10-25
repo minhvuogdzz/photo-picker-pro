@@ -5,7 +5,7 @@ import { useTranslation } from "@/core/lib/i18n";
 import { useSessionTimeout } from "@/core/hooks/useSessionTimeout";
 import { clearSessionStart } from "@/core/services/sessionTimeoutPolicy";
 import { isUnlimitedSession } from "@/core/services/appEntitlementPolicy";
-import { AlertTriangle, Clock, LogIn, MonitorX, ShieldCheck, Sparkles, WifiOff, XCircle } from "lucide-react";
+import { AlertTriangle, Clock, LogIn, MonitorX, ShieldCheck, WifiOff, XCircle } from "lucide-react";
 
 interface SessionExpiredDialogProps {
   readonly reason: "device" | "subscription" | "offline" | "error" | "suspended" | "timeout";
@@ -101,7 +101,6 @@ export function SessionExpiredDialog({
           {/* Header Info */}
           <div className="space-y-2.5">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-[11px] font-extrabold uppercase tracking-widest">
-              <Sparkles size={12} />
               Bảo vệ phiên làm việc
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
@@ -219,11 +218,11 @@ export function SessionExpiredDialog({
   };
 
   return (
-    <div className="h-screen flex items-center justify-center bg-background p-4">
+    <div role="alertdialog" aria-modal="true" aria-labelledby="session-expired-title" className="h-screen flex items-center justify-center bg-background p-4">
       <div className="panel w-full max-w-sm p-8 space-y-6 text-center animate-fade-in">
-        <div className="flex justify-center">{config.icon}</div>
+        <div className="flex justify-center" aria-hidden="true">{config.icon}</div>
         <div className="space-y-2">
-          <h2 className="text-lg font-bold text-foreground">{config.title}</h2>
+          <h2 id="session-expired-title" className="text-lg font-bold text-foreground">{config.title}</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
             {config.description}
           </p>

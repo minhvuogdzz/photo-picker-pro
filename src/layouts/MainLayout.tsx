@@ -4,14 +4,16 @@ import { LauncherPage } from "@/core/pages/LauncherPage";
 import { SystemModule } from "@/modules/system/SystemModule";
 import { WelcomeScreen } from "@/core/components/WelcomeScreen";
 import { TopBar } from "./TopBar";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { AlertCircle, Key } from "lucide-react";
 import { EcosystemSidebar } from "./EcosystemSidebar";
-import PhotoPickerModule from "@/modules/photo-picker";
-import MvdConvertApp from "@/modules/mvd-convert/MvdConvertApp";
-import ResourcesApp from "@/modules/resources/ResourcesApp";
-import ContactTheSheetApp from "@/modules/contact-the-sheet";
-import PhotoCounterApp from "@/modules/photo-counter";
+// Each app is its own chunk, loaded the first time it is opened: the launcher alone no longer
+// parses and keeps the code of every module in memory.
+const PhotoPickerModule = lazy(() => import("@/modules/photo-picker"));
+const MvdConvertApp = lazy(() => import("@/modules/mvd-convert/MvdConvertApp"));
+const ResourcesApp = lazy(() => import("@/modules/resources/ResourcesApp"));
+const ContactTheSheetApp = lazy(() => import("@/modules/contact-the-sheet"));
+const PhotoCounterApp = lazy(() => import("@/modules/photo-counter"));
 import { DonateModal } from "@/core/components/DonateModal";
 import { AnnouncementPopup } from "@/core/components/AnnouncementPopup";
 import { LicenseManager } from "@/core/license/LicenseManager";
@@ -44,7 +46,7 @@ export function AppLayout() {
       )}
       
       {/* TopBar Glass Wrapper */}
-      <div className="rounded-xl shrink-0 relative z-50 bg-card/90 backdrop-blur-md border border-border shadow-sm overflow-visible">
+      <div className="rounded-xl shrink-0 relative z-50 bg-card border border-border shadow-sm overflow-visible">
         <TopBar />
       </div>
 
@@ -83,11 +85,13 @@ export function AppLayout() {
           >
             {activeModule === "launcher" && <LauncherPage />}
             {activeModule === "system" && <SystemModule />}
-            {activeModule === "photo-picker" && <PhotoPickerModule />}
-            {activeModule === "mvd-convert" && <MvdConvertApp />}
-            {activeModule === "resources" && <ResourcesApp />}
-            {activeModule === "contact-the-sheet" && <ContactTheSheetApp />}
-            {activeModule === "photo-counter" && <PhotoCounterApp />}
+            <Suspense fallback={null}>
+              {activeModule === "photo-picker" && <PhotoPickerModule />}
+              {activeModule === "mvd-convert" && <MvdConvertApp />}
+              {activeModule === "resources" && <ResourcesApp />}
+              {activeModule === "contact-the-sheet" && <ContactTheSheetApp />}
+              {activeModule === "photo-counter" && <PhotoCounterApp />}
+            </Suspense>
           </div>
         </div>
       </div>

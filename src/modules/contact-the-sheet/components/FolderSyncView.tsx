@@ -238,7 +238,7 @@ export function FolderSyncView({ onGoToBatch }: Props) {
               <h2 className="text-xs sm:text-sm font-bold text-foreground tracking-tight truncate">
                 Đồng bộ tên thư mục con
               </h2>
-              <span className="px-1.5 py-0.2 rounded bg-muted text-muted-foreground border border-border text-[9px] font-semibold uppercase tracking-wider shrink-0">
+              <span className="px-1.5 py-0.2 rounded bg-muted text-muted-foreground border border-border text-[10px] font-semibold uppercase tracking-wider shrink-0">
                 Tiện ích thư mục Studio
               </span>
             </div>
@@ -400,7 +400,7 @@ export function FolderSyncView({ onGoToBatch }: Props) {
               )}
             </div>
           </div>
-          <button
+          <button aria-label="Đóng"
             onClick={() => setSyncSummary(null)}
             className="text-muted-foreground hover:text-foreground cursor-pointer p-1 shrink-0"
           >
@@ -487,7 +487,7 @@ export function FolderSyncView({ onGoToBatch }: Props) {
                   onClick={() => removeFolder(folder.path)}
                   disabled={isSyncing}
                   className="w-6 h-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer shrink-0"
-                  title="Xóa khỏi danh sách"
+                  title="Xóa khỏi danh sách" aria-label="Xóa khỏi danh sách"
                 >
                   <X size={12} />
                 </button>

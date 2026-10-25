@@ -41,71 +41,103 @@
 
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", system-ui, sans-serif;
   --font-mono: "SF Mono", "JetBrains Mono", ui-monospace, monospace;
+
+  /* Type scale. The root is 13px, so Tailwind's defaults land on 9.75px (xs) and 11.4px (sm),
+     which is too small for a desktop UI. These resolve to 11px and 12px. */
+  --text-xs: 0.8462rem;
+  --text-xs--line-height: 1.4;
+  --text-sm: 0.9231rem;
+  --text-sm--line-height: 1.45;
+
+  /* Elevation scale shared by cards, popovers and modals. */
+  --shadow-xs: 0 1px 2px rgb(15 23 42 / 0.05);
+  --shadow-sm: 0 1px 3px rgb(15 23 42 / 0.08), 0 1px 2px rgb(15 23 42 / 0.04);
+  --shadow-md: 0 6px 16px -4px rgb(15 23 42 / 0.12), 0 2px 6px -2px rgb(15 23 42 / 0.06);
+  --shadow-lg: 0 18px 40px -12px rgb(15 23 42 / 0.22), 0 6px 14px -6px rgb(15 23 42 / 0.1);
 }
 
 @layer base {
   :root {
-    /* Light Theme — Matching CleanMyMac [Image 5]: soft cool sky/ice-gray canvas & pure white elevated cards */
-    --color-background: #e8edf5;
-    --color-foreground: #111827;
+    /* Light theme — soft cool canvas with pure white elevated cards.
+       Text/brand colors are chosen to clear WCAG AA (4.5:1) on both the canvas and the cards. */
+    --color-background: #e9eef6;
+    --color-foreground: #0f172a;
     --color-card: #ffffff;
-    --color-card-foreground: #111827;
+    --color-card-foreground: #0f172a;
     --color-popover: #ffffff;
-    --color-popover-foreground: #111827;
-    
-    --color-primary: #007aff;
+    --color-popover-foreground: #0f172a;
+
+    --color-primary: #1d5fe0;
     --color-primary-foreground: #ffffff;
-    
+
     --color-secondary: #eef2f8;
     --color-secondary-foreground: #1e293b;
-    
+
     --color-muted: #edf1f7;
-    --color-muted-foreground: #64748b;
-    
+    --color-muted-foreground: #56627a;
+
     --color-accent: #e2e8f2;
     --color-accent-foreground: #0f172a;
-    
-    --color-destructive: #ef4444;
+
+    --color-destructive: #d92d2d;
     --color-destructive-foreground: #ffffff;
-    --color-success: #10b981;
-    --color-warning: #f59e0b;
-    --color-info: #0284c7;
-    
-    --color-border: #d8e0ec;
+    --color-success: #0b7a55;
+    --color-warning: #a15c07;
+    --color-info: #0369a1;
+
+    --color-border: #d6dfeb;
+    --color-border-strong: #b4c0d2;
     --color-input: #ffffff;
-    --color-ring: #007aff;
+    --color-ring: #1d5fe0;
   }
 
   .dark {
-    /* Dark Theme — Matching CleanMyMac MClean Dark [Image 4]: deep matte slate canvas & sleek layered cards */
-    --color-background: #181b22;
-    --color-foreground: #f3f4f6;
-    --color-card: #20242e;
-    --color-card-foreground: #f3f4f6;
-    --color-popover: #20242e;
-    --color-popover-foreground: #f3f4f6;
-    
-    --color-primary: #007aff;
-    --color-primary-foreground: #ffffff;
-    
-    --color-secondary: #282d3a;
+    /* Dark theme — deep matte slate canvas with layered cards.
+       Brand and status colors switch to lighter tonal variants (with dark foregrounds) so they stay legible. */
+    --color-background: #13161c;
+    --color-foreground: #f1f4f9;
+    --color-card: #1b1f28;
+    --color-card-foreground: #f1f4f9;
+    --color-popover: #1f2430;
+    --color-popover-foreground: #f1f4f9;
+
+    --color-primary: #4f94ff;
+    --color-primary-foreground: #07122b;
+
+    --color-secondary: #262b37;
     --color-secondary-foreground: #e2e8f0;
-    
-    --color-muted: #232734;
-    --color-muted-foreground: #94a3b8;
-    
-    --color-accent: #2b3040;
+
+    --color-muted: #212631;
+    --color-muted-foreground: #98a6bb;
+
+    --color-accent: #2a3041;
     --color-accent-foreground: #ffffff;
-    
-    --color-destructive: #ef4444;
-    --color-destructive-foreground: #ffffff;
-    --color-success: #10b981;
-    --color-warning: #ff9409;
+
+    --color-destructive: #f87171;
+    --color-destructive-foreground: #1c0707;
+    --color-success: #34d399;
+    --color-warning: #fbbf24;
     --color-info: #38bdf8;
-    
-    --color-border: #2e3444;
-    --color-input: #151720;
-    --color-ring: #007aff;
+
+    --color-border: #2c3342;
+    --color-border-strong: #424b60;
+    --color-input: #11141a;
+    --color-ring: #4f94ff;
+  }
+
+  /* Keyboard focus: one consistent, visible ring for every interactive control (utilities can still override). */
+  :where(button, a[href], input, select, textarea, summary, [role="button"], [role="tab"], [role="switch"], [tabindex]:not([tabindex="-1"])):focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+
+  :where(button:not(:disabled), [role="button"], [role="tab"], summary, label[for], select) {
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklab, var(--color-primary) 28%, transparent);
   }
 }
 
@@ -153,13 +185,13 @@ body {
   background-color: var(--color-card);
   border-radius: var(--radius-xl);
   border: 1px solid var(--color-border);
-  box-shadow: 0 4px 20px -2px rgba(18, 38, 63, 0.05), 0 0 1px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-sm);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
 .dark .panel {
-  box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.35), 0 0 1px rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .panel-header {
@@ -171,10 +203,10 @@ body {
 }
 
 .panel-title {
-  font-size: 0.6875rem;
-  font-weight: 500;
+  font-size: 0.8077rem;
+  font-weight: 600;
   color: var(--color-foreground);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -189,10 +221,11 @@ body {
   justify-content: center;
   gap: 0.375rem;
   border-radius: var(--radius-md);
-  padding: 0.4375rem 0.75rem;
-  font-size: 0.75rem;
+  min-height: 2.25rem;
+  padding: 0.4375rem 0.875rem;
+  font-size: 0.9231rem;
   font-weight: 500;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, filter 0.15s ease, transform 0.12s ease;
   cursor: pointer;
   border: none;
   outline: none;
@@ -268,43 +301,44 @@ body {
 }
 
 /* Badges */
-.badge {
+.badge,
+.badge-success,
+.badge-warning,
+.badge-destructive,
+.badge-info {
   display: inline-flex;
   align-items: center;
+  gap: 0.25rem;
   border-radius: var(--radius-md);
-  padding: 0.125rem 0.4375rem;
-  font-size: 0.625rem;
-  font-weight: 500;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.7692rem;
+  font-weight: 600;
   letter-spacing: 0.02em;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .badge-success {
-  composes: badge;
-  background-color: oklch(0.55 0.16 155 / 0.12);
+  background-color: color-mix(in oklab, var(--color-success) 12%, transparent);
   color: var(--color-success);
-  border: 1px solid oklch(0.55 0.16 155 / 0.2);
+  border: 1px solid color-mix(in oklab, var(--color-success) 28%, transparent);
 }
 
 .badge-warning {
-  composes: badge;
-  background-color: oklch(0.68 0.16 70 / 0.12);
+  background-color: color-mix(in oklab, var(--color-warning) 12%, transparent);
   color: var(--color-warning);
-  border: 1px solid oklch(0.68 0.16 70 / 0.2);
+  border: 1px solid color-mix(in oklab, var(--color-warning) 28%, transparent);
 }
 
 .badge-destructive {
-  composes: badge;
-  background-color: oklch(0.58 0.2 25 / 0.12);
+  background-color: color-mix(in oklab, var(--color-destructive) 12%, transparent);
   color: var(--color-destructive);
-  border: 1px solid oklch(0.58 0.2 25 / 0.2);
+  border: 1px solid color-mix(in oklab, var(--color-destructive) 28%, transparent);
 }
 
 .badge-info {
-  composes: badge;
-  background-color: oklch(0.55 0.16 235 / 0.12);
+  background-color: color-mix(in oklab, var(--color-info) 12%, transparent);
   color: var(--color-info);
-  border: 1px solid oklch(0.55 0.16 235 / 0.2);
+  border: 1px solid color-mix(in oklab, var(--color-info) 28%, transparent);
 }
 
 /* Input */
@@ -313,11 +347,12 @@ body {
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
   background-color: var(--color-input);
+  min-height: 2.5rem;
   padding-top: 0.625rem;
   padding-bottom: 0.625rem;
-  font-size: 0.8125rem;
+  font-size: 1rem;
   color: var(--color-foreground);
-  transition: all 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
   box-shadow: inset 0 1px 2px oklch(0 0 0 / 0.04);
 }
 
@@ -359,11 +394,11 @@ body {
 }
 
 .stat-label {
-  font-size: 0.625rem;
+  font-size: 0.7692rem;
   color: var(--color-muted-foreground);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
-  font-weight: 500;
+  letter-spacing: 0.04em;
+  font-weight: 600;
 }
 
 /* Folder item */
@@ -386,11 +421,11 @@ body {
 
 /* Table */
 .table-header {
-  font-size: 0.6875rem;
-  font-weight: 500;
+  font-size: 0.8077rem;
+  font-weight: 600;
   color: var(--color-muted-foreground);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   padding: 0.5rem 0.75rem;
   text-align: left;
   border-bottom: 1px solid var(--color-border);
@@ -398,7 +433,8 @@ body {
 
 .table-cell {
   padding: 0.5rem 0.75rem;
-  font-size: 0.75rem;
+  font-size: 0.8846rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .table-row {
@@ -453,6 +489,21 @@ body {
 .animate-app-enter {
   animation: appEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   will-change: transform, opacity;
+}
+
+/* Respect the OS "reduce motion" setting: keep spinners (they signal progress) but stop decorative motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-spin {
+    animation-duration: 1s !important;
+    animation-iteration-count: infinite !important;
+  }
 }
 
 @keyframes fadeIn {
@@ -624,3 +675,10 @@ body {
 }
 
 
+
+/* Power saving — see src/core/lib/motionPower.ts.
+   Only looping animations are listed: pausing a one-shot entrance could freeze it half-shown. */
+html.motion-idle :is(.animate-pulse, .animate-ping, .animate-bounce, .animate-pulse-soft, .coffee-steam-wisp, .studio-title-text, .motion-decor),
+html.motion-background :is(.animate-pulse, .animate-ping, .animate-bounce, .animate-pulse-soft, .coffee-steam-wisp, .studio-title-text, .motion-decor, .animate-spin) {
+  animation-play-state: paused !important;
+}

@@ -7,7 +7,6 @@ import {
   X,
   CheckCircle2,
   Copy,
-  Sparkles,
   ShieldCheck,
   Clock,
   ArrowRight,
@@ -18,7 +17,9 @@ import {
   User,
   Phone,
   Info,
-  PartyPopper,
+  KeyRound,
+  Infinity as InfinityIcon,
+  Check,
 } from "lucide-react";
 import { triggerPaymentSuccessConfetti } from "@/core/lib/confettiCelebration";
 import { apiRequest } from "@/core/services/apiClient";
@@ -263,7 +264,7 @@ export function LicenseManager({
       <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/30 shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
-            <Sparkles className="w-5 h-5" />
+            <KeyRound className="w-5 h-5" />
           </div>
           <div>
             <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
@@ -274,7 +275,7 @@ export function LicenseManager({
             </p>
           </div>
         </div>
-        <button
+        <button aria-label="Đóng"
           onClick={onClose}
           className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
         >
@@ -359,7 +360,7 @@ export function LicenseManager({
                     }`}
                   >
                     {planInfo.isLifetime ? (
-                      <Sparkles size={22} />
+                      <InfinityIcon size={22} />
                     ) : planInfo.isFullApp ? (
                       <Layers size={22} />
                     ) : planInfo.isPhotoPickerOnly ? (
@@ -425,7 +426,7 @@ export function LicenseManager({
 
             {planInfo.isTrial && (
               <div className="p-3.5 rounded-xl bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/30 flex items-start gap-3 text-xs">
-                <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                 <div>
                   <span className="font-semibold text-blue-800 dark:text-blue-300">Trải nghiệm Dùng Thử Đầy Đủ:</span>
                   <p className="text-muted-foreground mt-0.5 leading-relaxed">
@@ -610,7 +611,7 @@ export function LicenseManager({
                       }`}
                     >
                       {pkg.badge && (
-                        <span className="absolute -top-2.5 right-2 px-1.5 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-[9px] font-bold text-white rounded-full shadow">
+                        <span className="absolute -top-2.5 right-2 px-1.5 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-[10px] font-bold text-white rounded-full shadow">
                           {pkg.badge}
                         </span>
                       )}
@@ -821,31 +822,27 @@ export function LicenseManager({
               <div
                 className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-emerald-500/20 via-primary/15 to-teal-500/20 border-2 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 mx-auto flex items-center justify-center shadow-xl shadow-emerald-500/15"
               >
-                <PartyPopper className="w-10 h-10 filter drop-shadow animate-bounce" />
+                <CheckCircle2 className="w-10 h-10" />
               </div>
               <div className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-[11px] font-bold">
-                <Sparkles size={11} className="text-amber-500" />
                 <span>GIAO DỊCH THÀNH CÔNG RỰC RỠ</span>
-                <Sparkles size={11} className="text-amber-500" />
               </div>
             </div>
 
             <div>
               <h3 className="text-2xl font-black text-foreground tracking-tight flex items-center justify-center gap-2">
                 <span>Thanh Toán Thành Công!</span>
-                <span className="text-2xl animate-bounce">🎉</span>
               </h3>
               <p className="text-xs text-muted-foreground mt-1.5 max-w-md mx-auto leading-relaxed">
-                Cảm ơn bạn đã tin dùng <strong className="text-foreground">MVD Tech & Design Studio</strong>. Hệ thống đã xác thực giao dịch qua SePay và tự động kích hoạt quyền lợi gói dịch vụ vào tài khoản của bạn.
+                Cảm ơn bạn đã tin dùng <strong className="text-foreground">DH Studio Pro</strong>. Hệ thống đã xác thực giao dịch qua SePay và tự động kích hoạt quyền lợi gói dịch vụ vào tài khoản của bạn.
               </p>
             </div>
 
             {/* Key Card with luxury glowing border */}
             <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-primary/5 to-teal-500/10 dark:from-emerald-500/15 dark:via-primary/10 dark:to-teal-500/15 border-2 border-emerald-500/30 dark:border-emerald-500/40 shadow-xl shadow-emerald-500/5 space-y-3.5 relative overflow-hidden">
               <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center justify-center gap-1.5">
-                <Sparkles size={12} className="text-amber-500" />
+                <KeyRound size={12} />
                 <span>MÃ BẢN QUYỀN (LICENSE KEY)</span>
-                <Sparkles size={12} className="text-amber-500" />
               </div>
 
               <div className="font-mono text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-300 tracking-widest select-all bg-background dark:bg-card/70 py-2.5 px-4 rounded-xl border border-emerald-500/25 shadow-inner">
@@ -915,7 +912,7 @@ export function LicenseManager({
                 disabled={isActivating || !manualKey.trim()}
                 className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-xs shadow-md hover:bg-primary/90 transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
               >
-                {isActivating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                {isActivating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                 Xác nhận kích hoạt
               </button>
             </div>
@@ -929,12 +926,11 @@ export function LicenseManager({
             <div
               className="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 mx-auto flex items-center justify-center shadow-lg shadow-emerald-500/20"
             >
-              <PartyPopper className="w-8 h-8 animate-bounce" />
+              <CheckCircle2 className="w-8 h-8" />
             </div>
             <div>
               <h3 className="text-lg font-black text-foreground flex items-center justify-center gap-1.5">
                 <span>Kích Hoạt Thành Công!</span>
-                <span>🎉</span>
               </h3>
               <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">{activateSuccessMsg}</p>
             </div>

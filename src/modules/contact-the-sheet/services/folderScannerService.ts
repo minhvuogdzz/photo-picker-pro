@@ -11,6 +11,9 @@ import { jobMatchingService, type SheetRowRecord } from "./jobMatchingService.ts
 import { useContactSheetStore } from "../stores/useContactSheetStore.ts";
 import folderTreesFixture from "../../../../tests/fixtures/contact-the-sheet/folder-trees.json" with { type: "json" };
 
+/** Max jobs whose Drive lookup runs at the same time (keeps clear of Drive API rate limits). */
+const DRIVE_RESOLVE_CONCURRENCY = 5;
+
 export class FolderScannerService {
   /**
    * Intelligently resolves input folder paths according to studio workflow:
@@ -102,6 +105,35 @@ export class FolderScannerService {
     }
 
     // 2. Live Mode: Native Rust walkdir topology scan
+    // Fresh scan: drop cached Drive data (may belong to another account or an older folder state)
+    driveResolverService.clearCache();
+    // Phase 1: scan topology and collect one work item per job (local, fast)
+    interface LiveJobItem {
+      id: string;
+      jobFolderName: string;
+      resolved: ReturnType<typeof finalFolderResolver.resolveDeepestDeliveryFolder>;
+      metadata: ParsedJobMetadata;
+    }
+    const items: LiveJobItem[] = [];
+    const buildMetadata = (rootName: string, resolvedName: string): ParsedJobMetadata => {
+      const rootMetadata = folderParserService.parseFolderName(rootName);
+      const deepestMetadata = folderParserService.parseFolderName(resolvedName);
+      const combinedCandidates = Array.from(
+        new Set([
+          ...(rootMetadata.candidateNames || []),
+          ...(deepestMetadata.candidateNames || []),
+          rootMetadata.customerName,
+          deepestMetadata.customerName,
+        ].filter(Boolean) as string[])
+      );
+      return {
+        ...rootMetadata,
+        customerName: deepestMetadata.customerName || rootMetadata.customerName,
+        socialUsername: deepestMetadata.socialUsername || rootMetadata.socialUsername,
+        candidateNames: combinedCandidates,
+      };
+    };
+
     const expandedRootPaths = await this.resolveSmartInputFolders(rootPaths);
     for (const rootPath of expandedRootPaths) {
       if (onProgress) onProgress(`Đang quét cấu trúc thư mục: ${rootPath}...`);
@@ -119,7 +151,6 @@ export class FolderScannerService {
 
       if (topology.length === 0) continue;
 
-      // Group folders by top-level child of root
       // depth 0 is root itself; depth 1 are individual job folders
       const jobRootEntries = topology.filter((e) => e.depth === 1);
 
@@ -127,194 +158,119 @@ export class FolderScannerService {
       // the root path itself is the single job folder.
       // If the folder contains > 1 child folders, each child folder represents an individual job.
       if (jobRootEntries.length <= 1) {
-        // Root path itself is the single job folder
         const resolved = finalFolderResolver.resolveDeepestDeliveryFolder(topology);
         const rootName = topology[0].folder_name;
-        const rootMetadata = folderParserService.parseFolderName(rootName);
-        const deepestMetadata = folderParserService.parseFolderName(resolved.folderName);
-
-        const combinedCandidates = Array.from(
-          new Set([
-            ...(rootMetadata.candidateNames || []),
-            ...(deepestMetadata.candidateNames || []),
-            rootMetadata.customerName,
-            deepestMetadata.customerName,
-          ].filter(Boolean) as string[])
-        );
-
-        const metadata: ParsedJobMetadata = {
-          ...rootMetadata,
-          customerName: deepestMetadata.customerName || rootMetadata.customerName,
-          socialUsername: deepestMetadata.socialUsername || rootMetadata.socialUsername,
-          candidateNames: combinedCandidates,
-        };
-
-        let driveResult: any = { driveItemId: "", driveWebLink: "" };
-        try {
-          const effectiveDriveConfig =
-            profile?.driveConfig?.localRootPath
-              ? profile.driveConfig
-              : useContactSheetStore?.getState?.()?.lastDriveConfig || profile?.driveConfig;
-          const localRootPath = effectiveDriveConfig?.localRootPath || "";
-          const remoteRootDriveId = effectiveDriveConfig?.remoteRootDriveId || "root";
-          const requireOwnerMatch = effectiveDriveConfig?.requireOwnerMatch ?? true;
-          const currentUserEmail =
-            profile.googleAccountEmail ||
-            useContactSheetStore?.getState?.()?.googleConnection?.accountEmail;
-
-          driveResult = await driveResolverService.resolveLocalFolderToDriveLink(
-            resolved.folderPath,
-            localRootPath,
-            remoteRootDriveId,
-            false,
-            {
-              finalFolderName: resolved.folderName,
-              jobFolderName: rootName,
-              customerName: metadata.customerName,
-              requireOwnerMatch,
-              currentUserEmail,
-            }
-          );
-        } catch (err: any) {
-          console.warn("Drive resolution warning for single job", resolved.folderPath, err);
-        }
-
-        if (!driveResult?.driveWebLink) {
-          driveResult = {
-            driveItemId: driveResult?.driveItemId || "",
-            driveWebLink: "",
-            warnings: driveResult?.warnings || [`Chưa tìm thấy liên kết thư mục trên Google Drive`],
-          };
-        }
-
-        const job: DiscoveredJob = {
-          id: `job_single_${Date.now()}`,
-          sourceType: "LOCAL_DRIVE_DESKTOP",
+        items.push({
+          id: `job_single_${items.length}_${Date.now()}`,
           jobFolderName: rootName,
-          finalFolderName: resolved.folderName,
-          finalFolderPath: resolved.folderPath,
-          driveItemId: driveResult.driveItemId,
-          driveWebLink: driveResult.driveWebLink,
-          metadata,
-          imageCount: resolved.imageCount,
-          status: resolved.status === "NEEDS_REVIEW" ? "NEEDS_REVIEW" : "PENDING",
-          statusReason: resolved.reason,
-        };
-
-        if (sheetRows.length > 0) {
-          const match = jobMatchingService.matchJobToSheetRows(job, sheetRows, profile);
-          job.targetSheetRow = match.targetRow;
-          job.targetTabTitle = match.targetTabTitle;
-          job.targetRowSnapshot = match.targetSnapshot;
-          job.matchConfidence = match.confidence;
-          if (match.status === "NEEDS_REVIEW") {
-            job.status = "NEEDS_REVIEW";
-            job.statusReason = match.reason;
-            job.candidateRows = match.candidateRows;
-          } else if (match.status === "READY") {
-            job.status = "READY";
-          }
-        }
-
-        discoveredJobs.push(job);
+          resolved,
+          metadata: buildMetadata(rootName, resolved.folderName),
+        });
       } else {
-        // Multiple jobs under parent folder (e.g. "10-9/job1", "10-9/job2", ...)
         for (const jobRoot of jobRootEntries) {
           const jobSubtree = topology.filter(
             (e) => e.folder_path === jobRoot.folder_path || e.folder_path.startsWith(jobRoot.folder_path + "/")
           );
-
           const resolved = finalFolderResolver.resolveDeepestDeliveryFolder(jobSubtree);
-          const rootMetadata = folderParserService.parseFolderName(jobRoot.folder_name);
-          const deepestMetadata = folderParserService.parseFolderName(resolved.folderName);
-
-          const combinedCandidates = Array.from(
-            new Set([
-              ...(rootMetadata.candidateNames || []),
-              ...(deepestMetadata.candidateNames || []),
-              rootMetadata.customerName,
-              deepestMetadata.customerName,
-            ].filter(Boolean) as string[])
-          );
-
-          const metadata: ParsedJobMetadata = {
-            ...rootMetadata,
-            customerName: deepestMetadata.customerName || rootMetadata.customerName,
-            socialUsername: deepestMetadata.socialUsername || rootMetadata.socialUsername,
-            candidateNames: combinedCandidates,
-          };
-
-          let driveResult: any = { driveItemId: "", driveWebLink: "" };
-          try {
-            const effectiveDriveConfig =
-              profile?.driveConfig?.localRootPath
-                ? profile.driveConfig
-                : useContactSheetStore?.getState?.()?.lastDriveConfig || profile?.driveConfig;
-            const localRootPath = effectiveDriveConfig?.localRootPath || "";
-            const remoteRootDriveId = effectiveDriveConfig?.remoteRootDriveId || "root";
-            const requireOwnerMatch = effectiveDriveConfig?.requireOwnerMatch ?? true;
-            const currentUserEmail =
-              profile.googleAccountEmail ||
-              useContactSheetStore?.getState?.()?.googleConnection?.accountEmail;
-
-            driveResult = await driveResolverService.resolveLocalFolderToDriveLink(
-              resolved.folderPath,
-              localRootPath,
-              remoteRootDriveId,
-              false,
-              {
-                finalFolderName: resolved.folderName,
-                jobFolderName: jobRoot.folder_name,
-                customerName: metadata.customerName,
-                requireOwnerMatch,
-                currentUserEmail,
-              }
-            );
-          } catch (err: any) {
-            console.warn("Drive resolution warning for", resolved.folderPath, err);
-          }
-
-          if (!driveResult?.driveWebLink) {
-            driveResult = {
-              driveItemId: driveResult?.driveItemId || "",
-              driveWebLink: "",
-              warnings: driveResult?.warnings || [`Chưa tìm thấy liên kết thư mục trên Google Drive`],
-            };
-          }
-
-          const job: DiscoveredJob = {
-            id: `job_${jobRoot.folder_name}_${Date.now()}`,
-            sourceType: "LOCAL_DRIVE_DESKTOP",
+          items.push({
+            id: `job_${jobRoot.folder_name}_${items.length}_${Date.now()}`,
             jobFolderName: jobRoot.folder_name,
-            finalFolderName: resolved.folderName,
-            finalFolderPath: resolved.folderPath,
-            driveItemId: driveResult.driveItemId,
-            driveWebLink: driveResult.driveWebLink,
-            metadata,
-            imageCount: resolved.imageCount,
-            status: resolved.status === "NEEDS_REVIEW" ? "NEEDS_REVIEW" : "PENDING",
-            statusReason: resolved.reason,
-          };
-
-          if (sheetRows.length > 0) {
-            const match = jobMatchingService.matchJobToSheetRows(job, sheetRows, profile);
-            job.targetSheetRow = match.targetRow;
-            job.targetTabTitle = match.targetTabTitle;
-            job.targetRowSnapshot = match.targetSnapshot;
-            job.matchConfidence = match.confidence;
-            if (match.status === "NEEDS_REVIEW") {
-              job.status = "NEEDS_REVIEW";
-              job.statusReason = match.reason;
-              job.candidateRows = match.candidateRows;
-            } else if (match.status === "READY") {
-              job.status = "READY";
-            }
-          }
-
-          discoveredJobs.push(job);
+            resolved,
+            metadata: buildMetadata(jobRoot.folder_name, resolved.folderName),
+          });
         }
       }
     }
+
+    // Phase 2: resolve Drive links + match sheet rows, several jobs at a time
+    const effectiveDriveConfig =
+      profile?.driveConfig?.localRootPath
+        ? profile.driveConfig
+        : useContactSheetStore?.getState?.()?.lastDriveConfig || profile?.driveConfig;
+    const localRootPath = effectiveDriveConfig?.localRootPath || "";
+    const remoteRootDriveId = effectiveDriveConfig?.remoteRootDriveId || "root";
+    const requireOwnerMatch = effectiveDriveConfig?.requireOwnerMatch ?? true;
+    const currentUserEmail =
+      profile.googleAccountEmail ||
+      useContactSheetStore?.getState?.()?.googleConnection?.accountEmail;
+
+    let doneCount = 0;
+    const processItem = async (item: LiveJobItem): Promise<DiscoveredJob> => {
+      const { resolved, metadata } = item;
+
+      let driveResult: any = { driveItemId: "", driveWebLink: "" };
+      try {
+        driveResult = await driveResolverService.resolveLocalFolderToDriveLink(
+          resolved.folderPath,
+          localRootPath,
+          remoteRootDriveId,
+          false,
+          {
+            finalFolderName: resolved.folderName,
+            jobFolderName: item.jobFolderName,
+            customerName: metadata.customerName,
+            requireOwnerMatch,
+            currentUserEmail,
+          }
+        );
+      } catch (err: any) {
+        console.warn("Drive resolution warning for", resolved.folderPath, err);
+      }
+
+      if (!driveResult?.driveWebLink) {
+        driveResult = {
+          driveItemId: driveResult?.driveItemId || "",
+          driveWebLink: "",
+          warnings: driveResult?.warnings || [`Chưa tìm thấy liên kết thư mục trên Google Drive`],
+        };
+      }
+
+      const job: DiscoveredJob = {
+        id: item.id,
+        sourceType: "LOCAL_DRIVE_DESKTOP",
+        jobFolderName: item.jobFolderName,
+        finalFolderName: resolved.folderName,
+        finalFolderPath: resolved.folderPath,
+        driveItemId: driveResult.driveItemId,
+        driveWebLink: driveResult.driveWebLink,
+        metadata,
+        imageCount: resolved.imageCount,
+        status: resolved.status === "NEEDS_REVIEW" ? "NEEDS_REVIEW" : "PENDING",
+        statusReason: resolved.reason,
+      };
+
+      if (sheetRows.length > 0) {
+        const match = jobMatchingService.matchJobToSheetRows(job, sheetRows, profile);
+        job.targetSheetRow = match.targetRow;
+        job.targetTabTitle = match.targetTabTitle;
+        job.targetRowSnapshot = match.targetSnapshot;
+        job.matchConfidence = match.confidence;
+        if (match.status === "NEEDS_REVIEW") {
+          job.status = "NEEDS_REVIEW";
+          job.statusReason = match.reason;
+          job.candidateRows = match.candidateRows;
+        } else if (match.status === "READY") {
+          job.status = "READY";
+        }
+      }
+
+      doneCount++;
+      if (onProgress) onProgress(`Đang tra cứu Google Drive & so khớp (${doneCount}/${items.length})...`);
+      return job;
+    };
+
+    const results = new Array<DiscoveredJob>(items.length);
+    let cursor = 0;
+    const worker = async () => {
+      while (cursor < items.length) {
+        const idx = cursor++;
+        results[idx] = await processItem(items[idx]);
+      }
+    };
+    await Promise.all(
+      Array.from({ length: Math.min(DRIVE_RESOLVE_CONCURRENCY, items.length) }, () => worker())
+    );
+    discoveredJobs.push(...results);
 
     return discoveredJobs;
   }

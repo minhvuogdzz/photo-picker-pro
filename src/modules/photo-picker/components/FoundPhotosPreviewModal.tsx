@@ -263,7 +263,7 @@ export function FoundPhotosPreviewModal({
               type="button"
               onClick={onClose}
               className="p-2 rounded-xl bg-white/10 hover:bg-red-500/20 hover:text-red-400 border border-white/10 text-muted-foreground hover:border-red-500/30 transition-all cursor-pointer"
-              title="Đóng (Phím ESC)"
+              title="Đóng (Phím ESC)" aria-label="Đóng (Phím ESC)"
             >
               <X size={18} />
             </button>
@@ -278,7 +278,7 @@ export function FoundPhotosPreviewModal({
               type="button"
               onClick={handlePrev}
               className="absolute left-3 sm:left-6 z-20 w-11 h-11 rounded-2xl bg-black/60 hover:bg-emerald-600/80 text-white/80 hover:text-white border border-white/15 hover:border-emerald-400/50 flex items-center justify-center backdrop-blur-md shadow-2xl transition-all cursor-pointer group active:scale-95"
-              title="Ảnh trước (Mũi tên Trái ←)"
+              title="Ảnh trước (Mũi tên Trái ←)" aria-label="Ảnh trước (Mũi tên Trái ←)"
             >
               <ChevronLeft size={22} className="group-hover:-translate-x-0.5 transition-transform" />
             </button>
@@ -290,7 +290,7 @@ export function FoundPhotosPreviewModal({
               type="button"
               onClick={handleNext}
               className="absolute right-3 sm:right-6 z-20 w-11 h-11 rounded-2xl bg-black/60 hover:bg-emerald-600/80 text-white/80 hover:text-white border border-white/15 hover:border-emerald-400/50 flex items-center justify-center backdrop-blur-md shadow-2xl transition-all cursor-pointer group active:scale-95"
-              title="Ảnh tiếp theo (Mũi tên Phải →)"
+              title="Ảnh tiếp theo (Mũi tên Phải →)" aria-label="Ảnh tiếp theo (Mũi tên Phải →)"
             >
               <ChevronRight size={22} className="group-hover:translate-x-0.5 transition-transform" />
             </button>
@@ -317,7 +317,7 @@ export function FoundPhotosPreviewModal({
                 draggable={false}
               />
             ) : !isLoadingThumb && (
-              <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground/60">
+              <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground/80">
                 <ImageIcon size={48} />
                 <span className="text-xs">Không thể tạo ảnh xem trước</span>
               </div>
@@ -372,7 +372,7 @@ export function FoundPhotosPreviewModal({
                       draggable={false}
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-black/40 text-[9px] font-mono text-muted-foreground">
+                    <div className="w-full h-full flex items-center justify-center bg-black/40 text-[10px] font-mono text-muted-foreground">
                       <ImageIcon size={16} />
                     </div>
                   )}
@@ -380,7 +380,7 @@ export function FoundPhotosPreviewModal({
                   {/* Code overlay pill */}
                   <div className="absolute bottom-0 inset-x-0 bg-black/80 backdrop-blur-xs py-0.5 px-1 text-center truncate">
                     <span
-                      className={`text-[9px] font-mono font-bold block truncate ${
+                      className={`text-[10px] font-mono font-bold block truncate ${
                         isActive ? "text-emerald-300" : "text-white/80"
                       }`}
                     >

@@ -2,7 +2,7 @@ import { useConvertStore } from "@/core/stores/useConvertStore";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { UploadCloud, FolderOpen, Image as ImageIcon, Play, FileDown, CheckCircle2, AlertCircle, X, ChevronDown, Zap, FileImage, Layers, Settings2, FolderDown } from "lucide-react";
+import { UploadCloud, FolderOpen, Image as ImageIcon, Play, FileDown, CheckCircle2, AlertCircle, X, ChevronDown, FileImage, Layers, Settings2, FolderDown, ScrollText } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function MvdConvertApp() {
@@ -106,7 +106,7 @@ export default function MvdConvertApp() {
       <div className="px-5 py-3 border-b border-border bg-muted/30 flex justify-between items-center shrink-0 z-10">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center text-primary">
-            <Zap size={16} />
+            <FileImage size={16} />
           </div>
           <div>
             <h2 className="text-sm font-semibold tracking-tight text-foreground">MVD Convert</h2>
@@ -158,7 +158,7 @@ export default function MvdConvertApp() {
               
               <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
                 {store.inputFolders.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-muted-foreground/60 gap-1.5 py-8">
+                  <div className="h-full flex flex-col items-center justify-center text-muted-foreground/80 gap-1.5 py-8">
                     <FileImage size={24} className="opacity-40" />
                     <span className="text-[11px]">Chưa có thư mục nào được chọn</span>
                   </div>
@@ -172,7 +172,7 @@ export default function MvdConvertApp() {
                       <button 
                         className="w-5 h-5 rounded flex items-center justify-center hover:bg-destructive hover:text-destructive-foreground transition-colors shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground cursor-pointer" 
                         onClick={() => store.removeInputFolder(f)}
-                        title="Xóa"
+                        title="Xóa" aria-label="Xóa"
                       >
                         <X size={11} />
                       </button>
@@ -243,7 +243,7 @@ export default function MvdConvertApp() {
                 onChange={(e) => store.setQuality(Number(e.target.value))}
                 className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
               />
-              <div className="flex justify-between text-[9px] font-mono text-muted-foreground px-0.5">
+              <div className="flex justify-between text-[10px] font-mono text-muted-foreground px-0.5">
                 <span>40%</span>
                 <span>60%</span>
                 <span>80%</span>
@@ -340,8 +340,8 @@ export default function MvdConvertApp() {
                   </div>
                 ))}
                 {store.logs.length === 0 && (
-                  <div className="h-full flex flex-col items-center justify-center text-muted-foreground/40 gap-1">
-                    <Zap size={18} className="opacity-30" />
+                  <div className="h-full flex flex-col items-center justify-center text-muted-foreground/70 gap-1">
+                    <ScrollText size={18} className="opacity-30" />
                     <span className="text-[10px]">Nhật ký xử lý sẽ hiển thị tại đây</span>
                   </div>
                 )}
@@ -357,7 +357,7 @@ export default function MvdConvertApp() {
                   store.isConverting 
                     ? 'bg-muted text-muted-foreground cursor-not-allowed border border-border' 
                     : store.inputFolders.length === 0
-                    ? 'bg-muted text-muted-foreground/40 cursor-not-allowed border border-border'
+                    ? 'bg-muted text-muted-foreground/70 cursor-not-allowed border border-border'
                     : 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm'
                 }`}
               >

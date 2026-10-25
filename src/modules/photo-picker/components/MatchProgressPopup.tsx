@@ -8,14 +8,14 @@ export function MatchProgressPopup() {
   if (phase !== "copying") return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm animate-fade-in">
+    <div role="dialog" aria-modal="true" aria-labelledby="dlg-MatchProgressPopup-1" className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm animate-fade-in">
       <div className="bg-card w-80 rounded-2xl p-6 shadow-2xl border border-border/50 animate-scale-up flex flex-col gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
             <Loader2 className="w-5 h-5 text-primary animate-spin" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-sm text-foreground truncate">
+            <h3 id="dlg-MatchProgressPopup-1" className="font-semibold text-sm text-foreground truncate">
               {progress?.message || "Đang xử lý file..."}
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">

@@ -200,7 +200,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
 
   // Render modal directly in document.body using React Portal
   return createPortal(
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 select-none animate-fade-in">
+    <div role="dialog" aria-modal="true" aria-labelledby="dlg-AccountSecurityModal-1" className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 select-none animate-fade-in">
       {/* Clickable backdrop */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-xs dark:bg-black/80 dark:backdrop-blur-md cursor-pointer"
@@ -219,7 +219,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
               <Shield size={16} />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-foreground">Tài khoản & Bảo mật</h2>
+              <h2 id="dlg-AccountSecurityModal-1" className="text-sm font-bold text-foreground">Tài khoản & Bảo mật</h2>
               <p className="text-[11px] text-muted-foreground">Quản lý tên đăng nhập, mật khẩu và thiết bị</p>
             </div>
           </div>
@@ -227,7 +227,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
             type="button"
             onClick={onClose}
             className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer border border-transparent hover:border-border"
-            title="Đóng (ESC)"
+            title="Đóng (ESC)" aria-label="Đóng (ESC)"
           >
             <X size={16} />
           </button>

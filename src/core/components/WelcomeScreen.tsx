@@ -90,7 +90,7 @@ export function WelcomeScreen() {
 
   const viSubtitle = config.viSubtitle || "Chào mừng bạn đến với hệ sinh thái";
   const enSubtitle = config.enSubtitle || "Welcome to the ecosystem of";
-  const title = config.title || "MVD Tech & Design Studio";
+  const title = config.title || "DH Studio Pro";
 
   return (
     <div
@@ -112,7 +112,7 @@ export function WelcomeScreen() {
         
         {/* Soft Ambient Chromatic Glow behind container */}
         <div
-          className="absolute -inset-2 rounded-[34px] opacity-40 blur-2xl pointer-events-none transition-all duration-700"
+          className="absolute -inset-2 rounded-[34px] opacity-40 blur-2xl pointer-events-none transition-all duration-700 motion-decor"
           style={{
             background: "conic-gradient(from 0deg, #00f2fe, #4facfe, #7000ff, #ff007f, #ff9900, #00f2fe)",
             animation: "ai-spin 6s linear infinite, ai-aura-pulse 4s ease-in-out infinite alternate",
@@ -124,7 +124,7 @@ export function WelcomeScreen() {
           
           {/* Revolving sRGB AI Thinking Conic Beam */}
           <div
-            className="absolute -inset-[150%] pointer-events-none"
+            className="absolute -inset-[150%] pointer-events-none motion-decor"
             style={{
               background: "conic-gradient(from 0deg at 50% 50%, transparent 0%, #00f2fe 15%, #4facfe 30%, #7000ff 50%, #ff007f 70%, #ff9900 85%, transparent 100%)",
               animation: "ai-spin 4s linear infinite",

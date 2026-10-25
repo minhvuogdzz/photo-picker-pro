@@ -211,14 +211,14 @@ export function CenterPanel() {
                 Parsing...
               </span>
             )}
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted/50 text-muted-foreground border border-border/40">
+            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-muted/60 text-muted-foreground border border-border/50 tabular-nums">
               {parsedCodes.length} {t("codes_count")}
             </span>
             <button
               type="button"
               onClick={() => setIsHelpModalOpen(true)}
               className="inline-flex items-center justify-center w-6 h-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all border border-border/60 hover:border-primary/50 cursor-pointer shadow-2xs group"
-              title="Hướng dẫn cú pháp & xử lý trùng tiền tố"
+              title="Hướng dẫn cú pháp & xử lý trùng tiền tố" aria-label="Hướng dẫn cú pháp & xử lý trùng tiền tố"
             >
               <HelpCircle size={13} className="text-muted-foreground group-hover:text-primary transition-colors" />
             </button>
@@ -226,17 +226,20 @@ export function CenterPanel() {
         </div>
 
         {/* Match Mode Selector */}
-        <div className="px-4 pt-2 flex items-center gap-2">
-          <span className="text-[10px] text-muted-foreground">{t("mode")}:</span>
-          <div className="flex gap-0.5 bg-muted/40 rounded-md p-0.5">
+        <div className="px-4 pt-2.5 flex items-center gap-2.5">
+          <span id="match-mode-label" className="text-[11px] font-medium text-muted-foreground">{t("mode")}:</span>
+          <div role="radiogroup" aria-labelledby="match-mode-label" className="flex gap-0.5 bg-muted/50 rounded-lg p-0.5 border border-border/50">
             {modes.map((mode) => (
               <button
                 key={mode.id}
+                type="button"
+                role="radio"
+                aria-checked={matchMode === mode.id}
                 onClick={() => setMatchMode(mode.id)}
-                className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] transition-colors cursor-pointer ${
                   matchMode === mode.id
-                    ? "bg-primary text-primary-foreground shadow-sm font-medium"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-primary text-primary-foreground shadow-sm font-semibold"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
                 }`}
               >
                 {mode.icon}
@@ -256,7 +259,7 @@ export function CenterPanel() {
               value={regexPattern}
               onChange={(e) => setRegexPattern(e.target.value)}
             />
-            <p className="text-[9px] text-muted-foreground/70 mt-1 leading-relaxed">
+            <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
               {t("regex_hint")}
             </p>
           </div>
@@ -266,7 +269,8 @@ export function CenterPanel() {
         <div className="flex-1 px-4 py-3 min-h-0 flex flex-col">
           <textarea
             ref={textareaRef}
-            className="w-full h-full resize-none font-mono text-[12px] leading-relaxed p-3 bg-muted/20 border border-border/50 text-foreground rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-all placeholder:text-muted-foreground/40"
+            aria-label={t("customer_codes")}
+            className="w-full h-full resize-none font-mono text-[13px] leading-relaxed p-3.5 bg-muted/20 border border-border/60 text-foreground rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus:border-primary/50 transition-colors placeholder:text-muted-foreground/80 disabled:opacity-60"
             style={{ fontFeatureSettings: '"zero" 1, "ss01" 1', scrollbarWidth: 'thin' }}
             placeholder={t("paste_codes_here")}
             value={rawCodeInput}
@@ -278,14 +282,14 @@ export function CenterPanel() {
         </div>
 
         {/* Scan Options */}
-        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-[11px] pb-2.5 px-4">
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs pb-3 px-4">
           <label className="flex items-center gap-1.5 cursor-pointer">
             <input
               type="checkbox"
               checked={scanOptions.filter_raw}
               onChange={(e) => setScanOptions({ filter_raw: e.target.checked })}
               disabled={phase === "scanning" || phase === "copying"}
-              className="rounded border-border text-primary focus:ring-primary/50 cursor-pointer disabled:opacity-50 w-3 h-3"
+              className="rounded border-border accent-primary cursor-pointer disabled:opacity-50 w-3.5 h-3.5"
             />
             <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>Lọc Raw</span>
           </label>
@@ -296,7 +300,7 @@ export function CenterPanel() {
               checked={scanOptions.filter_jpg}
               onChange={(e) => setScanOptions({ filter_jpg: e.target.checked })}
               disabled={phase === "scanning" || phase === "copying"}
-              className="rounded border-border text-primary focus:ring-primary/50 cursor-pointer disabled:opacity-50 w-3 h-3"
+              className="rounded border-border accent-primary cursor-pointer disabled:opacity-50 w-3.5 h-3.5"
             />
             <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>Lọc JPG</span>
           </label>
@@ -307,7 +311,7 @@ export function CenterPanel() {
               checked={!scanOptions.recursive}
               onChange={(e) => setScanOptions({ recursive: !e.target.checked })}
               disabled={phase === "scanning" || phase === "copying"}
-              className="rounded border-border text-primary focus:ring-primary/50 cursor-pointer disabled:opacity-50 w-3 h-3"
+              className="rounded border-border accent-primary cursor-pointer disabled:opacity-50 w-3.5 h-3.5"
             />
             <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>Chỉ thư mục chọn</span>
           </label>
@@ -318,7 +322,7 @@ export function CenterPanel() {
               checked={scanOptions.recursive}
               onChange={(e) => setScanOptions({ recursive: e.target.checked })}
               disabled={phase === "scanning" || phase === "copying"}
-              className="rounded border-border text-primary focus:ring-primary/50 cursor-pointer disabled:opacity-50 w-3 h-3"
+              className="rounded border-border accent-primary cursor-pointer disabled:opacity-50 w-3.5 h-3.5"
             />
             <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>Lọc tất cả thư mục con</span>
           </label>

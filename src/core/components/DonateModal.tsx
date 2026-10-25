@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { X, Sparkles, Heart } from "lucide-react";
+import { X, Heart } from "lucide-react";
 import qrImage from "@/assets/qr_donate.jpg";
 import { useAppStore } from "@/core/stores/useAppStore";
 import { CoffeeSteamIcon } from "./CoffeeSteamIcon";
@@ -22,7 +22,7 @@ export function DonateModal() {
   if (!isOpen) return null;
 
   return createPortal(
-    <div
+    <div role="dialog" aria-modal="true" aria-labelledby="dlg-DonateModal-1"
       className="fixed inset-0 z-[110] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in select-none"
       onClick={onClose}
     >
@@ -37,12 +37,12 @@ export function DonateModal() {
               <CoffeeSteamIcon size={16} className="text-amber-500" />
             </div>
             <div>
-              <h3 className="text-xs font-bold text-foreground leading-tight flex items-center gap-1">
+              <h3 id="dlg-DonateModal-1" className="text-xs font-bold text-foreground leading-tight flex items-center gap-1">
                 <span>Ủng hộ tác giả</span>
-                <span className="text-amber-500">· Donate Cafe ☕</span>
+                <span className="text-amber-500">· Donate Cafe</span>
               </h3>
               <p className="text-[10px] text-muted-foreground mt-0.5">
-                MVD Tech & Design Studio
+                DH Studio Pro
               </p>
             </div>
           </div>
@@ -51,7 +51,7 @@ export function DonateModal() {
             type="button"
             onClick={onClose}
             className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
-            title="Đóng (Esc)"
+            title="Đóng (Esc)" aria-label="Đóng (Esc)"
           >
             <X size={15} />
           </button>
@@ -62,7 +62,6 @@ export function DonateModal() {
           {/* Slogan Banner */}
           <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 relative overflow-hidden">
             <div className="flex items-start gap-2">
-              <Sparkles size={13} className="text-amber-500 shrink-0 mt-0.5" />
               <p className="text-[11px] text-amber-900 dark:text-amber-200 italic font-medium leading-relaxed">
                 "Sự ủng hộ của bạn sẽ góp phần vào sự phát triển công nghệ mới của tôi - Vuong Dev"
               </p>

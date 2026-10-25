@@ -28,13 +28,13 @@ export function SessionExpiringWarningModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 backdrop-blur-xs dark:bg-black/70 dark:backdrop-blur-md p-4 animate-fade-in select-none">
+    <div role="dialog" aria-modal="true" aria-labelledby="dlg-SessionExpiringWarningModal-1" className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 backdrop-blur-xs dark:bg-black/70 dark:backdrop-blur-md p-4 animate-fade-in select-none">
       <div className="relative w-full max-w-md panel p-6 md:p-8 space-y-6 text-center border-2 border-amber-500/60 shadow-[0_0_50px_-10px_rgba(245,158,11,0.2)] rounded-2xl bg-card text-card-foreground animate-scale-in">
         {/* Close / Dismiss button */}
         <button
           onClick={dismiss30sWarning}
           className="absolute top-4 right-4 text-muted-foreground hover:text-foreground p-1.5 rounded-lg hover:bg-muted transition-colors cursor-pointer"
-          title="Đóng thông báo"
+          title="Đóng thông báo" aria-label="Đóng thông báo"
         >
           <X size={18} />
         </button>
@@ -52,7 +52,7 @@ export function SessionExpiringWarningModal() {
             <Clock size={12} />
             Cảnh báo phiên làm việc
           </div>
-          <h2 className="text-xl font-extrabold text-foreground">
+          <h2 id="dlg-SessionExpiringWarningModal-1" className="text-xl font-extrabold text-foreground">
             Phiên sắp hết hạn trong
           </h2>
           <div className="text-4xl font-mono font-black text-amber-600 dark:text-amber-400 drop-shadow-sm tracking-tight pt-1">

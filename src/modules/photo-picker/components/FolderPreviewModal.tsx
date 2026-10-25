@@ -171,7 +171,7 @@ function FloatingCursorPreview({
               {photo.extension}
             </span>
             {rating > 0 && (
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500 text-black flex items-center gap-0.5">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500 text-black flex items-center gap-0.5">
                 <Star size={9} className="fill-black" />
                 <span>Rate {rating}</span>
               </span>
@@ -883,7 +883,7 @@ export function FolderPreviewModal({
   const currentFolderTitle = getFolderName(folderPath);
 
   return (
-    <div
+    <div role="dialog" aria-modal="true" aria-labelledby="dlg-FolderPreviewModal-1"
       className={`fixed inset-0 z-50 flex items-center justify-center ${
         isFullscreen ? "p-0" : "p-3 sm:p-5 md:p-6 lg:p-8"
       } bg-black/80 backdrop-blur-md animate-fade-in select-none transition-all duration-300`}
@@ -905,7 +905,7 @@ export function FolderPreviewModal({
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h2 className="text-sm md:text-base font-bold text-foreground truncate" title={currentFolderTitle}>
+                <h2 id="dlg-FolderPreviewModal-1" className="text-sm md:text-base font-bold text-foreground truncate" title={currentFolderTitle}>
                   {currentFolderTitle}
                 </h2>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 shrink-0 font-semibold">
@@ -937,10 +937,10 @@ export function FolderPreviewModal({
                 placeholder="Tìm tên hoặc mã số..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-7 py-1.5 text-xs rounded-lg bg-background border border-border/60 focus:outline-none focus:ring-1 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground/60"
+                className="w-full pl-8 pr-7 py-1.5 text-xs rounded-lg bg-background border border-border/60 focus:outline-none focus:ring-1 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground/80"
               />
               {searchQuery && (
-                <button
+                <button aria-label="Đóng"
                   type="button"
                   onClick={() => setSearchQuery("")}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 cursor-pointer"
@@ -1034,7 +1034,7 @@ export function FolderPreviewModal({
                 className={`p-1 rounded-md transition-all cursor-pointer ${
                   gridSize === "sm" ? "bg-card text-foreground shadow-2xs" : "hover:text-foreground"
                 }`}
-                title="Lưới nhỏ"
+                title="Lưới nhỏ" aria-label="Lưới nhỏ"
               >
                 <Grid3X3 size={13} />
               </button>
@@ -1044,7 +1044,7 @@ export function FolderPreviewModal({
                 className={`p-1 rounded-md transition-all cursor-pointer ${
                   gridSize === "md" ? "bg-card text-foreground shadow-2xs" : "hover:text-foreground"
                 }`}
-                title="Lưới vừa"
+                title="Lưới vừa" aria-label="Lưới vừa"
               >
                 <Grid2X2 size={13} />
               </button>
@@ -1054,7 +1054,7 @@ export function FolderPreviewModal({
                 className={`p-1 rounded-md transition-all cursor-pointer ${
                   gridSize === "lg" ? "bg-card text-foreground shadow-2xs" : "hover:text-foreground"
                 }`}
-                title="Lưới lớn"
+                title="Lưới lớn" aria-label="Lưới lớn"
               >
                 <Layers size={13} />
               </button>
@@ -1082,7 +1082,7 @@ export function FolderPreviewModal({
               type="button"
               onClick={onClose}
               className="p-1.5 rounded-lg border border-border/50 bg-background/60 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer"
-              title="Đóng cửa sổ xem ảnh (ESC)"
+              title="Đóng cửa sổ xem ảnh (ESC)" aria-label="Đóng cửa sổ xem ảnh (ESC)"
             >
               <X size={15} />
             </button>
@@ -1126,7 +1126,7 @@ export function FolderPreviewModal({
                       ? "bg-amber-500 text-white border-amber-600 shadow-2xs"
                       : count > 0
                       ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/20"
-                      : "bg-muted/30 text-muted-foreground/70 border-border/40 hover:text-foreground"
+                      : "bg-muted/30 text-muted-foreground/85 border-border/40 hover:text-foreground"
                   }`}
                   title={`Lọc ảnh Rate ${starNum} (Phím tắt: Cmd+${starNum} hoặc phím ${starNum})`}
                 >
@@ -1324,9 +1324,9 @@ export function FolderPreviewModal({
                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                           />
                         ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/30 animate-pulse bg-muted/10">
+                          <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/60 animate-pulse bg-muted/10">
                             <ImageIcon size={20} className="mb-1" />
-                            <span className="text-[9px] font-mono uppercase tracking-wider">
+                            <span className="text-[10px] font-mono uppercase tracking-wider">
                               {photo.extension}
                             </span>
                           </div>
@@ -1342,7 +1342,7 @@ export function FolderPreviewModal({
 
                         {/* Top-Right: Format Badge */}
                         <span
-                          className={`absolute top-1.5 right-1.5 text-[9px] font-mono font-bold uppercase px-1.5 py-0.2 rounded shadow-xs tracking-wider border select-none ${
+                          className={`absolute top-1.5 right-1.5 text-[10px] font-mono font-bold uppercase px-1.5 py-0.2 rounded shadow-xs tracking-wider border select-none ${
                             isRaw
                               ? "bg-purple-950/85 text-purple-300 border-purple-500/40 backdrop-blur-xs"
                               : "bg-emerald-950/85 text-emerald-300 border-emerald-500/40 backdrop-blur-xs"
@@ -1361,7 +1361,7 @@ export function FolderPreviewModal({
                               setLightboxIndex(idx);
                             }}
                             className="pointer-events-auto p-2 rounded-full bg-black/75 text-white hover:bg-primary hover:text-primary-foreground backdrop-blur-xs shadow-lg transition-transform hover:scale-110 cursor-pointer border border-white/20"
-                            title="Phóng to toàn màn hình (Double-click hoặc Space)"
+                            title="Phóng to toàn màn hình (Double-click hoặc Space)" aria-label="Phóng to toàn màn hình (Double-click hoặc Space)"
                           >
                             <ZoomIn size={15} />
                           </button>
@@ -1376,7 +1376,7 @@ export function FolderPreviewModal({
                           >
                             {photo.filename}
                           </span>
-                          <span className="text-[9px] text-muted-foreground font-mono ml-1">
+                          <span className="text-[10px] text-muted-foreground font-mono ml-1">
                             {formatBytes(photo.size)}
                           </span>
                         </div>
@@ -1396,21 +1396,21 @@ export function FolderPreviewModal({
                                   handleSetRating(photo.full_path, starIdx);
                                 }}
                                 className="p-0.5 text-muted-foreground hover:scale-125 transition-transform cursor-pointer"
-                                title={`Gắn Rate ${starIdx} (Cmd+${starIdx})`}
+                                title={`Gắn Rate ${starIdx} (Cmd+${starIdx})`} aria-label={`Gắn Rate ${starIdx} (Cmd+${starIdx})`}
                               >
                                 <Star
                                   size={11}
                                   className={
                                     starIdx <= photoRate
                                       ? "fill-amber-400 text-amber-400"
-                                      : "text-muted-foreground/40 hover:text-amber-400"
+                                      : "text-muted-foreground/70 hover:text-amber-400"
                                   }
                                 />
                               </button>
                             ))}
                           </div>
 
-                          <span className="font-mono text-[9px] text-muted-foreground/70">
+                          <span className="font-mono text-[10px] text-muted-foreground/85">
                             #{photo.normalized_number || "---"}
                           </span>
                         </div>
@@ -1532,14 +1532,14 @@ export function FolderPreviewModal({
                               type="button"
                               onClick={() => handleSetRating(activeSidePhoto.full_path, starIdx)}
                               className="p-1 rounded-md hover:bg-amber-500/15 hover:scale-115 transition-all cursor-pointer group"
-                              title={`Chọn Rate ${starIdx} (Phím: ${starIdx} hoặc Cmd+${starIdx})`}
+                              title={`Chọn Rate ${starIdx} (Phím: ${starIdx} hoặc Cmd+${starIdx})`} aria-label={`Chọn Rate ${starIdx} (Phím: ${starIdx} hoặc Cmd+${starIdx})`}
                             >
                               <Star
                                 size={18}
                                 className={
                                   isFilled
                                     ? "fill-amber-400 text-amber-400"
-                                    : "text-muted-foreground/40 group-hover:text-amber-400"
+                                    : "text-muted-foreground/70 group-hover:text-amber-400"
                                 }
                               />
                             </button>
@@ -1667,7 +1667,7 @@ export function FolderPreviewModal({
                       type="button"
                       onClick={() => handleSetRating(filteredPhotos[lightboxIndex].full_path, starIdx)}
                       className="p-1 hover:scale-125 transition-transform cursor-pointer"
-                      title={`Đánh giá Rate ${starIdx} (Phím tắt: ${starIdx})`}
+                      title={`Đánh giá Rate ${starIdx} (Phím tắt: ${starIdx})`} aria-label={`Đánh giá Rate ${starIdx} (Phím tắt: ${starIdx})`}
                     >
                       <Star
                         size={16}
@@ -1691,7 +1691,7 @@ export function FolderPreviewModal({
                   type="button"
                   onClick={() => setLightboxIndex(null)}
                   className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer"
-                  title="Đóng (ESC)"
+                  title="Đóng (ESC)" aria-label="Đóng (ESC)"
                 >
                   <X size={18} />
                 </button>
@@ -1708,7 +1708,7 @@ export function FolderPreviewModal({
                   type="button"
                   onClick={() => setLightboxIndex(lightboxIndex - 1)}
                   className="absolute left-6 z-20 p-3 rounded-full bg-white/10 hover:bg-white/25 text-white transition-all cursor-pointer backdrop-blur-md"
-                  title="Ảnh trước (Mũi tên trái)"
+                  title="Ảnh trước (Mũi tên trái)" aria-label="Ảnh trước (Mũi tên trái)"
                 >
                   <ChevronLeft size={24} />
                 </button>
@@ -1719,7 +1719,7 @@ export function FolderPreviewModal({
                   type="button"
                   onClick={() => setLightboxIndex(lightboxIndex + 1)}
                   className="absolute right-6 z-20 p-3 rounded-full bg-white/10 hover:bg-white/25 text-white transition-all cursor-pointer backdrop-blur-md"
-                  title="Ảnh tiếp theo (Mũi tên phải)"
+                  title="Ảnh tiếp theo (Mũi tên phải)" aria-label="Ảnh tiếp theo (Mũi tên phải)"
                 >
                   <ChevronRight size={24} />
                 </button>
@@ -1760,7 +1760,7 @@ export function FolderPreviewModal({
                   onClick={handleZoomOut}
                   disabled={lightboxZoom <= 0.5}
                   className="p-1.5 rounded-full hover:bg-white/20 active:scale-95 disabled:opacity-30 disabled:hover:bg-transparent transition-all cursor-pointer"
-                  title="Thu nhỏ (-) hoặc Cuộn chuột xuống"
+                  title="Thu nhỏ (-) hoặc Cuộn chuột xuống" aria-label="Thu nhỏ (-) hoặc Cuộn chuột xuống"
                 >
                   <ZoomOut size={16} />
                 </button>
@@ -1779,7 +1779,7 @@ export function FolderPreviewModal({
                   onClick={handleZoomIn}
                   disabled={lightboxZoom >= 5}
                   className="p-1.5 rounded-full hover:bg-white/20 active:scale-95 disabled:opacity-30 disabled:hover:bg-transparent transition-all cursor-pointer"
-                  title="Phóng to (+) hoặc Cuộn chuột lên"
+                  title="Phóng to (+) hoặc Cuộn chuột lên" aria-label="Phóng to (+) hoặc Cuộn chuột lên"
                 >
                   <ZoomIn size={16} />
                 </button>
@@ -1791,7 +1791,7 @@ export function FolderPreviewModal({
                       type="button"
                       onClick={handleResetZoom}
                       className="p-1.5 rounded-full hover:bg-white/20 active:scale-95 transition-all cursor-pointer text-amber-300 hover:text-amber-200"
-                      title="Đặt lại vừa màn hình (Fit)"
+                      title="Đặt lại vừa màn hình (Fit)" aria-label="Đặt lại vừa màn hình (Fit)"
                     >
                       <RotateCcw size={14} />
                     </button>
@@ -1835,7 +1835,7 @@ export function FolderPreviewModal({
                     <p className="text-[11px] text-muted-foreground">Sao chép ảnh theo phân loại sao vào thư mục riêng</p>
                   </div>
                 </div>
-                <button
+                <button aria-label="Đóng"
                   type="button"
                   onClick={() => setIsExportModalOpen(false)}
                   className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
@@ -1868,7 +1868,7 @@ export function FolderPreviewModal({
                             ? "bg-amber-500/15 border-amber-500 text-amber-800 dark:text-amber-200 ring-2 ring-amber-500/30 font-semibold"
                             : count > 0
                             ? "bg-muted/40 hover:bg-muted border-border/50 text-foreground"
-                            : "bg-muted/20 border-border/30 text-muted-foreground/60 opacity-60"
+                            : "bg-muted/20 border-border/30 text-muted-foreground/80 opacity-60"
                         }`}
                       >
                         <div className="flex items-center gap-1 text-xs">
@@ -1936,7 +1936,7 @@ export function FolderPreviewModal({
                   </button>
                 </div>
                 <p className="text-[10px] text-muted-foreground leading-relaxed">
-                  💡 Thư mục sẽ tự động được tạo nếu chưa tồn tại. Không ghi đè ảnh gốc.
+                  Thư mục sẽ tự động được tạo nếu chưa tồn tại. Không ghi đè ảnh gốc.
                 </p>
               </div>
 

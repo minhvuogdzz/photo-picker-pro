@@ -31,7 +31,7 @@ export function RemoveCompletedCustomerDialog() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-fade-in">
+    <div role="dialog" aria-modal="true" aria-labelledby="dlg-RemoveCompletedCustomerDialog-1" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-fade-in">
       <div className="bg-card w-full max-w-md rounded-2xl border border-emerald-500/40 shadow-2xl p-5 space-y-4 animate-scale-in">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
@@ -39,13 +39,13 @@ export function RemoveCompletedCustomerDialog() {
           </div>
 
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-bold text-foreground">Hoàn tất lọc thư mục khách!</h3>
+            <h3 id="dlg-RemoveCompletedCustomerDialog-1" className="text-sm font-bold text-foreground">Hoàn tất lọc thư mục khách!</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
               Đã lọc file thành công & cập nhật trạng thái Sheet thành <span className="font-semibold text-emerald-600 dark:text-emerald-400">"Đã lọc"</span>.
             </p>
           </div>
 
-          <button
+          <button aria-label="Đóng"
             type="button"
             onClick={handleKeep}
             className="p-1 text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer"

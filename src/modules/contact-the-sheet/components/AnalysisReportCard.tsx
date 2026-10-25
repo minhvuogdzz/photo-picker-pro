@@ -5,9 +5,9 @@ import {
   CheckCircle2,
   Table,
   HelpCircle,
-  Sparkles,
   Link,
   FunctionSquare,
+  Heading,
 } from "lucide-react";
 import type { TabAnalysisResult } from "../types";
 
@@ -102,7 +102,7 @@ export function AnalysisReportCard({ analysis, onConfirmHeader, selectedHeaderRo
 
         <div className="p-3 rounded-xl bg-background/60 border border-border flex flex-col gap-1 min-w-0 overflow-hidden">
           <span className="text-muted-foreground flex items-center gap-1">
-            <Sparkles size={13} className="text-muted-foreground shrink-0" /> Tiêu đề dò thấy
+            <Heading size={13} className="text-muted-foreground shrink-0" /> Tiêu đề dò thấy
           </span>
           <span className="font-bold text-foreground text-sm">
             Hàng {selectedHeaderRow}

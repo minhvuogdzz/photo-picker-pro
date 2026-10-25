@@ -12,7 +12,7 @@ import {
   CheckCircle2,
   Clock,
   ArrowRight,
-  Sparkles,
+  Info,
 } from "lucide-react";
 
 interface MaintenanceScreenProps {
@@ -86,7 +86,7 @@ export function MaintenanceScreen({ onContinueOffline }: MaintenanceScreenProps)
     "Hệ thống đang được nâng cấp máy chủ để hoạt động ổn định và mượt mà hơn. Các tính năng trực tuyến sẽ sớm quay trở lại. Dữ liệu và tài khoản của bạn vẫn được bảo toàn.";
 
   return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-950/95 backdrop-blur-xl text-white select-none animate-fade-in p-6">
+    <div role="dialog" aria-modal="true" aria-labelledby="dlg-MaintenanceScreen-1" className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-950/95 backdrop-blur-xl text-white select-none animate-fade-in p-6">
       {/* Subtle radial ambient background glow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-[20%] -left-[10%] w-[60vw] h-[60vw] rounded-full bg-blue-600/10 blur-[120px]" />
@@ -107,10 +107,10 @@ export function MaintenanceScreen({ onContinueOffline }: MaintenanceScreenProps)
         {/* Header content */}
         <div className="space-y-3">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
-            <Sparkles className="w-3.5 h-3.5" />
+            <Info className="w-3.5 h-3.5" />
             <span>Thông báo hệ thống</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+          <h1 id="dlg-MaintenanceScreen-1" className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
             {title}
           </h1>
           <p className="text-sm text-slate-300 leading-relaxed max-w-md mx-auto">

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { X, Megaphone, CheckCircle2, Sparkles, ExternalLink } from "lucide-react";
+import { X, Megaphone, CheckCircle2, ExternalLink } from "lucide-react";
 import { useAppStore } from "@/core/stores/useAppStore";
 import { apiRequest } from "@/core/services/apiClient";
 
@@ -101,7 +101,7 @@ export function AnnouncementPopup() {
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[115] flex items-center justify-center p-3 sm:p-5 bg-black/55 backdrop-blur-xs dark:bg-black/75 dark:backdrop-blur-md animate-fade-in select-none">
+    <div role="dialog" aria-modal="true" aria-labelledby="dlg-AnnouncementPopup-1" className="fixed inset-0 z-[115] flex items-center justify-center p-3 sm:p-5 bg-black/55 backdrop-blur-xs dark:bg-black/75 dark:backdrop-blur-md animate-fade-in select-none">
       {/* Click outside to close backdrop */}
       <div className="absolute inset-0" onClick={handleClose} />
 
@@ -118,16 +118,15 @@ export function AnnouncementPopup() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-foreground leading-tight">
+                <h3 id="dlg-AnnouncementPopup-1" className="text-sm font-bold text-foreground leading-tight">
                   {config.title}
                 </h3>
                 <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-700 dark:text-blue-400">
-                  <Sparkles size={10} />
                   Thông báo
                 </span>
               </div>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                Cập nhật thông tin chính thức từ MVD Tech & Design Studio
+                Cập nhật thông tin chính thức từ DH Studio Pro
               </p>
             </div>
           </div>
@@ -136,7 +135,7 @@ export function AnnouncementPopup() {
             type="button"
             onClick={handleClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer border border-transparent hover:border-border"
-            title="Đóng thông báo (ESC)"
+            title="Đóng thông báo (ESC)" aria-label="Đóng thông báo (ESC)"
           >
             <X size={16} />
           </button>

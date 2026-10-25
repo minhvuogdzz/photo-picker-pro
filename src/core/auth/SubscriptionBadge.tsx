@@ -1,6 +1,6 @@
 import { useAuthStore } from "@/core/stores/useAuthStore";
 import { getUserPlanInfo } from "@/core/services/appEntitlementPolicy";
-import { Sparkles, Clock, ShieldCheck, FileImage, Layers } from "lucide-react";
+import { Clock, ShieldCheck, FileImage, Layers, Infinity as InfinityIcon } from "lucide-react";
 
 interface SubscriptionBadgeProps {
   onClick?: () => void;
@@ -29,7 +29,7 @@ export function SubscriptionBadge({ onClick }: SubscriptionBadgeProps) {
           : "bg-destructive/15 text-destructive border-destructive/30 hover:bg-destructive/25";
 
   const icon = planInfo.isLifetime ? (
-    <Sparkles size={11} className="shrink-0" />
+    <InfinityIcon size={11} className="shrink-0" />
   ) : planInfo.isFullApp && !planInfo.isTrial ? (
     <Layers size={11} className="shrink-0 text-blue-400" />
   ) : planInfo.isPhotoPickerOnly ? (

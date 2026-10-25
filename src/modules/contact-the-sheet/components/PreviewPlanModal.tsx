@@ -23,7 +23,7 @@ export function PreviewPlanModal({ job, plan, onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
+    <div role="dialog" aria-modal="true" aria-labelledby="dlg-PreviewPlanModal-1" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
       <div className="bg-card border border-border shadow-2xl rounded-2xl w-full max-w-xl overflow-hidden flex flex-col animate-scale-in">
         {/* Header */}
         <div className="px-5 py-4 border-b border-border flex items-center justify-between bg-muted/20">
@@ -32,7 +32,7 @@ export function PreviewPlanModal({ job, plan, onClose }: Props) {
               <Eye size={16} />
             </div>
             <div>
-              <h3 className="font-extrabold text-sm text-foreground">
+              <h3 id="dlg-PreviewPlanModal-1" className="font-extrabold text-sm text-foreground">
                 Xem trước thay đổi (Preview Plan)
               </h3>
               <p className="text-[11px] text-muted-foreground">
@@ -42,7 +42,7 @@ export function PreviewPlanModal({ job, plan, onClose }: Props) {
               </p>
             </div>
           </div>
-          <button
+          <button aria-label="Đóng"
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted transition-colors cursor-pointer"
           >

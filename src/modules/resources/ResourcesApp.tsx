@@ -25,6 +25,7 @@ import {
   ExternalLink,
   HardDrive,
   Crown,
+  Star,
 } from "lucide-react";
 
 export interface ResourceItem {
@@ -347,7 +348,7 @@ export default function ResourcesApp() {
           <button
             onClick={() => setActiveModule("launcher")}
             className="w-7 h-7 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer border border-border"
-            title="Quay lại Launcher"
+            title="Quay lại Launcher" aria-label="Quay lại Launcher"
           >
             <ArrowLeft size={14} />
           </button>
@@ -359,7 +360,7 @@ export default function ResourcesApp() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xs font-semibold text-foreground tracking-tight">Kho Tài Nguyên Creative</h1>
-              <span className="text-[9px] font-medium px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20">
+              <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20">
                 PRO VAULT
               </span>
             </div>
@@ -377,7 +378,7 @@ export default function ResourcesApp() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm tài nguyên, hashtag..."
-            className="w-full bg-background border border-border rounded-lg pl-7 pr-2.5 py-1 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50 transition-colors shadow-sm"
+            className="w-full bg-background border border-border rounded-lg pl-7 pr-2.5 py-1 text-xs text-foreground placeholder:text-muted-foreground/80 focus:outline-none focus:border-primary/50 transition-colors shadow-sm"
           />
         </div>
       </div>
@@ -399,7 +400,7 @@ export default function ResourcesApp() {
             >
               <Icon size={12} />
               <span>{cat.label}</span>
-              <span className={`text-[9px] font-mono px-1 rounded ${isSelected ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+              <span className={`text-[10px] font-mono px-1 rounded ${isSelected ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
                 {cat.count}
               </span>
             </button>
@@ -442,12 +443,12 @@ export default function ResourcesApp() {
 
                     <div className="flex items-center gap-1.5">
                       {item.isVip && (
-                        <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-500 border border-amber-500/25">
+                        <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-500 border border-amber-500/25">
                           PRO
                         </span>
                       )}
                       {item.isHot && (
-                        <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-rose-500/15 text-rose-500 border border-rose-500/25">
+                        <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-rose-500/15 text-rose-500 border border-rose-500/25">
                           HOT
                         </span>
                       )}
@@ -473,7 +474,7 @@ export default function ResourcesApp() {
                       {item.hashtags.map((tag, idx) => (
                         <span
                           key={idx}
-                          className="text-[9px] text-muted-foreground px-1.5 py-0.2 rounded bg-muted/60 border border-border/50"
+                          className="text-[10px] text-muted-foreground px-1.5 py-0.2 rounded bg-muted/60 border border-border/50"
                         >
                           #{tag.replace(/^#/, "")}
                         </span>
@@ -487,8 +488,9 @@ export default function ResourcesApp() {
                   <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                     <span>{item.size || "0 MB"}</span>
                     <span>·</span>
-                    <span className="text-amber-500 font-medium">
-                      ★ {Number(item.rating || 5).toFixed(1)}
+                    <span className="inline-flex items-center gap-1 text-amber-500 font-medium">
+                      <Star size={11} className="fill-current" aria-hidden="true" />
+                      {Number(item.rating || 5).toFixed(1)}
                     </span>
                   </div>
 
@@ -508,7 +510,7 @@ export default function ResourcesApp() {
 
       {/* Resource Detail Modal */}
       {activeItem && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
+        <div role="dialog" aria-modal="true" aria-labelledby="dlg-ResourcesApp-1" className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
           <div className="w-full max-w-md bg-card border border-border rounded-xl p-5 shadow-xl relative animate-scale-in text-foreground">
             
             {/* Top Bar inside Modal */}
@@ -520,14 +522,14 @@ export default function ResourcesApp() {
               <button
                 onClick={handleCloseModal}
                 className="w-6 h-6 rounded-md bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground flex items-center justify-center cursor-pointer transition-colors"
-                title="Đóng"
+                title="Đóng" aria-label="Đóng"
               >
                 <X size={13} />
               </button>
             </div>
 
             {/* Title & Description */}
-            <h2 className="text-sm font-semibold text-foreground leading-snug mb-1.5">
+            <h2 id="dlg-ResourcesApp-1" className="text-sm font-semibold text-foreground leading-snug mb-1.5">
               {activeItem.title}
             </h2>
 

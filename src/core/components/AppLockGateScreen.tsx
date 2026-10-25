@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Lock, ArrowLeft, KeyRound, Sparkles } from "lucide-react";
+import { Lock, ArrowLeft, KeyRound } from "lucide-react";
 import { useAppStore } from "@/core/stores/useAppStore";
 import { LicenseManager } from "@/core/license/LicenseManager";
 
@@ -19,7 +19,7 @@ export function AppLockGateScreen({ appId, appName, description }: AppLockGateSc
       <button
         onClick={() => setActiveModule("launcher")}
         className="absolute top-4 left-4 w-7 h-7 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer border border-border"
-        title="Quay lại Launcher"
+        title="Quay lại Launcher" aria-label="Quay lại Launcher"
       >
         <ArrowLeft size={14} />
       </button>
@@ -30,7 +30,7 @@ export function AppLockGateScreen({ appId, appName, description }: AppLockGateSc
       </div>
 
       <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted border border-border text-muted-foreground text-[10px] font-semibold mb-2.5">
-        <Sparkles size={11} className="text-primary" />
+        <KeyRound size={11} className="text-primary" />
         <span>GÓI BẢN QUYỀN ỨNG DỤNG</span>
       </div>
 

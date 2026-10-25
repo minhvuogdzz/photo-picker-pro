@@ -103,7 +103,7 @@ export class SheetDiscoveryService {
         throw new Error(`GOOGLE_TOKEN_EXPIRED: Phiên xác thực Google đã hết hạn (${googleErrMsg || "401"}). Vui lòng bấm 'Ngắt kết nối' và 'Kết nối Google' lại.`);
       }
       if (res.status === 403) {
-        throw new Error(`SHEET_ACCESS_DENIED: Không thể truy cập bảng tính. Chi tiết từ Google:\n"${googleErrMsg || "Quyền bị từ chối"}"\n\n💡 Vui lòng kiểm tra:\n1. Kích hoạt Google Sheets API trong dự án Google Cloud (devhouse-af4bf).\n2. Chia sẻ bảng tính Google Sheet cho tài khoản "${googleCredentialManager.getAccountEmail() || "Google"}" (quyền Người xem hoặc Người chỉnh sửa).`);
+        throw new Error(`SHEET_ACCESS_DENIED: Không thể truy cập bảng tính. Chi tiết từ Google:\n"${googleErrMsg || "Quyền bị từ chối"}"\n\nVui lòng kiểm tra:\n1. Kích hoạt Google Sheets API trong dự án Google Cloud (devhouse-af4bf).\n2. Chia sẻ bảng tính Google Sheet cho tài khoản "${googleCredentialManager.getAccountEmail() || "Google"}" (quyền Người xem hoặc Người chỉnh sửa).`);
       }
       if (res.status === 404) {
         throw new Error(`SHEET_NOT_FOUND: Bảng tính không tồn tại hoặc ID không đúng: ${spreadsheetId}`);
@@ -461,7 +461,7 @@ export class SheetDiscoveryService {
     const data = await res.json();
     const rows: string[][] = data.values || [];
 
-    return rows.map((cols, idx) => {
+    const result = rows.map((cols, idx) => {
       const values: Record<string, string> = {};
       for (let c = 0; c < cols.length; c++) {
         const letter = this.columnIndexToLetter(c);
@@ -472,6 +472,82 @@ export class SheetDiscoveryService {
         values,
       };
     });
+
+    await this.fillMergedCells(spreadsheetId, tabTitle, startRow, result, token);
+    return result;
+  }
+
+  /**
+   * The values API only returns a merged block's value in its top-left cell; every other cell of the
+   * block comes back empty although the user sees the value on all rows. Copies the top-left value
+   * into the empty cells of the block so status / code / due-date / file-name checks see what the user sees.
+   * Best effort: on any failure the raw values are kept.
+   */
+  private async fillMergedCells(
+    spreadsheetId: string,
+    tabTitle: string,
+    startRow: number,
+    rows: Array<{ row: number; values: Record<string, string> }>,
+    token: string
+  ): Promise<void> {
+    if (rows.length === 0) return;
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      const metaUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets(properties(title),merges)`;
+      const metaRes = await fetch(metaUrl, { headers });
+      if (!metaRes.ok) return;
+      const meta = await metaRes.json();
+      const sheet = (meta.sheets || []).find((sh: any) => sh.properties?.title === tabTitle);
+      const lastRow = startRow + rows.length - 1;
+      // GridRange indexes are 0-based and end-exclusive
+      const merges: any[] = (sheet?.merges || []).filter(
+        (m: any) =>
+          m.endRowIndex - m.startRowIndex > 1 &&
+          m.endRowIndex >= startRow &&
+          m.startRowIndex + 1 <= lastRow
+      );
+      if (merges.length === 0) return;
+
+      // Top-left cells above the fetched range are not in `rows`: read them in one batch
+      const escaped = tabTitle.replace(/'/g, "''");
+      const cellOf = (m: any) => `'${escaped}'!${this.columnIndexToLetter(m.startColumnIndex)}${m.startRowIndex + 1}`;
+      const outside = merges.filter((m) => m.startRowIndex + 1 < startRow);
+      const outsideValues = new Map<string, string>();
+      if (outside.length > 0) {
+        const query = outside.map((m) => `ranges=${encodeURIComponent(cellOf(m))}`).join("&");
+        const batchRes = await fetch(
+          `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchGet?${query}`,
+          { headers }
+        );
+        if (batchRes.ok) {
+          const batch = await batchRes.json();
+          outside.forEach((m, i) => {
+            outsideValues.set(cellOf(m), batch.valueRanges?.[i]?.values?.[0]?.[0] || "");
+          });
+        }
+      }
+
+      const byRow = new Map(rows.map((r) => [r.row, r]));
+      for (const m of merges) {
+        const topLeftRow = m.startRowIndex + 1;
+        const topLeftLetter = this.columnIndexToLetter(m.startColumnIndex);
+        const source =
+          topLeftRow >= startRow
+            ? byRow.get(topLeftRow)?.values[topLeftLetter] || ""
+            : outsideValues.get(cellOf(m)) || "";
+        if (!source) continue;
+        for (let r = Math.max(topLeftRow, startRow); r <= Math.min(m.endRowIndex, lastRow); r++) {
+          const rec = byRow.get(r);
+          if (!rec) continue;
+          for (let c = m.startColumnIndex; c < m.endColumnIndex; c++) {
+            const letter = this.columnIndexToLetter(c);
+            if (!rec.values[letter]) rec.values[letter] = source;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Could not resolve merged cells, using raw values:", err);
+    }
   }
 
   /**

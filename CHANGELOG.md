@@ -2,6 +2,33 @@
 
 Tất cả các bản phát hành của **DH Studio Pro** (phát triển & thuộc sở hữu bản quyền của **DevHouse Software**) đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
 
+## [v2.9.0] - 2026-10-25
+
+### Trong bản cập nhật này, chúng tôi đã:
+
+#### 🎨 Làm mới giao diện toàn bộ ứng dụng
+- **Bảng màu mới đạt chuẩn dễ đọc:** Màu chính xanh dương được điều chỉnh để chữ trên nút và liên kết luôn đủ tương phản ở cả giao diện Sáng và Tối.
+- **Chữ lớn và rõ hơn:** Cỡ chữ nhỏ nhất tăng từ khoảng 9,75px lên 11px; các chữ mờ được tăng độ đậm để dễ đọc.
+- **Bớt icon gây nhiễu:** Mỗi nút, thẻ và nhãn chỉ còn một icon phù hợp nhất; gỡ toàn bộ emoji và các icon trang trí dư thừa (ví dụ các tab "Truy xuất mã chọn" và "Cấu hình Sheet & Cột").
+- **Launcher gọn hơn:** Các ứng dụng xếp lưới 2×2 cân đối, thẻ mở được bằng bàn phím, gói dài hạn hiển thị "Vĩnh viễn".
+- **Thao tác bằng bàn phím và trình đọc màn hình tốt hơn:** Viền focus rõ ràng, nút chỉ có icon đều có tên mô tả, hộp thoại và biểu mẫu đăng nhập được gắn nhãn đầy đủ; tôn trọng chế độ giảm chuyển động của hệ điều hành.
+- **Đồng bộ tên thương hiệu "DH Studio Pro"** ở màn chào, Donate, License và Thông báo.
+
+#### 📊 Contact The Sheet — Quét và điền link Drive nhanh, chính xác hơn
+- **Tải dữ liệu nhiều tab Google Sheet song song** và tra cứu Drive nhiều job cùng lúc (có giới hạn để tránh vượt hạn mức API).
+- **Kiểm tra chủ sở hữu thư mục:** Bỏ qua thư mục cuối thuộc tài khoản khác, chọn đúng thư mục của tài khoản đang kết nối; mỗi lần quét mới đều xoá dữ liệu Drive tạm để không dùng nhầm kết quả cũ.
+- **Đọc đúng ô gộp (merged cells):** Ngày hẹn trả ở ô gộp được áp cho cả khối hàng.
+
+#### ✅ Photo Picker — Truy xuất mã & kiểm tra trạng thái lọc
+- **Truy xuất mã từ nhiều tab Sheet,** mỗi tab có hàng bắt đầu và cột trạng thái riêng; nhiều dòng trùng tên file ưu tiên dòng còn mã và chưa "Đã lọc".
+- **Nhận diện trạng thái "Chưa lọc" chính xác hơn** (kể cả chữ Unicode tổ hợp hoặc khoảng trắng lạ) và đọc ngày hẹn dạng dd/mm không có năm, tính theo giờ Việt Nam.
+
+#### ⚡ Cải thiện & Tối ưu
+- **Giảm CPU khi để máy rảnh:** Các hiệu ứng lặp tự tạm dừng khi không có thao tác hoặc cửa sổ bị ẩn; vòng xoay tiến trình vẫn chạy khi đang xử lý.
+- **Mở app nhanh hơn:** Từng ứng dụng chỉ được nạp lần đầu khi bạn mở nó.
+
+---
+
 ## [v2.8.1] - 2026-10-23
 
 ### Trong bản cập nhật này, chúng tôi đã:

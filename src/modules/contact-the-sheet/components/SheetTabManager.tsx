@@ -6,8 +6,8 @@ import {
   ChevronDown,
   ChevronUp,
   Layers,
-  Sparkles,
   Copy,
+  Check,
 } from "lucide-react";
 import type { SheetTabInfo, TabConfiguration } from "../types";
 
@@ -92,7 +92,7 @@ export function SheetTabManager({
                 setViewMode("table");
                 setIsExpanded(true);
               }}
-              title="Xem dạng Bảng chi tiết"
+              title="Xem dạng Bảng chi tiết" aria-label="Xem dạng Bảng chi tiết"
               className={`p-1.5 rounded-lg text-xs transition-all cursor-pointer ${
                 viewMode === "table" && isExpanded
                   ? "bg-primary text-primary-foreground font-semibold"
@@ -106,7 +106,7 @@ export function SheetTabManager({
                 setViewMode("grid");
                 setIsExpanded(true);
               }}
-              title="Xem dạng Lưới thẻ (Grid)"
+              title="Xem dạng Lưới thẻ (Grid)" aria-label="Xem dạng Lưới thẻ (Grid)"
               className={`p-1.5 rounded-lg text-xs transition-all cursor-pointer ${
                 viewMode === "grid" && isExpanded
                   ? "bg-primary text-primary-foreground font-semibold"
@@ -202,7 +202,7 @@ export function SheetTabManager({
                           <td className="py-2 px-3 text-right">
                             {isSelected ? (
                               <span className="px-2.5 py-1 rounded-lg bg-primary text-primary-foreground text-[11px] font-medium inline-flex items-center gap-1">
-                                <Sparkles size={11} /> Đang chọn
+                                <Check size={11} /> Đang chọn
                               </span>
                             ) : (
                               <button

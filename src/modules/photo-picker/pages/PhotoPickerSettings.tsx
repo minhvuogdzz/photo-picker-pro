@@ -72,7 +72,7 @@ export function SettingsPage() {
               <FolderOutput size={14} className="text-amber-500" />
               {t("default_output_folder")}
             </div>
-            <span className="bg-amber-500/15 text-amber-700 dark:text-amber-300 text-[9px] px-1.5 py-0.2 rounded font-bold tracking-wider border border-amber-500/30">
+            <span className="bg-amber-500/15 text-amber-700 dark:text-amber-300 text-[10px] px-1.5 py-0.2 rounded font-bold tracking-wider border border-amber-500/30">
               PRO
             </span>
           </div>

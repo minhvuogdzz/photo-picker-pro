@@ -5,12 +5,12 @@ import {
   Key,
   QrCode,
   X,
-  Sparkles,
   Crown,
   CheckCircle2,
   Calendar,
   ExternalLink,
   ArrowRight,
+  Tag,
 } from "lucide-react";
 import type { ExpiringNoticeInfo } from "../services/accountExpirationService";
 import { getPricingPackages, PricingPackage } from "../services/paymentApi";
@@ -88,7 +88,7 @@ export function AccountExpiringAlertModal({
   const displayPackages = highlightedPackages.length > 0 ? highlightedPackages : safePackages.slice(0, 3);
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 backdrop-blur-xs dark:bg-black/75 dark:backdrop-blur-md p-4 animate-fade-in select-none">
+    <div role="dialog" aria-modal="true" aria-labelledby="dlg-AccountExpiringAlertModal-1" className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 backdrop-blur-xs dark:bg-black/75 dark:backdrop-blur-md p-4 animate-fade-in select-none">
       {/* Background ambient lighting */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] bg-gradient-to-tr from-amber-500/15 via-blue-500/10 to-orange-500/10 rounded-full blur-[110px] pointer-events-none" />
 
@@ -103,7 +103,7 @@ export function AccountExpiringAlertModal({
           type="button"
           onClick={handleDismiss}
           className="absolute top-4 right-4 text-muted-foreground hover:text-foreground p-1.5 rounded-xl hover:bg-muted transition-colors cursor-pointer"
-          title="Đóng thông báo"
+          title="Đóng thông báo" aria-label="Đóng thông báo"
         >
           <X size={18} />
         </button>
@@ -126,7 +126,7 @@ export function AccountExpiringAlertModal({
             <Clock size={12} />
             CẢNH BÁO SẮP HẾT HẠN (≤ 3 NGÀY)
           </div>
-          <h2 className="text-lg sm:text-xl font-black text-foreground tracking-tight">
+          <h2 id="dlg-AccountExpiringAlertModal-1" className="text-lg sm:text-xl font-black text-foreground tracking-tight">
             Gói Sử Dụng Của Bạn Sắp Hết Hạn
           </h2>
           <p className="text-xs text-muted-foreground leading-relaxed px-1">
@@ -159,7 +159,7 @@ export function AccountExpiringAlertModal({
         <div className="space-y-2 text-left">
           <div className="text-[11px] font-bold text-foreground flex items-center justify-between">
             <span className="flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              <Tag className="w-3.5 h-3.5 text-primary" />
               Các gói gia hạn đề xuất (Cấu hình bởi Admin):
             </span>
             <button
@@ -185,7 +185,7 @@ export function AccountExpiringAlertModal({
                       {pkg.name.replace(/Gói /i, "")}
                     </span>
                     {pkg.badge && (
-                      <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[9px] font-bold">
+                      <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[10px] font-bold">
                         {pkg.badge}
                       </span>
                     )}

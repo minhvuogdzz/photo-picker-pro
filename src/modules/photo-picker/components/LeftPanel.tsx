@@ -302,11 +302,11 @@ export function LeftPanel() {
 
   if (isCollapsed) {
     return (
-      <div className="w-12 flex flex-col items-center py-4 bg-card/60 backdrop-blur-md border border-border/30 shadow-sm rounded-xl transition-all duration-300">
+      <div className="w-12 flex flex-col items-center py-4 bg-card border border-border shadow-sm rounded-xl transition-all duration-300">
         <button 
           onClick={() => setIsCollapsed(false)}
           className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-all mb-4 cursor-pointer"
-          title="Mở bảng điều khiển"
+          title="Mở bảng điều khiển" aria-label="Mở bảng điều khiển"
         >
           <Menu size={16} />
         </button>
@@ -317,7 +317,7 @@ export function LeftPanel() {
               <FolderOpen size={16} />
             </div>
             {inputFolders.length > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-3.5 h-3.5 px-0.5 bg-foreground/80 text-[8px] font-semibold text-background rounded-full flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 min-w-3.5 h-3.5 px-0.5 bg-foreground/80 text-[10px] font-semibold text-background rounded-full flex items-center justify-center">
                 {inputFolders.length}
               </span>
             )}
@@ -330,7 +330,7 @@ export function LeftPanel() {
               <CheckCircle size={16} />
             </div>
             {matchResult && matchResult.found_count > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-3.5 h-3.5 px-0.5 bg-emerald-600 dark:bg-emerald-500 text-[8px] font-semibold text-white rounded-full flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 min-w-3.5 h-3.5 px-0.5 bg-emerald-600 dark:bg-emerald-500 text-[10px] font-semibold text-white rounded-full flex items-center justify-center">
                 {matchResult.found_count}
               </span>
             )}
@@ -341,7 +341,7 @@ export function LeftPanel() {
               <AlertTriangle size={16} />
             </div>
             {matchResult && (matchResult.missing_count > 0 || matchResult.duplicate_count > 0) && (
-              <span className="absolute -top-1 -right-1 min-w-3.5 h-3.5 px-0.5 bg-red-500 text-[8px] font-semibold text-white rounded-full flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 min-w-3.5 h-3.5 px-0.5 bg-red-500 text-[10px] font-semibold text-white rounded-full flex items-center justify-center">
                 {matchResult.missing_count + matchResult.duplicate_count}
               </span>
             )}
@@ -356,16 +356,16 @@ export function LeftPanel() {
 
       {/* SECTION 1: Input Folders & Batch Customer Queue */}
       <div
-        className={`flex flex-col flex-shrink-0 transition-all duration-300 bg-card/80 backdrop-blur-md border border-border/30 shadow-sm rounded-xl overflow-hidden ${
+        className={`flex flex-col flex-shrink-0 transition-all duration-300 bg-card border border-border shadow-sm rounded-xl overflow-hidden ${
           pickerMode === "multi" ? "max-h-[50%]" : "max-h-[35%]"
         }`}
       >
         {/* Header */}
-        <div className="py-2.5 px-3 flex justify-between items-center border-b border-border/30 bg-muted/10">
+        <div className="py-2.5 px-3 flex justify-between items-center border-b border-border bg-muted/10">
           <span className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-foreground uppercase">
             <FolderOpen size={13} className="text-muted-foreground" />
             <span>{pickerMode === "multi" ? "Hàng đợi khách" : t("input_folders")}</span>
-            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-muted/60 text-muted-foreground border border-border/30 font-mono font-bold">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted/60 text-muted-foreground border border-border/30 font-mono font-bold">
               {inputFolders.length}
             </span>
           </span>
@@ -375,8 +375,8 @@ export function LeftPanel() {
               <button
                 type="button"
                 onClick={clearInputFolders}
-                className="text-muted-foreground hover:text-destructive transition-all p-1 rounded-md hover:bg-destructive/10 cursor-pointer"
-                title="Xoá tất cả khách khỏi hàng đợi"
+                className="text-muted-foreground hover:text-destructive transition-colors p-1.5 rounded-md hover:bg-destructive/10 cursor-pointer"
+                title="Xoá tất cả khách khỏi hàng đợi" aria-label="Xoá tất cả khách khỏi hàng đợi"
               >
                 <Trash2 size={13} />
               </button>
@@ -385,8 +385,8 @@ export function LeftPanel() {
             <button
               type="button"
               onClick={handleAddFolder}
-              className="text-muted-foreground hover:text-foreground transition-all p-1 rounded-md hover:bg-muted/50 cursor-pointer"
-              title={pickerMode === "multi" ? "Thêm thư mục Tháng, Ngày hoặc Khách" : t("add_folder")}
+              className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-muted/60 cursor-pointer"
+              title={pickerMode === "multi" ? "Thêm thư mục Tháng, Ngày hoặc Khách" : t("add_folder")} aria-label={pickerMode === "multi" ? "Thêm thư mục Tháng, Ngày hoặc Khách" : t("add_folder")}
             >
               <FolderPlus size={14} />
             </button>
@@ -394,8 +394,8 @@ export function LeftPanel() {
             <button
               type="button"
               onClick={() => setIsCollapsed(true)}
-              className="text-muted-foreground hover:text-foreground transition-all p-1 rounded-md hover:bg-muted/50 cursor-pointer"
-              title="Thu gọn"
+              className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-muted/60 cursor-pointer"
+              title="Thu gọn" aria-label="Thu gọn"
             >
               <ChevronLeft size={14} />
             </button>
@@ -403,7 +403,7 @@ export function LeftPanel() {
         </div>
 
         {/* Mode Switcher: Lọc 1 khách vs Lọc nhiều khách */}
-        <div className="p-2 border-b border-border/30 bg-muted/20">
+        <div className="p-2 border-b border-border bg-muted/20">
           <div className="p-0.5 bg-muted/60 rounded-lg grid grid-cols-2 gap-1 text-[11px] font-medium border border-border/40">
             <button
               type="button"
@@ -444,10 +444,10 @@ export function LeftPanel() {
                 placeholder="Tìm tên khách cần lọc trước..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-7 pr-7 py-1 text-[11px] rounded-md bg-background border border-border/60 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary"
+                className="w-full pl-7 pr-7 py-1 text-[11px] rounded-md bg-background border border-border/60 text-foreground placeholder:text-muted-foreground/80 focus:outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/30"
               />
               {searchQuery && (
-                <button
+                <button aria-label="Xoá"
                   type="button"
                   onClick={() => setSearchQuery("")}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
@@ -482,7 +482,7 @@ export function LeftPanel() {
 
           {inputFolders.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-5 px-3 text-center border border-dashed border-border/40 rounded-lg">
-              <FolderPlus size={18} className="text-muted-foreground/40 mb-2" />
+              <FolderPlus size={18} className="text-muted-foreground/70 mb-2" />
               <p className="text-[11px] text-foreground/60">{t("no_folders_added")}</p>
               <p className="text-[10px] mt-1 text-muted-foreground max-w-[200px] leading-relaxed">
                 {pickerMode === "multi"
@@ -514,7 +514,7 @@ export function LeftPanel() {
                     handleOpenPreview(folder);
                   }}
                   className="p-1 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer shrink-0"
-                  title="Xem toàn bộ ảnh trong thư mục này"
+                  title="Xem toàn bộ ảnh trong thư mục này" aria-label="Xem toàn bộ ảnh trong thư mục này"
                 >
                   <Eye size={13} />
                 </button>
@@ -559,7 +559,7 @@ export function LeftPanel() {
                     </div>
 
                     {batchMeta?.day_name && (
-                      <span className="text-[9px] text-muted-foreground font-mono">
+                      <span className="text-[10px] text-muted-foreground font-mono">
                         {batchMeta.day_name}
                       </span>
                     )}
@@ -573,7 +573,7 @@ export function LeftPanel() {
                       handleOpenPreview(folder);
                     }}
                     className="p-1 rounded hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all cursor-pointer shrink-0"
-                    title="Xem trước ảnh của khách này"
+                    title="Xem trước ảnh của khách này" aria-label="Xem trước ảnh của khách này"
                   >
                     <Eye size={12} />
                   </button>
@@ -586,7 +586,7 @@ export function LeftPanel() {
                       removeInputFolder(folder);
                     }}
                     className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer shrink-0"
-                    title="Xoá khách này khỏi hàng đợi"
+                    title="Xoá khách này khỏi hàng đợi" aria-label="Xoá khách này khỏi hàng đợi"
                   >
                     <Trash2 size={12} />
                   </button>
@@ -599,7 +599,7 @@ export function LeftPanel() {
           {favoriteFolders.length > 0 && (
             <>
               <div className="pt-2 pb-1">
-                <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
                   <Star size={9} className="text-amber-400" />
                   {t("favorites")}
                 </span>
@@ -627,12 +627,12 @@ export function LeftPanel() {
       </div>
 
       {/* SECTION 2: Found Files */}
-      <div className="flex flex-col flex-1 min-h-[140px] bg-card/80 border border-border/30 shadow-sm rounded-xl overflow-hidden transition-all duration-300">
-        <div className="py-2.5 px-3 flex justify-between items-center border-b border-border/30">
+      <div className="flex flex-col flex-1 min-h-[140px] bg-card border border-border shadow-sm rounded-xl overflow-hidden transition-all duration-300">
+        <div className="py-2.5 px-3 flex justify-between items-center border-b border-border">
           <span className="flex items-center gap-2 text-[11px] font-semibold tracking-wide text-foreground uppercase">
             <CheckCircle size={13} className="text-emerald-600 dark:text-emerald-400" />
             Đã tìm thấy
-            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
               {matchResult?.found_count ?? 0}
             </span>
           </span>
@@ -650,7 +650,7 @@ export function LeftPanel() {
         </div>
         <div className="flex-1 overflow-y-auto p-2.5 space-y-1" style={{ scrollbarWidth: 'thin' }}>
           {(!matchResult || matchResult.found_count === 0) ? (
-            <div className="flex h-full items-center justify-center text-[11px] text-muted-foreground/40">
+            <div className="flex h-full items-center justify-center text-[11px] text-muted-foreground">
               Chưa có file nào
             </div>
           ) : (
@@ -672,8 +672,8 @@ export function LeftPanel() {
                       e.stopPropagation();
                       handleOpenFoundPreview(idx);
                     }}
-                    className="p-1 rounded-md text-muted-foreground/60 hover:text-emerald-400 hover:bg-emerald-500/15 transition-all cursor-pointer shrink-0 opacity-80 group-hover:opacity-100"
-                    title={`Xem trước ảnh ${match.photo.filename}`}
+                    className="p-1 rounded-md text-muted-foreground/80 hover:text-emerald-400 hover:bg-emerald-500/15 transition-all cursor-pointer shrink-0 opacity-80 group-hover:opacity-100"
+                    title={`Xem trước ảnh ${match.photo.filename}`} aria-label={`Xem trước ảnh ${match.photo.filename}`}
                   >
                     <Eye size={14} />
                   </button>
@@ -685,19 +685,19 @@ export function LeftPanel() {
       </div>
 
       {/* SECTION 3: Error Files — with copy buttons for duplicate & missing */}
-      <div className="flex flex-col flex-1 min-h-[140px] bg-card/80 border border-border/30 shadow-sm rounded-xl overflow-hidden transition-all duration-300">
-        <div className="py-2.5 px-3 flex justify-between items-center border-b border-border/30">
+      <div className="flex flex-col flex-1 min-h-[140px] bg-card border border-border shadow-sm rounded-xl overflow-hidden transition-all duration-300">
+        <div className="py-2.5 px-3 flex justify-between items-center border-b border-border">
           <span className="flex items-center gap-2 text-[11px] font-semibold tracking-wide text-foreground uppercase">
             <AlertTriangle size={13} className="text-red-500" />
             Các file lỗi
-            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-500 border border-red-500/20">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-500 border border-red-500/20">
               {(matchResult?.missing_count ?? 0) + (matchResult?.duplicate_count ?? 0)}
             </span>
           </span>
         </div>
         <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5" style={{ scrollbarWidth: 'thin' }}>
           {(!matchResult || (matchResult.missing_count === 0 && matchResult.duplicate_count === 0)) ? (
-            <div className="flex h-full items-center justify-center text-[11px] text-muted-foreground/40">
+            <div className="flex h-full items-center justify-center text-[11px] text-muted-foreground">
               Không có lỗi
             </div>
           ) : (
@@ -712,13 +712,13 @@ export function LeftPanel() {
                     </span>
                     <button
                       onClick={handleCopyAllErrors}
-                      className="flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer font-medium"
+                      className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer font-medium"
                     >
                       {copiedAll ? <ClipboardCheck size={9} /> : <Clipboard size={9} />}
                       {copiedAll ? "Đã sao chép" : "Sao chép tất cả"}
                     </button>
                   </div>
-                  <p className="text-[9px] text-foreground/85 font-mono leading-relaxed break-all bg-background/50 p-1.5 rounded border border-border/30">
+                  <p className="text-[10px] text-foreground/85 font-mono leading-relaxed break-all bg-background/50 p-1.5 rounded border border-border/30">
                     {formatErrorText({ includeMissing: true, includeDuplicates: true })}
                   </p>
                 </div>
@@ -734,13 +734,13 @@ export function LeftPanel() {
                     </span>
                     <button
                       onClick={handleCopyDuplicateCodes}
-                      className="flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 transition-colors cursor-pointer"
+                      className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 transition-colors cursor-pointer"
                     >
                       {copiedDuplicates ? <ClipboardCheck size={9} /> : <Clipboard size={9} />}
                       {copiedDuplicates ? "Đã sao chép" : "Sao chép"}
                     </button>
                   </div>
-                  <p className="text-[9px] text-amber-700/80 dark:text-amber-300/70 font-mono leading-relaxed break-all">
+                  <p className="text-[10px] text-amber-700/80 dark:text-amber-300/70 font-mono leading-relaxed break-all">
                     {formatErrorText({ includeMissing: false, includeDuplicates: true })}
                   </p>
                 </div>
@@ -756,13 +756,13 @@ export function LeftPanel() {
                     </span>
                     <button
                       onClick={handleCopyMissingCodes}
-                      className="flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 transition-colors cursor-pointer"
+                      className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 transition-colors cursor-pointer"
                     >
                       {copiedMissing ? <ClipboardCheck size={9} /> : <Clipboard size={9} />}
                       {copiedMissing ? "Đã sao chép" : "Sao chép"}
                     </button>
                   </div>
-                  <p className="text-[9px] text-red-700/80 dark:text-red-300/70 font-mono leading-relaxed break-all">
+                  <p className="text-[10px] text-red-700/80 dark:text-red-300/70 font-mono leading-relaxed break-all">
                     {formatErrorText({ includeMissing: true, includeDuplicates: false })}
                   </p>
                 </div>
@@ -775,7 +775,7 @@ export function LeftPanel() {
                     <span className={`font-mono text-[11px] font-medium ${match.status === "Missing" ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}`}>
                       {match.code}
                     </span>
-                    <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-medium ${match.status === "Missing" ? "bg-red-500/10 text-red-500" : "bg-amber-500/10 text-amber-500"}`}>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${match.status === "Missing" ? "bg-red-500/10 text-red-500" : "bg-amber-500/10 text-amber-500"}`}>
                       {match.status === "Missing" ? "Sai mã" : (match.status === "InputDuplicate" ? "Trùng mã" : `Trùng (${match.all_matches.length})`)}
                     </span>
                   </div>

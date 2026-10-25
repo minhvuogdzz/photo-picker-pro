@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   FileSpreadsheet,
   X,
@@ -11,7 +11,6 @@ import {
   Layers,
   LogIn,
   Settings2,
-  Sparkles,
   ExternalLink,
   ChevronDown,
   Save,
@@ -34,10 +33,19 @@ import { sheetDiscoveryService } from "@/modules/contact-the-sheet/services/shee
 import {
   sheetExtractorService,
   type ExtractedCodeColumn,
-  type SheetExtractionResult,
 } from "@/modules/contact-the-sheet/services/sheetExtractorService";
 import { sheetUpdateService } from "@/modules/contact-the-sheet/services/sheetUpdateService";
 import type { SheetRowRecord } from "@/modules/contact-the-sheet/services/jobMatchingService";
+import {
+  extractCodesAcrossTabs,
+  getTabStartRow,
+  getTabStatusMapping,
+  parseSavedTabs,
+  resolveCheckedTabs,
+  type MultiTabExtractionResult,
+  type PreferredRow,
+  type TabRows,
+} from "@/modules/photo-picker/services/sheetTabExtractionService";
 import type {
   FieldMapping,
   TabConfiguration,
@@ -70,6 +78,17 @@ const STANDARD_LETTERS = [
   "U", "V", "W", "X", "Y", "Z"
 ];
 
+// Checked sheet tabs in "Truy xuất mã chọn" (several tabs can be searched at once)
+const EXTRACT_TABS_STORAGE_KEY = "mvd_extract_selected_tabs";
+
+const readSavedExtractTabs = (): string[] | null => {
+  try {
+    return parseSavedTabs(localStorage.getItem(EXTRACT_TABS_STORAGE_KEY));
+  } catch {
+    return null;
+  }
+};
+
 export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract" }: Props) {
   const inputFolders = useAppStore((s) => s.inputFolders);
   const selectedInputFolders = useAppStore((s) => s.selectedInputFolders);
@@ -94,6 +113,12 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
   // Available sheet tabs
   const [availableTabs, setAvailableTabs] = useState<string[]>(DEFAULT_TABS);
   const [isLoadingMetadata, setIsLoadingMetadata] = useState<boolean>(false);
+  // Spreadsheet whose tab list is final (metadata fetched or fell back) — auto-run waits for it
+  // so saved tabs like "9/10" are not dropped against the placeholder DEFAULT_TABS
+  const [tabsReadyFor, setTabsReadyFor] = useState<string | null>(null);
+
+  // Checked tabs for extraction (null = nothing chosen yet → profile's active tab)
+  const [selectedTabs, setSelectedTabs] = useState<string[] | null>(readSavedExtractTabs);
 
   // Sheet URL input & applying state
   const [sheetUrlInput, setSheetUrlInput] = useState<string>("");
@@ -106,8 +131,15 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
 
   // Sheet data & matching state (Tab 1: Extract)
   const [isLoadingRows, setIsLoadingRows] = useState(false);
-  const [sheetRows, setSheetRows] = useState<SheetRowRecord[]>([]);
-  const [extractionResult, setExtractionResult] = useState<SheetExtractionResult | null>(null);
+  const [loadedTabRows, setLoadedTabRows] = useState<TabRows[]>([]);
+  const [failedTabs, setFailedTabs] = useState<string[]>([]);
+  const [extractionResult, setExtractionResult] = useState<MultiTabExtractionResult | null>(null);
+  // Bumped to make the auto-run effect reload rows with a fresh closure (after linking / connecting)
+  const [reloadToken, setReloadToken] = useState(0);
+  // Rows per spreadsheet+tab+startRow for this modal session (in-flight requests are shared too)
+  const rowsCacheRef = useRef(new Map<string, Promise<SheetRowRecord[]>>());
+  const settledRowsKeysRef = useRef(new Set<string>());
+  const loadSeqRef = useRef(0);
   const [selectedColumnLetters, setSelectedColumnLetters] = useState<Set<string>>(new Set());
   const [insertMode, setInsertMode] = useState<"replace" | "append">("replace");
   const [updateFilterStatus, setUpdateFilterStatus] = useState<boolean>(true);
@@ -149,30 +181,28 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
     return profile?.selectedTabTitle || "Edit 9/2026";
   }, [profile?.selectedTabTitle]);
 
-  // Active tab's specific configuration
-  const activeTabConfig = useMemo(() => {
-    return profile?.tabConfigurations?.[currentTabTitle] || null;
-  }, [profile?.tabConfigurations, currentTabTitle]);
+  // Tabs searched in Tab 1 (Extract), in sheet order
+  const checkedTabs = useMemo(
+    () => resolveCheckedTabs(selectedTabs, availableTabs, currentTabTitle),
+    [selectedTabs, availableTabs, currentTabTitle]
+  );
+  const checkedTabsKey = checkedTabs.join("\u0001");
 
-  // Effective profile merged with active tab configuration
-  const effectiveProfile = useMemo(() => {
-    if (!profile) return null;
-    if (!activeTabConfig) return profile;
-    return {
-      ...profile,
-      selectedTabTitle: currentTabTitle,
-      selectedTabId: activeTabConfig.sheetId,
-      headerRow: activeTabConfig.headerRow,
-      rowScope: activeTabConfig.rowScope,
-      fieldMappings: activeTabConfig.fieldMappings,
-    };
-  }, [profile, activeTabConfig, currentTabTitle]);
+  const tabsReady = !!profile?.spreadsheetId && tabsReadyFor === profile.spreadsheetId;
 
-  // Check if status column is configured for READ_WRITE
+  const totalLoadedRows = useMemo(
+    () => loadedTabRows.reduce((sum, t) => sum + t.rows.length, 0),
+    [loadedTabRows]
+  );
+
+  // Status is written back on the tab the customer's row was found on
+  const statusTabTitle = extractionResult?.matchedTabTitle || checkedTabs[0] || currentTabTitle;
+
+  // Check if status column is configured for READ_WRITE (on the matched row's tab)
   const statusMapping = useMemo(() => {
-    if (!effectiveProfile) return null;
-    return effectiveProfile.fieldMappings.find((m) => m.semanticField === "PHOTO_PICK_STATUS") || null;
-  }, [effectiveProfile?.fieldMappings]);
+    if (!profile) return null;
+    return getTabStatusMapping(profile, statusTabTitle);
+  }, [profile, statusTabTitle]);
 
   const configuredStatusValue = useMemo(() => {
     return (
@@ -185,6 +215,8 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
   useEffect(() => {
     if (isOpen) {
       setModalTab(initialTab);
+      // Fresh sheet data on every open: codes / status may have changed since last time
+      clearRowsCache();
       // Prioritize the currently selected/active folder from checkbox queue
       const activeFolder = selectedInputFolders[0] || inputFolders[0] || "";
       if (activeFolder) {
@@ -228,7 +260,15 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
   // Fetch real sheet tabs from Google Sheets API
   const fetchSheetTabsMetadata = async (overrideSpreadsheetId?: string) => {
     const sheetId = overrideSpreadsheetId || profile?.spreadsheetId;
-    if (!profile || !sheetId || profile.isMockSandbox) return;
+    if (!profile || !sheetId) return;
+    if (profile.isMockSandbox) {
+      // No remote metadata: keep the active + saved tabs selectable so the active tab is not dropped
+      const active = profile.selectedTabTitle ? [profile.selectedTabTitle] : [];
+      const saved = Object.keys(profile.tabConfigurations || {});
+      setAvailableTabs(Array.from(new Set([...active, ...saved, ...DEFAULT_TABS])));
+      setTabsReadyFor(sheetId);
+      return;
+    }
     try {
       setIsLoadingMetadata(true);
       const meta = await sheetDiscoveryService.fetchSpreadsheetMetadata(sheetId, false);
@@ -238,12 +278,14 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
       }
     } catch (err) {
       console.warn("Could not fetch remote tabs metadata, falling back to defaults:", err);
-      // Fallback: merge saved tabConfigurations
+      // Fallback: merge active tab + saved tabConfigurations
       const saved = Object.keys(profile.tabConfigurations || {});
-      const merged = Array.from(new Set([...saved, ...DEFAULT_TABS]));
+      const active = profile.selectedTabTitle ? [profile.selectedTabTitle] : [];
+      const merged = Array.from(new Set([...active, ...saved, ...DEFAULT_TABS]));
       setAvailableTabs(merged);
     } finally {
       setIsLoadingMetadata(false);
+      setTabsReadyFor(sheetId);
     }
   };
 
@@ -296,128 +338,199 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
     setConfigStatusValue(stVal?.sheetValue || "Đã lọc");
   };
 
-  // Switch tab in Tab 1 (Extract)
-  const handleQuickSwitchTab = async (newTabTitle: string) => {
-    if (!profile) return;
-    switchActiveTab(newTabTitle);
-    setSheetRows([]);
-    setExtractionResult(null);
-    setSelectedColumnLetters(new Set());
-
-    // Automatically reload rows for this tab and run extraction
+  // Tick / untick a tab in Tab 1 (Extract); the auto-run effect reloads & re-matches
+  const updateCheckedTabs = (next: string[]) => {
+    setSelectedTabs(next);
     try {
+      localStorage.setItem(EXTRACT_TABS_STORAGE_KEY, JSON.stringify(next));
+    } catch {}
+  };
+
+  const handleToggleTab = (tab: string) => {
+    updateCheckedTabs(checkedTabs.includes(tab) ? checkedTabs.filter((t) => t !== tab) : [...checkedTabs, tab]);
+  };
+
+  const handleToggleAllTabs = () => {
+    updateCheckedTabs(checkedTabs.length === availableTabs.length ? [] : [...availableTabs]);
+  };
+
+  // Open Tab 2 (Config) on a given sheet tab
+  const openConfigForTab = (tab: string) => {
+    setConfigTabTitle(tab);
+    loadTabConfigIntoForm(tab);
+    setModalTab("config");
+  };
+
+  const clearRowsCache = () => {
+    rowsCacheRef.current.clear();
+    settledRowsKeysRef.current.clear();
+  };
+
+  // Drop results of loads still in flight (tabs unchecked, sheet unlinked, Google disconnected)
+  const cancelPendingLoads = () => {
+    loadSeqRef.current++;
+    setIsLoadingRows(false);
+  };
+
+  // Load rows of every checked tab, each with its own start row. Tabs that fail are skipped;
+  // error only when all of them fail. Returns null when a newer load superseded this one.
+  const loadRows = async (
+    tabs: string[] = checkedTabs,
+    options: { force?: boolean } = {}
+  ): Promise<TabRows[] | null> => {
+    const sheetId = profile?.spreadsheetId;
+    if (!profile || !sheetId || tabs.length === 0) return [];
+
+    const seq = ++loadSeqRef.current;
+    const keyOf = (tab: string) => [sheetId, tab, getTabStartRow(profile, tab)].join("\u0001");
+    if (options.force) {
+      tabs.forEach((t) => {
+        rowsCacheRef.current.delete(keyOf(t));
+        settledRowsKeysRef.current.delete(keyOf(t));
+      });
+    }
+    // Only show the spinner when something really has to be fetched (re-matching cached rows is instant)
+    if (tabs.some((t) => !settledRowsKeysRef.current.has(keyOf(t)))) {
       setIsLoadingRows(true);
-      const rows = await sheetDiscoveryService.fetchSheetRowsForMatching(
-        profile.spreadsheetId,
-        newTabTitle,
-        profile.rowScope?.startRow || 4,
-        undefined,
-        profile.isMockSandbox
-      );
-      setSheetRows(rows);
-      if (targetFolderName) {
-        runExtractionWithRows(rows, newTabTitle);
-      }
-    } catch (err: any) {
-      console.error("Failed to switch and load tab rows:", err);
-      setErrorMessage(err.message || String(err));
-    } finally {
-      setIsLoadingRows(false);
+      setErrorMessage(null);
     }
-  };
 
-  // Load sheet rows
-  const loadRows = async (tabToLoad?: string, overrideSpreadsheetId?: string) => {
-    const sheetId = overrideSpreadsheetId || profile?.spreadsheetId;
-    if (!profile || !sheetId) return [];
-    setIsLoadingRows(true);
-    setErrorMessage(null);
-    const tabName = tabToLoad || currentTabTitle;
+    const loaded: TabRows[] = [];
+    const failed: string[] = [];
+    let firstError = "";
     try {
-      const rows = await sheetDiscoveryService.fetchSheetRowsForMatching(
-        sheetId,
-        tabName,
-        profile.rowScope?.startRow || 4,
-        undefined,
-        profile.isMockSandbox
-      );
-      setSheetRows(rows);
-      return rows;
-    } catch (err: any) {
-      console.error("Failed to load sheet rows:", err);
-      setErrorMessage(err.message || String(err));
-      return [];
+      // Sequential on purpose: the first request refreshes an expired Google token for the others
+      for (const tabTitle of tabs) {
+        const key = keyOf(tabTitle);
+        let pending = rowsCacheRef.current.get(key);
+        if (!pending) {
+          pending = sheetDiscoveryService.fetchSheetRowsForMatching(
+            sheetId,
+            tabTitle,
+            getTabStartRow(profile, tabTitle),
+            undefined,
+            profile.isMockSandbox
+          );
+          rowsCacheRef.current.set(key, pending);
+        }
+        try {
+          const rows = await pending;
+          settledRowsKeysRef.current.add(key);
+          loaded.push({ tabTitle, rows });
+        } catch (err: any) {
+          console.warn(`[SheetCodeExtractor] Could not load tab "${tabTitle}":`, err);
+          if (rowsCacheRef.current.get(key) === pending) rowsCacheRef.current.delete(key);
+          failed.push(tabTitle);
+          if (!firstError) firstError = err?.message || String(err);
+        }
+      }
+
+      if (seq !== loadSeqRef.current) return null;
+      setLoadedTabRows(loaded);
+      setFailedTabs(failed);
+      if (loaded.length === 0 && failed.length > 0) {
+        setErrorMessage(
+          `Không tải được dữ liệu từ Tab: ${failed.join(", ")}. Hãy chắc chắn tài khoản Google của bạn đã được cấp quyền xem bảng tính.\n${firstError}`
+        );
+      }
+      return loaded;
     } finally {
-      setIsLoadingRows(false);
+      if (seq === loadSeqRef.current) setIsLoadingRows(false);
     }
   };
 
-  // Run extraction matching with specific rows
-  const runExtractionWithRows = (rows: SheetRowRecord[], _tabName?: string) => {
+  // Default checked columns for a fresh match result
+  const applyDefaultColumns = (result: MultiTabExtractionResult) => {
+    // Default checked columns:
+    // Auto-activate any candidate column that contains photo codes (codeCount > 0).
+    // Specifically for Column 2 (or any column): if empty (codeCount === 0), do NOT check checkbox.
+    // If has content (codeCount > 0), automatically activate checkbox.
+    const defaultCols = new Set<string>();
+    if (result.candidateColumns.length > 0) {
+      const columnsWithCodes = result.candidateColumns.filter((c) => c.codeCount > 0);
+      if (columnsWithCodes.length > 0) {
+        columnsWithCodes.forEach((c) => defaultCols.add(c.columnLetter));
+      } else {
+        // If all candidate columns are empty, default to primary column
+        const primary = result.candidateColumns.find((c) => c.isPrimary) || result.candidateColumns[0];
+        if (primary) {
+          defaultCols.add(primary.columnLetter);
+        }
+      }
+    }
+    setSelectedColumnLetters(defaultCols);
+  };
+
+  // Match the target folder against rows of all checked tabs (each tab read with its own column mapping)
+  const runExtractionWithRows = (tabRows: TabRows[], preferred?: PreferredRow | null) => {
     if (!profile || !targetFolderName) return;
 
     try {
-      const activeProf = effectiveProfile || profile;
-      const result = sheetExtractorService.extractCodesForFolder(
+      const result = extractCodesAcrossTabs(
         targetFolderName,
         selectedFolder,
-        rows,
-        activeProf
+        tabRows,
+        profile,
+        configuredStatusValue,
+        preferred
       );
-
       setExtractionResult(result);
-
-      // Default checked columns:
-      // Auto-activate any candidate column that contains photo codes (codeCount > 0).
-      // Specifically for Column 2 (or any column): if empty (codeCount === 0), do NOT check checkbox.
-      // If has content (codeCount > 0), automatically activate checkbox.
-      const defaultCols = new Set<string>();
-      if (result.candidateColumns.length > 0) {
-        const columnsWithCodes = result.candidateColumns.filter((c) => c.codeCount > 0);
-        if (columnsWithCodes.length > 0) {
-          columnsWithCodes.forEach((c) => defaultCols.add(c.columnLetter));
-        } else {
-          // If all candidate columns are empty, default to primary column
-          const primary = result.candidateColumns.find((c) => c.isPrimary) || result.candidateColumns[0];
-          if (primary) {
-            defaultCols.add(primary.columnLetter);
-          }
-        }
-      }
-      setSelectedColumnLetters(defaultCols);
+      applyDefaultColumns(result);
     } catch (err: any) {
       console.error("Extraction error:", err);
       setErrorMessage(err.message || String(err));
     }
   };
 
-  // Run extraction matching
-  const runExtraction = async () => {
+  // Load rows for the checked tabs (cached per tab) and run extraction matching.
+  // silent: called by auto-run / reload buttons, so missing folder is not an error.
+  const runExtraction = async (options: { force?: boolean; silent?: boolean } = {}) => {
     if (!profile || !profile.spreadsheetId) {
-      setErrorMessage("Chưa liên kết Google Sheet. Vui lòng dán link Google Sheet vào ô trên và nhấn 'Liên kết Sheet'.");
+      if (!options.silent) {
+        setErrorMessage("Chưa liên kết Google Sheet. Vui lòng dán link Google Sheet vào ô trên và nhấn 'Liên kết Sheet'.");
+      }
       return;
     }
 
-    if (!targetFolderName) {
+    if (checkedTabs.length === 0) {
+      cancelPendingLoads();
+      setLoadedTabRows([]);
+      setFailedTabs([]);
+      setExtractionResult(null);
+      setSelectedColumnLetters(new Set());
+      if (!options.silent) setErrorMessage("Vui lòng tích chọn ít nhất một Tab làm việc để dò tìm.");
+      return;
+    }
+
+    if (!targetFolderName && !options.silent) {
       setErrorMessage("Vui lòng nhập hoặc chọn một thư mục ảnh đầu vào để đối chiếu.");
       return;
     }
 
-    let rows = sheetRows;
-    if (rows.length === 0) {
-      rows = await loadRows();
-      if (rows.length === 0) return;
+    const tabRows = await loadRows(checkedTabs, { force: options.force });
+    if (!tabRows) return; // superseded by a newer load
+    if (tabRows.length === 0 || !targetFolderName) {
+      setExtractionResult(null);
+      setSelectedColumnLetters(new Set());
+      return;
     }
 
-    runExtractionWithRows(rows, currentTabTitle);
+    runExtractionWithRows(tabRows);
   };
 
-  // Auto-run search when opened or folder changes
+  // User picks another row with the same "Tên file" (customer listed on several rows / tabs)
+  const handlePickSameFileRow = (tabTitle: string, row: number) => {
+    if (loadedTabRows.length === 0) return;
+    runExtractionWithRows(loadedTabRows, { tabTitle, row });
+  };
+
+  // Auto-run search when opened, folder or checked tabs change.
+  // Waits for the sheet's real tab list so saved tabs are resolved against it.
   useEffect(() => {
-    if (isOpen && profile && targetFolderName && modalTab === "extract") {
-      runExtraction();
+    if (isOpen && profile && tabsReady && modalTab === "extract") {
+      runExtraction({ silent: true });
     }
-  }, [isOpen, profile?.id, currentTabTitle, targetFolderName, modalTab]);
+  }, [isOpen, profile?.id, profile?.spreadsheetId, tabsReady, checkedTabsKey, targetFolderName, modalTab, reloadToken]);
 
   // Handle picking custom folder from disk
   const handleBrowseFolder = async () => {
@@ -445,7 +558,9 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
       await googleCredentialManager.connectGoogle();
       if (profile?.spreadsheetId) {
         await fetchSheetTabsMetadata();
-        await loadRows();
+        // Reload checked tabs via the auto-run effect (fresh closure after the awaits)
+        clearRowsCache();
+        setReloadToken((t) => t + 1);
       }
     } catch (err: any) {
       setErrorMessage(`Lỗi kết nối Google: ${err.message || err}`);
@@ -458,7 +573,10 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
   const handleDisconnectGoogle = async () => {
     try {
       await googleCredentialManager.disconnectGoogle();
-      setSheetRows([]);
+      cancelPendingLoads();
+      clearRowsCache();
+      setLoadedTabRows([]);
+      setFailedTabs([]);
       setExtractionResult(null);
       setSelectedColumnLetters(new Set());
     } catch (err: any) {
@@ -536,21 +654,11 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
         switchActiveTab(targetTab);
       }
 
-      // Load rows
-      setIsLoadingRows(true);
-      const rows = await sheetDiscoveryService.fetchSheetRowsForMatching(
-        sheetId,
-        targetTab,
-        updatedProfile.rowScope?.startRow || 4,
-        undefined,
-        false
-      );
-      setSheetRows(rows);
-
-      // If target folder is available, run extraction immediately
-      if (targetFolderName) {
-        runExtractionWithRows(rows, targetTab);
-      }
+      // Rows of the checked tabs (those still on this sheet, else the active tab) are loaded
+      // and matched by the auto-run effect once the tab list of this sheet is known
+      clearRowsCache();
+      setTabsReadyFor(sheetId);
+      setReloadToken((t) => t + 1);
     } catch (err: any) {
       console.error("Failed to link Google Sheet:", err);
       setErrorMessage(
@@ -558,7 +666,6 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
       );
     } finally {
       setIsApplyingSheet(false);
-      setIsLoadingRows(false);
     }
   };
 
@@ -572,7 +679,10 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
       updatedAt: new Date().toISOString(),
     });
     setSheetUrlInput("");
-    setSheetRows([]);
+    cancelPendingLoads();
+    clearRowsCache();
+    setLoadedTabRows([]);
+    setFailedTabs([]);
     setExtractionResult(null);
   };
 
@@ -616,11 +726,13 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
 
     // 2. Remember sheet filter context so that when user clicks "Lọc file" and the operation completes,
     // the app automatically updates the status on Google Sheet!
+    // Row, tab and status column all belong to the MATCHED row's tab (not the active tab).
     if (profile && extractionResult?.matchedRow) {
+      const matchedTab = extractionResult.matchedTabTitle || statusTabTitle;
       setSheetFilterContext({
         profileId: profile.id,
         spreadsheetId: profile.spreadsheetId,
-        tabTitle: currentTabTitle,
+        tabTitle: matchedTab,
         matchedRow: extractionResult.matchedRow,
         jobName: extractionResult.jobFolderName,
         folderName: targetFolderName,
@@ -629,7 +741,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
         autoUpdateOnFilterComplete: updateFilterStatus,
       });
       console.log(
-        `[SheetCodeExtractor] Saved sheet filter context for Row ${extractionResult.matchedRow}, tab "${currentTabTitle}", status: "${configuredStatusValue}"`
+        `[SheetCodeExtractor] Saved sheet filter context for Row ${extractionResult.matchedRow}, tab "${matchedTab}", col ${statusMapping?.columnLetter}, status: "${configuredStatusValue}"`
       );
     }
 
@@ -864,7 +976,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
           </button>
         </div>
 
-        {/* Top Tab Switcher: [ ⚡ Truy xuất mã ] and [ ⚙️ Cấu hình Sheet & Cột ] */}
+        {/* Top Tab Switcher: [ Truy xuất mã ] and [ Cấu hình Sheet & Cột ] */}
         <div className="shrink-0 px-5 pt-2.5 pb-0 bg-muted/10 border-b border-border/40 flex items-center gap-2">
           <button
             type="button"
@@ -877,8 +989,8 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                 : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30 cursor-pointer"
             }`}
           >
-            <Sparkles size={13} className={modalTab === "extract" ? "text-emerald-500" : ""} />
-            <span>⚡ Truy xuất mã chọn</span>
+            <FileSpreadsheet size={13} className={modalTab === "extract" ? "text-emerald-500" : ""} />
+            <span>Truy xuất mã chọn</span>
           </button>
 
           <button
@@ -893,7 +1005,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
             }`}
           >
             <Settings2 size={13} className={modalTab === "config" ? "text-primary" : ""} />
-            <span>⚙️ Cấu hình Sheet & Cột</span>
+            <span>Cấu hình Sheet & Cột</span>
           </button>
         </div>
 
@@ -1057,45 +1169,74 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                 <>
                   {/* Quick Tab & Sync status */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-muted/30 border border-border/50 rounded-lg">
-                    <div>
-                      <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold block mb-1">
-                        Tab làm việc (Trang tính)
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={currentTabTitle}
-                          onChange={(e) => handleQuickSwitchTab(e.target.value)}
-                          className="flex-1 bg-background border border-border/60 rounded px-2.5 py-1.5 text-xs text-foreground font-semibold focus:outline-none focus:border-primary"
-                        >
-                          {availableTabs.map((t) => (
-                            <option key={t} value={t}>
-                              {t}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          type="button"
-                          onClick={() => setModalTab("config")}
-                          className="p-1.5 border border-border/60 hover:bg-muted/50 rounded text-muted-foreground hover:text-foreground cursor-pointer"
-                          title="Cấu hình cột cho Tab này"
-                        >
-                          <Settings2 size={13} />
-                        </button>
+                    <div className="min-w-0">
+                      <div className="flex items-center justify-between mb-1 gap-2">
+                        <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
+                          Tab làm việc (Trang tính) · {checkedTabs.length}/{availableTabs.length}
+                          {isLoadingMetadata && <RefreshCw size={10} className="animate-spin" />}
+                        </label>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={handleToggleAllTabs}
+                            className="text-[10px] font-medium text-primary hover:underline cursor-pointer"
+                          >
+                            {checkedTabs.length === availableTabs.length ? "Bỏ chọn" : "Chọn tất cả"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openConfigForTab(statusTabTitle)}
+                            className="p-1 border border-border/60 hover:bg-muted/50 rounded text-muted-foreground hover:text-foreground cursor-pointer"
+                            title={`Cấu hình cột cho Tab "${statusTabTitle}"`}
+                          >
+                            <Settings2 size={12} />
+                          </button>
+                        </div>
                       </div>
+                      <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto custom-scrollbar">
+                        {availableTabs.map((t) => {
+                          const checked = checkedTabs.includes(t);
+                          return (
+                            <label
+                              key={t}
+                              className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[11px] font-semibold cursor-pointer transition-colors ${
+                                checked
+                                  ? "bg-primary/10 border-primary/50 text-foreground"
+                                  : "bg-background border-border/70 text-muted-foreground hover:text-foreground"
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => handleToggleTab(t)}
+                                className="w-3 h-3 accent-primary cursor-pointer"
+                              />
+                              {t}
+                            </label>
+                          );
+                        })}
+                      </div>
+                      {checkedTabs.length === 0 && (
+                        <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1">
+                          Chưa chọn Tab nào — tích ít nhất một Tab để dò tìm dòng khách.
+                        </p>
+                      )}
                     </div>
 
                     <div>
                       <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold block mb-1">
                         Dữ liệu Sheet đã nạp
                       </label>
-                      <div className="text-muted-foreground flex items-center justify-between py-1">
+                      <div className="text-muted-foreground flex items-center justify-between py-1 gap-2">
                         <span className="text-[11px] font-medium text-foreground">
-                          {sheetRows.length > 0 ? `${sheetRows.length} dòng dữ liệu` : "Chưa tải dòng"}
+                          {loadedTabRows.length > 0
+                            ? `${totalLoadedRows} dòng dữ liệu${loadedTabRows.length > 1 ? ` · ${loadedTabRows.length} Tab` : ""}`
+                            : "Chưa tải dòng"}
                         </span>
                         <button
                           type="button"
-                          onClick={() => loadRows(currentTabTitle).then((r) => runExtractionWithRows(r, currentTabTitle))}
-                          disabled={isLoadingRows}
+                          onClick={() => runExtraction({ force: true, silent: true })}
+                          disabled={isLoadingRows || checkedTabs.length === 0}
                           className="px-2.5 py-1 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-md text-[11px] font-semibold flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
                           title="Tải lại toàn bộ dữ liệu dòng Google Sheet mới nhất & quét lại"
                         >
@@ -1103,6 +1244,11 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                           <span>Làm mới dữ liệu</span>
                         </button>
                       </div>
+                      {failedTabs.length > 0 && loadedTabRows.length > 0 && (
+                        <p className="text-[10px] text-amber-600 dark:text-amber-400 leading-snug" title={failedTabs.join(", ")}>
+                          Bỏ qua Tab không tải được: {failedTabs.join(", ")}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -1183,7 +1329,11 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
               {isLoadingRows ? (
                 <div className="p-8 border border-border/60 rounded-xl bg-muted/10 flex flex-col items-center justify-center gap-2.5 text-muted-foreground">
                   <RefreshCw size={24} className="animate-spin text-primary" />
-                  <p className="text-xs">Đang đối chiếu dòng khách hàng trên Tab "{currentTabTitle}"...</p>
+                  <p className="text-xs text-center">
+                    {checkedTabs.length > 1
+                      ? `Đang tải & đối chiếu dòng khách hàng trên ${checkedTabs.length} Tab: ${checkedTabs.join(", ")}...`
+                      : `Đang đối chiếu dòng khách hàng trên Tab "${checkedTabs[0] || currentTabTitle}"...`}
+                  </p>
                 </div>
               ) : extractionResult ? (
                 <div className="space-y-3">
@@ -1208,13 +1358,19 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                       <div>
                         <div className="font-semibold text-xs flex items-center gap-2">
                           {extractionResult.matchedRow ? (
-                            <span>Dòng {extractionResult.matchedRow}: {extractionResult.customerName || extractionResult.jobFolderName}</span>
+                            <span>
+                              Tab {extractionResult.matchedTabTitle} · Dòng {extractionResult.matchedRow}:{" "}
+                              {extractionResult.customerName || extractionResult.jobFolderName}
+                            </span>
                           ) : (
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span>Không tìm thấy dòng khớp trên Tab "{currentTabTitle}"</span>
+                              <span>
+                                Không tìm thấy dòng khớp trên {extractionResult.searchedTabs.length} tab:{" "}
+                                {extractionResult.searchedTabs.join(", ")}
+                              </span>
                               <button
                                 type="button"
-                                onClick={() => loadRows(currentTabTitle).then((r) => runExtractionWithRows(r, currentTabTitle))}
+                                onClick={() => runExtraction({ force: true, silent: true })}
                                 disabled={isLoadingRows}
                                 className="px-2 py-0.5 bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 rounded text-[10px] font-semibold flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
                                 title="Tải lại dòng từ Google Sheet"
@@ -1233,6 +1389,33 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                         <div className="text-[11px] opacity-80 mt-0.5">
                           {extractionResult.reason || "Đã khớp đúng tên thư mục với Cột H (Tên file)."}
                         </div>
+
+                        {/* Same "Tên file" on several rows / tabs: let the user switch row */}
+                        {extractionResult.sameFileRows.length > 1 && (
+                          <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+                            <span className="text-[10px] opacity-80">Chọn dòng khác:</span>
+                            {extractionResult.sameFileRows.map((r) => {
+                              const isActive =
+                                r.tabTitle === extractionResult.matchedTabTitle && r.row === extractionResult.matchedRow;
+                              return (
+                                <button
+                                  key={`${r.tabTitle}:${r.row}`}
+                                  type="button"
+                                  onClick={() => handlePickSameFileRow(r.tabTitle, r.row)}
+                                  className={`px-1.5 py-0.5 rounded border text-[10px] font-medium transition-colors cursor-pointer ${
+                                    isActive
+                                      ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-700 dark:text-emerald-300"
+                                      : "bg-background/60 border-border/60 text-muted-foreground hover:text-foreground"
+                                  }`}
+                                  title={`${r.hasCodes ? "Có mã ảnh" : "Chưa có mã ảnh"}${r.isCompleted ? ` · Trạng thái "${configuredStatusValue}"` : ""}`}
+                                >
+                                  Tab {r.tabTitle} · Dòng {r.row}
+                                  {r.isCompleted ? ` · ${configuredStatusValue}` : ""}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1329,7 +1512,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                           )}
                         </button>
                         <span className="text-xs font-medium text-foreground">
-                          Tự động đổi trạng thái thành <span className="font-semibold text-emerald-600 dark:text-emerald-400">"{configuredStatusValue}"</span> vào Cột {statusMapping.columnLetter} ({statusMapping.columnHeader}) trên Sheet ngay khi lọc file xong
+                          Tự động đổi trạng thái thành <span className="font-semibold text-emerald-600 dark:text-emerald-400">"{configuredStatusValue}"</span> vào Cột {statusMapping.columnLetter} ({statusMapping.columnHeader}) trên Tab "{statusTabTitle}" ngay khi lọc file xong
                         </span>
                       </div>
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-medium">

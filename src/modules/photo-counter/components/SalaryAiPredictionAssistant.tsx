@@ -9,7 +9,6 @@ import {
   TrendingUp,
   Target,
   Calendar,
-  Zap,
   CheckCircle2,
   AlertCircle,
   Copy,
@@ -21,6 +20,9 @@ import {
   Clock,
   Briefcase,
   Crown,
+  Loader2,
+  Plug,
+  X,
 } from "lucide-react";
 import type { SalaryCalculationResult, SalaryConfig } from "../types";
 import {
@@ -202,9 +204,9 @@ export function SalaryAiPredictionAssistant({
     {
       id: "initial-coach-greeting",
       role: "assistant",
-      content: `Xin chào! Tôi là **Cố Vấn Hiệu Suất Studio (AI Coach)**. ⚡\n\nTôi đã kết nối trực tiếp với bảng thống kê lương của bạn. Dù mục tiêu của bạn là **đạt chuẩn KPI** hay bứt phá thu nhập lên **${targetSalary.toLocaleString(
+      content: `Xin chào! Tôi là **Cố Vấn Hiệu Suất Studio (AI Coach)**.\n\nTôi đã kết nối trực tiếp với bảng thống kê lương của bạn. Dù mục tiêu của bạn là **đạt chuẩn KPI** hay bứt phá thu nhập lên **${targetSalary.toLocaleString(
         "vi-VN"
-      )} đ**, hãy bấm nút **"AI Dự đoán"** hoặc chọn câu hỏi gợi ý bên dưới để chúng ta cùng lên kế hoạch tác chiến cụ thể cho từng ngày nhé! 🔥`,
+      )} đ**, hãy bấm nút **"AI Dự đoán"** hoặc chọn câu hỏi gợi ý bên dưới để chúng ta cùng lên kế hoạch tác chiến cụ thể cho từng ngày nhé!`,
       timestamp: Date.now(),
     },
   ]);
@@ -296,7 +298,7 @@ export function SalaryAiPredictionAssistant({
       const errorMsg: ChatMessage = {
         id: `assistant-err-${Date.now()}`,
         role: "assistant",
-        content: `⚠️ **Không thể lấy phản hồi từ Gemini AI**: ${
+        content: `**Không thể lấy phản hồi từ Gemini AI**: ${
           err?.message || "Đã xảy ra lỗi không xác định."
         }\n\n*Gợi ý:* Hãy bấm vào biểu tượng bánh răng **Cài đặt AI** ở góc trên để kiểm tra hoặc cập nhật lại API Key nhé.`,
         timestamp: Date.now(),
@@ -330,7 +332,7 @@ export function SalaryAiPredictionAssistant({
       query: `Hãy tư vấn chiến thuật làm việc: nên ưu tiên đẩy ảnh Loại 1 hay Loại 2 và làm sao để nhận thêm thưởng bộ VIP để thu nhập nhanh chạm mốc nhất?`,
     },
     {
-      label: `🔥 Tiếp thêm động lực chiến đấu hôm nay!`,
+      label: `Tiếp thêm động lực chiến đấu hôm nay!`,
       query: `Tôi đang hơi mệt và nản. Hãy cho tôi một bài truyền lửa mạnh mẽ để tôi tập trung cao độ mở Photoshop cày cuốc ngay bây giờ!`,
     },
   ];
@@ -380,7 +382,7 @@ export function SalaryAiPredictionAssistant({
       <div className="p-3.5 border-b border-border/80 bg-muted/30 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/25 text-primary flex items-center justify-center shrink-0 shadow-2xs">
-            <Sparkles size={16} className="text-primary animate-pulse" />
+            <Bot size={16} className="text-primary" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
@@ -403,7 +405,7 @@ export function SalaryAiPredictionAssistant({
             type="button"
             onClick={() => setShowSettings(true)}
             className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors border border-transparent hover:border-border"
-            title="Cấu hình Gemini API Key & Model"
+            title="Cấu hình Gemini API Key & Model" aria-label="Cấu hình Gemini API Key & Model"
           >
             <Settings size={14} />
           </button>
@@ -438,7 +440,7 @@ export function SalaryAiPredictionAssistant({
                   key={preset}
                   type="button"
                   onClick={() => setTargetSalary(preset)}
-                  className={`text-[9px] px-1.5 py-0.2 rounded font-mono transition-colors ${
+                  className={`text-[10px] px-1.5 py-0.2 rounded font-mono transition-colors ${
                     targetSalary === preset
                       ? "bg-primary text-primary-foreground font-bold"
                       : "bg-muted hover:bg-accent text-muted-foreground"
@@ -472,7 +474,7 @@ export function SalaryAiPredictionAssistant({
                 /{salaryConfig.daysInMonth}
               </span>
             </div>
-            <p className="text-[9px] text-muted-foreground mt-1">
+            <p className="text-[10px] text-muted-foreground mt-1">
               Còn {predictionMetrics.remainingCalendarDays} ngày lịch đến hết tháng
             </p>
           </div>
@@ -497,7 +499,7 @@ export function SalaryAiPredictionAssistant({
               }
               className="w-full px-2.5 py-1.5 text-xs font-mono font-bold rounded-lg bg-card border border-border text-foreground focus:outline-none focus:border-primary"
             />
-            <p className="text-[9px] text-primary font-semibold mt-1">
+            <p className="text-[10px] text-primary font-semibold mt-1">
               Thực chiến còn {predictionMetrics.remainingWorkingDays} ngày làm việc
             </p>
           </div>
@@ -513,7 +515,7 @@ export function SalaryAiPredictionAssistant({
             <div className="text-xs font-mono font-extrabold text-foreground">
               {predictionMetrics.remainingWorkingDays} ngày
             </div>
-            <span className="text-[9px] text-muted-foreground block">
+            <span className="text-[10px] text-muted-foreground block">
               (Trừ {remainingDaysOff} ngày nghỉ)
             </span>
           </div>
@@ -525,10 +527,10 @@ export function SalaryAiPredictionAssistant({
             </span>
             <div className="text-xs font-mono font-extrabold text-foreground">
               {predictionMetrics.isCurrentKpiAchieved
-                ? "Đã có Lương cứng 🎉"
+                ? "Đã có Lương cứng"
                 : `${predictionMetrics.dailyPhotosForKpi} file/ngày`}
             </div>
-            <span className="text-[9px] text-muted-foreground block truncate">
+            <span className="text-[10px] text-muted-foreground block truncate">
               {predictionMetrics.isCurrentKpiAchieved
                 ? `Vượt +${(calc.actualPhotos - calc.monthKpi).toLocaleString("vi-VN")} file`
                 : `Thiếu ${predictionMetrics.kpiShortfall.toLocaleString("vi-VN")} file (Hiện tính ${salaryConfig.unitPriceKpi.toLocaleString("vi-VN")}đ/file)`}
@@ -543,9 +545,9 @@ export function SalaryAiPredictionAssistant({
             <div className="text-xs font-mono font-extrabold text-primary">
               {predictionMetrics.dailyPhotosForTarget > 0
                 ? `${predictionMetrics.dailyPhotosForTarget} file/ngày`
-                : "Đã vượt mục tiêu 🚀"}
+                : "Đã vượt mục tiêu"}
             </div>
-            <span className="text-[9px] text-muted-foreground block truncate">
+            <span className="text-[10px] text-muted-foreground block truncate">
               {predictionMetrics.salaryGap > 0
                 ? `Tổng ${predictionMetrics.targetTotalPhotos.toLocaleString("vi-VN")} file (gồm +${predictionMetrics.effBonusIncrease.toLocaleString("vi-VN")}đ thưởng hiệu suất)`
                 : "Đã đạt mức lương mong muốn"}
@@ -571,7 +573,7 @@ export function SalaryAiPredictionAssistant({
           </div>
 
           <div className="flex items-center gap-1 text-primary font-medium shrink-0">
-            <Zap size={11} className="text-primary" />
+            <TrendingUp size={11} className="text-primary" />
             <span>
               Mốc {predictionMetrics.nextEffThreshold.toLocaleString("vi-VN")} file: còn{" "}
               <strong>{predictionMetrics.photosToNextEffThreshold.toLocaleString("vi-VN")} file</strong> (+500k)
@@ -652,7 +654,7 @@ export function SalaryAiPredictionAssistant({
         {isLoading && (
           <div className="flex gap-2.5 items-start">
             <div className="w-6 h-6 rounded-full bg-muted border border-border text-primary flex items-center justify-center shrink-0">
-              <Sparkles size={12} className="animate-spin" />
+              <Loader2 size={12} className="animate-spin" />
             </div>
             <div className="bg-card border border-border/80 rounded-xl rounded-tl-none p-3 shadow-2xs space-y-2 max-w-[85%]">
               <div className="flex items-center gap-2 text-xs font-semibold text-primary">
@@ -705,7 +707,7 @@ export function SalaryAiPredictionAssistant({
           }}
           disabled={isLoading}
           placeholder="Nhập câu hỏi hoặc yêu cầu AI dự đoán lương..."
-          className="flex-1 px-3 py-2 text-xs rounded-lg bg-muted/40 border border-border text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary"
+          className="flex-1 px-3 py-2 text-xs rounded-lg bg-muted/40 border border-border text-foreground placeholder:text-muted-foreground/85 focus:outline-none focus:border-primary"
         />
 
         <button
@@ -722,13 +724,13 @@ export function SalaryAiPredictionAssistant({
 
       {/* 6. SETTINGS MODAL (GEMINI API KEY & MODEL) */}
       {showSettings && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+        <div role="dialog" aria-modal="true" aria-labelledby="dlg-SalaryAiPredictionAssistant-1" className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-card border border-border rounded-2xl shadow-xl max-w-md w-full p-4 space-y-4 text-xs">
             {/* Header */}
             <div className="flex items-center justify-between pb-2 border-b border-border">
               <div className="flex items-center gap-2">
                 <Settings size={16} className="text-primary" />
-                <h3 className="text-sm font-bold text-foreground">
+                <h3 id="dlg-SalaryAiPredictionAssistant-1" className="text-sm font-bold text-foreground">
                   Cấu Hình Gemini AI Toàn Hệ Thống
                 </h3>
               </div>
@@ -736,14 +738,15 @@ export function SalaryAiPredictionAssistant({
                 type="button"
                 onClick={() => setShowSettings(false)}
                 className="text-muted-foreground hover:text-foreground p-1 rounded hover:bg-muted"
+                aria-label="Đóng"
               >
-                ✕
+                <X size={14} aria-hidden="true" />
               </button>
             </div>
 
             {/* Note about persistence */}
             <div className="p-2.5 rounded-lg bg-primary/10 border border-primary/20 text-foreground text-[11px] leading-relaxed">
-              💡 <strong>Lưu ý:</strong> API Key được lưu tập trung trong bộ nhớ máy (
+              <strong>Lưu ý:</strong> API Key được lưu tập trung trong bộ nhớ máy (
               <code>localStorage</code>) và sẽ được dùng chung cho tính năng Dự đoán lương cũng như
               toàn bộ các dịch vụ AI tương lai của DH Studio Pro (DevHouse Software).
             </div>
@@ -835,7 +838,7 @@ export function SalaryAiPredictionAssistant({
                 disabled={testStatus === "testing"}
                 className="px-3 py-1.5 rounded-lg bg-muted hover:bg-accent border border-border text-foreground font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer"
               >
-                <Zap size={12} className="text-amber-500" />
+                <Plug size={12} />
                 <span>Kiểm tra kết nối</span>
               </button>
 

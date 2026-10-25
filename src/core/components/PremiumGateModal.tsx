@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Crown, Sparkles, X, ShieldAlert, KeyRound } from "lucide-react";
+import { Crown, X, ShieldAlert, KeyRound } from "lucide-react";
 import { LicenseManager } from "@/core/license/LicenseManager";
 import { PREMIUM_FEATURE_LABELS, type PremiumFeatureKey } from "@/core/services/premiumFeaturePolicy";
 
@@ -44,7 +44,7 @@ export function PremiumGateModal({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[9990] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in select-none">
+    <div role="dialog" aria-modal="true" aria-labelledby="dlg-PremiumGateModal-1" className="fixed inset-0 z-[9990] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in select-none">
       <div className="absolute inset-0" onClick={onClose} />
 
       <div className="w-full max-w-md bg-card border border-amber-500/30 rounded-3xl p-6 shadow-2xl relative z-10 animate-scale-in text-foreground">
@@ -52,7 +52,7 @@ export function PremiumGateModal({
         <button
           onClick={onClose}
           className="absolute right-4 top-4 w-7 h-7 rounded-full bg-muted hover:bg-muted/80 active:scale-95 text-muted-foreground hover:text-foreground flex items-center justify-center transition-all cursor-pointer"
-          title="Đóng"
+          title="Đóng" aria-label="Đóng"
         >
           <X size={14} />
         </button>
@@ -60,15 +60,14 @@ export function PremiumGateModal({
         {/* Crown Icon Box */}
         <div className="flex flex-col items-center text-center">
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-500/20 to-orange-500/15 border border-amber-500/40 flex items-center justify-center text-amber-500 mb-3.5 shadow-lg shadow-amber-500/10">
-            <Crown size={28} className="animate-pulse" />
+            <Crown size={28} />
           </div>
 
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[10px] font-extrabold uppercase tracking-wider mb-2">
-            <Sparkles size={11} />
             <span>ĐẶC QUYỀN VIP PREMIUM</span>
           </div>
 
-          <h3 className="text-base font-bold text-foreground tracking-tight mb-2">
+          <h3 id="dlg-PremiumGateModal-1" className="text-base font-bold text-foreground tracking-tight mb-2">
             Nâng Cấp VIP Premium Để Mở Khóa
           </h3>
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { DownloadCloud, X, Zap, CheckCircle2, AlertCircle, Bug, Loader2, Clock } from 'lucide-react';
+import { DownloadCloud, X, CheckCircle2, AlertCircle, Bug, Loader2, Clock, PlusCircle, RotateCw } from 'lucide-react';
 import { useUpdaterStore } from '@/core/stores/useUpdaterStore';
 import { UpdateCheckResult } from '@/core/updater';
 
@@ -79,7 +79,7 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+    <div role="dialog" aria-modal="true" aria-labelledby="dlg-UpdateDialog-1" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
       <div className="bg-white dark:bg-[#16181d] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-white/10 flex flex-col max-h-[90vh]">
         
         {/* Header */}
@@ -89,7 +89,7 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({
               <DownloadCloud size={22} />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <h3 id="dlg-UpdateDialog-1" className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 Bản cập nhật mới có sẵn
                 <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-mono font-semibold border border-blue-200 dark:border-blue-700/50">
                   v{version}
@@ -104,7 +104,7 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({
             <button
               onClick={handleRemindLater}
               className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
-              title="Đóng và nhắc tôi sau"
+              title="Đóng và nhắc tôi sau" aria-label="Đóng và nhắc tôi sau"
             >
               <X size={18} />
             </button>
@@ -154,7 +154,7 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({
             </div>
           ) : notes ? (
             <div className="space-y-3">
-              {renderSection("Tính năng mới", notes.features, <Zap size={15} />, "text-amber-500 dark:text-amber-400")}
+              {renderSection("Tính năng mới", notes.features, <PlusCircle size={15} />, "text-amber-500 dark:text-amber-400")}
               {renderSection("Cải thiện", notes.improvements, <CheckCircle2 size={15} />, "text-emerald-500 dark:text-emerald-400")}
               {renderSection("Sửa lỗi", notes.bugFixes, <Bug size={15} />, "text-red-500 dark:text-red-400")}
               {renderSection("Lỗi đã biết", notes.knownIssues, <AlertCircle size={15} />, "text-orange-500 dark:text-orange-400")}
@@ -195,7 +195,7 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({
               onClick={handleRestart}
               className="w-full sm:w-auto px-6 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
             >
-              <Zap size={15} /> Khởi động lại ngay
+              <RotateCw size={15} /> Khởi động lại ngay
             </button>
           ) : isDownloading ? (
             <button

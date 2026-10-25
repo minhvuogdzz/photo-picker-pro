@@ -19,13 +19,13 @@ import {
   FileText,
   X,
   Send,
-  Zap,
   Layers,
   Crown,
   Lock,
   Cpu,
   FileSpreadsheet,
   Laptop,
+  FileImage,
 } from "lucide-react";
 import { useUpdaterStore } from "@/core/stores/useUpdaterStore";
 import { apiRequest } from "@/core/services/apiClient";
@@ -166,7 +166,7 @@ export function SystemModule() {
           <BrandLogo variant="icon" className="w-8 h-8 rounded-lg object-contain shadow-xs shrink-0" />
           <div>
             <h2 className="text-[12px] font-semibold tracking-tight text-foreground">{t("system")}</h2>
-            <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-semibold">{t("general_options")}</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{t("general_options")}</p>
           </div>
         </div>
 
@@ -380,7 +380,7 @@ export function SystemModule() {
 
                   <div className="p-3 rounded-xl bg-muted/40 border border-border/80 flex items-start gap-2.5">
                     <div className="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                      <Zap size={14} />
+                      <FileImage size={14} />
                     </div>
                     <div>
                       <h4 className="text-xs font-bold text-foreground">MVD Convert Fast</h4>
@@ -487,11 +487,11 @@ export function SystemModule() {
 
       {/* Feedback Modal */}
       {showFeedbackModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in">
+        <div role="dialog" aria-modal="true" aria-labelledby="dlg-SystemModule-1" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in">
           <div className="bg-card rounded-3xl w-full max-w-md border border-border shadow-2xl flex flex-col overflow-hidden animate-scale-in text-foreground">
             <div className="flex justify-between items-center px-5 py-4 border-b border-border bg-muted/30">
-              <h3 className="text-xs font-bold text-foreground">{t("feedback_title")}</h3>
-              <button 
+              <h3 id="dlg-SystemModule-1" className="text-xs font-bold text-foreground">{t("feedback_title")}</h3>
+              <button aria-label="Đóng" 
                 onClick={() => setShowFeedbackModal(false)}
                 className="w-7 h-7 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               >

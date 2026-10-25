@@ -4,6 +4,9 @@ import App from "./App";
 import "@fontsource/jetbrains-mono/400.css";
 import "@fontsource/jetbrains-mono/500.css";
 import "./index.css";
+import { startMotionPowerSaver } from "./core/lib/motionPower";
+
+startMotionPowerSaver();
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>

@@ -9,8 +9,8 @@ import {
   ExternalLink,
   Loader2,
   AlertCircle,
-  Sparkles,
   CheckCircle2,
+  ListChecks,
 } from "lucide-react";
 import {
   downloadSpreadsheetFile,
@@ -95,7 +95,7 @@ export function ExportSpreadsheetModal({
   const dayCount = data.scanResult?.days?.length || 0;
 
   return createPortal(
-    <div className="fixed inset-0 z-[9990] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in select-none">
+    <div role="dialog" aria-modal="true" aria-labelledby="dlg-ExportSpreadsheetModal-1" className="fixed inset-0 z-[9990] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in select-none">
       <div className="absolute inset-0" onClick={isExportingGoogle ? undefined : onClose} />
 
       <div className="w-full max-w-lg bg-card border border-emerald-500/30 rounded-3xl p-6 shadow-2xl relative z-10 animate-scale-in text-foreground">
@@ -104,7 +104,7 @@ export function ExportSpreadsheetModal({
           onClick={onClose}
           disabled={isExportingGoogle}
           className="absolute right-4 top-4 w-7 h-7 rounded-full bg-muted hover:bg-muted/80 active:scale-95 text-muted-foreground hover:text-foreground flex items-center justify-center transition-all cursor-pointer disabled:opacity-50"
-          title="Đóng"
+          title="Đóng" aria-label="Đóng"
         >
           <X size={14} />
         </button>
@@ -116,7 +116,7 @@ export function ExportSpreadsheetModal({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-bold text-foreground tracking-tight">
+              <h2 id="dlg-ExportSpreadsheetModal-1" className="text-base font-bold text-foreground tracking-tight">
                 Xuất Sang Trang Tính
               </h2>
               <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
@@ -132,7 +132,7 @@ export function ExportSpreadsheetModal({
         {/* Overview feature pill */}
         <div className="p-3 rounded-2xl bg-muted/50 border border-border/80 mb-4 text-xs space-y-1.5">
           <div className="font-semibold text-foreground flex items-center gap-1.5">
-            <Sparkles size={13} className="text-emerald-500" />
+            <ListChecks size={13} className="text-emerald-500" />
             <span>Nội dung được tạo sẵn trong trang tính:</span>
           </div>
           <ul className="text-[11px] text-muted-foreground space-y-1 pl-4 list-disc">
@@ -212,7 +212,7 @@ export function ExportSpreadsheetModal({
                   </>
                 ) : (
                   <>
-                    <Sparkles size={12} />
+                    <FileSpreadsheet size={12} />
                     <span>Tạo Google Sheet</span>
                   </>
                 )}

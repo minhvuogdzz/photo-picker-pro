@@ -6,13 +6,15 @@ import {
   ArrowRight,
   Shield,
   ExternalLink,
-  Sparkles,
   Zap,
   LayoutGrid,
   CheckCircle2,
   Layers,
   ChevronRight,
   Coffee,
+  CloudSun,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { CoffeeSteamIcon } from "@/core/components/CoffeeSteamIcon";
 import { getVersion } from "@tauri-apps/api/app";
@@ -22,6 +24,14 @@ import { checkAppAccess, getUserPlanInfo } from "@/core/services/appEntitlementP
 import { LicenseManager } from "@/core/license/LicenseManager";
 
 const DEFAULT_COMPANY_URL = "https://mvdphotoshopacademy.com";
+
+/** A license longer than ten years is shown as lifetime instead of an unreadable day count. */
+const LIFETIME_DAYS_THRESHOLD = 3650;
+
+function formatRemainingDays(days: number | null | undefined): string {
+  if (days == null || days > LIFETIME_DAYS_THRESHOLD) return "Vĩnh viễn";
+  return `${days} ngày`;
+}
 
 export function LauncherPage() {
   const setActiveModule = useAppStore((s) => s.setActiveModule);
@@ -70,7 +80,7 @@ export function LauncherPage() {
 
   const workflowApps = useMemo(() => modules.filter((m) => m.id !== "resources"), []);
 
-  const handleLaunch = (modId: string, e: React.MouseEvent) => {
+  const handleLaunch = (modId: string, e: React.SyntheticEvent<HTMLElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setLastClickPos({
       x: rect.left + rect.width / 2,
@@ -79,12 +89,20 @@ export function LauncherPage() {
     setActiveModule(modId);
   };
 
+  /** Lets Enter / Space activate a card that is exposed as a button. */
+  const launchOnKey = (modId: string) => (e: React.KeyboardEvent<HTMLElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleLaunch(modId, e);
+    }
+  };
+
   // Determine greeting based on local time
   const greetingData = useMemo(() => {
     const hour = new Date().getHours();
-    if (hour < 12) return { text: "Chào buổi sáng", icon: "☀️" };
-    if (hour < 18) return { text: "Chào buổi chiều", icon: "🌤️" };
-    return { text: "Chào buổi tối", icon: "🌙" };
+    if (hour < 12) return { text: "Chào buổi sáng", Icon: Sun };
+    if (hour < 18) return { text: "Chào buổi chiều", Icon: CloudSun };
+    return { text: "Chào buổi tối", Icon: Moon };
   }, []);
 
   const userName = session?.name || session?.email?.split("@")[0] || "Quý khách";
@@ -108,9 +126,9 @@ export function LauncherPage() {
     <div className="flex-1 flex flex-col h-full relative overflow-y-auto overflow-x-hidden p-5 md:p-7 animate-fade-in custom-scrollbar text-foreground">
       
       {/* AMBIENT BACKGROUND GLOWS — clean in light mode, atmospheric in dark mode */}
-      <div className="fixed top-[-10%] right-[-5%] w-[45%] h-[45%] bg-blue-500/8 rounded-full blur-[130px] pointer-events-none hidden dark:block" />
-      <div className="fixed bottom-[-10%] left-[-5%] w-[40%] h-[40%] bg-amber-500/6 rounded-full blur-[120px] pointer-events-none hidden dark:block" />
-      <div className="fixed top-[40%] left-[20%] w-[35%] h-[35%] bg-violet-500/5 rounded-full blur-[140px] pointer-events-none hidden dark:block" />
+      <div className="fixed top-[-10%] right-[-5%] w-[45%] h-[45%] rounded-full pointer-events-none hidden dark:block bg-[radial-gradient(closest-side,rgba(59,130,246,0.14),transparent)]" />
+      <div className="fixed bottom-[-10%] left-[-5%] w-[40%] h-[40%] rounded-full pointer-events-none hidden dark:block bg-[radial-gradient(closest-side,rgba(245,158,11,0.10),transparent)]" />
+      <div className="fixed top-[40%] left-[20%] w-[35%] h-[35%] rounded-full pointer-events-none hidden dark:block bg-[radial-gradient(closest-side,rgba(139,92,246,0.09),transparent)]" />
 
       {/* HEADER: ADMIN-CONFIGURABLE BANNER & USER ACCOUNT STATUS */}
       <div className="w-full max-w-5xl mx-auto mb-5 relative z-10">
@@ -118,15 +136,15 @@ export function LauncherPage() {
           <div>
             {/* Top pill badge */}
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted/70 border border-border text-[11px] font-medium text-foreground mb-2">
-              <span className="text-amber-500 dark:text-amber-400">{greetingData.icon}</span>
+              <greetingData.Icon size={13} aria-hidden="true" className="text-amber-500 dark:text-amber-400" />
               {displayBadge ? (
                 <span className="font-semibold text-primary">{displayBadge}</span>
               ) : (
                 <>
                   <span className="font-semibold text-primary">DH Studio Pro</span>
-                  <span className="text-muted-foreground/60">·</span>
+                  <span className="text-muted-foreground/80">·</span>
                   <span className="text-muted-foreground font-normal">DevHouse Software</span>
-                  <span className="text-muted-foreground/60">·</span>
+                  <span className="text-muted-foreground/80">·</span>
                   <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-[10px] font-medium">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     Hệ thống sẵn sàng
@@ -170,17 +188,17 @@ export function LauncherPage() {
                     {planInfo.planName}
                   </span>
                   {planInfo.isTrial && (
-                    <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-500 border border-amber-500/35 uppercase">
+                    <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-500 border border-amber-500/35 uppercase">
                       TRIAL
                     </span>
                   )}
                   {planInfo.isPhotoPickerOnly && (
-                    <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-500 border border-emerald-500/35 uppercase">
+                    <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-500 border border-emerald-500/35 uppercase">
                       GÓI LẺ
                     </span>
                   )}
                   {planInfo.isFullApp && !planInfo.isTrial && (
-                    <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-500 border border-blue-500/35 uppercase">
+                    <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-500 border border-blue-500/35 uppercase">
                       FULL APP
                     </span>
                   )}
@@ -197,7 +215,11 @@ export function LauncherPage() {
       {/* FEATURED SPOTLIGHT CARD — KHO TÀI NGUYÊN CREATIVE */}
       <div className="w-full max-w-5xl mx-auto mb-6 relative z-10">
         <div 
+          role="button"
+          tabIndex={0}
+          aria-label="Mở Kho Tài Nguyên Creative"
           onClick={(e) => handleLaunch("resources", e)}
+          onKeyDown={launchOnKey("resources")}
           className="group cursor-pointer rounded-2xl p-6 md:py-6.5 md:px-7 bg-gradient-to-r from-amber-500/12 via-card to-amber-500/8 hover:from-amber-500/18 hover:to-amber-500/12 border border-amber-500/35 hover:border-amber-500/55 transition-all duration-200 shadow-xs hover:shadow-lg relative overflow-hidden"
         >
           {/* Subtle warm glow inside spotlight */}
@@ -214,11 +236,10 @@ export function LauncherPage() {
                     Kho Tài Nguyên Creative
                   </h3>
                   <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/35 flex items-center gap-1 shadow-xs">
-                    <Sparkles size={11} />
                     <span>
                       {resourcesAccess.hasAccess
                         ? !resourcesAccess.isTrial
-                          ? `Đã mua · ${resourcesAccess.daysRemaining ?? "∞"} ngày`
+                          ? `Đã mua · ${formatRemainingDays(resourcesAccess.daysRemaining)}`
                           : `Dùng thử · ${resourcesAccess.daysRemaining ?? 0} ngày`
                         : "Chưa kích hoạt"}
                     </span>
@@ -260,7 +281,7 @@ export function LauncherPage() {
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           {workflowApps.map((mod) => {
             const Icon = mod.icon;
             const accent = mod.accentColor;
@@ -269,7 +290,11 @@ export function LauncherPage() {
             return (
               <div
                 key={mod.id}
+                role="button"
+                tabIndex={0}
+                aria-label={`Mở ${mod.name}`}
                 onClick={(e) => handleLaunch(mod.id, e)}
+                onKeyDown={launchOnKey(mod.id)}
                 className={`group cursor-pointer rounded-xl p-4.5 transition-all duration-200 relative overflow-hidden bg-card/85 hover:bg-card border border-border ${accent.border} flex flex-col justify-between shadow-sm hover:shadow-md`}
               >
                 {/* Colored Corner Ambient Glow on hover */}
@@ -290,7 +315,7 @@ export function LauncherPage() {
                       {modAccess.hasAccess ? (
                         !modAccess.isTrial ? (
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
-                            Đã mua · {modAccess.daysRemaining ?? "∞"} ngày
+                            Đã mua · {formatRemainingDays(modAccess.daysRemaining)}
                           </span>
                         ) : (
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
@@ -367,7 +392,7 @@ export function LauncherPage() {
               type="button"
               onClick={() => setIsDonateModalOpen(true)}
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-card border border-amber-500/35 hover:border-amber-500/65 text-amber-700 dark:text-amber-300 shadow-xs hover:bg-amber-500/10 transition-all cursor-pointer group active:scale-97"
-              title="Ủng hộ tác giả một ly cafe ☕"
+              title="Ủng hộ tác giả một ly cafe"
             >
               <div className="w-5 h-5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                 <CoffeeSteamIcon size={13} />
@@ -377,7 +402,7 @@ export function LauncherPage() {
                   Donate Cafe
                 </span>
                 <span className="text-[10px] text-muted-foreground/80 font-normal hidden md:inline">
-                  · Ủng hộ tác giả ☕
+                  · Ủng hộ tác giả
                 </span>
               </div>
             </button>
@@ -402,7 +427,7 @@ export function LauncherPage() {
                   title={`Mở trang web ${displayUrl}`}
                 >
                   <span className="group-hover:underline underline-offset-2">{displayUrl}</span>
-                  <ExternalLink size={11} className="text-muted-foreground/70 group-hover:text-primary transition-colors" />
+                  <ExternalLink size={11} className="text-muted-foreground/85 group-hover:text-primary transition-colors" />
                 </button>
               );
             })()}

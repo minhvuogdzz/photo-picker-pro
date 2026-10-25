@@ -11,33 +11,36 @@ export function EcosystemSidebar() {
 
   return (
     <div 
-      className={`${isCollapsed ? 'w-[56px]' : 'w-[200px]'} shrink-0 bg-card/90 backdrop-blur-md rounded-xl border border-border flex flex-col overflow-hidden transition-all duration-250 ease-in-out relative text-foreground`}
+      className={`${isCollapsed ? 'w-[56px]' : 'w-[200px]'} shrink-0 bg-card rounded-xl border border-border flex flex-col overflow-hidden transition-all duration-250 ease-in-out relative text-foreground`}
     >
       {/* Toggle Button */}
       <button 
+        type="button"
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className={`absolute top-3 z-50 w-5 h-5 bg-muted hover:bg-accent text-muted-foreground hover:text-foreground rounded-md flex items-center justify-center transition-all duration-150 border border-border cursor-pointer ${
-          isCollapsed ? 'right-[17px]' : 'right-2.5'
+        className={`absolute top-3 z-50 w-6 h-6 bg-muted hover:bg-accent text-muted-foreground hover:text-foreground rounded-md flex items-center justify-center transition-colors duration-150 border border-border cursor-pointer ${
+          isCollapsed ? 'right-[15px]' : 'right-2.5'
         }`}
         title={isCollapsed ? "Mở rộng" : "Thu gọn"}
+        aria-label={isCollapsed ? "Mở rộng thanh bên" : "Thu gọn thanh bên"}
+        aria-expanded={!isCollapsed}
       >
-        {isCollapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
+        {isCollapsed ? <ChevronRight size={13} aria-hidden="true" /> : <ChevronLeft size={13} aria-hidden="true" />}
       </button>
 
       {/* FIXED WIDTH INNER WRAPPER */}
-      <div className="w-[200px] flex flex-col h-full shrink-0">
+      <nav aria-label="Ứng dụng" className="w-[200px] flex flex-col h-full shrink-0">
         
         {/* Sidebar Header — flat, subtle */}
         <div className="py-3 pl-3 pr-2.5 border-b border-border flex items-center shrink-0 h-[52px]">
           <div className={`flex flex-col relative z-10 transition-opacity duration-150 ${isCollapsed ? 'opacity-0 delay-0' : 'opacity-100 delay-75'}`}>
-            <h2 className="font-semibold text-[11px] leading-tight text-foreground tracking-wide uppercase">Workspace</h2>
-            <p className="text-[9px] text-muted-foreground mt-0.5 font-medium truncate max-w-[150px]">DH Studio Pro</p>
+            <h2 className="font-semibold text-[11px] leading-tight text-foreground tracking-wider uppercase">Workspace</h2>
+            <p className="text-[11px] text-muted-foreground mt-0.5 font-medium truncate max-w-[150px]">DH Studio Pro</p>
           </div>
         </div>
 
         {/* App List */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-1.5 flex flex-col gap-0.5 custom-scrollbar">
-          <div className={`text-[9px] font-medium text-muted-foreground uppercase tracking-wider pl-2 py-1 mt-0.5 whitespace-nowrap transition-opacity duration-150 ${isCollapsed ? 'opacity-0 delay-0' : 'opacity-100 delay-75'}`}>
+          <div className={`text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pl-2 py-1 mt-0.5 whitespace-nowrap transition-opacity duration-150 ${isCollapsed ? 'opacity-0 delay-0' : 'opacity-100 delay-75'}`}>
             Ứng dụng
           </div>
           
@@ -57,10 +60,12 @@ export function EcosystemSidebar() {
                   });
                   setActiveModule(mod.id);
                 }}
-                className={`group flex items-center pl-2.5 pr-2 py-2 gap-2 rounded-lg transition-all duration-150 relative overflow-hidden shrink-0 ${
+                aria-current={isActive ? "page" : undefined}
+                aria-label={isCollapsed ? mod.name : undefined}
+                className={`group flex items-center pl-2.5 pr-2 py-2 gap-2 rounded-lg transition-colors duration-150 relative overflow-hidden shrink-0 ${
                   isActive 
-                    ? "bg-muted/80 text-foreground border border-border shadow-xs" 
-                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground border border-transparent"
+                    ? "bg-primary/10 text-foreground" 
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                 }`}
                 title={isCollapsed ? mod.name : undefined}
               >
@@ -77,7 +82,7 @@ export function EcosystemSidebar() {
                 </div>
                 
                 <div className={`flex flex-col min-w-0 transition-opacity duration-150 ${isCollapsed ? 'opacity-0 delay-0' : 'opacity-100 delay-75'}`}>
-                  <span className={`text-[11px] whitespace-nowrap leading-none ${isActive ? "font-semibold text-foreground" : "font-medium"}`}>
+                  <span className={`text-xs whitespace-nowrap leading-none ${isActive ? "font-semibold text-foreground" : "font-medium"}`}>
                     {mod.shortName || mod.name}
                   </span>
                 </div>
@@ -88,12 +93,12 @@ export function EcosystemSidebar() {
         
         {/* Footer */}
         <div className="p-2 border-t border-border shrink-0">
-          <p className={`text-[9px] text-center text-muted-foreground/60 font-medium whitespace-nowrap transition-opacity duration-150 ${isCollapsed ? 'opacity-0 delay-0' : 'opacity-100 delay-75'}`}>
+          <p className={`text-[10px] text-center text-muted-foreground font-medium whitespace-nowrap transition-opacity duration-150 ${isCollapsed ? 'opacity-0 delay-0' : 'opacity-100 delay-75'}`}>
             DevHouse Software
           </p>
         </div>
 
-      </div>
+      </nav>
     </div>
   );
 }

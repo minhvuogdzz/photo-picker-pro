@@ -22,9 +22,20 @@ export function SafeLink({ to, children, className, ...props }: SafeLinkProps) {
     }
   };
 
+  // Exposed as a link so it is reachable by keyboard; Enter / Space run the same click handler.
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      e.currentTarget.click();
+    }
+  };
+
   return (
     <div
+      role="link"
+      tabIndex={0}
       onClick={handleClick}
+      onKeyDown={handleKeyDown}
       className={`cursor-pointer ${className || ""}`}
       {...props}
     >

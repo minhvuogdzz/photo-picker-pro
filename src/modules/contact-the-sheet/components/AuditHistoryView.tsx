@@ -58,7 +58,7 @@ export function AuditHistoryView() {
       <div className="flex-1 bg-background/50 border border-border rounded-2xl overflow-hidden flex flex-col shadow-inner">
         {auditRecords.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
-            <History size={36} className="text-muted-foreground/30 mb-2" />
+            <History size={36} className="text-muted-foreground/60 mb-2" />
             <p className="text-sm font-semibold">Chưa có lịch sử cập nhật nào</p>
             <p className="text-xs mt-1">Khi bạn thực thi cập nhật các job lên Sheet, lịch sử sẽ xuất hiện tại đây.</p>
           </div>

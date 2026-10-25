@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import {
   X,
@@ -20,26 +20,20 @@ import {
 import { useAppStore } from "@/core/stores/useAppStore";
 import { useContactSheetStore } from "@/modules/contact-the-sheet/stores/useContactSheetStore";
 import { sheetDiscoveryService } from "@/modules/contact-the-sheet/services/sheetDiscoveryService";
-import { sheetExtractorService } from "@/modules/contact-the-sheet/services/sheetExtractorService";
 import type { SheetRowRecord } from "@/modules/contact-the-sheet/services/jobMatchingService";
 import { getFolderName } from "@/core/lib/utils";
+import {
+  checkFolder,
+  formatDateKey,
+  getVietnamTodayKey,
+  type FilterCheckConditions,
+  type FolderCheckResult,
+  type TabRows,
+} from "@/modules/photo-picker/services/filterStatusCheckService";
 
 interface CheckFilterStatusModalProps {
   isOpen: boolean;
   onClose: () => void;
-}
-
-interface FolderCheckResult {
-  folderPath: string;
-  folderName: string;
-  isKept: boolean;
-  matchedRow?: number;
-  tabTitle?: string;
-  actualStatus: string;
-  photoCode1Value?: string;
-  photoCode2Value?: string;
-  dueDateValue?: string;
-  reason: string;
 }
 
 const STANDARD_LETTERS = [
@@ -50,36 +44,6 @@ const STANDARD_LETTERS = [
 
 const COMMON_STATUS_SUGGESTIONS = ["Chưa lọc", "Chờ lọc", "Pending", "Đang lọc", "Chưa chụp"];
 const DEFAULT_TABS = ["Edit 9/2026", "Edit 8/2026", "Edit 10/2026", "DS Khách"];
-
-// Today's date in Vietnam (GMT+7) as a comparable yyyymmdd number, independent of the machine timezone
-function getVietnamTodayKey(): number {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Asia/Ho_Chi_Minh",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(new Date());
-  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
-  return get("year") * 10000 + get("month") * 100 + get("day");
-}
-
-function formatDateKey(key: number): string {
-  const d = key % 100;
-  const m = Math.floor(key / 100) % 100;
-  const y = Math.floor(key / 10000);
-  return `${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}/${y}`;
-}
-
-// Parse a sheet cell in dd/mm/yyyy (also accepts d/m/yyyy, "-" or "." separators) into a yyyymmdd number
-function parseDueDateKey(raw: string): number | null {
-  const m = raw.trim().match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/);
-  if (!m) return null;
-  const day = Number(m[1]);
-  const month = Number(m[2]);
-  const year = Number(m[3]);
-  if (month < 1 || month > 12 || day < 1 || day > new Date(year, month, 0).getDate()) return null;
-  return year * 10000 + month * 100 + day;
-}
 
 export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusModalProps) {
   const inputFolders = useAppStore((s) => s.inputFolders);
@@ -93,14 +57,33 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
     return activeProfile || profiles[0] || null;
   }, [activeProfile, profiles]);
 
-  // Tab options
+  // Real tab names of the linked spreadsheet (daily tabs like "9/10" are usually not saved in the profile)
+  const [remoteTabs, setRemoteTabs] = useState<string[]>([]);
+
+  useEffect(() => {
+    const sheetId = targetProfile?.spreadsheetId;
+    if (!isOpen || !sheetId || targetProfile?.isMockSandbox || sheetId.startsWith("mock")) return;
+    let cancelled = false;
+    sheetDiscoveryService
+      .fetchSpreadsheetMetadata(sheetId, false)
+      .then((meta) => {
+        if (!cancelled && meta?.tabs?.length) setRemoteTabs(meta.tabs.map((t) => t.title));
+      })
+      .catch((err) => console.warn("[CheckFilterStatusModal] Could not load sheet tabs:", err));
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, targetProfile?.spreadsheetId]);
+
+  // Tab options: every real tab of the sheet, plus tabs saved in the profile
   const availableTabs = useMemo(() => {
-    if (targetProfile?.tabConfigurations) {
-      const configured = Object.keys(targetProfile.tabConfigurations);
-      if (configured.length > 0) return configured;
-    }
-    return DEFAULT_TABS;
-  }, [targetProfile]);
+    const configured = targetProfile?.tabConfigurations ? Object.keys(targetProfile.tabConfigurations) : [];
+    const merged = Array.from(new Set([...remoteTabs, ...configured]));
+    return merged.length > 0 ? merged : DEFAULT_TABS;
+  }, [targetProfile, remoteTabs]);
+
+  // Original queue before the first Check TT, so re-running never works on an already narrowed queue
+  const queueRef = useRef<{ base: string[]; kept: string[]; batch: typeof batchCustomerFolders } | null>(null);
 
   const defaultTab =
     targetProfile?.selectedTabTitle ||
@@ -213,7 +196,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
       return;
     }
 
-    if (inputFolders.length === 0) {
+    if (inputFolders.length === 0 && !queueRef.current) {
       setErrorMessage("Danh sách thư mục đầu vào đang trống! Vui lòng thêm thư mục khách trước khi kiểm tra.");
       return;
     }
@@ -245,7 +228,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
       );
 
       // Load rows of every checked tab; a tab that fails to load is skipped unless all fail
-      const tabRows: Array<{ tabTitle: string; rows: SheetRowRecord[] }> = [];
+      const tabRows: TabRows[] = [];
       const failedTabs: string[] = [];
       for (const tabTitle of activeSelectedTabs) {
         const startRow =
@@ -276,107 +259,33 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
       setCheckProgress(`Đang đối soát ${inputFolders.length} thư mục khách với ${tabRows.length} Tab...`);
 
       const effectiveProfile = isMock ? { ...targetProfile, isMockSandbox: true } : targetProfile;
-      const targetValNorm = targetStatusValue.trim().toLowerCase();
-      const colLetter = statusColumn.toUpperCase().trim();
-      const code1Col = photoCode1Column !== "OFF" ? photoCode1Column.toUpperCase().trim() : null;
-      const code2Col = photoCode2Column !== "OFF" ? photoCode2Column.toUpperCase().trim() : null;
-      const dueCol = dueDateEnabled ? dueDateColumn.toUpperCase().trim() : null;
-      const todayKey = getVietnamTodayKey();
-      const todayStr = formatDateKey(todayKey);
+      const conditions: FilterCheckConditions = {
+        statusColumn,
+        targetStatusValue: targetStatusValue.trim(),
+        photoCode1Column: photoCode1Column !== "OFF" ? photoCode1Column : null,
+        photoCode2Column: photoCode2Column !== "OFF" ? photoCode2Column : null,
+        dueDateColumn: dueDateEnabled ? dueDateColumn : null,
+        todayKey: getVietnamTodayKey(),
+      };
 
-      const results: FolderCheckResult[] = [];
+      // Re-running continues from the original queue unless the user changed the queue since the last check
+      const sameSet = (a: string[], b: string[]) => a.length === b.length && a.every((x) => b.includes(x));
+      const reuseQueue = Boolean(queueRef.current && sameSet(inputFolders, queueRef.current.kept));
+      const sourceFolders = reuseQueue ? queueRef.current!.base : inputFolders;
 
-      for (let i = 0; i < inputFolders.length; i++) {
-        const folderPath = inputFolders[i];
-        const folderName = getFolderName(folderPath);
+      // Keep a folder if any of its rows on any checked tab passes all conditions
+      const results: FolderCheckResult[] = sourceFolders.map((folderPath) =>
+        checkFolder(folderPath, getFolderName(folderPath), tabRows, effectiveProfile, conditions)
+      );
 
-        // Evaluate the folder on every checked tab: keep it if any tab qualifies,
-        // otherwise report the first tab where it was found
-        const tabResults: FolderCheckResult[] = [];
-        for (const { tabTitle, rows } of tabRows) {
-          const match = sheetExtractorService.extractCodesForFolder(
-            folderName,
-            folderPath,
-            rows,
-            effectiveProfile
-          );
-
-          if (match.matchedRow) {
-            const matchedRowRecord = rows.find((r) => r.row === match.matchedRow);
-            const actualVal = (matchedRowRecord?.values[colLetter] || "").trim();
-            const actualValNorm = actualVal.toLowerCase();
-
-            // Photo code column values
-            const code1Val = code1Col ? (matchedRowRecord?.values[code1Col] || "").trim() : null;
-            const code2Val = code2Col ? (matchedRowRecord?.values[code2Col] || "").trim() : null;
-
-            // Due date column value (if due date scan enabled)
-            const dueVal = dueCol ? (matchedRowRecord?.values[dueCol] || "").trim() : null;
-            const dueKey = dueVal ? parseDueDateKey(dueVal) : null;
-
-            // Logic: status must match AND photo code columns (if enabled) must NOT be empty
-            // AND due date (if enabled) must be today or earlier (Vietnam time)
-            const statusOk = actualValNorm === targetValNorm;
-            const code1Ok = code1Col === null || code1Val !== "";
-            const code2Ok = code2Col === null || code2Val !== "";
-            const dueOk = dueCol === null || (dueKey !== null && dueKey <= todayKey);
-            const isKept = statusOk && code1Ok && code2Ok && dueOk;
-
-            // Build reason
-            let reason: string;
-            if (isKept) {
-              reason = `Khớp trạng thái "${actualVal}" (Dòng ${match.matchedRow})`;
-              if (dueCol) reason += ` • Tới hạn trả ${dueVal}`;
-            } else {
-              const reasons: string[] = [];
-              if (!statusOk) {
-                reasons.push(`Trạng thái là "${actualVal || "Trống"}" (Dòng ${match.matchedRow}), khác "${targetStatusValue}"`);
-              }
-              if (!code1Ok) {
-                reasons.push(`Cột ${code1Col} (Mã ảnh chọn 1) trống — không có mã ảnh`);
-              }
-              if (!code2Ok) {
-                reasons.push(`Cột ${code2Col} (Mã ảnh chọn 2) trống — không có mã ảnh`);
-              }
-              if (!dueOk) {
-                if (!dueVal) {
-                  reasons.push(`Cột ${dueCol} (Hẹn trả ảnh) trống`);
-                } else if (dueKey === null) {
-                  reasons.push(`Cột ${dueCol} (Hẹn trả ảnh) "${dueVal}" không đúng định dạng dd/mm/yyyy`);
-                } else {
-                  reasons.push(`Hẹn trả ${dueVal} — chưa tới hạn (hôm nay ${todayStr})`);
-                }
-              }
-              reason = reasons.join(" • ");
-            }
-
-            tabResults.push({
-              folderPath,
-              folderName,
-              isKept,
-              matchedRow: match.matchedRow,
-              tabTitle,
-              actualStatus: actualVal || "(Trống)",
-              photoCode1Value: code1Val ?? undefined,
-              photoCode2Value: code2Val ?? undefined,
-              dueDateValue: dueVal ?? undefined,
-              reason: `[${tabTitle}] ${reason}`,
-            });
+      // A tab that failed to load must not remove customers we could not look up
+      if (failedTabs.length > 0) {
+        for (const r of results) {
+          if (!r.isKept && !r.matchedRow) {
+            r.isKept = true;
+            r.actualStatus = "Chưa kiểm tra được";
+            r.reason = `Không tải được Tab ${failedTabs.join(", ")} nên giữ lại để bạn kiểm tra thủ công`;
           }
-        }
-
-        const best = tabResults.find((r) => r.isKept) || tabResults[0];
-        if (best) {
-          results.push(best);
-        } else {
-          // No match on any checked tab
-          results.push({
-            folderPath,
-            folderName,
-            isKept: false,
-            actualStatus: "Không tìm thấy trên Sheet",
-            reason: `Tên thư mục không khớp với dòng nào trên Tab: ${tabRows.map((t) => t.tabTitle).join(", ")}`,
-          });
         }
       }
 
@@ -388,10 +297,15 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
 
       // Automatically apply filtering to input queue:
       // Keep only folders with isKept = true
-      const keptFolders = results.filter((r) => r.isKept).map((r) => r.folderPath);
-      const keptBatchItems = batchCustomerFolders.filter((b) =>
-        keptFolders.includes(b.folder_path)
-      );
+      const keptChecked = results.filter((r) => r.isKept).map((r) => r.folderPath);
+      // Folders dropped into the queue while the check was running were never checked: keep them
+      const addedDuringCheck = useAppStore.getState().inputFolders.filter((f) => !sourceFolders.includes(f));
+      const keptFolders = [...keptChecked, ...addedDuringCheck];
+      // Customer metadata (day name...) also comes from the original queue, not the narrowed one
+      const knownBatch = [...(reuseQueue ? queueRef.current!.batch : []), ...batchCustomerFolders];
+      const allBatch = knownBatch.filter((b, i) => knownBatch.findIndex((x) => x.folder_path === b.folder_path) === i);
+      queueRef.current = { base: [...sourceFolders, ...addedDuringCheck], kept: keptFolders, batch: allBatch };
+      const keptBatchItems = allBatch.filter((b) => keptFolders.includes(b.folder_path));
 
       useAppStore.setState({
         inputFolders: keptFolders,
@@ -697,7 +611,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[11px] text-muted-foreground font-medium mb-1">
-                      Cột "Hẹn trả ảnh" trên Sheet (dd/mm/yyyy)
+                      Cột "Hẹn trả ảnh" trên Sheet (dd/mm hoặc dd/mm/yyyy)
                     </label>
                     <div className="relative">
                       <select
@@ -905,9 +819,19 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                         ) : (
                           <Trash2 size={13} className="text-rose-500 shrink-0" />
                         )}
-                        <span className="font-semibold text-foreground truncate text-[11px]">
-                          {item.folderName}
-                        </span>
+                        <div className="min-w-0">
+                          <span className="block font-semibold text-foreground truncate text-[11px]">
+                            {item.folderName}
+                          </span>
+                          {!item.isKept && (
+                            <span
+                              className="block text-[10px] text-rose-600/90 dark:text-rose-400/90 truncate"
+                              title={item.reason}
+                            >
+                              {item.reason}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0 text-[10px] flex-wrap justify-end">
@@ -994,7 +918,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
 
             <button
               type="button"
-              disabled={isChecking || inputFolders.length === 0 || activeSelectedTabs.length === 0}
+              disabled={isChecking || (inputFolders.length === 0 && !queueRef.current) || activeSelectedTabs.length === 0}
               onClick={handleRunCheck}
               className="px-4 py-1.5 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-colors cursor-pointer shadow-sm flex items-center gap-1.5 disabled:opacity-50"
             >

@@ -63,12 +63,14 @@ test("Drive Resolver: searchDriveForDeliveryFolder selects candidate matching jo
       return [
         {
           id: "folder_recent_other_client",
+          ownedByMe: true,
           name: "File hoàn thiện",
           parents: ["parent_other"],
           modifiedTime: "2026-09-11T01:00:00Z",
         },
         {
           id: "folder_huyen_phan",
+          ownedByMe: true,
           name: "File hoàn thiện",
           parents: ["parent_huyen_phan"],
           modifiedTime: "2026-09-10T15:00:00Z",
@@ -112,12 +114,14 @@ test("Drive Resolver: searchDriveForDeliveryFolder picks latest modified folder 
       return [
         {
           id: "folder_latest_modified",
+          ownedByMe: true,
           name: "File hoàn thiện",
           parents: ["parent_unknown"],
           modifiedTime: "2026-09-11T01:30:00Z",
         },
         {
           id: "folder_older",
+          ownedByMe: true,
           name: "File hoàn thiện",
           parents: ["parent_unknown_2"],
           modifiedTime: "2026-09-08T10:00:00Z",
@@ -155,6 +159,7 @@ test("Drive Resolver: searchDriveForDeliveryFolder finds finished subfolder insi
       return [
         {
           id: "job_folder_id_456",
+          ownedByMe: true,
           name: "10-9 15h Huy hoàng",
           modifiedTime: "2026-09-10T15:00:00Z",
         },
@@ -166,6 +171,7 @@ test("Drive Resolver: searchDriveForDeliveryFolder finds finished subfolder insi
       return [
         {
           id: "subfolder_final_789",
+          ownedByMe: true,
           name: "File hoàn thiện",
           parents: ["job_folder_id_456"],
           modifiedTime: "2026-09-10T16:00:00Z",
@@ -266,19 +272,19 @@ test("Drive Resolver (CRITICAL BUG FIX): Hierarchical walk down from configured 
     // 1. Children of shortcut base: 1wmPRksbQLAUMq5SnBi7TazBZ7ax5WuYI
     if (query.includes("'1wmPRksbQLAUMq5SnBi7TazBZ7ax5WuYI' in parents")) {
       return [
-        { id: "folder_photoshop", name: "Photoshop ", parents: ["1wmPRksbQLAUMq5SnBi7TazBZ7ax5WuYI"] },
+        { id: "folder_photoshop", name: "Photoshop ", parents: ["1wmPRksbQLAUMq5SnBi7TazBZ7ax5WuYI"], ownedByMe: true },
       ];
     }
     // 2. Children of Photoshop
     if (query.includes("'folder_photoshop' in parents")) {
       return [
-        { id: "folder_file_hoan_thien", name: "File hoàn thiện", parents: ["folder_photoshop"] },
+        { id: "folder_file_hoan_thien", name: "File hoàn thiện", parents: ["folder_photoshop"], ownedByMe: true },
       ];
     }
     // 3. Children of File hoàn thiện
     if (query.includes("'folder_file_hoan_thien' in parents")) {
       return [
-        { id: "folder_vuong", name: "Vương", parents: ["folder_file_hoan_thien"] },
+        { id: "folder_vuong", name: "Vương", parents: ["folder_file_hoan_thien"], ownedByMe: true },
       ];
     }
     // 4. Children of Vương
@@ -391,8 +397,8 @@ test("Drive Resolver: skips latest folder that still has sub-folders and picks o
     }
     if (query.includes("File hoàn thiện")) {
       return [
-        { id: "folder_latest_with_sub", name: "File hoàn thiện", parents: ["p1"], modifiedTime: "2026-09-11T01:30:00Z" },
-        { id: "folder_older_leaf", name: "File hoàn thiện", parents: ["p2"], modifiedTime: "2026-09-08T10:00:00Z" },
+        { id: "folder_latest_with_sub", name: "File hoàn thiện", parents: ["p1"], modifiedTime: "2026-09-11T01:30:00Z", ownedByMe: true },
+        { id: "folder_older_leaf", name: "File hoàn thiện", parents: ["p2"], modifiedTime: "2026-09-08T10:00:00Z", ownedByMe: true },
       ];
     }
     return [];
@@ -414,8 +420,8 @@ test("Drive Resolver: skips empty folder (no files) even if it is the latest", a
     }
     if (query.includes("File hoàn thiện")) {
       return [
-        { id: "folder_latest_empty", name: "File hoàn thiện", parents: ["p1"], modifiedTime: "2026-09-11T01:30:00Z" },
-        { id: "folder_older_with_files", name: "File hoàn thiện", parents: ["p2"], modifiedTime: "2026-09-08T10:00:00Z" },
+        { id: "folder_latest_empty", name: "File hoàn thiện", parents: ["p1"], modifiedTime: "2026-09-11T01:30:00Z", ownedByMe: true },
+        { id: "folder_older_with_files", name: "File hoàn thiện", parents: ["p2"], modifiedTime: "2026-09-08T10:00:00Z", ownedByMe: true },
       ];
     }
     return [];
@@ -434,18 +440,18 @@ test("Drive Resolver: job folder whose children all have sub-folders falls back 
   (service as any).queryDriveFiles = async (token: string, query: string) => {
     if (query.includes("mimeType != ")) return [{ id: "file_img_1", name: "IMG_0001.jpg" }];
     if (query.includes("'job_new' in parents")) {
-      return [{ id: "job_new_final", name: "File hoàn thiện", parents: ["job_new"] }];
+      return [{ id: "job_new_final", name: "File hoàn thiện", parents: ["job_new"], ownedByMe: true }];
     }
     if (query.includes("'job_new_final' in parents")) {
       return [{ id: "job_new_final_nested", name: "Bản 2", parents: ["job_new_final"] }];
     }
     if (query.includes("'job_old' in parents")) {
-      return [{ id: "job_old_final", name: "File hoàn thiện", parents: ["job_old"] }];
+      return [{ id: "job_old_final", name: "File hoàn thiện", parents: ["job_old"], ownedByMe: true }];
     }
     if (query.includes("12-9 9h Lan Anh")) {
       return [
-        { id: "job_new", name: "12-9 9h Lan Anh", modifiedTime: "2026-09-12T10:00:00Z" },
-        { id: "job_old", name: "12-9 9h Lan Anh", modifiedTime: "2026-09-12T08:00:00Z" },
+        { id: "job_new", name: "12-9 9h Lan Anh", modifiedTime: "2026-09-12T10:00:00Z", ownedByMe: true },
+        { id: "job_old", name: "12-9 9h Lan Anh", modifiedTime: "2026-09-12T08:00:00Z", ownedByMe: true },
       ];
     }
     return [];
@@ -460,4 +466,129 @@ test("Drive Resolver: job folder whose children all have sub-folders falls back 
 
   assert.ok(match);
   assert.equal(match.id, "job_old_final", "Must pick leaf folder from older job folder");
+});
+
+test("Drive Resolver: skips latest leaf folder owned by someone else and picks the one owned by connected account", async () => {
+  const service = new DriveResolverService();
+
+  (service as any).queryDriveFiles = async (token: string, query: string) => {
+    if (query.includes("mimeType != ")) return [{ id: "file_img_1", name: "IMG_0001.jpg" }];
+    if (query.includes("File hoàn thiện")) {
+      return [
+        {
+          id: "leaf_other_owner",
+          name: "File hoàn thiện",
+          parents: ["p1"],
+          modifiedTime: "2026-09-11T01:30:00Z",
+          ownedByMe: false,
+          owners: [{ emailAddress: "someone@else.com", me: false }],
+        },
+        {
+          id: "leaf_my_owner",
+          name: "File hoàn thiện",
+          parents: ["p2"],
+          modifiedTime: "2026-09-08T10:00:00Z",
+          ownedByMe: true,
+        },
+      ];
+    }
+    return [];
+  };
+  (service as any).getFolderNameById = async () => null;
+
+  const match = await service.searchDriveForDeliveryFolder(
+    "mock_token",
+    "File hoàn thiện",
+    "",
+    "",
+    "root",
+    "me@studio.com",
+    true
+  );
+
+  assert.ok(match);
+  assert.equal(match.id, "leaf_my_owner", "Folder owned by another account must be skipped");
+});
+
+test("Drive Resolver: returns null when the only leaf folder is owned by another account", async () => {
+  const service = new DriveResolverService();
+
+  (service as any).queryDriveFiles = async (token: string, query: string) => {
+    if (query.includes("mimeType != ")) return [{ id: "file_img_1", name: "IMG_0001.jpg" }];
+    if (query.includes("File hoàn thiện")) {
+      return [{ id: "leaf_other", name: "File hoàn thiện", parents: ["p1"], ownedByMe: false }];
+    }
+    return [];
+  };
+  (service as any).getFolderNameById = async () => null;
+
+  const match = await service.searchDriveForDeliveryFolder(
+    "mock_token",
+    "File hoàn thiện",
+    "",
+    "",
+    "root",
+    "me@studio.com",
+    true
+  );
+
+  assert.equal(match, null);
+});
+
+test("Drive Resolver: owner check switched off allows a leaf folder owned by another account", async () => {
+  const service = new DriveResolverService();
+
+  (service as any).queryDriveFiles = async (token: string, query: string) => {
+    if (query.includes("mimeType != ")) return [{ id: "file_img_1", name: "IMG_0001.jpg" }];
+    if (query.includes("File hoàn thiện")) {
+      return [{ id: "leaf_other", name: "File hoàn thiện", parents: ["p1"], ownedByMe: false }];
+    }
+    return [];
+  };
+  (service as any).getFolderNameById = async () => null;
+
+  const match = await service.searchDriveForDeliveryFolder(
+    "mock_token",
+    "File hoàn thiện",
+    "",
+    "",
+    "root",
+    "me@studio.com",
+    false
+  );
+
+  assert.ok(match);
+  assert.equal(match.id, "leaf_other");
+});
+
+test("Drive Resolver: final fresh ownership check rejects a folder whose cached data said it was mine", async () => {
+  const service = new DriveResolverService();
+  googleCredentialManager.getValidAccessToken = async () => "mock_valid_token";
+
+  // Search (with stale cached metadata) believes the folder is owned by the connected account...
+  service.searchDriveForDeliveryFolder = async () => ({
+    id: "stale_folder",
+    name: "File hoàn thiện",
+    ownedByMe: true,
+  });
+  // ...but Drive, asked fresh, says it belongs to someone else.
+  (service as any).getFolderById = async (token: string, id: string, forceFresh?: boolean) =>
+    forceFresh
+      ? { id, name: "File hoàn thiện", ownedByMe: false, owners: [{ emailAddress: "other@x.com", me: false }] }
+      : { id, name: "File hoàn thiện", ownedByMe: true };
+
+  const result = await service.resolveLocalFolderToDriveLink(
+    "/some/local/Job/File hoàn thiện",
+    "",
+    "root",
+    false,
+    {
+      finalFolderName: "File hoàn thiện",
+      currentUserEmail: "me@studio.com",
+      requireOwnerMatch: true,
+    }
+  );
+
+  assert.equal(result.isAccessible, false);
+  assert.equal(result.driveWebLink, "", "Must not return a link to a folder owned by someone else");
 });

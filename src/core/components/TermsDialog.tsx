@@ -8,10 +8,10 @@ interface TermsDialogProps {
 
 export function TermsDialog({ onClose, onAgree, showAgreeButton = false }: TermsDialogProps) {
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+    <div role="dialog" aria-modal="true" aria-labelledby="dlg-TermsDialog-1" className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
       <div className="panel w-full max-w-3xl bg-card/90 backdrop-blur-2xl border border-white/10 shadow-2xl rounded-2xl flex flex-col max-h-[85vh] animate-slide-up">
         <div className="p-6 border-b border-white/10 flex justify-between items-center shrink-0">
-          <h2 className="text-xl font-bold text-foreground">Điều khoản và Dịch vụ</h2>
+          <h2 id="dlg-TermsDialog-1" className="text-xl font-bold text-foreground">Điều khoản và Dịch vụ</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-2xl leading-none">&times;</button>
         </div>
         

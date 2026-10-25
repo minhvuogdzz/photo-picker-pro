@@ -67,12 +67,14 @@ export function TopBar() {
   };
 
   return (
-    <div className="flex items-center justify-between px-3 py-1.5">
+    <div className="flex items-center justify-between gap-3 px-3 py-2">
       {/* Left: Logo + Brand + Back Button */}
       <div className="flex items-center gap-2">
         {activeModule !== "launcher" && (
           <button 
-            className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer border border-transparent hover:border-border"
+            type="button"
+            aria-label="Quay lại Launcher"
+            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer border border-transparent hover:border-border"
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               setLastClickPos({ 
@@ -87,8 +89,10 @@ export function TopBar() {
           </button>
         )}
         
-        <div 
-          className="flex items-center gap-2.5 cursor-pointer hover:opacity-90 transition-opacity py-0.5"
+        <button
+          type="button"
+          aria-label="DH Studio Pro, về Launcher"
+          className="flex items-center gap-2.5 cursor-pointer hover:opacity-90 transition-opacity py-0.5 text-left rounded-lg"
           onClick={(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
             setLastClickPos({ 
@@ -101,14 +105,14 @@ export function TopBar() {
         >
           <BrandLogo variant="icon" className="w-8 h-8 rounded-lg object-contain shadow-sm shrink-0" />
           <div className="flex flex-col">
-            <h1 className="text-[13px] font-bold tracking-wide text-foreground uppercase whitespace-nowrap leading-tight">
+            <span className="text-[13px] font-bold tracking-wide text-foreground uppercase whitespace-nowrap leading-tight">
               DH Studio Pro
-            </h1>
-            <span className="text-[9px] font-medium text-muted-foreground tracking-wider leading-none">
+            </span>
+            <span className="text-[10px] font-medium text-muted-foreground tracking-wider leading-none mt-0.5">
               DevHouse Software
             </span>
           </div>
-        </div>
+        </button>
 
         {/* Update badge — flat subtle */}
         {updateResult?.hasUpdate && (
@@ -133,12 +137,15 @@ export function TopBar() {
 
         {/* Module Sub-tabs */}
         {(activeModule !== "launcher" && activeModule !== "system" && activeModule !== "resources") && tabs.length > 0 && (
-          <nav className="flex items-center gap-0.5 p-0.5 bg-muted/50 rounded-lg border border-border/50">
+          <nav role="tablist" aria-label="Điều hướng công cụ" className="flex items-center gap-0.5 p-0.5 bg-muted/50 rounded-lg border border-border/50">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`text-[11px] font-medium py-1 px-2 rounded-md flex items-center gap-1 transition-all cursor-pointer ${
+                className={`text-[11px] font-medium py-1 px-2.5 rounded-md flex items-center gap-1.5 transition-colors cursor-pointer ${
                   activeTab === tab.id
                     ? "bg-card text-foreground shadow-sm font-semibold"
                     : "text-muted-foreground hover:text-foreground"
@@ -156,10 +163,12 @@ export function TopBar() {
       <div className="flex items-center gap-1.5">
         <div className="relative">
           <button
+            type="button"
             onClick={() => setShowLicenseManager(!showLicenseManager)}
-            className="text-[10px] py-1 px-2 bg-muted/50 hover:bg-muted border border-border text-foreground transition-all font-medium flex items-center gap-1 rounded-lg cursor-pointer"
+            aria-label="Quyền lợi và gói dịch vụ"
+            className="text-[11px] py-1 px-2.5 bg-muted/50 hover:bg-muted border border-border text-foreground transition-colors font-medium flex items-center gap-1.5 rounded-lg cursor-pointer"
           >
-            <Key size={11} className="text-amber-500/80" />
+            <Key size={12} aria-hidden="true" className="text-amber-600 dark:text-amber-400" />
             <span className="hidden md:inline">Quyền Lợi</span>
           </button>
           {showLicenseManager && (
@@ -191,13 +200,17 @@ export function TopBar() {
         {/* User Avatar / Menu */}
         <div className="relative">
           <button
+            type="button"
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-1 px-1.5 py-1 rounded-md hover:bg-muted transition-all cursor-pointer"
+            aria-haspopup="menu"
+            aria-expanded={showUserMenu}
+            aria-label="Menu tài khoản"
+            className="flex items-center gap-1.5 px-1.5 py-1 rounded-md hover:bg-muted transition-colors cursor-pointer"
           >
             <div className="w-5 h-5 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center text-primary">
               <User size={11} />
             </div>
-            <span className="text-[11px] font-medium text-foreground/80 max-w-[80px] truncate hidden sm:inline">
+            <span className="text-[11px] font-medium text-foreground/90 max-w-[96px] truncate hidden sm:inline">
               {session?.name || "User"}
             </span>
           </button>
@@ -268,26 +281,31 @@ export function TopBar() {
             const next = theme === "dark" ? "light" : "dark";
             updateSetting("theme", next);
           }}
+          type="button"
           title={theme === "dark" ? "Chuyển sang Giao diện Sáng (Light)" : "Chuyển sang Giao diện Tối (Dark)"}
-          className="flex items-center justify-center w-6 h-6 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+          aria-label={theme === "dark" ? "Chuyển sang giao diện sáng" : "Chuyển sang giao diện tối"}
+          className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
         >
           {theme === "dark" ? (
-            <Sun size={13} className="text-amber-400 hover:rotate-45 transition-transform" />
+            <Sun size={14} aria-hidden="true" className="text-amber-400" />
           ) : (
-            <Moon size={13} className="text-slate-700 hover:-rotate-12 transition-transform" />
+            <Moon size={14} aria-hidden="true" className="text-slate-700" />
           )}
         </button>
 
         {/* System Menu */}
         <div className="relative">
           <button
+            type="button"
             onClick={() => setActiveModule("system")}
             title="Cài đặt hệ thống"
-            className={`flex items-center justify-center w-6 h-6 rounded-md hover:bg-muted transition-all cursor-pointer ${
+            aria-label="Cài đặt hệ thống"
+            aria-current={activeModule === "system" ? "page" : undefined}
+            className={`flex items-center justify-center w-7 h-7 rounded-md hover:bg-muted transition-colors cursor-pointer ${
               activeModule === "system" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Menu size={14} />
+            <Menu size={15} aria-hidden="true" />
           </button>
         </div>
       </div>

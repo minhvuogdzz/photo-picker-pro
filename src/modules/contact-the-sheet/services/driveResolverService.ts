@@ -164,9 +164,20 @@ export class DriveResolverService {
   private childFoldersCache = new Map<string, DriveFolderItem[]>();
   private localRootToDriveIdCache = new Map<string, string>();
   private leafFolderCache = new Map<string, boolean>();
+  // In-flight requests, so concurrent jobs share one Drive call instead of repeating it
+  private inflight = new Map<string, Promise<any>>();
+
+  private dedupe<T>(key: string, fn: () => Promise<T>): Promise<T> {
+    const existing = this.inflight.get(key);
+    if (existing) return existing as Promise<T>;
+    const p = fn().finally(() => this.inflight.delete(key));
+    this.inflight.set(key, p);
+    return p;
+  }
 
   public clearCache(): void {
     this.leafFolderCache.clear();
+    this.inflight.clear();
     this.parentNameCache.clear();
     this.folderMetadataCache.clear();
     this.childFoldersCache.clear();
@@ -279,7 +290,7 @@ export class DriveResolverService {
           requireOwnerMatch
         );
 
-        if (walkedMatch) {
+        if (walkedMatch && (await this.confirmOwnership(token, walkedMatch.id, currentUserEmail, requireOwnerMatch))) {
           const shareLink = `https://drive.google.com/drive/folders/${walkedMatch.id}?usp=sharing`;
           this.tryMakeFolderShareable(token, walkedMatch.id).catch(() => {});
 
@@ -289,7 +300,7 @@ export class DriveResolverService {
             relativePath: targetFolderName,
             isAccessible: true,
             resolvedPath: localFolderPath,
-            isOwnerMatched: walkedMatch.ownedByMe ?? false,
+            isOwnerMatched: true,
           };
         }
       } catch (walkErr) {
@@ -309,7 +320,7 @@ export class DriveResolverService {
         requireOwnerMatch
       );
 
-      if (driveMatch) {
+      if (driveMatch && (await this.confirmOwnership(token, driveMatch.id, currentUserEmail, requireOwnerMatch))) {
         const shareLink = `https://drive.google.com/drive/folders/${driveMatch.id}?usp=sharing`;
         this.tryMakeFolderShareable(token, driveMatch.id).catch(() => {});
 
@@ -319,7 +330,7 @@ export class DriveResolverService {
           relativePath: targetFolderName,
           isAccessible: true,
           resolvedPath: localFolderPath,
-          isOwnerMatched: driveMatch.ownedByMe ?? false,
+          isOwnerMatched: true,
         };
       }
     } catch (searchErr) {
@@ -386,7 +397,17 @@ export class DriveResolverService {
     if (this.localRootToDriveIdCache.has(cacheKey)) {
       return this.localRootToDriveIdCache.get(cacheKey)!;
     }
+    return this.dedupe(`root:${cacheKey}`, () =>
+      this.resolveDriveFolderIdForLocalRootUncached(token, localRoot, fallbackRemoteId, cacheKey)
+    );
+  }
 
+  private async resolveDriveFolderIdForLocalRootUncached(
+    token: string,
+    localRoot: string,
+    fallbackRemoteId: string,
+    cacheKey: string
+  ): Promise<string> {
     const parsed = parseLocalDrivePath(localRoot);
 
     let startId = fallbackRemoteId || "root";
@@ -464,7 +485,11 @@ export class DriveResolverService {
       const nonRawChildren = children.filter((c) => !isRawFolder(c.name));
 
       // Find child matching seg
-      let nextChild = nonRawChildren.find((c) => areFolderNamesEqual(c.name, seg));
+      const sameNameChildren = nonRawChildren.filter((c) => areFolderNamesEqual(c.name, seg));
+      let nextChild: DriveFolderItem | undefined =
+        (requireOwnerMatch ?? true)
+          ? sameNameChildren.find((c) => this.isFolderOwnedByCurrentUser(c, currentUserEmail)) || sameNameChildren[0]
+          : sameNameChildren[0];
 
       // If first segment represents job folder or customer folder
       if (!nextChild && i === 0) {
@@ -499,24 +524,21 @@ export class DriveResolverService {
 
     // Resolve to a leaf folder (no sub-folders, contains files): the matched folder itself
     // or one of its immediate children (exact name / delivery keywords first)
-    const candidate = await this.pickLeafDeliveryFolder(token, lastMatchedFolder, targetFolderName);
+    const candidate = await this.pickLeafDeliveryFolder(
+      token,
+      lastMatchedFolder,
+      targetFolderName,
+      currentUserEmail,
+      requireOwnerMatch ?? true
+    );
     if (!candidate) {
       return null;
-    }
-
-    // Check ownership if required
-    if (requireOwnerMatch && currentUserEmail) {
-      const isOwned = this.isFolderOwnedByCurrentUser(candidate, currentUserEmail);
-      if (!isOwned && !candidate.ownedByMe) {
-        // If candidate is not owned by current user, return with warning or fallback
-        // Return anyway if it's the exact path child but tag ownedByMe = false
-      }
     }
 
     return {
       id: candidate.id,
       name: candidate.name,
-      ownedByMe: candidate.ownedByMe ?? this.isFolderOwnedByCurrentUser(candidate, currentUserEmail),
+      ownedByMe: this.isFolderOwnedByCurrentUser(candidate, currentUserEmail),
     };
   }
 
@@ -557,7 +579,7 @@ export class DriveResolverService {
         }
 
         // Pick a leaf folder inside (or equal to) this job folder; otherwise try the next older job folder
-        const leaf = await this.pickLeafDeliveryFolder(token, jobFolder, cleanTargetName);
+        const leaf = await this.pickLeafDeliveryFolder(token, jobFolder, cleanTargetName, currentUserEmail, requireOwnerMatch ?? true);
         if (leaf) {
           return {
             id: leaf.id,
@@ -592,8 +614,8 @@ export class DriveResolverService {
         if (!isDesc) continue;
       }
 
-      // Only leaf folders (no sub-folders, contains files) are delivery folders
-      if (!(await this.isLeafFolderWithFiles(token, c.id))) continue;
+      // Only leaf folders (no sub-folders, contains files) owned by the connected account are delivery folders
+      if (!(await this.isEligibleDeliveryFolder(token, c, currentUserEmail, requireOwnerMatch ?? true))) continue;
 
       eligibleCandidates.push(c);
     }
@@ -660,7 +682,7 @@ export class DriveResolverService {
           if (!isDesc) continue;
         }
 
-        const leaf = await this.pickLeafDeliveryFolder(token, custFolder, cleanTargetName);
+        const leaf = await this.pickLeafDeliveryFolder(token, custFolder, cleanTargetName, currentUserEmail, requireOwnerMatch ?? true);
         if (leaf) {
           return {
             id: leaf.id,
@@ -680,13 +702,16 @@ export class DriveResolverService {
    * Only a leaf folder qualifies: it has no sub-folders and contains at least one file.
    * Order: the container itself, then immediate children by exact target name,
    * delivery keywords, then the rest (latest modified first). Raw folders are skipped.
+   * Every returned folder is a leaf with files AND owned by the connected account.
    */
   public async pickLeafDeliveryFolder(
     token: string,
     container: DriveFolderItem,
-    targetFolderName?: string
+    targetFolderName?: string,
+    currentUserEmail?: string | null,
+    requireOwnerMatch: boolean = true
   ): Promise<DriveFolderItem | null> {
-    if (await this.isLeafFolderWithFiles(token, container.id)) {
+    if (await this.isEligibleDeliveryFolder(token, container, currentUserEmail, requireOwnerMatch)) {
       return container;
     }
 
@@ -699,12 +724,47 @@ export class DriveResolverService {
     ].filter((c, idx, arr) => arr.findIndex((x) => x.id === c.id) === idx);
 
     for (const child of ordered) {
-      if (await this.isLeafFolderWithFiles(token, child.id)) {
+      if (await this.isEligibleDeliveryFolder(token, child, currentUserEmail, requireOwnerMatch)) {
         return child;
       }
     }
 
     return null;
+  }
+
+  /**
+   * Last line of defence before a link is returned: re-reads the folder straight from Drive
+   * (bypassing every cache, which could hold data from another account or an earlier scan)
+   * and checks it is still owned by the connected account. Skipped only when the owner check is off.
+   */
+  private async confirmOwnership(
+    token: string,
+    folderId: string,
+    currentUserEmail: string | null | undefined,
+    requireOwnerMatch: boolean
+  ): Promise<boolean> {
+    if (!requireOwnerMatch) return true;
+    const fresh = await this.getFolderById(token, folderId, true);
+    if (!fresh || !this.isFolderOwnedByCurrentUser(fresh, currentUserEmail)) {
+      console.warn(`[DriveResolver] Rejected folder ${folderId}: not owned by the connected Google account.`);
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * A folder may receive the link only if ALL hold: it has no sub-folders, it contains at least
+   * one file, and it is owned by the Google account connected to the sheet.
+   * (The "latest modified" condition comes from the Drive query order, newest first.)
+   */
+  public async isEligibleDeliveryFolder(
+    token: string,
+    folder: DriveFolderItem,
+    currentUserEmail?: string | null,
+    requireOwnerMatch: boolean = true
+  ): Promise<boolean> {
+    if (requireOwnerMatch && !this.isFolderOwnedByCurrentUser(folder, currentUserEmail)) return false;
+    return this.isLeafFolderWithFiles(token, folder.id);
   }
 
   /**
@@ -715,16 +775,18 @@ export class DriveResolverService {
       return this.leafFolderCache.get(folderId)!;
     }
 
-    const subFolders = await this.getChildFolders(token, folderId);
-    let isLeaf = false;
-    if (subFolders.length === 0) {
-      const fileQuery = `'${folderId}' in parents and mimeType != 'application/vnd.google-apps.folder' and trashed = false`;
-      const files = await this.queryDriveFiles(token, fileQuery, "modifiedTime desc", 1);
-      isLeaf = files.length > 0;
-    }
+    return this.dedupe(`leaf:${folderId}`, async () => {
+      const subFolders = await this.getChildFolders(token, folderId);
+      let isLeaf = false;
+      if (subFolders.length === 0) {
+        const fileQuery = `'${folderId}' in parents and mimeType != 'application/vnd.google-apps.folder' and trashed = false`;
+        const files = await this.queryDriveFiles(token, fileQuery, "modifiedTime desc", 1);
+        isLeaf = files.length > 0;
+      }
 
-    this.leafFolderCache.set(folderId, isLeaf);
-    return isLeaf;
+      this.leafFolderCache.set(folderId, isLeaf);
+      return isLeaf;
+    });
   }
 
   private async findMatchingParentCandidate(
@@ -842,10 +904,12 @@ export class DriveResolverService {
       return this.childFoldersCache.get(parentId)!;
     }
 
-    const query = `'${parentId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
-    const folders = await this.queryDriveFiles(token, query, "modifiedTime desc", 100);
-    this.childFoldersCache.set(parentId, folders);
-    return folders;
+    return this.dedupe(`children:${parentId}`, async () => {
+      const query = `'${parentId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+      const folders = await this.queryDriveFiles(token, query, "modifiedTime desc", 100);
+      this.childFoldersCache.set(parentId, folders);
+      return folders;
+    });
   }
 
   public async queryDriveFiles(
@@ -897,8 +961,12 @@ export class DriveResolverService {
     return files;
   }
 
-  public async getFolderById(token: string, folderId: string): Promise<DriveFolderItem | null> {
-    if (this.folderMetadataCache.has(folderId)) {
+  public async getFolderById(
+    token: string,
+    folderId: string,
+    forceFresh: boolean = false
+  ): Promise<DriveFolderItem | null> {
+    if (!forceFresh && this.folderMetadataCache.has(folderId)) {
       return this.folderMetadataCache.get(folderId)!;
     }
 

@@ -278,13 +278,13 @@ export function AuthGuard({ children }: AuthGuardProps) {
       
       {/* Copyright/Crack Warning Dialog (Blocking) */}
       {!!copyrightWarningMessage && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+        <div role="dialog" aria-modal="true" aria-labelledby="dlg-AuthGuard-1" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
           <div className="panel w-full max-w-sm p-8 space-y-6 text-center animate-scale-in">
             <div className="flex justify-center">
               <AlertTriangle size={40} className="text-destructive" />
             </div>
             <div className="space-y-2">
-              <h2 className="text-lg font-bold text-foreground">Cảnh báo bản quyền</h2>
+              <h2 id="dlg-AuthGuard-1" className="text-lg font-bold text-foreground">Cảnh báo bản quyền</h2>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 {copyrightWarningMessage}
               </p>
@@ -315,13 +315,13 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
       {/* Expiring Soon Warning Dialog (Dismissable fallback) */}
       {!!expiringSoonMessage && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+        <div role="dialog" aria-modal="true" aria-labelledby="dlg-AuthGuard-2" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
           <div className="panel w-full max-w-sm p-8 space-y-6 text-center animate-scale-in">
             <div className="flex justify-center">
               <Info size={40} className="text-warning" />
             </div>
             <div className="space-y-2">
-              <h2 className="text-lg font-bold text-foreground">Thông báo gia hạn</h2>
+              <h2 id="dlg-AuthGuard-2" className="text-lg font-bold text-foreground">Thông báo gia hạn</h2>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 {expiringSoonMessage}
               </p>
