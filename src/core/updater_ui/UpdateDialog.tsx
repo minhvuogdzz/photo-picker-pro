@@ -1,7 +1,8 @@
-import React from 'react';
-import { DownloadCloud, X, CheckCircle2, AlertCircle, Bug, Loader2, Clock, PlusCircle, RotateCw } from 'lucide-react';
+import React, { useState } from 'react';
+import { DownloadCloud, X, CheckCircle2, AlertCircle, Bug, Loader2, Clock, PlusCircle, RotateCw, History } from 'lucide-react';
 import { useUpdaterStore } from '@/core/stores/useUpdaterStore';
 import { UpdateCheckResult } from '@/core/updater';
+import { VersionHistoryModal } from '@/core/components/VersionHistoryModal';
 
 interface UpdateDialogProps {
   updateResult?: UpdateCheckResult | null;
@@ -24,6 +25,7 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({
   const applyAndRestart = useUpdaterStore((s) => s.applyAndRestart);
   const closeModal = useUpdaterStore((s) => s.closeModal);
   const remindMeLater = useUpdaterStore((s) => s.remindMeLater);
+  const [showHistory, setShowHistory] = useState(false);
 
   // If props are passed explicitly, use them; otherwise use store state
   const activeUpdate = propUpdateResult !== undefined ? propUpdateResult : storeUpdateResult;
@@ -173,57 +175,72 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({
           )}
         </div>
 
-        {/* Footer: 2 lựa chọn duy nhất "Cập nhật ngay" và "Nhắc tôi sau" */}
-        <div className="bg-slate-50 dark:bg-white/[0.02] px-6 py-4 border-t border-slate-200 dark:border-white/10 flex items-center justify-end gap-2.5">
-          {error ? (
-            <>
+        {/* Footer */}
+        <div className="bg-slate-50 dark:bg-white/[0.02] px-6 py-4 border-t border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-2.5">
+          <button
+            type="button"
+            onClick={() => setShowHistory(true)}
+            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors cursor-pointer py-1"
+          >
+            <History size={13} className="text-primary" />
+            <span>Lịch sử 7 bản gần nhất</span>
+          </button>
+
+          <div className="flex items-center gap-2.5 ml-auto">
+            {error ? (
+              <>
+                <button
+                  onClick={handleClose}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-muted hover:bg-muted/80 text-foreground transition-all cursor-pointer"
+                >
+                  Đóng
+                </button>
+                <button
+                  onClick={handleUpdate}
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <DownloadCloud size={14} /> Thử lại
+                </button>
+              </>
+            ) : isReadyToRestart ? (
               <button
-                onClick={handleClose}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-muted hover:bg-muted/80 text-foreground transition-all cursor-pointer"
+                onClick={handleRestart}
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
               >
-                Đóng
+                <RotateCw size={15} /> Khởi động lại ngay
               </button>
+            ) : isDownloading ? (
               <button
-                onClick={handleUpdate}
-                className="px-5 py-2 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                disabled
+                className="px-6 py-2.5 rounded-xl text-xs font-semibold bg-primary/40 text-primary-foreground/70 flex items-center gap-2 cursor-not-allowed"
               >
-                <DownloadCloud size={14} /> Thử lại
+                <Loader2 size={14} className="animate-spin" /> Đang tải bản cập nhật...
               </button>
-            </>
-          ) : isReadyToRestart ? (
-            <button
-              onClick={handleRestart}
-              className="w-full sm:w-auto px-6 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-            >
-              <RotateCw size={15} /> Khởi động lại ngay
-            </button>
-          ) : isDownloading ? (
-            <button
-              disabled
-              className="px-6 py-2.5 rounded-xl text-xs font-semibold bg-primary/40 text-primary-foreground/70 flex items-center gap-2 cursor-not-allowed"
-            >
-              <Loader2 size={14} className="animate-spin" /> Đang tải bản cập nhật...
-            </button>
-          ) : (
-            <>
-              <button
-                onClick={handleRemindLater}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-all flex items-center gap-1.5 cursor-pointer border border-border/50"
-              >
-                <Clock size={13} />
-                Nhắc tôi sau
-              </button>
-              <button
-                onClick={handleUpdate}
-                className="px-5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-md shadow-blue-500/25 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 border border-blue-400/30"
-              >
-                <DownloadCloud size={14} />
-                Cập nhật ngay
-              </button>
-            </>
-          )}
+            ) : (
+              <>
+                <button
+                  onClick={handleRemindLater}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-all flex items-center gap-1.5 cursor-pointer border border-border/50"
+                >
+                  <Clock size={13} />
+                  Nhắc tôi sau
+                </button>
+                <button
+                  onClick={handleUpdate}
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-md shadow-blue-500/25 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 border border-blue-400/30"
+                >
+                  <DownloadCloud size={14} />
+                  Cập nhật ngay
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
+
+      {showHistory && (
+        <VersionHistoryModal onClose={() => setShowHistory(false)} />
+      )}
     </div>
   );
 };

@@ -26,12 +26,14 @@ import {
   FileSpreadsheet,
   Laptop,
   FileImage,
+  History,
 } from "lucide-react";
 import { useUpdaterStore } from "@/core/stores/useUpdaterStore";
 import { apiRequest } from "@/core/services/apiClient";
 import { BrandLogo } from "@/core/components/BrandLogo";
 import { TermsDialog } from "@/core/components/TermsDialog";
 import { useSupportZalo } from "@/core/services/supportContact";
+import { VersionHistoryModal } from "@/core/components/VersionHistoryModal";
 
 type Tab = "general" | "about";
 
@@ -58,6 +60,10 @@ export function SystemModule() {
   // Terms Dialog State
   const [showTermsDialog, setShowTermsDialog] = useState(false);
 
+  // Version History Modal State
+  const [showVersionHistoryModal, setShowVersionHistoryModal] = useState(false);
+  const [isLatestUpdateNotice, setIsLatestUpdateNotice] = useState(false);
+
   useEffect(() => {
     getVersion().then(setVersion).catch(console.error);
   }, []);
@@ -66,7 +72,8 @@ export function SystemModule() {
     try {
       const result = await checkForUpdatesStore({ isManual: true });
       if (result && !result.hasUpdate) {
-        alert(t("latest_version"));
+        setIsLatestUpdateNotice(true);
+        setShowVersionHistoryModal(true);
       }
     } catch (err) {
       alert(t("update_check_failed") + String(err));
@@ -259,6 +266,17 @@ export function SystemModule() {
                   <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t("software_updates")}</h3>
                   <div className="flex items-center gap-2">
                     <button
+                      onClick={() => {
+                        setIsLatestUpdateNotice(false);
+                        setShowVersionHistoryModal(true);
+                      }}
+                      className="border border-border hover:border-foreground/20 bg-card/60 hover:bg-muted text-muted-foreground hover:text-foreground text-[11px] font-semibold py-1.5 px-3 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                      title="Xem lịch sử 7 phiên bản gần nhất"
+                    >
+                      <History size={12} />
+                      Lịch sử 7 bản gần nhất
+                    </button>
+                    <button
                       onClick={handleManualUpdateCheck}
                       disabled={isCheckingUpdate}
                       className="border border-border hover:border-foreground/20 bg-card/60 hover:bg-muted text-muted-foreground hover:text-foreground text-[11px] font-semibold py-1.5 px-3 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
@@ -343,11 +361,22 @@ export function SystemModule() {
                 </p>
               </div>
               
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-center gap-2">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/15 text-emerald-500 text-[11px] font-bold rounded-full border border-emerald-500/30">
                   <ShieldCheck size={13} />
                   <span>{isLifetime ? "Bản Quyền Vĩnh Viễn (Lifetime)" : "Bản Quyền Hợp Lệ"}</span>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsLatestUpdateNotice(false);
+                    setShowVersionHistoryModal(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-bold rounded-full border border-primary/25 transition-all cursor-pointer shadow-sm active:scale-97"
+                >
+                  <History size={12} />
+                  <span>Lịch sử 7 phiên bản</span>
+                </button>
               </div>
 
               {/* Thông tin hệ sinh thái chi tiết */}
@@ -575,6 +604,13 @@ export function SystemModule() {
             </div>
           </div>
         </div>
+      )}
+      {/* Version History Modal */}
+      {showVersionHistoryModal && (
+        <VersionHistoryModal 
+          onClose={() => setShowVersionHistoryModal(false)} 
+          isLatestNotice={isLatestUpdateNotice}
+        />
       )}
     </div>
   );

@@ -28,6 +28,7 @@ dist-ssr
 
 # Large binary sub-apps (Avoid GitHub 100MB file limit rejection)
 src-tauri/resources/apps/*
+test-builds/
 !src-tauri/resources/apps/.gitkeep
 *.dmg
 *.asar.original.bak

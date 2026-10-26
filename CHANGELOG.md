@@ -2,6 +2,26 @@
 
 Tất cả các bản phát hành của **DH Studio Pro** (phát triển & thuộc sở hữu bản quyền của **DevHouse Software**) đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
 
+## [v2.9.1] - 2026-10-26
+
+### Trong bản cập nhật này, chúng tôi đã:
+
+#### 🎨 Làm mới giao diện Đăng nhập (Auth UI)
+- **Bố cục Split-screen hiện đại:** Khung trình chiếu ảnh dự án mượt mà bên trái, form đăng nhập trực quan và thoáng đãng bên phải.
+- **Tích hợp bộ chọn giao diện tức thì:** Hỗ trợ Sáng (Light), Tối (Dark) và Tự động theo hệ thống (System) ngay trên màn hình đăng nhập.
+- **Bo góc mềm mại chuẩn mực:** Áp dụng bo góc `rounded-xl` đồng bộ cho toàn bộ ô nhập liệu và các nút bấm.
+- **Căn chỉnh hàng tùy chọn cân đối:** Sắp xếp gọn gàng "Tự động đăng nhập", "Lưu mật khẩu" và "Quên mật khẩu" chống tràn dòng trên màn hình hẹp.
+
+#### 📋 Lịch sử phiên bản & Ghi chú phát hành (Release Notes)
+- **Cửa sổ xem lịch sử 7 phiên bản gần nhất:** Hiển thị trực quan danh sách 7 bản cập nhật gần nhất với ghi chú phát hành (Release Notes) được phân loại rõ ràng (Giao diện, Tính năng, Tối ưu, Sửa lỗi, Bảo mật).
+- **Tích hợp sâu vào hệ thống:** Xem trực tiếp từ Cài đặt chung, Cập nhật ứng dụng, Thông tin phiên bản và Hộp thoại tự động cập nhật.
+- **Thông báo phiên bản mới nhất thân thiện:** Thay thế hộp thoại cảnh báo mặc định của trình duyệt bằng giao diện thông báo trực quan, chuyên nghiệp.
+
+#### 🛠️ Sửa lỗi hiển thị đồ họa
+- **Khắc phục triệt để lỗi vỡ nền / ô vuông màu:** Chuyển đổi hiệu ứng nền sang dải màu chuyển tiếp Radial Gradients tính toán trực tiếp trên GPU, loại bỏ hoàn toàn lỗi vỡ ô vuông màu của bộ render WebKit macOS khi chuyển đổi màn hình đăng nhập.
+
+---
+
 ## [v2.9.0] - 2026-10-25
 
 ### Trong bản cập nhật này, chúng tôi đã:
