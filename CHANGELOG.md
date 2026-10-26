@@ -2,6 +2,33 @@
 
 Tất cả các bản phát hành của **DH Studio Pro** (phát triển & thuộc sở hữu bản quyền của **DevHouse Software**) đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
 
+## [v2.9.2] - 2026-10-26
+
+### Trong bản cập nhật này, chúng tôi đã:
+
+#### ⚡ Auto Find — Lọc liên tục nhiều khách hàng thông minh
+- **Công tắc Auto Find chuyên dụng:** Bổ sung công tắc bật/tắt Auto Find ngay cạnh các chế độ so khớp (`# Chính xác`, `Q Chứa`, `.* Regex`), cho phép chủ động kích hoạt quy trình tự động hóa cho hàng đợi nhiều khách.
+- **Tự động truy xuất và nạp mã khách tiếp theo:** Ngay sau khi chép xong khách hiện tại, hệ thống tự động dò tìm và nạp mã chọn từ Google Sheet cho khách tiếp theo trong hàng đợi mà không cần người dùng phải bấm "Truy xuất trang tính" thủ công.
+- **Điểm dừng an toàn (Safe Inspection Stop):** Tự động dừng lại ở bước nạp mã vào ô lọc để người dùng kiểm tra nhanh danh sách mã trước khi bấm "Quét file".
+- **Nhận diện tháng thông minh:** Tự động phát hiện thông tin tháng từ tên thư mục khách (ví dụ `20-10...` $\rightarrow$ Tháng 10) để ưu tiên quét đúng tab tháng tương ứng.
+- **Bộ nhớ đệm thông minh (Cache TTL 5 phút):** Ngăn chặn việc gọi API dồn dập gây lỗi HTTP 429 (Rate Limit) của Google Sheets, mang lại tốc độ chuyển tiếp tức thì (<1ms).
+- **Cập nhật trạng thái chạy ngầm không gián đoạn:** Tác vụ đổi trạng thái Sheet của khách cũ được thực hiện bất đồng bộ ngầm, không gây khựng hay tắc nghẽn luồng xử lý của khách tiếp theo.
+- **Nút "Bỏ qua sang khách tiếp":** Bổ sung nút xử lý nhanh trên thông báo khi khách chưa có mã chọn trên Google Sheet.
+
+#### 🗑️ Hiệu ứng Thùng rác tương tác (macOS Trash Toss)
+- **Widget Thùng rác thu nhỏ (Mini Trash Bin):** Đặt ngay phía trên các nút tác vụ ở cột bên phải với nắp thùng rác mở ra và đóng vào có hiệu ứng nảy chân thực.
+- **Hiệu ứng vo tròn và ném rác 3D:** Khách vừa hoàn tất được vo tròn thành cục giấy 3D ném theo quỹ đạo parabol qua màn hình vào thùng rác.
+- **Căn chỉnh vị trí bắt đầu chuẩn xác:** Cục giấy được vo tròn ngay tại vị trí ô khách ở cột hàng đợi bên trái trước khi bay sang cột bên phải.
+- **Âm thanh đáp rác macOS chân thực:** Tích hợp âm thanh thả rác nguyên bản của macOS (`trash.wav`) kèm bộ tổng hợp Web Audio API dự phòng.
+- **Cửa sổ Khách đã đá ra (Ejected Customers Modal):** Hỗ trợ xem lại danh sách khách đã hoàn tất, khôi phục khách về hàng đợi hoặc dọn sạch thùng rác (hoàn toàn an toàn, chỉ quản lý trong app, không xóa file trên ổ đĩa).
+
+#### 🛠️ Sửa lỗi & Tối ưu luồng truy xuất trang tính
+- **Đồng bộ siêu dữ liệu Tab Google Sheet:** Khắc phục triệt để lỗi không tìm thấy dòng do lệch danh sách tab giữa Auto Find và modal Truy xuất trang tính thủ công.
+- **Xử lý tự động kết quả khớp tương đồng (`NEEDS_REVIEW`):** Tự động chọn hàng có điểm khớp cao nhất chưa bị đánh dấu "Đã lọc".
+- **Timeout bảo vệ 8s:** Ngăn chặn tuyệt đối tình trạng đứng ứng dụng khi kết nối mạng Google Sheets bị gián đoạn.
+
+---
+
 ## [v2.9.1] - 2026-10-26
 
 ### Trong bản cập nhật này, chúng tôi đã:

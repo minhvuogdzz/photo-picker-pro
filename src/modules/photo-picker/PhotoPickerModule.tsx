@@ -9,6 +9,8 @@ import { SettingsPage } from "./pages/PhotoPickerSettings";
 import { HistoryPage } from "./pages/HistoryPage";
 import { MatchProgressPopup } from "./components/MatchProgressPopup";
 import { RemoveCompletedCustomerDialog } from "./components/RemoveCompletedCustomerDialog";
+import { CrumpledPaperTossAnimation } from "./components/CrumpledPaperTossAnimation";
+import { EjectedCustomersModal } from "./components/EjectedCustomersModal";
 
 export function PhotoPickerModule() {
   const activeTab = useAppStore((s) => s.activeTab);
@@ -44,6 +46,12 @@ export function PhotoPickerModule() {
 
           {/* Remove Completed Customer Dialog */}
           <RemoveCompletedCustomerDialog />
+
+          {/* Crumpled Paper Toss Animation Overlay */}
+          <CrumpledPaperTossAnimation />
+
+          {/* Ejected Customers Trash Bin Modal */}
+          <EjectedCustomersModal />
         </>
       )}
     </div>

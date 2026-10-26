@@ -302,7 +302,7 @@ export function LeftPanel() {
 
   if (isCollapsed) {
     return (
-      <div className="w-12 flex flex-col items-center py-4 bg-card border border-border shadow-sm rounded-xl transition-all duration-300">
+      <div id="left-panel-collapsed-strip" className="w-12 flex flex-col items-center py-4 bg-card border border-border shadow-sm rounded-xl transition-all duration-300">
         <button 
           onClick={() => setIsCollapsed(false)}
           className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-all mb-4 cursor-pointer"
@@ -492,34 +492,42 @@ export function LeftPanel() {
             </div>
           ) : pickerMode === "single" ? (
             // Single Folder View
-            inputFolders.map((folder, i) => (
-              <div
-                key={i}
-                onClick={() => handleOpenPreview(folder)}
-                className="flex items-center gap-2 p-2 rounded-lg border bg-background/50 border-border/30 hover:border-border/60 hover:bg-muted/30 transition-colors group cursor-pointer select-none"
-                title="Bấm để mở kho ảnh xem trước"
-              >
-                <FolderOpen size={13} className="text-muted-foreground group-hover:text-primary shrink-0 transition-colors" />
+            inputFolders.map((folder, i) => {
+              const isSelected = selectedInputFolders.length === 0 || selectedInputFolders.includes(folder);
+              const folderName = getFolderName(folder);
+              return (
                 <div
-                  className="flex-1 truncate text-[11px] text-foreground/80 font-medium group-hover:text-foreground"
-                  title={folder}
-                  dir="rtl"
+                  key={i}
+                  id={isSelected ? "active-customer-queue-item" : undefined}
+                  data-customer-folder={folder}
+                  data-folder-name={folderName}
+                  data-active-customer={isSelected ? "true" : "false"}
+                  onClick={() => handleOpenPreview(folder)}
+                  className="flex items-center gap-2 p-2 rounded-lg border bg-background/50 border-border/30 hover:border-border/60 hover:bg-muted/30 transition-colors group cursor-pointer select-none"
+                  title="Bấm để mở kho ảnh xem trước"
                 >
-                  &lrm;{getFolderName(folder)}
+                  <FolderOpen size={13} className="text-muted-foreground group-hover:text-primary shrink-0 transition-colors" />
+                  <div
+                    className="flex-1 truncate text-[11px] text-foreground/80 font-medium group-hover:text-foreground"
+                    title={folder}
+                    dir="rtl"
+                  >
+                    &lrm;{folderName}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenPreview(folder);
+                    }}
+                    className="p-1 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer shrink-0"
+                    title="Xem toàn bộ ảnh trong thư mục này" aria-label="Xem toàn bộ ảnh trong thư mục này"
+                  >
+                    <Eye size={13} />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleOpenPreview(folder);
-                  }}
-                  className="p-1 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer shrink-0"
-                  title="Xem toàn bộ ảnh trong thư mục này" aria-label="Xem toàn bộ ảnh trong thư mục này"
-                >
-                  <Eye size={13} />
-                </button>
-              </div>
-            ))
+              );
+            })
           ) : (
             // Multi Customer Batch Queue View
             filteredFolders.map((folder) => {
@@ -530,6 +538,10 @@ export function LeftPanel() {
               return (
                 <div
                   key={folder}
+                  id={isSelected ? "active-customer-queue-item" : undefined}
+                  data-customer-folder={folder}
+                  data-folder-name={folderName}
+                  data-active-customer={isSelected ? "true" : "false"}
                   onClick={() => selectSingleInputFolder(folder)}
                   className={`flex items-center gap-2 p-2 rounded-lg border transition-all cursor-pointer group select-none ${
                     isSelected

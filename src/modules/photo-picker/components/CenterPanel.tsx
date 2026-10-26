@@ -11,6 +11,13 @@ import {
   Settings2,
   Filter,
   HelpCircle,
+  Zap,
+  Loader2,
+  CheckCircle2,
+  AlertTriangle,
+  RotateCcw,
+  SkipForward,
+  X,
 } from "lucide-react";
 import type { CustomerCode } from "@/core/types";
 import { useTranslation } from "@/core/lib/i18n";
@@ -18,6 +25,8 @@ import { listen } from "@tauri-apps/api/event";
 import { SheetCodeExtractorModal } from "./SheetCodeExtractorModal";
 import { CheckFilterStatusModal } from "./CheckFilterStatusModal";
 import { FilterSyntaxHelpModal } from "./FilterSyntaxHelpModal";
+import { AutoFindToggle } from "./AutoFindToggle";
+import { autoFindService } from "../services/autoFindService";
 
 export {
   isCommandToken,
@@ -40,10 +49,58 @@ export function CenterPanel() {
   const scanOptions = useAppStore((s) => s.scanOptions);
   const setScanOptions = useAppStore((s) => s.setScanOptions);
   const pickerMode = useAppStore((s) => s.pickerMode);
+  const isAutoFinding = useAppStore((s) => s.isAutoFinding);
+  const autoFindStatus = useAppStore((s) => s.autoFindStatus);
+  const setAutoFindStatus = useAppStore((s) => s.setAutoFindStatus);
+  const selectedInputFolders = useAppStore((s) => s.selectedInputFolders);
+  const inputFolders = useAppStore((s) => s.inputFolders);
   const [isParsingDebounced, setIsParsingDebounced] = useState(false);
   const { t } = useTranslation();
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleRetryAutoFind = async () => {
+    const activeFolder = selectedInputFolders[0] || inputFolders[0];
+    if (activeFolder) {
+      const folderName = activeFolder.split(/[/\\]+/).filter(Boolean).pop() || activeFolder;
+      await autoFindService.fetchAndApplyCodesForCustomer(activeFolder, folderName);
+    }
+  };
+
+  const handleSkipAutoFind = () => {
+    const activeFolder = selectedInputFolders[0] || inputFolders[0];
+    if (activeFolder) {
+      const folderName = activeFolder.split(/[/\\]+/).filter(Boolean).pop() || activeFolder;
+      const store = useAppStore.getState();
+      const activeEl =
+        document.getElementById("active-customer-queue-item") ||
+        document.querySelector(`[data-customer-folder="${activeFolder}"]`) ||
+        document.querySelector(`[data-folder-name="${folderName}"]`);
+      const rect = activeEl?.getBoundingClientRect();
+      const startPos = rect
+        ? { x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) }
+        : undefined;
+
+      store.triggerTossAnimation(folderName, startPos);
+      store.addEjectedCustomer({
+        folderPath: activeFolder,
+        folderName,
+        copyCount: 0,
+      });
+      store.removeInputFolder(activeFolder);
+      store.setAutoFindStatus(null);
+      store.setPhase("idle");
+      store.setRawCodeInput("");
+      store.setParsedCodes([]);
+
+      const updatedStore = useAppStore.getState();
+      const nextFolder = updatedStore.selectedInputFolders[0] || updatedStore.inputFolders[0];
+      if (nextFolder) {
+        const nextName = nextFolder.split(/[/\\]+/).filter(Boolean).pop() || nextFolder;
+        void autoFindService.fetchAndApplyCodesForCustomer(nextFolder, nextName);
+      }
+    }
+  };
 
 
 
@@ -225,28 +282,33 @@ export function CenterPanel() {
           </div>
         </div>
 
-        {/* Match Mode Selector */}
-        <div className="px-4 pt-2.5 flex items-center gap-2.5">
-          <span id="match-mode-label" className="text-[11px] font-medium text-muted-foreground">{t("mode")}:</span>
-          <div role="radiogroup" aria-labelledby="match-mode-label" className="flex gap-0.5 bg-muted/50 rounded-lg p-0.5 border border-border/50">
-            {modes.map((mode) => (
-              <button
-                key={mode.id}
-                type="button"
-                role="radio"
-                aria-checked={matchMode === mode.id}
-                onClick={() => setMatchMode(mode.id)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] transition-colors cursor-pointer ${
-                  matchMode === mode.id
-                    ? "bg-primary text-primary-foreground shadow-sm font-semibold"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
-                }`}
-              >
-                {mode.icon}
-                {mode.id === "ExactNumber" ? t("exact") : mode.id === "Contains" ? t("contains") : t("regex")}
-              </button>
-            ))}
+        {/* Match Mode Selector & Auto Find Toggle */}
+        <div className="px-4 pt-2.5 flex items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2.5">
+            <span id="match-mode-label" className="text-[11px] font-medium text-muted-foreground">{t("mode")}:</span>
+            <div role="radiogroup" aria-labelledby="match-mode-label" className="flex gap-0.5 bg-muted/50 rounded-lg p-0.5 border border-border/50">
+              {modes.map((mode) => (
+                <button
+                  key={mode.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={matchMode === mode.id}
+                  onClick={() => setMatchMode(mode.id)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] transition-colors cursor-pointer ${
+                    matchMode === mode.id
+                      ? "bg-primary text-primary-foreground shadow-sm font-semibold"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
+                  }`}
+                >
+                  {mode.icon}
+                  {mode.id === "ExactNumber" ? t("exact") : mode.id === "Contains" ? t("contains") : t("regex")}
+                </button>
+              ))}
+            </div>
           </div>
+
+          {/* Right side: Auto Find Toggle */}
+          <AutoFindToggle />
         </div>
 
         {/* Regex Pattern Input */}
@@ -265,8 +327,84 @@ export function CenterPanel() {
           </div>
         )}
 
+        {/* Auto Find Status Feedback Banners */}
+        {autoFindStatus?.state === "error" && (
+          <div className="mx-4 mt-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-800 dark:text-amber-200 animate-fade-in flex flex-col gap-1.5 shadow-2xs">
+            <div className="flex items-start gap-2">
+              <AlertTriangle size={15} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-foreground">
+                  Auto Find: Chưa thể nạp mã cho {autoFindStatus.targetCustomerName || "khách này"}
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                  {autoFindStatus.message}
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Đóng thông báo"
+                onClick={() => setAutoFindStatus(null)}
+                className="text-muted-foreground hover:text-foreground p-0.5 rounded cursor-pointer"
+              >
+                <X size={13} />
+              </button>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 justify-end pt-1">
+              {pickerMode === "multi" && inputFolders.length > 1 && (
+                <button
+                  type="button"
+                  onClick={handleSkipAutoFind}
+                  className="px-2.5 py-1 rounded-md bg-muted hover:bg-muted/80 text-foreground font-medium text-[11px] flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+                  title="Bỏ qua khách này và chuyển ngay sang khách tiếp theo"
+                >
+                  <SkipForward size={11} />
+                  <span>Bỏ qua sang khách tiếp</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleRetryAutoFind}
+                className="px-2.5 py-1 rounded-md bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 font-semibold text-[11px] flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+              >
+                <RotateCcw size={11} />
+                <span>Thử lại</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSheetModalInitialTab("extract");
+                  setIsSheetModalOpen(true);
+                }}
+                className="px-2.5 py-1 rounded-md bg-card hover:bg-muted border border-border text-foreground font-medium text-[11px] flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+              >
+                <FileSpreadsheet size={11} />
+                <span>Mở Truy xuất trang tính</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {autoFindStatus?.state === "success" && (
+          <div className="mx-4 mt-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 flex items-center justify-between text-xs animate-fade-in shadow-2xs">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <CheckCircle2 size={13} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span className="truncate">
+                Đã nạp <strong>{autoFindStatus.codeCount} mã</strong> cho <strong>{autoFindStatus.targetCustomerName}</strong>. Hãy bấm <strong>Quét file</strong>!
+              </span>
+            </div>
+            <button
+              type="button"
+              aria-label="Đóng"
+              onClick={() => setAutoFindStatus(null)}
+              className="text-muted-foreground hover:text-foreground p-0.5 rounded cursor-pointer shrink-0 ml-2"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        )}
+
         {/* Code Input Textarea */}
-        <div className="flex-1 px-4 py-3 min-h-0 flex flex-col">
+        <div className="flex-1 px-4 py-3 min-h-0 flex flex-col relative">
           <textarea
             ref={textareaRef}
             aria-label={t("customer_codes")}
@@ -277,8 +415,35 @@ export function CenterPanel() {
             onChange={(e) => setRawCodeInput(e.target.value)}
             onPaste={handlePaste}
             spellCheck={false}
-            disabled={phase === "scanning" || phase === "copying"}
+            disabled={phase === "scanning" || phase === "copying" || isAutoFinding}
           />
+
+          {/* Hiệu ứng loading chờ quét giữa chừng */}
+          {isAutoFinding && (
+            <div className="absolute inset-x-4 inset-y-3 z-30 rounded-lg bg-card/90 backdrop-blur-xs border-2 border-emerald-500/40 shadow-xl flex flex-col items-center justify-center p-5 animate-fade-in text-center overflow-hidden">
+              {/* Animated top shimmer bar */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500 animate-[srgb-text-flow_2s_linear_infinite]" />
+
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center mb-3 shadow-[0_0_20px_rgba(16,185,129,0.25)] animate-pulse">
+                <Zap size={22} className="fill-emerald-500/40" />
+              </div>
+
+              <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                <Loader2 size={15} className="animate-spin text-emerald-500" />
+                <span>Đang tự động nạp mã từ Google Sheet...</span>
+              </h4>
+
+              <p className="text-xs text-muted-foreground mt-1 max-w-sm font-mono">
+                {autoFindStatus?.targetCustomerName
+                  ? `Khách: ${autoFindStatus.targetCustomerName}`
+                  : "Đang đối chiếu dữ liệu bảng tính..."}
+              </p>
+
+              <span className="text-[10px] text-muted-foreground/80 mt-2 px-2.5 py-0.5 rounded-full bg-muted/60 border border-border/50">
+                Chờ nạp xong để bấm Quét file
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Scan Options */}

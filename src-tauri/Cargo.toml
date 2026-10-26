@@ -1,6 +1,6 @@
 [package]
 name = "photo-picker-pro"
-version = "2.9.1"
+version = "2.9.2"
 description = "DH Studio Pro - Professional studio suite by DevHouse Software"
 authors = ["DevHouse Software"]
 edition = "2021"

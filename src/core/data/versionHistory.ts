@@ -15,10 +15,49 @@ export interface VersionReleaseNote {
 
 export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
   {
+    version: "v2.9.2",
+    date: "2026-10-26",
+    title: "Chế độ Auto Find thông minh đa khách hàng & Hiệu ứng Thùng rác tương tác",
+    isCurrent: true,
+    sections: [
+      {
+        title: "⚡ Auto Find — Lọc liên tục nhiều khách hàng",
+        type: "feature",
+        items: [
+          "Bổ sung công tắc Auto Find cạnh chế độ so khớp, tự động truy xuất và nạp mã khách tiếp theo từ Google Sheet ngay khi hoàn tất khách trước.",
+          "Cơ chế an toàn: Dừng lại ở bước nạp mã để người dùng kiểm tra danh sách mã trước khi bấm Quét file.",
+          "Tự động nhận diện tháng trong tên thư mục (ví dụ '20-10' -> Tháng 10) để ưu tiên quét đúng tab tháng tương ứng.",
+          "Bộ nhớ đệm thông minh (Cache TTL 5 phút) ngăn chặn vượt hạn mức Google Sheets API (HTTP 429) và cho tốc độ chuyển tiếp tức thì (<1ms).",
+          "Tự động đồng bộ trạng thái 'Đã lọc' của khách cũ ở chế độ chạy ngầm (asynchronous background), không làm nghẽn hoặc đơ luồng xử lý khách mới.",
+          "Bổ sung nút 'Bỏ qua sang khách tiếp' trên thanh thông báo khi khách chưa có mã chọn trên Google Sheet.",
+        ],
+      },
+      {
+        title: "🗑️ Hiệu ứng Thùng rác tương tác (macOS Trash Toss)",
+        type: "design",
+        items: [
+          "Thùng rác thu nhỏ (Mini Trash Bin) tại cột Dashboard với nắp mở đóng tương tác bật nảy.",
+          "Hiệu ứng vo tròn thẻ khách thành cục giấy 3D ném theo quỹ đạo parabol qua màn hình vào thùng rác.",
+          "Vị trí bắt đầu vo giấy được căn chỉnh chính xác ngay tại vị trí ô khách ở cột hàng đợi bên trái.",
+          "Tích hợp âm thanh đáp rác chân thực trích xuất từ hệ thống CoreAudio của macOS (trash.wav).",
+          "Cửa sổ Quản lý khách đã đá ra (Ejected Customers Modal) hỗ trợ xem lại, khôi phục về hàng đợi hoặc dọn sạch thùng rác (chỉ quản lý trong app, hoàn toàn không xoá file trên ổ đĩa).",
+        ],
+      },
+      {
+        title: "🛠️ Sửa lỗi & Tối ưu luồng truy xuất trang tính",
+        type: "fix",
+        items: [
+          "Khắc phục sự cố lệch tên Tab Google Sheet giữa Auto Find và modal Truy xuất trang tính thủ công.",
+          "Xử lý tự động trường hợp nhiều hàng trùng khớp hoặc điểm tương đồng (NEEDS_REVIEW) bằng cách chọn hàng có điểm cao nhất chưa bị đánh dấu 'Đã lọc'.",
+          "Bổ sung cơ chế Timeout 8s cho các lệnh gọi API Google Sheets, loại bỏ triệt để hiện tượng đứng app hoặc tắc nghẽn hàng đợi.",
+        ],
+      },
+    ],
+  },
+  {
     version: "v2.9.1",
     date: "2026-10-26",
     title: "Làm mới giao diện Đăng nhập & Bổ sung Lịch sử phiên bản (Release Notes)",
-    isCurrent: true,
     sections: [
       {
         title: "🎨 Làm mới giao diện Đăng nhập (Auth UI)",
@@ -179,36 +218,6 @@ export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
         items: [
           "Tối ưu đồ họa trong suốt chuẩn nét trên cả giao diện Sáng và Tối.",
           "Bộ cài đặt DMG và NSIS mới hỗ trợ Auto-updater mượt mà không xung đột mã cũ.",
-        ],
-      },
-    ],
-  },
-  {
-    version: "v2.6.7",
-    date: "2026-10-01",
-    title: "Tự động phân tách thư mục buổi chụp & Kéo thả Native bền bỉ",
-    sections: [
-      {
-        title: "Tính năng nhận diện thư mục thông minh",
-        type: "feature",
-        items: [
-          "Tự động quét và phân tách thư mục buổi chụp của từng khách hàng khi kéo thả thư mục lớn.",
-          "Bổ sung hiệu ứng Expanding Loading UX thông báo tiến trình thời gian thực.",
-        ],
-      },
-      {
-        title: "Tối ưu hóa thao tác Kéo - Thả Native",
-        type: "improvement",
-        items: [
-          "Cơ chế Drag & Drop Native bền bỉ trên macOS/Windows, không bị mất sự kiện khi kéo nhanh.",
-          "Tự động trích xuất release notes chi tiết cho trình cập nhật tự động.",
-        ],
-      },
-      {
-        title: "Sửa lỗi đường dẫn",
-        type: "fix",
-        items: [
-          "Khắc phục sự cố nhận diện thư mục lồng nhau chứa ký tự đặc biệt hoặc tiếng Việt có dấu.",
         ],
       },
     ],

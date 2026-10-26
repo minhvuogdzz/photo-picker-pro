@@ -43,6 +43,30 @@ interface AppState {
   readonly pickerMode: PickerMode;
   setPickerMode: (mode: PickerMode) => void;
 
+  // Auto Find mode (Auto next customer sheet extraction)
+  readonly autoFindEnabled: boolean;
+  setAutoFindEnabled: (val: boolean) => void;
+  readonly isAutoFinding: boolean;
+  setIsAutoFinding: (val: boolean) => void;
+  readonly autoFindStatus: AutoFindProcessStatus | null;
+  setAutoFindStatus: (status: AutoFindProcessStatus | null) => void;
+
+  // Ejected customers & Trash Can
+  readonly ejectedCustomers: EjectedCustomerItem[];
+  addEjectedCustomer: (item: { folderPath: string; folderName: string; copyCount?: number; dayName?: string }) => void;
+  restoreEjectedCustomer: (folderPath: string) => void;
+  clearEjectedCustomers: () => void;
+  readonly isTrashModalOpen: boolean;
+  setIsTrashModalOpen: (open: boolean) => void;
+
+  // Crumpled paper toss animation trigger
+  readonly tossAnimationTrigger: {
+    id: number;
+    folderName: string;
+    startPos?: { x: number; y: number };
+  } | null;
+  triggerTossAnimation: (folderName: string, startPos?: { x: number; y: number }) => void;
+
   // Input folders & Batch Customer Queue
   readonly inputFolders: string[];
   readonly selectedInputFolders: string[];
@@ -139,6 +163,31 @@ export interface SheetUpdateStatus {
   updatedAt?: string;
 }
 
+export interface EjectedCustomerItem {
+  id: string;
+  folderPath: string;
+  folderName: string;
+  completedAt: string;
+  copyCount?: number;
+  dayName?: string;
+}
+
+export interface AutoFindProcessStatus {
+  state: "idle" | "loading" | "success" | "error";
+  targetCustomerName?: string;
+  message?: string;
+  codeCount?: number;
+  updatedAt?: string;
+}
+
+const loadStoredAutoFind = (): boolean => {
+  try {
+    return localStorage.getItem("mvd_picker_auto_find") === "true";
+  } catch {
+    return false;
+  }
+};
+
 const loadStoredDontAsk = (): boolean => {
   try {
     return localStorage.getItem("mvd_picker_dont_ask_remove_completed") === "true";
@@ -165,6 +214,16 @@ const initialState = {
   activeDropZone: null as "input" | "sync" | null,
   syncFolders: [] as string[],
   pickerMode: loadStoredPickerMode(),
+  autoFindEnabled: loadStoredAutoFind(),
+  isAutoFinding: false,
+  autoFindStatus: null as AutoFindProcessStatus | null,
+  ejectedCustomers: [] as EjectedCustomerItem[],
+  isTrashModalOpen: false,
+  tossAnimationTrigger: null as {
+    id: number;
+    folderName: string;
+    startPos?: { x: number; y: number };
+  } | null,
   inputFolders: [] as string[],
   selectedInputFolders: [] as string[],
   batchCustomerFolders: [] as CustomerFolderItem[],
@@ -231,6 +290,62 @@ export const useAppStore = create<AppState>((set) => ({
       return { pickerMode: mode };
     });
   },
+
+  setAutoFindEnabled: (val) => {
+    try {
+      localStorage.setItem("mvd_picker_auto_find", String(val));
+    } catch {}
+    set({ autoFindEnabled: val });
+  },
+
+  setIsAutoFinding: (val) => set({ isAutoFinding: val }),
+
+  setAutoFindStatus: (status) => set({ autoFindStatus: status }),
+
+  addEjectedCustomer: (item) =>
+    set((state) => {
+      const existing = state.ejectedCustomers.filter((c) => c.folderPath !== item.folderPath);
+      const newItem: EjectedCustomerItem = {
+        id: `eject_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        folderPath: item.folderPath,
+        folderName: item.folderName,
+        completedAt: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+        copyCount: item.copyCount,
+        dayName: item.dayName,
+      };
+      return { ejectedCustomers: [newItem, ...existing] };
+    }),
+
+  restoreEjectedCustomer: (folderPath) =>
+    set((state) => {
+      const remainingEjected = state.ejectedCustomers.filter((c) => c.folderPath !== folderPath);
+      const folderName = folderPath.split(/[/\\]+/).filter(Boolean).pop() || folderPath;
+      const newItem: CustomerFolderItem = {
+        folder_path: folderPath,
+        folder_name: folderName,
+        image_count: 0,
+      };
+
+      const hasFolder = state.inputFolders.includes(folderPath);
+      const nextInputFolders = hasFolder ? state.inputFolders : [folderPath, ...state.inputFolders];
+      const nextBatchFolders = hasFolder
+        ? state.batchCustomerFolders
+        : [newItem, ...state.batchCustomerFolders.filter((b) => b.folder_path !== folderPath)];
+
+      return {
+        ejectedCustomers: remainingEjected,
+        inputFolders: nextInputFolders,
+        batchCustomerFolders: nextBatchFolders,
+        selectedInputFolders: [folderPath],
+      };
+    }),
+
+  clearEjectedCustomers: () => set({ ejectedCustomers: [] }),
+
+  setIsTrashModalOpen: (open) => set({ isTrashModalOpen: open }),
+
+  triggerTossAnimation: (folderName, startPos) =>
+    set({ tossAnimationTrigger: { id: Date.now(), folderName, startPos } }),
 
   setBatchCustomerFolders: (folders) => set({ batchCustomerFolders: folders }),
 

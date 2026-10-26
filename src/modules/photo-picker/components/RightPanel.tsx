@@ -25,6 +25,7 @@ import { useScanAndMatch } from "@/modules/photo-picker/features/scanner/hooks/u
 import { useCopyOperation } from "@/modules/photo-picker/features/copy/hooks/useCopyOperation";
 import { useExport } from "@/modules/photo-picker/features/export/hooks/useExport";
 import { sheetFilterAutomationService } from "@/modules/contact-the-sheet/services/sheetFilterAutomationService";
+import { MiniTrashBin } from "./MiniTrashBin";
 
 export function RightPanel() {
   const matchResult = useAppStore((s) => s.matchResult);
@@ -38,6 +39,8 @@ export function RightPanel() {
   const setOutputMode = useAppStore((s) => s.setOutputMode);
   const selectedInputFolders = useAppStore((s) => s.selectedInputFolders);
   const inputFolders = useAppStore((s) => s.inputFolders);
+  const isAutoFinding = useAppStore((s) => s.isAutoFinding);
+  const autoFindStatus = useAppStore((s) => s.autoFindStatus);
   const sheetUpdateStatus = useAppStore((s) => s.sheetUpdateStatus);
   const { t } = useTranslation();
   
@@ -156,7 +159,7 @@ export function RightPanel() {
   };
 
   const isActive = phase === "scanning" || phase === "copying";
-  const canScan = selectedInputFolders.length > 0 && !isActive;
+  const canScan = selectedInputFolders.length > 0 && !isActive && !isAutoFinding;
   const canCopy =
     matchResult &&
     matchResult.found_count > 0 &&
@@ -500,6 +503,9 @@ export function RightPanel() {
           </div>
         )}
 
+        {/* Mini Trash Bin Anchor (Ejected Customers) */}
+        <MiniTrashBin />
+
         {/* Action Buttons */}
         <div className="flex flex-col gap-2 mt-auto pb-1">
           {isActive ? (
@@ -515,10 +521,23 @@ export function RightPanel() {
               <button
                 onClick={handleScanAndMatch}
                 disabled={!canScan}
-                className="btn-primary py-2.5 rounded-lg text-xs font-semibold flex justify-center items-center gap-1.5 transition-all"
+                className={`btn-primary py-2.5 rounded-lg text-xs font-semibold flex justify-center items-center gap-1.5 transition-all ${
+                  autoFindStatus?.state === "success" && !matchResult
+                    ? "ring-2 ring-emerald-500 ring-offset-2 ring-offset-background animate-pulse"
+                    : ""
+                }`}
               >
-                <ScanSearch size={14} />
-                {t("scan_match")}
+                {isAutoFinding ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    <span>Đang nạp mã...</span>
+                  </>
+                ) : (
+                  <>
+                    <ScanSearch size={14} />
+                    {t("scan_match")}
+                  </>
+                )}
               </button>
 
               <button

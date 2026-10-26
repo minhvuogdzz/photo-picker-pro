@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { CheckCircle2, Trash2, ArrowRight, X } from "lucide-react";
 import { useAppStore } from "@/core/stores/useAppStore";
+import { autoFindService } from "../services/autoFindService";
 
 export function RemoveCompletedCustomerDialog() {
   const completedCustomer = useAppStore((s) => s.completedCustomerPendingRemoval);
@@ -9,6 +10,9 @@ export function RemoveCompletedCustomerDialog() {
   );
   const removeInputFolder = useAppStore((s) => s.removeInputFolder);
   const setDontAskRemoveCompleted = useAppStore((s) => s.setDontAskRemoveCompleted);
+  const triggerTossAnimation = useAppStore((s) => s.triggerTossAnimation);
+  const addEjectedCustomer = useAppStore((s) => s.addEjectedCustomer);
+  const autoFindEnabled = useAppStore((s) => s.autoFindEnabled);
   const inputFolders = useAppStore((s) => s.inputFolders);
 
   const [dontAskAgain, setDontAskAgain] = useState(false);
@@ -19,8 +23,49 @@ export function RemoveCompletedCustomerDialog() {
     if (dontAskAgain) {
       setDontAskRemoveCompleted(true);
     }
+
+    // 1. Capture element position from left queue
+    const activeEl =
+      document.getElementById("active-customer-queue-item") ||
+      document.querySelector(`[data-customer-folder="${completedCustomer.folderPath}"]`) ||
+      document.querySelector(`[data-folder-name="${completedCustomer.folderName}"]`);
+    const rect = activeEl?.getBoundingClientRect();
+    const startPos = rect
+      ? { x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) }
+      : undefined;
+
+    // 2. Trigger animation & record to trash can
+    triggerTossAnimation(completedCustomer.folderName, startPos);
+    addEjectedCustomer({
+      folderPath: completedCustomer.folderPath,
+      folderName: completedCustomer.folderName,
+    });
+
+    // 3. Remove folder from queue
     removeInputFolder(completedCustomer.folderPath);
     setCompletedCustomerPendingRemoval(null);
+
+    // 4. Reset operation phase to idle for next customer
+    const store = useAppStore.getState();
+    store.setPhase("idle");
+    store.setCopyResult(null);
+    store.setMatchResult(null);
+    store.setRawCodeInput("");
+    store.setParsedCodes([]);
+
+    // 5. If autoFindEnabled is ON, fetch next customer's codes
+    if (autoFindEnabled) {
+      const updatedStore = useAppStore.getState();
+      const nextCustomerFolder =
+        updatedStore.selectedInputFolders[0] || updatedStore.inputFolders[0];
+
+      if (nextCustomerFolder) {
+        const nextFolderName =
+          nextCustomerFolder.split(/[/\\]+/).filter(Boolean).pop() || nextCustomerFolder;
+
+        void autoFindService.fetchAndApplyCodesForCustomer(nextCustomerFolder, nextFolderName);
+      }
+    }
   };
 
   const handleKeep = () => {
