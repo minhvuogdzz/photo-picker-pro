@@ -11,6 +11,7 @@ import {
   parseSavedTabs,
   resolveCheckedTabs,
   type TabRows,
+  type MultiTabExtractionResult,
 } from "./sheetTabExtractionService";
 import { getFolderName } from "@/core/lib/utils";
 import { invoke } from "@tauri-apps/api/core";
@@ -324,56 +325,95 @@ class AutoFindService {
         };
       }
 
-      // 3. Fetch rows for the checked tabs (using high-speed cache)
-      const tabRows: TabRows[] = [];
-      const failedTabs: string[] = [];
-
-      for (const tabTitle of checkedTabs) {
-        try {
-          const startRow = getTabStartRow(profile, tabTitle);
-          const rows = await this.getTabRowsCached(
-            profile.spreadsheetId,
-            tabTitle,
-            startRow,
-            isMock
-          );
-          tabRows.push({ tabTitle, rows });
-        } catch (fetchErr) {
-          console.warn(`[AutoFindService] Failed to load rows for tab "${tabTitle}":`, fetchErr);
-          failedTabs.push(tabTitle);
-        }
-      }
-
-      if (tabRows.length === 0) {
-        const reason = `Không thể kết nối tải dữ liệu trang tính (Lỗi tại Tab: ${failedTabs.join(", ")}).`;
-        useAppStore.getState().setAutoFindStatus({
-          state: "error",
-          targetCustomerName: rawName,
-          message: reason,
-        });
-        return {
-          success: false,
-          folderName: rawName,
-          folderPath,
-          reason,
-        };
-      }
-
       // 4. Status mapping
       const configuredStatusValue =
         profile.valueMappings?.find((v) => v.semanticRole === "PHOTO_PICK_STATUS_COMPLETED")
           ?.sheetValue || "Đã lọc";
 
-      // 5. Extract codes across tabs
-      let extraction = extractCodesAcrossTabs(
-        rawName,
-        folderPath,
-        tabRows,
-        profile,
-        configuredStatusValue
-      );
+      // 3. Intelligent Fetching & Fast-Path Matching:
+      // If customer folder contains a month indicator or active tab is prioritized:
+      // Try the primary tab FIRST to avoid downloading multiple tabs when match is readily available.
+      let extraction: MultiTabExtractionResult | null = null;
+      const tabRows: TabRows[] = [];
+      const failedTabs: string[] = [];
 
-      // 6. Intelligent Fallback: If checked tabs missed the customer, search remaining available tabs
+      // Determine the highest priority tab
+      const primaryCandidateTab = checkedTabs[0];
+
+      if (primaryCandidateTab && checkedTabs.length > 1) {
+        try {
+          const startRow = getTabStartRow(profile, primaryCandidateTab);
+          const rows = await this.getTabRowsCached(profile.spreadsheetId, primaryCandidateTab, startRow, isMock);
+          tabRows.push({ tabTitle: primaryCandidateTab, rows });
+
+          // Fast check on primary tab
+          const candidateExtraction = extractCodesAcrossTabs(
+            rawName,
+            folderPath,
+            [{ tabTitle: primaryCandidateTab, rows }],
+            profile,
+            configuredStatusValue
+          );
+
+          if (candidateExtraction.status !== "NO_MATCH" && candidateExtraction.matchedRow) {
+            extraction = candidateExtraction;
+            console.log(`[AutoFindService] Fast-path match succeeded on primary tab "${primaryCandidateTab}"!`);
+          }
+        } catch (fetchErr) {
+          console.warn(`[AutoFindService] Primary tab "${primaryCandidateTab}" fetch error:`, fetchErr);
+          failedTabs.push(primaryCandidateTab);
+        }
+      }
+
+      // If fast-path did not produce a match, fetch the remaining checked tabs in parallel
+      if (!extraction) {
+        const remainingTabs = checkedTabs.filter((t) => t !== primaryCandidateTab);
+        if (remainingTabs.length > 0) {
+          const fetchPromises = remainingTabs.map(async (tabTitle) => {
+            const startRow = getTabStartRow(profile, tabTitle);
+            const rows = await this.getTabRowsCached(profile.spreadsheetId, tabTitle, startRow, isMock);
+            return { tabTitle, rows };
+          });
+
+          const results = await Promise.allSettled(fetchPromises);
+          for (let i = 0; i < results.length; i++) {
+            const res = results[i];
+            const tabTitle = remainingTabs[i];
+            if (res.status === "fulfilled") {
+              tabRows.push(res.value);
+            } else {
+              console.warn(`[AutoFindService] Parallel fetch error for tab "${tabTitle}":`, res.reason);
+              failedTabs.push(tabTitle);
+            }
+          }
+        }
+
+        if (tabRows.length === 0) {
+          const reason = `Không thể kết nối tải dữ liệu trang tính (Lỗi tại Tab: ${failedTabs.join(", ")}).`;
+          useAppStore.getState().setAutoFindStatus({
+            state: "error",
+            targetCustomerName: rawName,
+            message: reason,
+          });
+          return {
+            success: false,
+            folderName: rawName,
+            folderPath,
+            reason,
+          };
+        }
+
+        // Run full extraction across all loaded tabs
+        extraction = extractCodesAcrossTabs(
+          rawName,
+          folderPath,
+          tabRows,
+          profile,
+          configuredStatusValue
+        );
+      }
+
+      // 6. Intelligent Fallback: If checked tabs missed the customer, search remaining available tabs in parallel
       if (extraction.status === "NO_MATCH" || !extraction.matchedRow) {
         const unsearchedTabs = availableTabs.filter((t) => !checkedTabs.includes(t));
 
@@ -386,10 +426,18 @@ class AutoFindService {
           return 0;
         });
 
-        for (const fallbackTab of prioritizedFallbackTabs) {
-          try {
+        const batchFallback = prioritizedFallbackTabs.slice(0, 3);
+        const fallbackResults = await Promise.allSettled(
+          batchFallback.map(async (fallbackTab) => {
             const startRow = getTabStartRow(profile, fallbackTab);
             const rows = await this.getTabRowsCached(profile.spreadsheetId, fallbackTab, startRow, isMock);
+            return { fallbackTab, rows };
+          })
+        );
+
+        for (const res of fallbackResults) {
+          if (res.status === "fulfilled") {
+            const { fallbackTab, rows } = res.value;
             const fallbackExtraction = extractCodesAcrossTabs(
               rawName,
               folderPath,
@@ -410,8 +458,6 @@ class AutoFindService {
               } catch {}
               break;
             }
-          } catch (err) {
-            console.warn(`[AutoFindService] Fallback search on tab "${fallbackTab}" failed:`, err);
           }
         }
       }
@@ -419,12 +465,13 @@ class AutoFindService {
       // 7. Handle ambiguous candidate rows (NEEDS_REVIEW):
       // If multiple candidates were found, pick the highest-scoring candidate row that has codes and is not completed
       if (
+        extraction &&
         (extraction.status === "NEEDS_REVIEW" || !extraction.matchedRow) &&
         extraction.candidateRows &&
         extraction.candidateRows.length > 0
       ) {
         const bestCandidate =
-          extraction.candidateRows.find((c) => {
+          extraction.candidateRows.find((c: any) => {
             const statusCol = profile.fieldMappings?.find((m) => m.semanticField === "PHOTO_PICK_STATUS")?.columnLetter || "G";
             const val = c.values[statusCol] || "";
             return !val.toLowerCase().includes("đã lọc");
@@ -448,7 +495,7 @@ class AutoFindService {
         }
       }
 
-      if (extraction.status === "NO_MATCH" || !extraction.matchedRow) {
+      if (!extraction || extraction.status === "NO_MATCH" || !extraction.matchedRow) {
         const reason = `Không tìm thấy dòng tương ứng với "${rawName}" trên Google Sheet.`;
         useAppStore.getState().setAutoFindStatus({
           state: "error",
@@ -465,7 +512,7 @@ class AutoFindService {
 
       // 8. Pick candidate columns with codes
       const candidateCols = extraction.candidateColumns || [];
-      const columnsWithCodes = candidateCols.filter((c) => c.codeCount > 0);
+      const columnsWithCodes = candidateCols.filter((c: any) => c.codeCount > 0);
       const activeCols = columnsWithCodes.length > 0 ? columnsWithCodes : candidateCols.slice(0, 1);
 
       const formattedCodes = sheetExtractorService.formatExtractedCodes(activeCols);

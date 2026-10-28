@@ -561,9 +561,10 @@ export class DriveResolverService {
     const cleanJobName = (jobFolderName || "").normalize("NFC").trim();
     const cleanCustomerName = (customerName || "").normalize("NFC").trim();
 
-    // Strategy A: If jobFolderName is provided and differs from targetFolderName,
-    // locate the job folder on Drive first, then check its children for the final folder
-    if (cleanJobName && cleanJobName.toLowerCase() !== cleanTargetName.toLowerCase()) {
+    // Strategy A: If jobFolderName is provided, locate the job folder on Drive first,
+    // then pick its leaf delivery subfolder (or itself if it's already a leaf delivery folder).
+    // This handles both renamed subfolders (where jobFolderName === targetFolderName) and legacy subfolders.
+    if (cleanJobName) {
       const jobNameCond = this.buildNameQuery(cleanJobName);
       const jobQuery = `mimeType = 'application/vnd.google-apps.folder' and trashed = false and ${jobNameCond}`;
       const jobCandidates = await this.queryDriveFiles(token, jobQuery, "modifiedTime desc", 15);

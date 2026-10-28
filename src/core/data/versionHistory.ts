@@ -15,10 +15,44 @@ export interface VersionReleaseNote {
 
 export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
   {
+    version: "v2.9.3",
+    date: "2026-10-28",
+    title: "Tự động đổi trạng thái lọc & Khắc phục phân quyền Batch Contact The Sheet",
+    isCurrent: true,
+    sections: [
+      {
+        title: "⚡ Tự động hóa Trạng thái lọc (Status Automation)",
+        type: "feature",
+        items: [
+          "Tự động điền trạng thái lọc hoàn tất (ví dụ 'Đã lọc') vào cột Trạng Thái Lọc (cột M) trên Google Sheets khi thực thi Batch hoàn thành cùng Tên Editor và Link Edit.",
+          "Bổ sung cấu hình quyền READ_WRITE và chính sách ALWAYS_REPLACE cho cột Trạng Thái Lọc trong Studio Workspace Wizard.",
+          "Bảo tồn tuyệt đối các cột có công thức bảo vệ hoặc khi ô tính đã có sẵn trạng thái hoàn tất để tránh ghi đè dư thừa.",
+        ],
+      },
+      {
+        title: "🛠️ Khắc phục phân quyền ghi và đồng bộ Drive trong Batch Runner",
+        type: "fix",
+        items: [
+          "Loại bỏ hoàn toàn lỗi hiển thị sai 'Bị chặn bởi quyền hạn' khi chuyển tiếp tự động từ màn hình Đồng bộ tên thư mục sang Thực thi Batch.",
+          "Nâng cấp thuật toán Strategy A của Drive Resolver: Tự động phát hiện và định vị thư mục thành phẩm con (leaf delivery folder) trên Google Drive ngay cả khi tên thư mục con vừa được đổi đồng bộ khớp với tên thư mục khách hàng.",
+          "Phân giải phân quyền ghi đa tab (effectiveProfile): Đánh giá quyền ghi và phạm vi dòng (rowScope) chuẩn xác theo từng Tab riêng biệt, ngăn ngừa xung đột phân quyền chéo giữa các tháng.",
+          "Khi thiếu liên kết Drive, chuyển trạng thái thông minh sang NEEDS_REVIEW kèm hướng dẫn kiểm tra Google Drive Desktop thay vì báo lỗi đỏ giả lập.",
+        ],
+      },
+      {
+        title: "🚀 Tối ưu hóa hiệu năng & độ trễ chuyển tiếp",
+        type: "improvement",
+        items: [
+          "Tăng độ trễ chuyển tiếp an toàn lên 1.5s để Google Drive Desktop kịp đồng bộ siêu dữ liệu file system cục bộ.",
+          "Tối ưu bộ nhớ đệm spreadsheetMergesCache với phương thức dọn dẹp tức thì, bảo đảm dữ liệu ô gộp luôn tươi mới.",
+        ],
+      },
+    ],
+  },
+  {
     version: "v2.9.2",
     date: "2026-10-26",
     title: "Chế độ Auto Find thông minh đa khách hàng & Hiệu ứng Thùng rác tương tác",
-    isCurrent: true,
     sections: [
       {
         title: "⚡ Auto Find — Lọc liên tục nhiều khách hàng",

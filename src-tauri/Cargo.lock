@@ -3004,7 +3004,7 @@ dependencies = [
 
 [[package]]
 name = "photo-picker-pro"
-version = "2.9.2"
+version = "2.9.3"
 dependencies = [
  "base64 0.22.1",
  "cc",

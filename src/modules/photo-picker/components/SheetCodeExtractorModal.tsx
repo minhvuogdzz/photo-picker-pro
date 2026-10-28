@@ -399,8 +399,17 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
     const failed: string[] = [];
     let firstError = "";
     try {
-      // Sequential on purpose: the first request refreshes an expired Google token for the others
-      for (const tabTitle of tabs) {
+      // Ensure Google token is valid once upfront so parallel requests succeed reliably
+      if (!profile.isMockSandbox) {
+        try {
+          await googleCredentialManager.getValidAccessToken();
+        } catch (tokenErr) {
+          console.warn("[SheetCodeExtractor] Token check before parallel load:", tokenErr);
+        }
+      }
+
+      // Parallel fetching for high speed
+      const promises = tabs.map(async (tabTitle) => {
         const key = keyOf(tabTitle);
         let pending = rowsCacheRef.current.get(key);
         if (!pending) {
@@ -416,12 +425,22 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
         try {
           const rows = await pending;
           settledRowsKeysRef.current.add(key);
-          loaded.push({ tabTitle, rows });
+          return { tabTitle, rows };
         } catch (err: any) {
           console.warn(`[SheetCodeExtractor] Could not load tab "${tabTitle}":`, err);
           if (rowsCacheRef.current.get(key) === pending) rowsCacheRef.current.delete(key);
-          failed.push(tabTitle);
-          if (!firstError) firstError = err?.message || String(err);
+          throw { tabTitle, err };
+        }
+      });
+
+      const settled = await Promise.allSettled(promises);
+      for (const res of settled) {
+        if (res.status === "fulfilled") {
+          loaded.push(res.value);
+        } else {
+          const reason = res.reason;
+          failed.push(reason.tabTitle);
+          if (!firstError) firstError = reason.err?.message || String(reason.err);
         }
       }
 

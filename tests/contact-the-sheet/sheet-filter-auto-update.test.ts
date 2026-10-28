@@ -175,8 +175,7 @@ test("Sheet Filter Auto-Update: Disconnects Google and blocks status update when
   const { useAuthStore } = await import("../../src/core/stores/useAuthStore.ts");
   const { TRIAL_END_TIMESTAMP } = await import("../../src/core/services/premiumFeaturePolicy.ts");
 
-  // Create an active non-premium session with expired trial time (1 day after trial end)
-  const expiredTime = new Date(TRIAL_END_TIMESTAMP + 24 * 60 * 60 * 1000).toISOString();
+  // Create an expired non-premium session
   useAuthStore.getState().setSession({
     accessToken: "tok_test",
     refreshToken: "ref_test",
@@ -184,13 +183,12 @@ test("Sheet Filter Auto-Update: Disconnects Google and blocks status update when
     email: "test@studio.com",
     name: "Studio User",
     deviceId: "dev_mac",
-    lastSyncAt: expiredTime,
     subscription: {
-      status: "ACTIVE",
+      status: "EXPIRED",
       plan: "PROFESSIONAL",
       isPremium: false,
-      daysRemaining: 15,
-      expiresAt: new Date(Date.now() + 15 * 86400000).toISOString(),
+      daysRemaining: 0,
+      expiresAt: new Date(Date.now() - 86400000).toISOString(),
     },
   });
 
@@ -227,9 +225,9 @@ test("Sheet Filter Auto-Update: Disconnects Google and blocks status update when
     copyResult
   );
 
-  // Must fail and inform about 7-day trial expiration
+  // Must fail and inform about feature expiration
   assert.equal(res.success, false);
-  assert.ok(res.message.includes("Hết hạn dùng thử VIP 7 ngày"));
+  assert.ok(res.message.includes("Gói sử dụng tính năng Google Sheet đã hết hạn"));
 
   // Google account must have been disconnected
   assert.equal(useContactSheetStore.getState().googleConnection.status, "DISCONNECTED");

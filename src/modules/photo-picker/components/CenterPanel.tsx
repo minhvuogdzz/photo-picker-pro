@@ -111,9 +111,14 @@ export function CenterPanel() {
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
 
   // Debounced parsing
+  const lastParsedInputRef = useRef<string | null>(null);
   const parseInput = useCallback(
     async (input: string) => {
+      if (lastParsedInputRef.current === input) {
+        return;
+      }
       if (!input.trim()) {
+        lastParsedInputRef.current = "";
         setParsedCodes([]);
         return;
       }
@@ -122,6 +127,7 @@ export function CenterPanel() {
         const codes = await invoke<CustomerCode[]>("parse_customer_codes", {
           input,
         });
+        lastParsedInputRef.current = input;
         setParsedCodes(codes);
       } catch (error) {
         console.error("Parse error:", error);

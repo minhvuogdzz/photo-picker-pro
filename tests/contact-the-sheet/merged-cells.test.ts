@@ -33,6 +33,7 @@ function mockGoogle(merges: any[], valuesByRange: Record<string, string>) {
 }
 
 test("Merged due date is copied down to the other rows of the block", async () => {
+  sheetDiscoveryService.clearMergesCache();
   // L2:L4 merged (0-based, end exclusive) over rows 2..4
   mockGoogle([{ sheetId: 0, startRowIndex: 1, endRowIndex: 4, startColumnIndex: 11, endColumnIndex: 12 }], {});
   const rows = await sheetDiscoveryService.fetchSheetRowsForMatching("x", "T", 2, undefined, false);
@@ -41,6 +42,7 @@ test("Merged due date is copied down to the other rows of the block", async () =
 });
 
 test("Merged block whose top-left cell is above the fetched range is read via batchGet", async () => {
+  sheetDiscoveryService.clearMergesCache();
   // L1:L3 merged, but fetching starts at row 2
   mockGoogle([{ sheetId: 0, startRowIndex: 0, endRowIndex: 3, startColumnIndex: 11, endColumnIndex: 12 }], { "'T'!L1": "19/10" });
   const rows = await sheetDiscoveryService.fetchSheetRowsForMatching("x", "T", 2, undefined, false);
@@ -50,6 +52,7 @@ test("Merged block whose top-left cell is above the fetched range is read via ba
 });
 
 test("Failure while reading merges falls back to raw values", async () => {
+  sheetDiscoveryService.clearMergesCache();
   mockGoogle([], {});
   const base = (globalThis as any).fetch;
   (globalThis as any).fetch = async (url: string) =>

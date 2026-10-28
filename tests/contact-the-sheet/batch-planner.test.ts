@@ -282,3 +282,207 @@ test("Policy Protection: ASK_BEFORE_OVERWRITE triggers CONFLICT when existing ce
   assert.equal(evaluated.conflictDetails?.existingValue, "Tuấn");
   assert.equal(evaluated.conflictDetails?.proposedValue, "Vương");
 });
+
+test("Fix Issue 1: Missing Drive link does NOT trigger false FIELD_READ_ONLY / Bị chặn bởi quyền hạn", () => {
+  const jobNoDrive: DiscoveredJob = {
+    id: "job-no-drive",
+    sourceType: "LOCAL_DRIVE_DESKTOP",
+    jobFolderName: "12-8 9h _vy_01",
+    finalFolderName: "12-8 9h _vy_01",
+    finalFolderPath: "/path/12-8",
+    driveItemId: "",
+    driveWebLink: "", // Not yet synced / no link
+    metadata: { rawFolderName: "12-8 9h _vy_01", unparsedTokens: [] },
+    imageCount: 20,
+    status: "READY",
+    targetSheetRow: 15,
+    targetRowSnapshot: {
+      N: "Vương", // Already same editor
+      O: "",
+    },
+  };
+
+  const { job: evaluated, plan } = batchPlannerService.planJobUpdate(jobNoDrive, testProfile);
+
+  // Link write must NOT be marked as FIELD_READ_ONLY
+  const linkWrite = plan.writes.find((w) => w.field === "DELIVERY_LINK");
+  assert.equal(linkWrite?.allowed, false);
+  assert.notEqual(linkWrite?.blockedReason, "FIELD_READ_ONLY", "Missing Drive link must not be flagged as FIELD_READ_ONLY");
+  
+  // Overall job status must be NEEDS_REVIEW with clear statusReason, NOT ERROR with 'Bị chặn bởi quyền hạn'
+  assert.notEqual(evaluated.status, "ERROR");
+  assert.equal(evaluated.status, "NEEDS_REVIEW");
+  assert.ok(evaluated.statusReason?.includes("Chưa có đường dẫn Drive"), `Expected drive notice, got: ${evaluated.statusReason}`);
+});
+
+test("Fix Issue 1: Multi-tab uses effectiveProfile to avoid false OUTSIDE_ROW_SCOPE / FIELD_READ_ONLY", () => {
+  const multiTabProfile: WorkspaceProfile = {
+    ...testProfile,
+    selectedTabTitle: "Tab 1",
+    rowScope: { startRow: 100, endRow: 200, ignoreEmptyRows: true }, // Tab 1 only valid for 100-200
+    tabConfigurations: {
+      "Tab 2": {
+        sheetId: 2,
+        tabTitle: "Tab 2",
+        headerRow: 2,
+        rowScope: { startRow: 4, endRow: 50, ignoreEmptyRows: true }, // Tab 2 valid for 4-50
+        fieldMappings: [
+          {
+            semanticField: "EDITOR",
+            columnLetter: "P", // shifted to P
+            columnIndex: 15,
+            columnHeader: "Tên Edit",
+            permission: "READ_WRITE",
+            isFormulaDerived: false,
+            writePolicy: "SET_IF_EMPTY",
+          },
+          {
+            semanticField: "DELIVERY_LINK",
+            columnLetter: "Q", // shifted to Q
+            columnIndex: 16,
+            columnHeader: "Link Edit",
+            permission: "READ_WRITE",
+            isFormulaDerived: false,
+            writePolicy: "ASK_BEFORE_OVERWRITE",
+          },
+        ],
+        schemaFingerprint: "fp-2",
+        updatedAt: new Date().toISOString(),
+      },
+    },
+  };
+
+  const jobTab2: DiscoveredJob = {
+    id: "job-tab2",
+    sourceType: "LOCAL_DRIVE_DESKTOP",
+    jobFolderName: "Job Tab 2",
+    finalFolderName: "Job Tab 2",
+    finalFolderPath: "/path/tab2",
+    driveWebLink: "https://drive.google.com/tab2",
+    metadata: { rawFolderName: "Job Tab 2", unparsedTokens: [] },
+    imageCount: 15,
+    status: "READY",
+    targetTabTitle: "Tab 2",
+    targetSheetRow: 10, // Row 10 is inside Tab 2 scope (4-50), but outside Tab 1 scope (100-200)!
+    targetRowSnapshot: {
+      P: "",
+      Q: "",
+    },
+  };
+
+  const { job: evaluated, plan } = batchPlannerService.planJobUpdate(jobTab2, multiTabProfile);
+
+  // Must succeed on Tab 2 mappings without being blocked by Tab 1 rowScope or fieldMappings
+  assert.equal(evaluated.status, "READY");
+  assert.equal(plan.isSafeToExecute, true);
+  const editorWrite = plan.writes.find((w) => w.field === "EDITOR");
+  assert.equal(editorWrite?.columnLetter, "P");
+  assert.equal(editorWrite?.allowed, true);
+  const linkWrite = plan.writes.find((w) => w.field === "DELIVERY_LINK");
+  assert.equal(linkWrite?.columnLetter, "Q");
+  assert.equal(linkWrite?.allowed, true);
+});
+
+test("Fix Issue 2: Automatic status update changes status to configured 'Đã lọc' on batch execution", () => {
+  const profileWithStatus: WorkspaceProfile = {
+    ...testProfile,
+    fieldMappings: [
+      ...testProfile.fieldMappings,
+      {
+        semanticField: "PHOTO_PICK_STATUS",
+        columnLetter: "M",
+        columnIndex: 12,
+        columnHeader: "Trạng Thái Lọc",
+        permission: "READ_WRITE",
+        isFormulaDerived: false,
+        writePolicy: "ALWAYS_REPLACE",
+      },
+    ],
+    valueMappings: [
+      { semanticRole: "EDITOR_CURRENT_USER", sheetValue: "Vương" },
+      { semanticRole: "PHOTO_PICK_STATUS_COMPLETED", sheetValue: "Đã lọc" },
+    ],
+  };
+
+  const jobPendingStatus: DiscoveredJob = {
+    id: "job-status-test",
+    sourceType: "LOCAL_DRIVE_DESKTOP",
+    jobFolderName: "15-8 10h Mai Linh",
+    finalFolderName: "15-8 10h Mai Linh",
+    finalFolderPath: "/path/mailinh",
+    driveWebLink: "https://drive.google.com/mailinh",
+    metadata: { rawFolderName: "15-8 10h Mai Linh", unparsedTokens: [] },
+    imageCount: 25,
+    status: "READY",
+    targetSheetRow: 20,
+    targetRowSnapshot: {
+      M: "Chưa lọc", // Old status
+      N: "",          // Empty editor
+      O: "",          // Empty link
+    },
+  };
+
+  const { job: evaluated, plan } = batchPlannerService.planJobUpdate(jobPendingStatus, profileWithStatus);
+
+  assert.equal(evaluated.status, "READY");
+  assert.equal(plan.isSafeToExecute, true);
+
+  // Verify status write is planned for column M with 'Đã lọc'
+  const statusWrite = plan.writes.find((w) => w.field === "PHOTO_PICK_STATUS");
+  assert.ok(statusWrite, "Plan must include PHOTO_PICK_STATUS write");
+  assert.equal(statusWrite.columnLetter, "M");
+  assert.equal(statusWrite.oldValue, "Chưa lọc");
+  assert.equal(statusWrite.newValue, "Đã lọc");
+  assert.equal(statusWrite.allowed, true);
+
+  // Verify editor and link writes are also present
+  assert.equal(plan.writes.find((w) => w.field === "EDITOR")?.allowed, true);
+  assert.equal(plan.writes.find((w) => w.field === "DELIVERY_LINK")?.allowed, true);
+});
+
+test("Fix Issue 2: If status is already 'Đã lọc', redundant write is skipped", () => {
+  const profileWithStatus: WorkspaceProfile = {
+    ...testProfile,
+    fieldMappings: [
+      ...testProfile.fieldMappings,
+      {
+        semanticField: "PHOTO_PICK_STATUS",
+        columnLetter: "M",
+        columnIndex: 12,
+        columnHeader: "Trạng Thái Lọc",
+        permission: "READ_WRITE",
+        isFormulaDerived: false,
+        writePolicy: "ALWAYS_REPLACE",
+      },
+    ],
+    valueMappings: [
+      { semanticRole: "EDITOR_CURRENT_USER", sheetValue: "Vương" },
+      { semanticRole: "PHOTO_PICK_STATUS_COMPLETED", sheetValue: "Đã lọc" },
+    ],
+  };
+
+  const jobAlreadyCompleted: DiscoveredJob = {
+    id: "job-already-done",
+    sourceType: "LOCAL_DRIVE_DESKTOP",
+    jobFolderName: "16-8 14h Lan Anh",
+    finalFolderName: "16-8 14h Lan Anh",
+    finalFolderPath: "/path/lananh",
+    driveWebLink: "https://drive.google.com/lananh",
+    metadata: { rawFolderName: "16-8 14h Lan Anh", unparsedTokens: [] },
+    imageCount: 18,
+    status: "READY",
+    targetSheetRow: 25,
+    targetRowSnapshot: {
+      M: "Đã lọc", // Already set
+      N: "Vương",  // Already set
+      O: "https://drive.google.com/lananh", // Already set
+    },
+  };
+
+  const { job: evaluated, plan } = batchPlannerService.planJobUpdate(jobAlreadyCompleted, profileWithStatus);
+
+  assert.equal(evaluated.status, "COMPLETED");
+  assert.equal(plan.isSafeToExecute, false, "All writes already completed, no execution needed");
+  const statusWrite = plan.writes.find((w) => w.field === "PHOTO_PICK_STATUS");
+  assert.equal(statusWrite?.allowed, false);
+});

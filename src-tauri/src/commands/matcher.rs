@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::Instant;
 
 use regex::Regex;
 
@@ -28,6 +29,32 @@ pub fn match_photos(
     })
 }
 
+// Helper to normalize strings for separator-agnostic matching
+fn canonicalize(s: &str) -> String {
+    s.chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .collect::<String>()
+        .to_lowercase()
+}
+
+fn strip_leading_zeros(s: &str) -> &str {
+    let trimmed = s.trim_start_matches('0');
+    if trimmed.is_empty() && !s.is_empty() {
+        "0"
+    } else {
+        trimmed
+    }
+}
+
+struct IndexedPhoto<'a> {
+    file: &'a PhotoFile,
+    stem_lower: String,
+    stem_canon: String,
+    name_lower: String,
+    name_canon: String,
+    unpadded_number: String,
+}
+
 pub fn match_photos_impl<F>(
     codes: Vec<CustomerCode>,
     files: Vec<PhotoFile>,
@@ -48,68 +75,62 @@ where
 
     let _multi_folder = folder_count.unwrap_or(1) >= 2;
 
-    // Helper to normalize strings for separator-agnostic matching
-    fn canonicalize(s: &str) -> String {
-        s.chars()
-            .filter(|c| c.is_ascii_alphanumeric())
-            .collect::<String>()
-            .to_lowercase()
-    }
-
-    // Build number-based file index for ExactNumber mode fallback
-    let number_index: HashMap<String, Vec<&PhotoFile>> = match match_mode {
-        MatchMode::ExactNumber => {
-            let mut index: HashMap<String, Vec<&PhotoFile>> = HashMap::new();
-            for file in &files {
-                if !file.normalized_number.is_empty() {
-                    index
-                        .entry(file.normalized_number.clone())
-                        .or_default()
-                        .push(file);
-                }
-            }
-            index
-        }
-        _ => HashMap::new(),
-    };
-
-    // Build a stem-based index for exact matching
-    // Maps lowercase filename stem -> list of files
-    let stem_index: HashMap<String, Vec<&PhotoFile>> = if matches!(match_mode, MatchMode::ExactNumber) {
-        let mut index: HashMap<String, Vec<&PhotoFile>> = HashMap::new();
-        for file in &files {
-            let stem = std::path::Path::new(&file.filename)
-                .file_stem()
-                .and_then(|s| s.to_str())
-                .unwrap_or("")
-                .to_lowercase();
-            if !stem.is_empty() {
-                index.entry(stem).or_default().push(file);
-            }
-        }
-        index
-    } else {
-        HashMap::new()
-    };
-
-    // Build canonical stem index for separator-agnostic matching
-    // Maps canonical alphanumeric stem (e.g. "abc1234") -> list of files
-    let canonical_stem_index: HashMap<String, Vec<&PhotoFile>> = if matches!(match_mode, MatchMode::ExactNumber) {
-        let mut index: HashMap<String, Vec<&PhotoFile>> = HashMap::new();
-        for file in &files {
+    // Precompute lowercase and canonical representations once for all files to eliminate
+    // hundreds of thousands of heap allocations during matching.
+    let indexed_photos: Vec<IndexedPhoto> = files
+        .iter()
+        .map(|file| {
             let stem = std::path::Path::new(&file.filename)
                 .file_stem()
                 .and_then(|s| s.to_str())
                 .unwrap_or("");
-            let canonical = canonicalize(stem);
-            if !canonical.is_empty() {
-                index.entry(canonical).or_default().push(file);
+            let stem_lower = stem.to_lowercase();
+            let stem_canon = canonicalize(stem);
+            let name_lower = file.filename.to_lowercase();
+            let name_canon = canonicalize(&file.filename);
+            let unpadded_number = strip_leading_zeros(&file.normalized_number).to_string();
+
+            IndexedPhoto {
+                file,
+                stem_lower,
+                stem_canon,
+                name_lower,
+                name_canon,
+                unpadded_number,
             }
+        })
+        .collect();
+
+    // Build number-based file index for ExactNumber mode
+    let mut number_index: HashMap<String, Vec<&PhotoFile>> = HashMap::new();
+    let mut unpadded_number_index: HashMap<String, Vec<&PhotoFile>> = HashMap::new();
+    let mut stem_index: HashMap<String, Vec<&PhotoFile>> = HashMap::new();
+    let mut canonical_stem_index: HashMap<String, Vec<&PhotoFile>> = HashMap::new();
+
+    for item in &indexed_photos {
+        if !item.file.normalized_number.is_empty() {
+            number_index
+                .entry(item.file.normalized_number.clone())
+                .or_default()
+                .push(item.file);
+            unpadded_number_index
+                .entry(item.unpadded_number.clone())
+                .or_default()
+                .push(item.file);
         }
-        index
-    } else {
-        HashMap::new()
-    };
+        if !item.stem_lower.is_empty() {
+            stem_index
+                .entry(item.stem_lower.clone())
+                .or_default()
+                .push(item.file);
+        }
+        if !item.stem_canon.is_empty() {
+            canonical_stem_index
+                .entry(item.stem_canon.clone())
+                .or_default()
+                .push(item.file);
+        }
+    }
 
     // Compile regex if needed (skip pre-compile when pattern has {code} placeholder)
     let compiled_regex = if let MatchMode::Regex = match_mode {
@@ -122,6 +143,9 @@ where
     } else {
         None
     };
+
+    // Precompile alpha regex once for Contains mode
+    let re_alpha = Regex::new(r"[a-zA-Z]+").unwrap();
 
     let mut matches: Vec<MatchedPhoto> = Vec::new();
     let mut found_count: usize = 0;
@@ -140,13 +164,24 @@ where
         speed: None,
     });
 
+    let mut last_progress_emit = Instant::now();
+
     for (i, code) in codes.iter().enumerate() {
-        // Emit progress every few codes to prevent event spam, but enough to keep UI updated
-        if total_codes > 0 && i % std::cmp::max(1, total_codes / 100) == 0 {
+        // Throttle progress emissions to prevent IPC event flooding and React re-rendering stutter
+        let should_emit = i == 0
+            || i + 1 == total_codes
+            || (last_progress_emit.elapsed().as_millis() >= 60 && i % 5 == 0);
+
+        if should_emit {
+            last_progress_emit = Instant::now();
             progress_callback(ProgressEvent {
                 current: i,
                 total: total_codes,
-                percentage: (i as f64 / total_codes as f64) * 100.0,
+                percentage: if total_codes > 0 {
+                    (i as f64 / total_codes as f64) * 100.0
+                } else {
+                    100.0
+                },
                 message: format!("Đang lọc mã {}...", code.normalized),
                 eta_seconds: None,
                 speed: None,
@@ -219,14 +254,26 @@ where
                         // Strict prefix match failed. Do not fallback to arbitrary other cameras!
                         Vec::new()
                     } else {
-                        // Fallback: number-only match (user typed just a number, no prefix anywhere)
-                        let mut fallback_matched = Vec::new();
-                        for (file_num, files_with_num) in &number_index {
-                            if file_num.ends_with(&code.normalized) {
-                                fallback_matched.extend(files_with_num.iter().map(|f| (*f).clone()));
+                        // Fast O(1) number matching before linear scan:
+                        // 1. Exact normalized number (e.g. "0123" -> "0123")
+                        if let Some(fs) = number_index.get(&code.normalized) {
+                            fs.iter().map(|f| (*f).clone()).collect()
+                        } else {
+                            // 2. Unpadded number (e.g. user typed "123", file is "00123")
+                            let unpadded_code = strip_leading_zeros(&code.normalized);
+                            if let Some(fs) = unpadded_number_index.get(unpadded_code) {
+                                fs.iter().map(|f| (*f).clone()).collect()
+                            } else {
+                                // 3. Fallback: ends_with match for partial tails
+                                let mut fallback_matched = Vec::new();
+                                for (file_num, files_with_num) in &number_index {
+                                    if file_num.ends_with(&code.normalized) {
+                                        fallback_matched.extend(files_with_num.iter().map(|f| (*f).clone()));
+                                    }
+                                }
+                                fallback_matched
                             }
                         }
-                        fallback_matched
                     }
                 }
             }
@@ -236,7 +283,6 @@ where
                 let effective_prefix: Option<String> = code.prefix.clone().or_else(|| {
                     let cleaned = super::parser::clean_token(&code.raw);
                     let without_ext = super::parser::remove_extension(&cleaned);
-                    let re_alpha = Regex::new(r"[a-zA-Z]+").ok()?;
                     re_alpha.find(&without_ext).map(|mat| mat.as_str().to_string())
                 });
 
@@ -246,27 +292,24 @@ where
                     let prefix_canon = canonicalize(prefix);
                     let target_combined = format!("{}{}", prefix_canon, code.normalized);
 
-                    matched_with_prefix = files
+                    matched_with_prefix = indexed_photos
                         .iter()
-                        .filter(|f| {
-                            let name_lower = f.filename.to_lowercase();
-                            let name_canon = canonicalize(&f.filename);
-
+                        .filter(|p| {
                             // Priority 1: Canonical filename contains both prefix and number together
                             // e.g. "ABC_1234.jpg" (canonical "abc1234jpg") contains "abc1234"
-                            if name_canon.contains(&target_combined) {
+                            if p.name_canon.contains(&target_combined) {
                                 return true;
                             }
 
                             // Priority 2: Filename contains prefix AND contains normalized number anywhere
                             // e.g. "ABC_wedding_1234.jpg" contains "abc" and "1234"
-                            if name_canon.contains(&prefix_canon) && name_lower.contains(&code.normalized) {
+                            if p.name_canon.contains(&prefix_canon) && p.name_lower.contains(&code.normalized) {
                                 return true;
                             }
 
                             false
                         })
-                        .cloned()
+                        .map(|p| p.file.clone())
                         .collect();
                 }
 
@@ -276,13 +319,10 @@ where
                     // Fallback or standard contains:
                     // If no file matches the prefix (e.g. customer typed ACB123 instead of ABC123, or IGM0088 instead of IMG0088),
                     // or if no prefix was provided: simply match any file whose filename contains the normalized number!
-                    files
+                    indexed_photos
                         .iter()
-                        .filter(|f| {
-                            let name_lower = f.filename.to_lowercase();
-                            name_lower.contains(&code.normalized)
-                        })
-                        .cloned()
+                        .filter(|p| p.name_lower.contains(&code.normalized))
+                        .map(|p| p.file.clone())
                         .collect()
                 }
             }

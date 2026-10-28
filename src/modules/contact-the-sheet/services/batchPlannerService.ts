@@ -81,7 +81,7 @@ export class BatchPlannerService {
 
       // Base write permission (hard formula & scope checks)
       const baseCheck = schemaMappingService.evaluateWritePermission(
-        profile,
+        effectiveProfile,
         "EDITOR",
         targetRow,
         currentVal,
@@ -165,7 +165,7 @@ export class BatchPlannerService {
 
       // Base check (formula & scope)
       const baseCheck = schemaMappingService.evaluateWritePermission(
-        profile,
+        effectiveProfile,
         "DELIVERY_LINK",
         targetRow,
         currentVal,
@@ -177,7 +177,7 @@ export class BatchPlannerService {
         blockedReason = baseCheck.reason;
       } else if (!driveLink) {
         allowed = false;
-        blockedReason = "FIELD_READ_ONLY";
+        blockedReason = undefined;
         warnings.push(`Chưa có đường dẫn Drive cho job "${job.jobFolderName}".`);
       } else {
         const isSameLink = currentVal.includes(driveLink);
@@ -249,7 +249,74 @@ export class BatchPlannerService {
       });
     }
 
-    // 3. Determine overall job execution readiness
+    // 3. Evaluate STATUS write (PHOTO_PICK_STATUS / WORKFLOW_STATUS / EDIT_STATUS)
+    const statusMapping = effectiveProfile.fieldMappings.find(
+      (m) =>
+        m.semanticField === "PHOTO_PICK_STATUS" ||
+        m.semanticField === "EDIT_STATUS" ||
+        m.semanticField === "WORKFLOW_STATUS"
+    );
+
+    const completedStatus = (
+      effectiveProfile.valueMappings?.find(
+        (v) =>
+          v.semanticRole === "PHOTO_PICK_STATUS_COMPLETED" ||
+          v.semanticRole === "EDIT_STATUS_COMPLETED"
+      )?.sheetValue ||
+      profile.valueMappings?.find(
+        (v) =>
+          v.semanticRole === "PHOTO_PICK_STATUS_COMPLETED" ||
+          v.semanticRole === "EDIT_STATUS_COMPLETED"
+      )?.sheetValue ||
+      "Đã lọc"
+    ).trim();
+
+    if (statusMapping && completedStatus) {
+      const currentVal = (snapshot[statusMapping.columnLetter] || "").trim();
+      const isAlreadyCompleted = currentVal.toLowerCase() === completedStatus.toLowerCase();
+      let allowed = false;
+      let blockedReason: PlannedCellWrite["blockedReason"] = undefined;
+
+      const baseCheck = schemaMappingService.evaluateWritePermission(
+        effectiveProfile,
+        statusMapping.semanticField,
+        targetRow,
+        currentVal,
+        false
+      );
+
+      const isFormula = statusMapping.isFormulaDerived || baseCheck.reason === "FORMULA_CELL";
+      const isOutsideScope = baseCheck.reason === "OUTSIDE_ROW_SCOPE";
+
+      if (isFormula) {
+        allowed = false;
+        blockedReason = "FORMULA_CELL";
+      } else if (isOutsideScope) {
+        allowed = false;
+        blockedReason = "OUTSIDE_ROW_SCOPE";
+      } else if (statusMapping.permission === "IGNORE") {
+        allowed = false;
+      } else if (isAlreadyCompleted) {
+        // Status is already set to the completed status, no overwrite needed
+        allowed = false;
+        blockedReason = undefined;
+      } else if (statusMapping.permission === "READ_WRITE" || statusMapping.semanticField === "PHOTO_PICK_STATUS") {
+        allowed = true;
+      }
+
+      plannedWrites.push({
+        field: statusMapping.semanticField,
+        columnLetter: statusMapping.columnLetter,
+        row: targetRow,
+        tabTitle: targetTabTitle,
+        oldValue: currentVal,
+        newValue: completedStatus,
+        allowed,
+        blockedReason,
+      });
+    }
+
+    // 4. Determine overall job execution readiness
     const hasHardError = plannedWrites.some(
       (w) => w.blockedReason === "FORMULA_CELL" || w.blockedReason === "OUTSIDE_ROW_SCOPE"
     );
@@ -266,13 +333,18 @@ export class BatchPlannerService {
       statusReason = `Ô ${detectedConflict?.field || "dữ liệu"} đã có sẵn nội dung cũ. Cần duyệt trước khi ghi đè.`;
     } else if (hasHardError) {
       jobStatus = "ERROR";
-      const rawReason = plannedWrites.find((w) => !w.allowed)?.blockedReason;
-      if (rawReason === "FORMULA_CELL") statusReason = "Ô đích chứa công thức bảo vệ";
-      else if (rawReason === "OUTSIDE_ROW_SCOPE") statusReason = "Hàng nằm ngoài phạm vi cho phép";
-      else statusReason = rawReason || "Bị chặn bởi quyền hạn";
+      const hardWrite = plannedWrites.find(
+        (w) => w.blockedReason === "FORMULA_CELL" || w.blockedReason === "OUTSIDE_ROW_SCOPE"
+      );
+      if (hardWrite?.blockedReason === "FORMULA_CELL") statusReason = "Ô đích chứa công thức bảo vệ";
+      else if (hardWrite?.blockedReason === "OUTSIDE_ROW_SCOPE") statusReason = "Hàng nằm ngoài phạm vi cho phép";
+      else statusReason = "Bị chặn bởi quyền hạn";
     } else if (executableWrites.length > 0) {
       jobStatus = "READY";
       statusReason = undefined;
+    } else if (!job.driveWebLink && linkMapping && linkMapping.permission === "READ_WRITE") {
+      jobStatus = "NEEDS_REVIEW";
+      statusReason = "Chưa có đường dẫn Drive (kiểm tra đồng bộ Google Drive Desktop)";
     } else {
       // No changes needed (cells are either already set or protected by SET_IF_EMPTY)
       jobStatus = "COMPLETED";

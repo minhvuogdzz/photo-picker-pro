@@ -285,11 +285,23 @@ export function WorkspaceWizard() {
       fieldMappings.map((m) => ({ index: m.columnIndex, headerName: m.columnHeader }))
     );
 
+    // Ensure PHOTO_PICK_STATUS is READ_WRITE when pickCompletedStatus is configured
+    const effectiveFieldMappings = fieldMappings.map((m) => {
+      if (m.semanticField === "PHOTO_PICK_STATUS" && pickCompletedStatus.trim() && m.permission !== "IGNORE") {
+        return {
+          ...m,
+          permission: "READ_WRITE" as const,
+          writePolicy: "ALWAYS_REPLACE" as const,
+        };
+      }
+      return m;
+    });
+
     const currentTabConfig: TabConfiguration = {
       sheetId: targetTabId,
       tabTitle: targetTabTitle,
       headerRow: selectedHeaderRow,
-      fieldMappings,
+      fieldMappings: effectiveFieldMappings,
       rowScope: { startRow, ignoreEmptyRows: true },
       schemaFingerprint: fingerprint,
       updatedAt: new Date().toISOString(),
@@ -309,7 +321,7 @@ export function WorkspaceWizard() {
       selectedTabTitle: targetTabTitle,
       selectedTabId: targetTabId,
       headerRow: selectedHeaderRow,
-      fieldMappings,
+      fieldMappings: effectiveFieldMappings,
       valueMappings: [
         {
           semanticRole: "EDITOR_CURRENT_USER",
@@ -994,7 +1006,7 @@ export function WorkspaceWizard() {
             <div className="p-3 bg-muted/30 border border-border/80 rounded-xl flex items-center gap-2.5 text-[11px] text-muted-foreground">
               <ShieldCheck size={16} className="text-emerald-400 shrink-0" />
               <span>
-                <b>Nguyên tắc bảo vệ dữ liệu:</b> Cột công thức (A, B, H, S...) được khóa <b>READ_ONLY</b> tuyệt đối. Hệ thống chỉ ghi vào 2 cột: <b>N (Tên Edit)</b> và <b>O (Link Edit)</b>.
+                <b>Nguyên tắc bảo vệ dữ liệu:</b> Cột công thức (A, B, H, S...) được khóa <b>READ_ONLY</b> tuyệt đối. Hệ thống ghi vào các cột được cấu hình: <b>M (Trạng Thái Lọc)</b>, <b>N (Tên Edit)</b> và <b>O (Link Edit)</b>.
               </span>
             </div>
           </div>

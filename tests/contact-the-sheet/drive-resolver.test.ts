@@ -592,3 +592,57 @@ test("Drive Resolver: final fresh ownership check rejects a folder whose cached 
   assert.equal(result.isAccessible, false);
   assert.equal(result.driveWebLink, "", "Must not return a link to a folder owned by someone else");
 });
+
+test("Drive Resolver Strategy A: Finds leaf delivery folder even when jobFolderName === targetFolderName (post sync_subfolder_names)", async () => {
+  const service = new DriveResolverService();
+
+  // Mock queryDriveFiles: when searching for cleanJobName, return the customer job folder on Drive
+  (service as any).queryDriveFiles = async (token: string, q: string) => {
+    if (q.includes("01-08 Khanh Chi")) {
+      return [
+        {
+          id: "job_drive_folder_id",
+          name: "01-08 Khanh Chi",
+          owners: [{ me: true, emailAddress: "me@studio.com" }],
+          modifiedTime: "2026-10-28T12:00:00Z",
+        },
+      ];
+    }
+    return [];
+  };
+
+  // Mock getChildFolders for the job folder: returns a leaf delivery child (e.g. named 'Done' or '01-08 Khanh Chi')
+  (service as any).getChildFolders = async (token: string, parentId: string) => {
+    if (parentId === "job_drive_folder_id") {
+      return [
+        {
+          id: "delivery_subfolder_id",
+          name: "Done",
+          owners: [{ me: true, emailAddress: "me@studio.com" }],
+          modifiedTime: "2026-10-28T12:05:00Z",
+          webViewLink: "https://drive.google.com/folders/delivery_subfolder_id",
+        },
+      ];
+    }
+    return [];
+  };
+
+  // Mock isLeafFolderWithFiles: job folder has subfolders (false), delivery subfolder is leaf (true)
+  (service as any).isLeafFolderWithFiles = async (token: string, folderId: string) => {
+    return folderId === "delivery_subfolder_id";
+  };
+
+  const match = await service.searchDriveForDeliveryFolder(
+    "mock_token",
+    "01-08 Khanh Chi", // targetFolderName matches jobFolderName after subfolder rename sync
+    "01-08 Khanh Chi", // jobFolderName
+    "Khanh Chi",
+    "root",
+    "me@studio.com",
+    true
+  );
+
+  assert.ok(match, "Strategy A must execute and find delivery folder even when jobFolderName === targetFolderName");
+  assert.equal(match.id, "delivery_subfolder_id");
+  assert.equal(match.webViewLink, "https://drive.google.com/folders/delivery_subfolder_id");
+});

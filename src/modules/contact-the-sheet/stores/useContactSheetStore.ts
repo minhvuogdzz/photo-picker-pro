@@ -206,9 +206,9 @@ export const STANDARD_19_STUDIO_MAPPINGS: FieldMapping[] = [
     columnLetter: "M",
     columnIndex: 12,
     columnHeader: "Trạng Thái Lọc",
-    permission: "READ_ONLY",
+    permission: "READ_WRITE",
     isFormulaDerived: false,
-    writePolicy: "SET_IF_EMPTY",
+    writePolicy: "ALWAYS_REPLACE",
   },
   {
     semanticField: "EDITOR",

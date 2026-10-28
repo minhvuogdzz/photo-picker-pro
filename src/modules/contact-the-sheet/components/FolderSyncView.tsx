@@ -216,12 +216,12 @@ export function FolderSyncView({ onGoToBatch }: Props) {
     setIsSyncing(false);
     setSyncProgress(null);
 
-    // Auto-navigate and process in Batch Runner with updated folder names
+    // Auto-navigate and process in Batch Runner with updated folder names (giving Google Drive Desktop time to register local file system renames)
     if (successCount > 0 && onGoToBatch) {
       const syncedPaths = folders.map((f) => f.path);
       setTimeout(() => {
         onGoToBatch(syncedPaths);
-      }, 750);
+      }, 1500);
     }
   };
 

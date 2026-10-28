@@ -41,6 +41,13 @@ export const KNOWN_SEMANTIC_ALIASES: SemanticAlias[] = [
 ];
 
 export class SheetDiscoveryService {
+  private spreadsheetMergesCache = new Map<string, { sheets: any[]; timestamp: number }>();
+  private readonly MERGES_CACHE_TTL_MS = 5 * 60 * 1000;
+
+  public clearMergesCache(): void {
+    this.spreadsheetMergesCache.clear();
+  }
+
   /**
    * Extracts Google Spreadsheet ID from URL or raw ID string.
    */
@@ -493,11 +500,21 @@ export class SheetDiscoveryService {
     if (rows.length === 0) return;
     try {
       const headers = { Authorization: `Bearer ${token}` };
-      const metaUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets(properties(title),merges)`;
-      const metaRes = await fetch(metaUrl, { headers });
-      if (!metaRes.ok) return;
-      const meta = await metaRes.json();
-      const sheet = (meta.sheets || []).find((sh: any) => sh.properties?.title === tabTitle);
+      let sheets: any[] = [];
+      const cached = this.spreadsheetMergesCache.get(spreadsheetId);
+      const now = Date.now();
+      if (cached && now - cached.timestamp < this.MERGES_CACHE_TTL_MS) {
+        sheets = cached.sheets;
+      } else {
+        const metaUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets(properties(title),merges)`;
+        const metaRes = await fetch(metaUrl, { headers });
+        if (!metaRes.ok) return;
+        const meta = await metaRes.json();
+        sheets = meta.sheets || [];
+        this.spreadsheetMergesCache.set(spreadsheetId, { sheets, timestamp: now });
+      }
+
+      const sheet = sheets.find((sh: any) => sh.properties?.title === tabTitle);
       const lastRow = startRow + rows.length - 1;
       // GridRange indexes are 0-based and end-exclusive
       const merges: any[] = (sheet?.merges || []).filter(

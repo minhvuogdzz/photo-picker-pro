@@ -2,6 +2,27 @@
 
 Tất cả các bản phát hành của **DH Studio Pro** (phát triển & thuộc sở hữu bản quyền của **DevHouse Software**) đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
 
+## [v2.9.3] - 2026-10-28
+
+### Trong bản cập nhật này, chúng tôi đã:
+
+#### ⚡ Tự động hóa Trạng thái lọc (Contact The Sheet Status Automation)
+- **Cập nhật trạng thái "Đã lọc" tự động khi thực thi Batch:** Hệ thống tự động đánh dấu trạng thái hoàn tất (theo giá trị cấu hình `PHOTO_PICK_STATUS_COMPLETED`, mặc định "Đã lọc") vào cột Trạng Thái Lọc (cột M) trên Google Sheets khi thực thi Batch ghi cùng lúc Tên Edit và Link Edit.
+- **Tự động cấp quyền ghi cho cột trạng thái:** Cập nhật mẫu Workspace chuẩn và bộ lưu cấu hình để tự động cấp quyền `READ_WRITE` và chính sách `ALWAYS_REPLACE` cho cột Trạng Thái Lọc nếu người dùng thiết lập trạng thái hoàn tất.
+- **Bảo vệ nguyên vẹn ô tính an toàn:** Bảo tồn tuyệt đối các ô chứa công thức bảo vệ và bỏ qua các ô đã có sẵn trạng thái hoàn tất để tránh ghi dư thừa.
+
+#### 🛠️ Khắc phục lỗi phân quyền ghi và đồng bộ Drive trong Batch Runner
+- **Loại bỏ lỗi hiển thị sai "Bị chặn bởi quyền hạn":** Khắc phục lỗi khi chuyển tiếp tự động từ màn hình Đồng bộ tên thư mục sang Thực thi Batch làm phát sinh lỗi `FIELD_READ_ONLY` sai ngữ nghĩa khi thiếu liên kết Drive.
+- **Nâng cấp thuật toán Strategy A của Drive Resolver:** Tìm kiếm và định vị chính xác thư mục thành phẩm con (`leaf delivery folder`) trên Google Drive ngay cả khi tên thư mục con vừa được đổi đồng bộ khớp với tên thư mục khách hàng.
+- **Phân giải phân quyền ghi đa tab (`effectiveProfile`):** Đánh giá quyền ghi và phạm vi dòng (`rowScope`) chuẩn xác theo từng Tab riêng biệt, triệt tiêu lỗi xung đột phân quyền chéo khi thực thi Batch trên nhiều tháng/nhiều tab.
+- **Xử lý trạng thái thiếu Drive link thân thiện (`NEEDS_REVIEW`):** Chuyển sang trạng thái Cần duyệt kèm hướng dẫn kiểm tra Google Drive Desktop thay vì đánh dấu lỗi đỏ `ERROR`.
+
+#### 🚀 Tối ưu hiệu năng & độ trễ chuyển tiếp
+- **Gia tăng độ trễ chuyển tiếp an toàn lên 1.5s:** Cho phép Google Drive Desktop và hệ thống tệp cục bộ có đủ thời gian ghi nhận và đồng bộ các thao tác đổi tên thư mục con.
+- **Cơ chế xóa bộ nhớ đệm ô gộp (`clearMergesCache`):** Bổ sung hàm dọn cache cho `SheetDiscoveryService`, đảm bảo dữ liệu ô gộp trên trang tính luôn được cập nhật chính xác nhất.
+
+---
+
 ## [v2.9.2] - 2026-10-26
 
 ### Trong bản cập nhật này, chúng tôi đã:
