@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAppStore } from "@/core/stores/useAppStore";
 import { useAuthStore } from "@/core/stores/useAuthStore";
+import { useSettingsStore } from "@/core/stores/useSettingsStore";
 import { useTranslation } from "@/core/lib/i18n";
 import { logout } from "@/core/services/authApi";
 import { SubscriptionBadge } from "@/core/auth/SubscriptionBadge";
@@ -8,8 +9,9 @@ import { LicenseManager } from "@/core/license/LicenseManager";
 import { AccountSecurityModal } from "@/core/components/AccountSecurityModal";
 import { BrandLogo } from "@/core/components/BrandLogo";
 import { CoffeeSteamIcon } from "@/core/components/CoffeeSteamIcon";
+import { useUserAvatar } from "@/core/hooks/useUserAvatar";
 import {
-  Sparkles,
+  Home,
   BarChart3,
   FileSpreadsheet,
   FileImage,
@@ -22,6 +24,10 @@ import {
   Shield,
   LogOut,
   ChevronRight,
+  Trash2,
+  Sun,
+  Moon,
+  CircleDot,
 } from "lucide-react";
 
 export function EcosystemSidebar() {
@@ -34,11 +40,27 @@ export function EcosystemSidebar() {
   const setIsDonateModalOpen = useAppStore((s) => s.setIsDonateModalOpen);
   const session = useAuthStore((s) => s.session);
   const authLogout = useAuthStore((s) => s.logout);
+  const theme = useSettingsStore((s) => s.settings.theme);
+  const updateSetting = useSettingsStore((s) => s.updateSetting);
   const { t } = useTranslation();
 
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLicenseManager, setShowLicenseManager] = useState(false);
   const [showAccountModal, setShowAccountModal] = useState(false);
+  const { avatarUrl, updateAvatar, removeAvatar } = useUserAvatar();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        await updateAvatar(file);
+      } catch (err) {
+        console.error("Failed to update avatar:", err);
+      }
+    }
+    e.target.value = "";
+  };
 
   const handleNavigate = (modId: string, tab?: "home" | "history" | "settings") => {
     setActiveModule(modId);
@@ -64,7 +86,7 @@ export function EcosystemSidebar() {
         {
           id: "launcher",
           label: "Bảng điều khiển",
-          icon: Sparkles,
+          icon: Home,
           iconColor: "text-blue-500 dark:text-blue-400",
           isActive: activeModule === "launcher",
           onClick: () => handleNavigate("launcher"),
@@ -155,7 +177,7 @@ export function EcosystemSidebar() {
                 DH Studio Pro
               </span>
               <span className="text-[10px] font-medium text-muted-foreground tracking-wider leading-none truncate mt-0.5">
-                DevHouse Software
+                Devhouse Software
               </span>
             </div>
           </div>
@@ -248,46 +270,108 @@ export function EcosystemSidebar() {
       {/* ========================================================= */}
       {/* Sidebar Footer: USER PROFILE, LICENSE & STATUS HUB        */}
       {/* ========================================================= */}
-      <div className="p-3.5 border-t border-border/50 shrink-0 flex flex-col gap-2.5 bg-black/[0.02] dark:bg-white/[0.02]">
+      <div className="p-3 shrink-0 flex flex-col gap-2 relative">
+        {/* Hidden Avatar File Input (shared for both expanded and collapsed modes) */}
+        <input
+          ref={avatarInputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          className="hidden"
+          onChange={handleAvatarFile}
+        />
+
         {!isCollapsed ? (
           <>
-            {/* Row 1: Subscription Badge & Action Buttons */}
-            <div className="flex items-center justify-between gap-2 flex-wrap">
+            {/* Row 1: Subscription Status Badge */}
+            <div className="w-full flex items-center justify-between">
               <SubscriptionBadge onClick={() => setShowLicenseManager(true)} />
-
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setShowLicenseManager(true)}
-                  className="h-7 px-2.5 rounded-lg bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 text-foreground flex items-center gap-1 text-[11px] font-semibold transition-colors cursor-pointer border border-border/40"
-                  title="Xem quyền lợi và gói bản quyền"
-                >
-                  <Key size={12} className="text-amber-500" />
-                  <span>Key</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsDonateModalOpen(true)}
-                  className="h-7 px-2.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 flex items-center gap-1 text-[11px] font-semibold transition-colors cursor-pointer"
-                  title="Ủng hộ tác giả một ly cafe"
-                >
-                  <CoffeeSteamIcon size={12} />
-                  <span>Donate</span>
-                </button>
-              </div>
             </div>
 
-            {/* Row 2: User Profile Card with Dropdown */}
-            <div className="relative">
+            {/* Row 2: Key & License Management */}
+            <button
+              type="button"
+              onClick={() => setShowLicenseManager(true)}
+              className="w-full h-8 px-2.5 rounded-xl bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 text-foreground flex items-center justify-between text-[11px] font-semibold transition-all cursor-pointer border border-border/40 group active:scale-[0.99]"
+              title="Xem quyền lợi và gói bản quyền"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <Key size={13} className="text-amber-500 shrink-0" />
+                <span className="truncate">Gói bản quyền & Key</span>
+              </div>
+              <ChevronRight size={12} className="text-muted-foreground group-hover:translate-x-0.5 transition-transform shrink-0" />
+            </button>
+
+            {/* Row 3: Donate Cafe */}
+            <button
+              type="button"
+              onClick={() => setIsDonateModalOpen(true)}
+              className="w-full h-8 px-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 flex items-center justify-between text-[11px] font-semibold transition-all cursor-pointer group active:scale-[0.99]"
+              title="Ủng hộ tác giả một ly cafe"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <CoffeeSteamIcon size={13} className="shrink-0" />
+                <span className="truncate">Ủng hộ tác giả (Donate)</span>
+              </div>
+              <ChevronRight size={12} className="text-amber-600/70 dark:text-amber-400/70 group-hover:translate-x-0.5 transition-transform shrink-0" />
+            </button>
+
+            {/* Row 4: Theme Switcher */}
+            <div className="flex items-center p-1 rounded-xl bg-black/5 dark:bg-white/5 border border-border/40 text-[11px] gap-1">
+              <button
+                type="button"
+                onClick={() => updateSetting("theme", "light")}
+                className={`flex-1 py-1 px-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  theme === "light"
+                    ? "bg-white dark:bg-[#2c2d33] text-foreground shadow-xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                title="Giao diện Sáng (Light)"
+              >
+                <Sun size={12} className="text-amber-500 shrink-0" />
+                <span>Sáng</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => updateSetting("theme", "dark")}
+                className={`flex-1 py-1 px-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  theme === "dark"
+                    ? "bg-white dark:bg-[#2c2d33] text-foreground shadow-xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                title="Giao diện Tối (Dark)"
+              >
+                <Moon size={12} className="text-blue-400 shrink-0" />
+                <span>Tối</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => updateSetting("theme", "system")}
+                className={`flex-1 py-1 px-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  theme === "system"
+                    ? "bg-white dark:bg-[#2c2d33] text-foreground shadow-xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                title="Tự động theo hệ điều hành (Auto)"
+              >
+                <CircleDot size={12} className="rotate-45 text-muted-foreground shrink-0" />
+                <span>Auto</span>
+              </button>
+            </div>
+
+            {/* Row 5: User Profile Card */}
+            <div>
               <button
                 type="button"
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="w-full flex items-center justify-between gap-2.5 p-2 rounded-xl bg-black/5 dark:bg-white/5 border border-border/40 hover:bg-black/10 dark:hover:bg-white/10 transition-all cursor-pointer text-left"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center text-primary font-bold text-[11px] shrink-0">
-                    {session?.name ? session.name.charAt(0).toUpperCase() : <User size={13} />}
+                  <div className="w-8 h-8 rounded-lg bg-primary/15 border border-primary/25 overflow-hidden flex items-center justify-center text-primary font-bold text-[12px] shrink-0">
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <User size={15} className="text-primary" />
+                    )}
                   </div>
                   <div className="flex flex-col min-w-0">
                     <span className="text-[12px] font-bold text-foreground truncate leading-tight">
@@ -303,68 +387,13 @@ export function EcosystemSidebar() {
                   <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-xs" title="Đang trực tuyến" />
                 </div>
               </button>
-
-              {/* User Dropdown Menu */}
-              {showUserMenu && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setShowUserMenu(false)}
-                  />
-                  <div className="absolute left-0 bottom-full mb-2 w-60 p-2 z-50 animate-slide-up shadow-xl bg-card border border-border rounded-2xl">
-                    <div className="px-3 py-2.5 border-b border-border/60 mb-1">
-                      <p className="text-[13px] font-semibold truncate text-foreground">
-                        {session?.name || "Người dùng"}
-                      </p>
-                      <p className="text-[11px] font-mono text-primary truncate">
-                        @{session?.username || session?.email?.split("@")[0] || "guest"}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground truncate">
-                        {session?.email}
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        setShowUserMenu(false);
-                        setShowAccountModal(true);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-foreground hover:bg-muted rounded-xl transition-colors cursor-pointer"
-                    >
-                      <Shield size={14} className="text-primary" />
-                      Tài khoản & Bảo mật
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setShowUserMenu(false);
-                        setShowLicenseManager(true);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-foreground hover:bg-muted rounded-xl transition-colors cursor-pointer"
-                    >
-                      <Key size={14} className="text-amber-500" />
-                      Đổi Quyền Lợi / Key
-                    </button>
-
-                    <div className="my-1 border-t border-border/40" />
-
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-destructive hover:bg-destructive/10 rounded-xl transition-colors cursor-pointer"
-                    >
-                      <LogOut size={14} />
-                      {t("logout")}
-                    </button>
-                  </div>
-                </>
-              )}
             </div>
 
-            {/* Row 3: Status Ready */}
-            <div className="flex items-center gap-2 px-1 pt-1">
-              <span className="relative flex h-2.5 w-2.5 shrink-0">
+            {/* Row 6: Status Ready */}
+            <div className="flex items-center gap-2 px-1 pt-0.5">
+              <span className="relative flex h-2 w-2 shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
               </span>
               <span className="text-[11px] font-medium text-muted-foreground">
                 Sẵn sàng làm việc
@@ -373,11 +402,11 @@ export function EcosystemSidebar() {
           </>
         ) : (
           /* Collapsed Mode Footer Icons */
-          <div className="flex flex-col items-center gap-2.5 py-1">
+          <div className="flex flex-col items-center gap-2 py-1">
             <button
               type="button"
               onClick={() => setShowLicenseManager(true)}
-              className="w-8 h-8 rounded-lg bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 flex items-center justify-center text-amber-500 transition-colors"
+              className="w-8 h-8 rounded-lg bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 flex items-center justify-center text-amber-500 transition-colors cursor-pointer"
               title="Quyền Lợi & Gói"
             >
               <Key size={14} />
@@ -386,23 +415,153 @@ export function EcosystemSidebar() {
             <button
               type="button"
               onClick={() => setIsDonateModalOpen(true)}
-              className="w-8 h-8 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center transition-colors"
+              className="w-8 h-8 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center transition-colors cursor-pointer"
               title="Donate Cafe"
             >
               <CoffeeSteamIcon size={14} />
             </button>
 
+            {/* Theme Toggle in collapsed mode */}
+            <button
+              type="button"
+              onClick={() => {
+                const next = theme === "dark" ? "light" : theme === "light" ? "system" : "dark";
+                updateSetting("theme", next);
+              }}
+              className="w-8 h-8 rounded-lg bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              title={`Giao diện: ${theme === "dark" ? "Tối" : theme === "light" ? "Sáng" : "Auto"} (Bấm để đổi)`}
+            >
+              {theme === "light" ? (
+                <Sun size={14} className="text-amber-500" />
+              ) : theme === "dark" ? (
+                <Moon size={14} className="text-blue-400" />
+              ) : (
+                <CircleDot size={14} className="rotate-45" />
+              )}
+            </button>
+
             <button
               type="button"
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="w-8 h-8 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center text-primary font-bold text-[12px] transition-transform hover:scale-105"
+              className="w-8 h-8 rounded-lg bg-primary/15 border border-primary/25 overflow-hidden flex items-center justify-center text-primary font-bold text-[12px] transition-transform hover:scale-105 cursor-pointer"
               title={session?.name || "Tài khoản"}
             >
-              {session?.name ? session.name.charAt(0).toUpperCase() : <User size={14} />}
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <User size={14} className="text-primary" />
+              )}
             </button>
 
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 mt-1" title="Sẵn sàng làm việc" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500 mt-0.5" title="Sẵn sàng làm việc" />
           </div>
+        )}
+
+        {/* User Dropdown Menu - Works in both expanded and collapsed mode */}
+        {showUserMenu && (
+          <>
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setShowUserMenu(false)}
+            />
+            <div
+              className={`z-50 animate-slide-up shadow-2xl bg-card border border-border rounded-2xl p-2 ${
+                isCollapsed
+                  ? "fixed left-[76px] bottom-3 w-64"
+                  : "absolute left-3 right-3 bottom-[56px]"
+              }`}
+            >
+              <div className="px-3 py-2.5 border-b border-border/60 mb-1 flex items-center gap-2.5">
+                <div
+                  className="relative group/avt cursor-pointer shrink-0"
+                  onClick={() => avatarInputRef.current?.click()}
+                  title="Bấm để đổi ảnh đại diện"
+                >
+                  <div className="w-9 h-9 rounded-xl bg-primary/15 border border-primary/25 overflow-hidden flex items-center justify-center text-primary shadow-xs">
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <User size={17} className="text-primary" />
+                    )}
+                  </div>
+                  <div className="absolute inset-0 bg-black/45 rounded-xl opacity-0 group-hover/avt:opacity-100 transition-opacity flex items-center justify-center text-white">
+                    <Camera size={12} />
+                  </div>
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-semibold truncate text-foreground leading-tight">
+                    {session?.name || "Người dùng"}
+                  </p>
+                  <p className="text-[10px] font-mono text-primary truncate leading-tight mt-0.5">
+                    @{session?.username || session?.email?.split("@")[0] || "guest"}
+                  </p>
+                  <p className="text-[9px] text-muted-foreground truncate leading-tight mt-0.5">
+                    {session?.email}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  avatarInputRef.current?.click();
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[11px] text-foreground hover:bg-muted rounded-xl transition-colors cursor-pointer"
+              >
+                <Camera size={13} className="text-primary" />
+                Đổi ảnh đại diện
+              </button>
+
+              {avatarUrl && (
+                <button
+                  type="button"
+                  onClick={removeAvatar}
+                  className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[11px] text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-colors cursor-pointer"
+                >
+                  <Trash2 size={13} />
+                  Gỡ ảnh đại diện (Về icon User)
+                </button>
+              )}
+
+              <div className="my-1 border-t border-border/40" />
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowUserMenu(false);
+                  setShowAccountModal(true);
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-foreground hover:bg-muted rounded-xl transition-colors cursor-pointer"
+              >
+                <Shield size={14} className="text-primary" />
+                Tài khoản & Bảo mật
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowUserMenu(false);
+                  setShowLicenseManager(true);
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-foreground hover:bg-muted rounded-xl transition-colors cursor-pointer"
+              >
+                <Key size={14} className="text-amber-500" />
+                Đổi Quyền Lợi / Key
+              </button>
+
+              <div className="my-1 border-t border-border/40" />
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-destructive hover:bg-destructive/10 rounded-xl transition-colors cursor-pointer"
+              >
+                <LogOut size={14} />
+                {t("logout")}
+              </button>
+            </div>
+          </>
         )}
       </div>
 

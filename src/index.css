@@ -493,7 +493,8 @@ body {
 }
 
 .animate-app-enter {
-  animation: appEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: appEnter 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: center center;
   will-change: transform, opacity;
 }
 
@@ -530,7 +531,7 @@ body {
 @keyframes appEnter {
   0% {
     opacity: 0;
-    transform: scale(0.96);
+    transform: scale(0.975);
   }
   100% {
     opacity: 1;

@@ -15,10 +15,58 @@ export interface VersionReleaseNote {
 
 export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
   {
+    version: "v2.9.5",
+    date: "2026-10-31",
+    title: "Hệ thống Giám sát Hiệu suất Thực (Real System Monitor), Tùy chỉnh Avatar & Trải nghiệm Dashboard Pro",
+    isCurrent: true,
+    sections: [
+      {
+        title: "⚡ Hệ thống Giám sát Hiệu suất Thực (Native OS System Performance)",
+        type: "feature",
+        items: [
+          "Thu thập 100% dữ liệu thực từ hệ điều hành qua Rust backend: Theo dõi riêng biệt CPU (%) và RAM (MB/GB) tiêu thụ bởi tiến trình DH Studio Pro.",
+          "Theo dõi toàn bộ tài nguyên máy tính: Tổng CPU Usage, RAM (Tổng, Đã dùng, Còn trống, Tỷ lệ %) với biểu đồ sparkline mượt mà.",
+          "Cơ chế Memory Pressure thông minh: Đánh giá áp lực bộ nhớ thực tế (macOS kernel pressure & Windows commit/paging) với 2 trạng thái rõ ràng NORMAL và WARNING.",
+          "Storage Disks: Vòng tròn đo dung lượng Circular Progress Rings tự động nhận diện tất cả ổ đĩa và hiển thị dung lượng trống (Free Space) nổi bật.",
+        ],
+      },
+      {
+        title: "👤 Tùy biến Avatar & Trải nghiệm người dùng",
+        type: "improvement",
+        items: [
+          "Hỗ trợ người dùng đổi ảnh đại diện cá nhân hóa (PNG, JPG, WebP), tự động crop vuông tâm và tối ưu hóa kích thước 256×256 px.",
+          "Mặc định sử dụng icon User trang nhã thay vì chữ cái viết tắt.",
+          "Đồng bộ avatar thời gian thực giữa thanh bên và modal Tài khoản & Bảo mật.",
+          "Hỗ trợ mở popover menu tài khoản đầy đủ ngay cả khi thanh bên ở chế độ thu gọn (collapsed).",
+        ],
+      },
+      {
+        title: "🎨 Tái cấu trúc Bố cục Dashboard & Điều hướng chuyên nghiệp",
+        type: "design",
+        items: [
+          "Thiết lập chuẩn thứ tự ưu tiên: 1. Ứng dụng làm việc (4 công cụ cốt lõi) -> 2. Kho Tài Nguyên Creative -> 3. Giám sát hiệu suất.",
+          "Mô tả các ứng dụng hiển thị trọn vẹn, không còn bị cắt ngắn ba chấm.",
+          "Đổi icon Bảng điều khiển thành Trang chủ (Home) trực quan.",
+          "Bổ sung hiệu ứng chuyển động scale mượt mà (animate-app-enter) khi mở và chuyển đổi giữa các ứng dụng.",
+        ],
+      },
+      {
+        title: "🧭 Hoàn thiện Thanh bên (Sidebar) & Nhận diện thương hiệu",
+        type: "design",
+        items: [
+          "Bố trí chân thanh bên thoáng đãng: Mỗi mục một hàng riêng biệt (Bản quyền, Key, Donate, Theme Switcher 3 chế độ, Thẻ người dùng và Trạng thái).",
+          "Loại bỏ viền và nền của khối chân trang, hòa quyện tự nhiên với Sidebar.",
+          "Đồng bộ tuyệt đối chiều cao thanh TopBar và Header thanh bên (h-14 / 56px), căn thẳng hàng 100% đường border ngang.",
+          "Chuẩn hóa tên thương hiệu Devhouse Software (chữ h viết thường).",
+        ],
+      },
+    ],
+  },
+  {
     version: "v2.9.4",
     date: "2026-10-30",
     title: "Tái thiết lập giao diện Studio Dashboard toàn diện & Tối ưu không gian làm việc macOS",
-    isCurrent: true,
+    isCurrent: false,
     sections: [
       {
         title: "🎨 Tái thiết lập giao diện Studio Dashboard & Phong cách macOS hiện đại",
@@ -34,7 +82,7 @@ export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
         title: "🧭 Tối ưu hóa Thanh bên sinh thái (Ecosystem Sidebar) & Hub người dùng",
         type: "design",
         items: [
-          "Tích hợp đầy đủ nhận diện thương hiệu DH Studio Pro & DevHouse Software cùng logo chính thức.",
+          "Tích hợp đầy đủ nhận diện thương hiệu DH Studio Pro & Devhouse Software cùng logo chính thức.",
           "Chuyển toàn bộ thông tin người dùng, trạng thái gói bản quyền (Full App), mã kích hoạt Key và nút ủng hộ Cafe xuống chân thanh bên (footer) gọn gàng, trực quan.",
           "Lược bỏ các mục điều hướng không cần thiết như Thùng rác và Lịch sử thao tác trên thanh bên chính.",
         ],
@@ -277,7 +325,7 @@ export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
         title: "Chuyển đổi thương hiệu & Nhận diện (Rebranding)",
         type: "feature",
         items: [
-          "Chính thức chuyển giao và đổi tên thành DH Studio Pro trực thuộc DevHouse Software.",
+          "Chính thức chuyển giao và đổi tên thành DH Studio Pro trực thuộc Devhouse Software.",
           "Bộ biểu tượng Logo Squircle mới sang trọng mô phỏng chu trình làm việc Studio khép kín.",
           "Đồng bộ nhận diện thương hiệu trên TopBar, Launcher, Sidebar, Đăng nhập và Bản quyền.",
         ],

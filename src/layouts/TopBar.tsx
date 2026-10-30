@@ -4,12 +4,8 @@ import { useTranslation } from "@/core/lib/i18n";
 import {
   Clock,
   RefreshCw,
-  Sun,
-  Moon,
-  CircleDot,
 } from "lucide-react";
 import { useUpdaterStore } from "@/core/stores/useUpdaterStore";
-import { useSettingsStore } from "@/core/stores/useSettingsStore";
 import { SmartSearchBar } from "./SmartSearchBar";
 import { useSessionTimeout } from "@/core/hooks/useSessionTimeout";
 
@@ -21,9 +17,6 @@ export function TopBar() {
   const session = useAuthStore((s) => s.session);
   const { formattedTime, isExpiringSoon, isUnlimited } = useSessionTimeout();
   const { t } = useTranslation();
-
-  const theme = useSettingsStore((s) => s.settings.theme);
-  const updateSetting = useSettingsStore((s) => s.updateSetting);
 
   const getModuleTitle = () => {
     switch (activeModule) {
@@ -47,60 +40,9 @@ export function TopBar() {
   };
 
   return (
-    <header className="h-12 w-full flex items-center justify-between gap-4 px-2 select-none">
-      {/* Left: Capsule Theme Switcher + Module Title */}
+    <header className="h-full w-full flex items-center justify-between gap-4 select-none">
+      {/* Left: Module Title Breadcrumb */}
       <div className="flex items-center gap-3 shrink-0">
-        {/* Capsule Theme Switcher [ 🌓 | ☀️ | 🌙 ] */}
-        <div
-          className="flex items-center p-0.5 rounded-full bg-black/5 dark:bg-white/10 border border-black/5 dark:border-white/10 transition-colors"
-          title="Chế độ giao diện (Tự động / Sáng / Tối)"
-        >
-          {/* Auto / System */}
-          <button
-            type="button"
-            onClick={() => updateSetting("theme", "system")}
-            className={`w-6 h-6 rounded-full flex items-center justify-center transition-all cursor-pointer ${
-              theme === "system"
-                ? "bg-white dark:bg-[#2c2d33] text-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-            title="Tự động theo hệ điều hành (Auto)"
-            aria-label="Chế độ tự động"
-          >
-            <CircleDot size={12} className="rotate-45" />
-          </button>
-
-          {/* Light */}
-          <button
-            type="button"
-            onClick={() => updateSetting("theme", "light")}
-            className={`w-6 h-6 rounded-full flex items-center justify-center transition-all cursor-pointer ${
-              theme === "light"
-                ? "bg-white text-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-            title="Giao diện Sáng (Light mode)"
-            aria-label="Chế độ sáng"
-          >
-            <Sun size={12} className="text-amber-500" />
-          </button>
-
-          {/* Dark */}
-          <button
-            type="button"
-            onClick={() => updateSetting("theme", "dark")}
-            className={`w-6 h-6 rounded-full flex items-center justify-center transition-all cursor-pointer ${
-              theme === "dark"
-                ? "bg-[#2c2d33] text-white shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-            title="Giao diện Tối (Dark mode)"
-            aria-label="Chế độ tối"
-          >
-            <Moon size={12} className="text-blue-400" />
-          </button>
-        </div>
-
         {/* Current Module Title Breadcrumb */}
         <div className="flex items-center gap-2">
           <span className="text-[13px] font-bold text-foreground tracking-tight">

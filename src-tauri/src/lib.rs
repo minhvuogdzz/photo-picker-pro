@@ -9,6 +9,7 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .manage(std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)))
+        .manage(commands::system_monitor::SystemMonitorState::new())
         .setup(|_app| {
             commands::system_utils::update_system_theme_icon("system".to_string()).ok();
             Ok(())
@@ -58,6 +59,7 @@ pub fn run() {
             commands::preview::get_photo_thumbnails_batch,
             commands::preview::clear_thumbnail_cache,
             commands::preview::copy_photo_files,
+            commands::system_monitor::get_system_performance_metrics,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

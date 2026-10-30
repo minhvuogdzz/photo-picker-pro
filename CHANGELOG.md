@@ -1,6 +1,37 @@
 # 📋 Lịch Sử Cập Nhật & Phát Hành (Changelog)
 
-Tất cả các bản phát hành của **DH Studio Pro** (phát triển & thuộc sở hữu bản quyền của **DevHouse Software**) đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
+Tất cả các bản phát hành của **DH Studio Pro** (phát triển & thuộc sở hữu bản quyền của **Devhouse Software**) đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
+
+## [v2.9.5] - 2026-10-31
+
+### Trong bản cập nhật này, chúng tôi đã:
+
+#### ⚡ Giám sát Hiệu suất Hệ thống Thực (Native OS System Performance)
+- **100% dữ liệu thực từ hệ điều hành:** Thay thế toàn bộ dữ liệu mô phỏng bằng API gốc từ Rust (`sysinfo` và kernel APIs).
+- **Application Performance riêng biệt:** Theo dõi chi tiết mức tiêu thụ CPU (%) và Memory (MB/GB) của riêng tiến trình DH Studio Pro với biểu đồ biến động thời gian thực.
+- **System Performance toàn diện:** Giám sát tổng thể CPU và RAM máy tính (Total, Used, Available, Percentage) kèm biểu đồ sparkline mượt mà.
+- **Memory Pressure trực quan:** Nhận diện áp lực bộ nhớ thực tế (`memorystatus_vm_pressure` trên macOS, commit/paging trên Windows) với 2 trạng thái NORMAL và WARNING.
+- **Storage Rings đo dung lượng ổ đĩa:** Thẻ ổ đĩa dạng vòng tròn (Circular Progress Ring) hiển thị nổi bật dung lượng còn trống (Free Space), tự động chia cột responsive linh hoạt.
+
+#### 👤 Tùy biến Avatar & Trải nghiệm Người dùng
+- **Đổi ảnh đại diện cá nhân hóa:** Hỗ trợ tải lên ảnh avatar (PNG, JPG, WebP), tự động crop vuông tâm và tối ưu hóa 256×256 px.
+- **Mặc định icon User:** Sử dụng biểu tượng User chuẩn mực thay vì chữ cái viết tắt khi chưa cài đặt ảnh.
+- **Đồng bộ thời gian thực:** Cập nhật ảnh đại diện tức thì trên toàn bộ thanh bên và modal Tài khoản.
+- **Hoàn thiện menu khi thu gọn Sidebar:** Popover menu tài khoản hoạt động hoàn hảo cả ở chế độ mở rộng lẫn thu gọn (collapsed).
+
+#### 🎨 Bố cục Dashboard Chuyên nghiệp & Hiệu ứng Chuyển ứng dụng
+- **Chuẩn hóa thứ tự ưu tiên:** 1. Ứng dụng làm việc -> 2. Kho Tài Nguyên Creative -> 3. Giám sát hiệu suất.
+- **Hiển thị đầy đủ mô tả:** Mô tả 4 công cụ làm việc được trình bày trọn vẹn, không bị cắt ngắn ba chấm.
+- **Icon Trang chủ thân thiện:** Đổi biểu tượng Bảng điều khiển thành icon Trang chủ (`Home`).
+- **Hiệu ứng Scale khi mở ứng dụng:** Tích hợp hiệu ứng chuyển cảnh scale mượt mà chuẩn macOS (`animate-app-enter`), loại bỏ hoàn toàn cảm giác giật/khựng.
+
+#### 🧭 Hoàn thiện Thanh bên (Sidebar) & Nhận diện thương hiệu
+- **Bố cục chân thanh bên thoáng đãng:** Mỗi chức năng một hàng riêng biệt (Bản quyền, Key, Donate, Theme Switcher, Thẻ tài khoản, Trạng thái).
+- **Loại bỏ viền và nền:** Khối chân trang hoàn toàn trong suốt, hòa quyện với thanh bên.
+- **Đồng bộ đường kẻ ngang TopBar:** Khớp chính xác chiều cao thanh TopBar và Header thanh bên (56px), căn thẳng hàng 100% viền ngang.
+- **Chuẩn hóa thương hiệu:** Cập nhật đồng bộ thương hiệu **Devhouse Software** (chữ h viết thường).
+
+---
 
 ## [v2.9.4] - 2026-10-30
 

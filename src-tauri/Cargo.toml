@@ -1,8 +1,8 @@
 [package]
 name = "photo-picker-pro"
-version = "2.9.4"
-description = "DH Studio Pro - Professional studio suite by DevHouse Software"
-authors = ["DevHouse Software"]
+version = "2.9.5"
+description = "DH Studio Pro - Professional studio suite by Devhouse Software"
+authors = ["Devhouse Software"]
 edition = "2021"
 
 [lib]
@@ -32,6 +32,8 @@ dirs = "5"
 keyring = { version = "3", features = ["apple-native", "windows-native", "linux-native"] }
 sha2 = "0.10"
 base64 = "0.22"
+sysinfo = "0.33"
+libc = "0.2"
 
 [profile.release]
 strip = true

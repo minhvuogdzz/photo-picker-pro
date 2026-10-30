@@ -158,7 +158,7 @@ export function FragmentedImageSlider() {
         <div className="text-center px-6 z-10 opacity-45 select-none flex flex-col items-center">
           <img src="/brand/dh_app_icon_dark_squircle.png" alt="DH Studio Pro" className="w-16 h-16 mb-3 object-contain" />
           <p className="text-xs font-bold tracking-widest uppercase text-white/75">DH Studio Pro</p>
-          <p className="text-[10px] tracking-wider uppercase text-white/40 mt-1">DevHouse Software</p>
+          <p className="text-[10px] tracking-wider uppercase text-white/40 mt-1">Devhouse Software</p>
         </div>
       </div>
     );

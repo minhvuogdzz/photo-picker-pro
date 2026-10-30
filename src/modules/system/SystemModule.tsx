@@ -385,7 +385,7 @@ export function SystemModule() {
                 {/* Giới thiệu tổng quan */}
                 <div className="text-xs text-foreground/90 leading-relaxed space-y-2">
                   <p>
-                    <strong className="text-foreground font-extrabold">DH Studio Pro</strong> là hệ sinh thái phần mềm toàn diện thuộc bản quyền và sở hữu của <strong className="text-foreground font-extrabold">DevHouse Software</strong>, được xây dựng chuyên biệt dành cho các Nhiếp ảnh gia, Thợ ảnh sự kiện, Retoucher và Studio ảnh cưới chuyên nghiệp.
+                    <strong className="text-foreground font-extrabold">DH Studio Pro</strong> là hệ sinh thái phần mềm toàn diện thuộc bản quyền và sở hữu của <strong className="text-foreground font-extrabold">Devhouse Software</strong>, được xây dựng chuyên biệt dành cho các Nhiếp ảnh gia, Thợ ảnh sự kiện, Retoucher và Studio ảnh cưới chuyên nghiệp.
                   </p>
                   <p className="text-muted-foreground text-[11px] leading-relaxed">
                     Hệ sinh thái cung cấp giải pháp đồng bộ từ khâu chọn lọc ảnh thông minh bằng AI, chuyển đổi đa định dạng siêu tốc, tự động hóa Photoshop Actions, cho đến thư viện tài nguyên sáng tạo độc quyền.
@@ -459,11 +459,11 @@ export function SystemModule() {
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-2 text-xs">
                   <div className="flex gap-1.5">
                     <span className="text-muted-foreground">{t("copyright_owner")}:</span>
-                    <span className="font-bold text-foreground">DevHouse Software</span>
+                    <span className="font-bold text-foreground">Devhouse Software</span>
                   </div>
                   <div className="flex gap-1.5">
                     <span className="text-muted-foreground">{t("publisher")}:</span>
-                    <span className="font-bold text-foreground">DevHouse Software</span>
+                    <span className="font-bold text-foreground">Devhouse Software</span>
                   </div>
                 </div>
 

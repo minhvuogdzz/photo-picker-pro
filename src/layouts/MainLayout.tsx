@@ -43,8 +43,8 @@ export function AppLayout() {
 
       {/* Right Unified Window Content */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0 h-full overflow-hidden relative">
-        {/* Top macOS Bar */}
-        <div className="shrink-0 z-30 px-4 pt-2 pb-1.5 border-b border-border/50">
+        {/* Top macOS Bar - Exactly matching sidebar header height (h-14) for seamless border alignment */}
+        <div className="h-14 shrink-0 z-30 px-4 flex items-center border-b border-border/40">
           <TopBar />
         </div>
 
@@ -79,15 +79,20 @@ export function AppLayout() {
               : ""
           }`}
         >
-          {activeModule === "launcher" && <LauncherPage />}
-          {activeModule === "system" && <SystemModule />}
-          <Suspense fallback={null}>
-            {activeModule === "photo-picker" && <PhotoPickerModule />}
-            {activeModule === "mvd-convert" && <MvdConvertApp />}
-            {activeModule === "resources" && <ResourcesApp />}
-            {activeModule === "contact-the-sheet" && <ContactTheSheetApp />}
-            {activeModule === "photo-counter" && <PhotoCounterApp />}
-          </Suspense>
+          <div
+            key={activeModule}
+            className="flex-1 w-full h-full flex flex-col min-h-0 min-w-0 animate-app-enter origin-center"
+          >
+            {activeModule === "launcher" && <LauncherPage />}
+            {activeModule === "system" && <SystemModule />}
+            <Suspense fallback={null}>
+              {activeModule === "photo-picker" && <PhotoPickerModule />}
+              {activeModule === "mvd-convert" && <MvdConvertApp />}
+              {activeModule === "resources" && <ResourcesApp />}
+              {activeModule === "contact-the-sheet" && <ContactTheSheetApp />}
+              {activeModule === "photo-counter" && <PhotoCounterApp />}
+            </Suspense>
+          </div>
         </main>
       </div>
     </div>

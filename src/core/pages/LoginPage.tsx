@@ -299,7 +299,7 @@ export function LoginPage() {
             <BrandLogo variant="icon" className="w-10 h-10 object-contain drop-shadow-sm" />
             <div className="leading-tight">
               <h1 className="text-sm font-bold text-foreground tracking-tight">DH STUDIO PRO</h1>
-              <span className="text-[11px] text-muted-foreground block">DevHouse Software</span>
+              <span className="text-[11px] text-muted-foreground block">Devhouse Software</span>
             </div>
           </div>
 
@@ -710,7 +710,7 @@ export function LoginPage() {
           </div>
         </div>
 
-        <p className="px-8 sm:px-12 pb-6 text-[11px] text-muted-foreground">© 2026 DevHouse Software.</p>
+        <p className="px-8 sm:px-12 pb-6 text-[11px] text-muted-foreground">© 2026 Devhouse Software.</p>
       </div>
 
       {showConflictDialog && (

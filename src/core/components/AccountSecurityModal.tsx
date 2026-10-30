@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useAuthStore } from "@/core/stores/useAuthStore";
+import { useUserAvatar } from "@/core/hooks/useUserAvatar";
 import { updateProfile, changePassword, logoutOtherDevices } from "@/core/services/authApi";
 import { invoke } from "@tauri-apps/api/core";
 import {
@@ -16,6 +17,7 @@ import {
   EyeOff,
   LogOut,
   Save,
+  Camera,
 } from "lucide-react";
 
 interface AccountSecurityModalProps {
@@ -28,6 +30,24 @@ type TabType = "profile" | "password" | "devices";
 export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalProps) {
   const session = useAuthStore((s) => s.session);
   const setSession = useAuthStore((s) => s.setSession);
+
+  const { avatarUrl, updateAvatar, removeAvatar } = useUserAvatar();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+
+  const handleAvatarFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setAvatarError(null);
+      await updateAvatar(file);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Không thể tải ảnh";
+      setAvatarError(msg);
+    } finally {
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
+  };
 
   const [activeTab, setActiveTab] = useState<TabType>("profile");
 
@@ -287,17 +307,57 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
           {/* TAB 1: Profile & Account */}
           {activeTab === "profile" && (
             <form onSubmit={handleSaveProfile} className="space-y-3.5 animate-fade-in">
+              {/* Hidden Avatar File Input */}
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={handleAvatarFile}
+              />
+
               {/* Account summary banner */}
-              <div className="p-3 rounded-2xl bg-card border border-border flex items-center justify-between shadow-xs">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center font-bold text-primary text-xs shadow-inner">
-                    {session.name?.[0]?.toUpperCase() || "U"}
+              <div className="p-3.5 rounded-2xl bg-card border border-border flex items-center justify-between shadow-xs">
+                <div className="flex items-center gap-3.5">
+                  <div
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="relative group/modal-avt cursor-pointer shrink-0"
+                    title="Bấm để đổi ảnh đại diện"
+                  >
+                    <div className="w-11 h-11 rounded-xl bg-primary/15 border border-primary/25 overflow-hidden flex items-center justify-center text-primary shadow-xs">
+                      {avatarUrl ? (
+                        <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <User size={20} className="text-primary" />
+                      )}
+                    </div>
+                    <div className="absolute inset-0 bg-black/45 rounded-xl opacity-0 group-hover/modal-avt:opacity-100 transition-opacity flex items-center justify-center text-white">
+                      <Camera size={14} />
+                    </div>
                   </div>
+
                   <div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-foreground">{session.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => avatarInputRef.current?.click()}
+                        className="text-[10px] text-primary hover:underline font-semibold cursor-pointer"
+                      >
+                        Đổi ảnh
+                      </button>
+                      {avatarUrl && (
+                        <button
+                          type="button"
+                          onClick={removeAvatar}
+                          className="text-[10px] text-muted-foreground hover:text-destructive hover:underline font-medium cursor-pointer"
+                        >
+                          Gỡ ảnh
+                        </button>
+                      )}
                     </div>
                     <p className="text-[11px] text-muted-foreground">{session.email}</p>
+                    {avatarError && <p className="text-[10px] text-destructive mt-0.5">{avatarError}</p>}
                   </div>
                 </div>
 
