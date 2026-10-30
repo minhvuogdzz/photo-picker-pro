@@ -287,6 +287,16 @@ export const useAppStore = create<AppState>((set) => ({
           batchCustomerFolders: keepItem ? [keepItem] : [],
         };
       }
+      if (mode === "multi") {
+        try {
+          localStorage.setItem("mvd_picker_auto_find", "false");
+        } catch {}
+        return {
+          pickerMode: mode,
+          autoFindEnabled: false,
+          autoFindStatus: null,
+        };
+      }
       return { pickerMode: mode };
     });
   },
@@ -411,10 +421,17 @@ export const useAppStore = create<AppState>((set) => ({
       const nextSelected =
         state.selectedInputFolders.length > 0 ? state.selectedInputFolders : [nextInputFolders[0]];
 
+      // Enforce Auto Find OFF by default when folders are dropped/ingested into multi-customer mode
+      try {
+        localStorage.setItem("mvd_picker_auto_find", "false");
+      } catch {}
+
       return {
         inputFolders: nextInputFolders,
         batchCustomerFolders: nextBatchFolders,
         selectedInputFolders: nextSelected,
+        autoFindEnabled: false,
+        autoFindStatus: null,
       };
     }),
 

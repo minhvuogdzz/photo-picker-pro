@@ -25,9 +25,9 @@ export function AutoFindToggle() {
     setAutoFindEnabled(nextState);
 
     if (nextState) {
-      // If toggled ON, automatically extract codes for the first/active customer if codes box is empty
+      // If toggled ON, automatically extract codes for the first/active customer immediately
       const activeFolder = selectedInputFolders[0] || inputFolders[0];
-      if (activeFolder && !rawCodeInput.trim()) {
+      if (activeFolder) {
         const res = await autoFindService.fetchAndApplyCodesForCustomer(activeFolder);
         if (res.success) {
           setNotification({

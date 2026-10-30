@@ -1,314 +1,165 @@
 import { useAppStore } from "@/core/stores/useAppStore";
 import { useAuthStore } from "@/core/stores/useAuthStore";
 import { useTranslation } from "@/core/lib/i18n";
-import { logout } from "@/core/services/authApi";
-import { SubscriptionBadge } from "@/core/auth/SubscriptionBadge";
 import {
-  Camera,
-  Settings,
   Clock,
-  LogOut,
-  User,
-  Key,
-  Menu,
-  ArrowLeft,
-  Shield,
   RefreshCw,
   Sun,
   Moon,
+  CircleDot,
 } from "lucide-react";
-import { useState } from "react";
 import { useUpdaterStore } from "@/core/stores/useUpdaterStore";
 import { useSettingsStore } from "@/core/stores/useSettingsStore";
-import { LicenseManager } from "@/core/license/LicenseManager";
-import { AccountSecurityModal } from "@/core/components/AccountSecurityModal";
 import { SmartSearchBar } from "./SmartSearchBar";
 import { useSessionTimeout } from "@/core/hooks/useSessionTimeout";
-import { BrandLogo } from "@/core/components/BrandLogo";
-import type { MainTab } from "@/core/types";
 
 export function TopBar() {
   const updateResult = useUpdaterStore((s) => s.updateResult);
   const openModal = useUpdaterStore((s) => s.openModal);
-  const activeTab = useAppStore((s) => s.activeTab);
-  const setActiveTab = useAppStore((s) => s.setActiveTab);
+  const activeModule = useAppStore((s) => s.activeModule);
   const setActiveModule = useAppStore((s) => s.setActiveModule);
-  const setLastClickPos = useAppStore((s) => s.setLastClickPos);
   const session = useAuthStore((s) => s.session);
-  const authLogout = useAuthStore((s) => s.logout);
   const { formattedTime, isExpiringSoon, isUnlimited } = useSessionTimeout();
   const { t } = useTranslation();
 
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showLicenseManager, setShowLicenseManager] = useState(false);
-  const [showAccountModal, setShowAccountModal] = useState(false);
-  const activeModule = useAppStore((s) => s.activeModule);
   const theme = useSettingsStore((s) => s.settings.theme);
   const updateSetting = useSettingsStore((s) => s.updateSetting);
 
-  let tabs: { id: MainTab; label: string; icon: React.ReactNode }[] = [];
-
-  if (activeModule === "photo-picker") {
-    tabs = [
-      { id: "home", label: t("home"), icon: <Camera size={13} /> },
-      { id: "history", label: t("history"), icon: <Clock size={13} /> },
-      { id: "settings", label: t("settings"), icon: <Settings size={13} /> },
-    ];
-  }
-
-  const handleLogout = async () => {
-    setShowUserMenu(false);
-    try {
-      await logout(session?.accessToken);
-    } catch {
-      // Best effort
+  const getModuleTitle = () => {
+    switch (activeModule) {
+      case "launcher":
+        return "Bảng điều khiển";
+      case "photo-picker":
+        return "Lọc ảnh Pro";
+      case "contact-the-sheet":
+        return "Contact the Sheet";
+      case "mvd-convert":
+        return "MVD Convert";
+      case "resources":
+        return "Kho Tài nguyên Creative";
+      case "photo-counter":
+        return "Thống kê sản lượng";
+      case "system":
+        return "Cài đặt & Bản quyền";
+      default:
+        return "DH Studio Pro";
     }
-    authLogout();
   };
 
   return (
-    <div className="flex items-center justify-between gap-3 px-3 py-2">
-      {/* Left: Logo + Brand + Back Button */}
-      <div className="flex items-center gap-2">
-        {activeModule !== "launcher" && (
-          <button 
-            type="button"
-            aria-label="Quay lại Launcher"
-            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer border border-transparent hover:border-border"
-            onClick={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect();
-              setLastClickPos({ 
-                x: rect.left + rect.width / 2, 
-                y: rect.top + rect.height / 2 
-              });
-              setActiveModule("launcher");
-            }}
-            title="Quay lại Launcher"
-          >
-            <ArrowLeft size={14} />
-          </button>
-        )}
-        
-        <button
-          type="button"
-          aria-label="DH Studio Pro, về Launcher"
-          className="flex items-center gap-2.5 cursor-pointer hover:opacity-90 transition-opacity py-0.5 text-left rounded-lg"
-          onClick={(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            setLastClickPos({ 
-              x: rect.left + rect.width / 2, 
-              y: rect.top + rect.height / 2 
-            });
-            setActiveModule("launcher");
-          }}
-          title="DH Studio Pro · DevHouse Software"
+    <header className="h-12 w-full flex items-center justify-between gap-4 px-2 select-none">
+      {/* Left: Capsule Theme Switcher + Module Title */}
+      <div className="flex items-center gap-3 shrink-0">
+        {/* Capsule Theme Switcher [ 🌓 | ☀️ | 🌙 ] */}
+        <div
+          className="flex items-center p-0.5 rounded-full bg-black/5 dark:bg-white/10 border border-black/5 dark:border-white/10 transition-colors"
+          title="Chế độ giao diện (Tự động / Sáng / Tối)"
         >
-          <BrandLogo variant="icon" className="w-8 h-8 rounded-lg object-contain shadow-sm shrink-0" />
-          <div className="flex flex-col">
-            <span className="text-[13px] font-bold tracking-wide text-foreground uppercase whitespace-nowrap leading-tight">
-              DH Studio Pro
-            </span>
-            <span className="text-[10px] font-medium text-muted-foreground tracking-wider leading-none mt-0.5">
-              DevHouse Software
-            </span>
-          </div>
-        </button>
+          {/* Auto / System */}
+          <button
+            type="button"
+            onClick={() => updateSetting("theme", "system")}
+            className={`w-6 h-6 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+              theme === "system"
+                ? "bg-white dark:bg-[#2c2d33] text-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            title="Tự động theo hệ điều hành (Auto)"
+            aria-label="Chế độ tự động"
+          >
+            <CircleDot size={12} className="rotate-45" />
+          </button>
 
-        {/* Update badge — flat subtle */}
+          {/* Light */}
+          <button
+            type="button"
+            onClick={() => updateSetting("theme", "light")}
+            className={`w-6 h-6 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+              theme === "light"
+                ? "bg-white text-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            title="Giao diện Sáng (Light mode)"
+            aria-label="Chế độ sáng"
+          >
+            <Sun size={12} className="text-amber-500" />
+          </button>
+
+          {/* Dark */}
+          <button
+            type="button"
+            onClick={() => updateSetting("theme", "dark")}
+            className={`w-6 h-6 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+              theme === "dark"
+                ? "bg-[#2c2d33] text-white shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            title="Giao diện Tối (Dark mode)"
+            aria-label="Chế độ tối"
+          >
+            <Moon size={12} className="text-blue-400" />
+          </button>
+        </div>
+
+        {/* Current Module Title Breadcrumb */}
+        <div className="flex items-center gap-2">
+          <span className="text-[13px] font-bold text-foreground tracking-tight">
+            {getModuleTitle()}
+          </span>
+
+          {activeModule !== "launcher" && (
+            <button
+              type="button"
+              onClick={() => setActiveModule("launcher")}
+              className="text-[11px] text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+            >
+              · Về Bảng điều khiển
+            </button>
+          )}
+        </div>
+
+        {/* Update badge */}
         {updateResult?.hasUpdate && (
           <button
             onClick={(e) => {
               e.stopPropagation();
               openModal();
             }}
-            className="text-[10px] py-0.5 px-2 bg-primary/10 hover:bg-primary/15 text-primary font-medium flex items-center gap-1 rounded-md cursor-pointer border border-primary/20 transition-all"
+            className="text-[10px] py-0.5 px-2 bg-primary/10 hover:bg-primary/15 text-primary font-medium flex items-center gap-1 rounded-full cursor-pointer border border-primary/20 transition-all"
             title={`Có bản cập nhật mới v${updateResult.version}`}
           >
-            <RefreshCw size={10} className="shrink-0" />
+            <RefreshCw size={10} className="shrink-0 animate-spin" />
             <span>v{updateResult.version}</span>
           </button>
         )}
       </div>
 
-      {/* Center: Smart Search Bar & Navigation Tabs */}
-      <div className="flex items-center gap-2">
-        {/* Smart Search Bar — Only visible on Launcher page */}
-        {activeModule === "launcher" && <SmartSearchBar />}
-
-        {/* Module Sub-tabs */}
-        {(activeModule !== "launcher" && activeModule !== "system" && activeModule !== "resources") && tabs.length > 0 && (
-          <nav role="tablist" aria-label="Điều hướng công cụ" className="flex items-center gap-0.5 p-0.5 bg-muted/50 rounded-lg border border-border/50">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                role="tab"
-                aria-selected={activeTab === tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`text-[11px] font-medium py-1 px-2.5 rounded-md flex items-center gap-1.5 transition-colors cursor-pointer ${
-                  activeTab === tab.id
-                    ? "bg-card text-foreground shadow-sm font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {tab.icon}
-                {tab.label}
-              </button>
-            ))}
-          </nav>
+      {/* Center: Smart Search Bar (Spotlight Style) */}
+      <div className="flex-1 flex justify-center max-w-md">
+        {activeModule === "launcher" && (
+          <div className="w-full">
+            <SmartSearchBar />
+          </div>
         )}
       </div>
 
-      {/* Right: Subscription Badge + License + User Menu + System */}
-      <div className="flex items-center gap-1.5">
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setShowLicenseManager(!showLicenseManager)}
-            aria-label="Quyền lợi và gói dịch vụ"
-            className="text-[11px] py-1 px-2.5 bg-muted/50 hover:bg-muted border border-border text-foreground transition-colors font-medium flex items-center gap-1.5 rounded-lg cursor-pointer"
-          >
-            <Key size={12} aria-hidden="true" className="text-amber-600 dark:text-amber-400" />
-            <span className="hidden md:inline">Quyền Lợi</span>
-          </button>
-          {showLicenseManager && (
-            <LicenseManager
-              onClose={() => setShowLicenseManager(false)}
-              variant="modal"
-              initialMode="my_plan"
-            />
-          )}
-        </div>
-        
-        <SubscriptionBadge onClick={() => setShowLicenseManager(true)} />
-
-        {/* Session Countdown (only when session limit is enforced) */}
+      {/* Right: Session Timer */}
+      <div className="flex items-center gap-2 shrink-0">
+        {/* Session Countdown (only when expiring soon or limited) */}
         {session && !isUnlimited && (
           <div
-            className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-mono border transition-all select-none ${
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-mono border transition-all select-none ${
               isExpiringSoon
                 ? "bg-destructive/10 text-destructive border-destructive/30 font-semibold animate-pulse"
-                : "bg-muted/30 text-muted-foreground border-border/40"
+                : "bg-black/5 dark:bg-white/10 text-muted-foreground border-border/40"
             }`}
-            title="Thời gian còn lại của phiên làm việc"
+            title="Thời gian phiên làm việc còn lại"
           >
-            <Clock size={10} className={isExpiringSoon ? "text-destructive shrink-0" : "text-muted-foreground shrink-0"} />
+            <Clock size={10} className={isExpiringSoon ? "text-destructive" : "text-muted-foreground"} />
             <span>{formattedTime}</span>
           </div>
         )}
-
-        {/* User Avatar / Menu */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setShowUserMenu(!showUserMenu)}
-            aria-haspopup="menu"
-            aria-expanded={showUserMenu}
-            aria-label="Menu tài khoản"
-            className="flex items-center gap-1.5 px-1.5 py-1 rounded-md hover:bg-muted transition-colors cursor-pointer"
-          >
-            <div className="w-5 h-5 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center text-primary">
-              <User size={11} />
-            </div>
-            <span className="text-[11px] font-medium text-foreground/90 max-w-[96px] truncate hidden sm:inline">
-              {session?.name || "User"}
-            </span>
-          </button>
-
-          {/* Dropdown Menu */}
-          {showUserMenu && (
-            <>
-              <div
-                className="fixed inset-0 z-40"
-                onClick={() => setShowUserMenu(false)}
-              />
-              <div className="absolute right-0 top-full mt-1.5 w-52 panel p-1.5 z-50 animate-slide-up shadow-lg border border-border rounded-xl">
-                <div className="px-2.5 py-2 border-b border-border/50 mb-1">
-                  <p className="text-[11px] font-semibold truncate text-foreground">{session?.name}</p>
-                  <p className="text-[10px] font-mono text-primary truncate">
-                    @{session?.username || session?.email.split("@")[0]}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground truncate">
-                    {session?.email}
-                  </p>
-                </div>
-
-                <button
-                  onClick={() => {
-                    setShowUserMenu(false);
-                    setShowAccountModal(true);
-                  }}
-                  className="w-full flex items-center gap-2 px-2.5 py-1.5 text-[11px] text-foreground hover:bg-muted rounded-md transition-colors cursor-pointer"
-                >
-                  <Shield size={13} className="text-primary/70" />
-                  Tài khoản & Bảo mật
-                </button>
-
-                <button
-                  onClick={() => {
-                    setShowUserMenu(false);
-                    setShowLicenseManager(true);
-                  }}
-                  className="w-full flex items-center gap-2 px-2.5 py-1.5 text-[11px] text-foreground hover:bg-muted rounded-md transition-colors cursor-pointer"
-                >
-                  <Key size={13} className="text-amber-500/70" />
-                  Đổi Quyền Lợi / Key
-                </button>
-
-                <div className="my-1 border-t border-border/40" />
-
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-2 px-2.5 py-1.5 text-[11px] text-destructive hover:bg-destructive/8 rounded-md transition-colors cursor-pointer"
-                >
-                  <LogOut size={13} />
-                  {t("logout")}
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Account & Security Modal */}
-        <AccountSecurityModal
-          isOpen={showAccountModal}
-          onClose={() => setShowAccountModal(false)}
-        />
-
-        {/* Quick Theme Toggle (CleanMyMac style) */}
-        <button
-          onClick={() => {
-            const next = theme === "dark" ? "light" : "dark";
-            updateSetting("theme", next);
-          }}
-          type="button"
-          title={theme === "dark" ? "Chuyển sang Giao diện Sáng (Light)" : "Chuyển sang Giao diện Tối (Dark)"}
-          aria-label={theme === "dark" ? "Chuyển sang giao diện sáng" : "Chuyển sang giao diện tối"}
-          className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-        >
-          {theme === "dark" ? (
-            <Sun size={14} aria-hidden="true" className="text-amber-400" />
-          ) : (
-            <Moon size={14} aria-hidden="true" className="text-slate-700" />
-          )}
-        </button>
-
-        {/* System Menu */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setActiveModule("system")}
-            title="Cài đặt hệ thống"
-            aria-label="Cài đặt hệ thống"
-            aria-current={activeModule === "system" ? "page" : undefined}
-            className={`flex items-center justify-center w-7 h-7 rounded-md hover:bg-muted transition-colors cursor-pointer ${
-              activeModule === "system" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Menu size={15} aria-hidden="true" />
-          </button>
-        </div>
       </div>
-    </div>
+    </header>
   );
 }

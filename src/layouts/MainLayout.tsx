@@ -7,32 +7,25 @@ import { TopBar } from "./TopBar";
 import { lazy, Suspense, useState } from "react";
 import { AlertCircle, Key } from "lucide-react";
 import { EcosystemSidebar } from "./EcosystemSidebar";
-// Each app is its own chunk, loaded the first time it is opened: the launcher alone no longer
-// parses and keeps the code of every module in memory.
+import { DonateModal } from "@/core/components/DonateModal";
+import { AnnouncementPopup } from "@/core/components/AnnouncementPopup";
+import { LicenseManager } from "@/core/license/LicenseManager";
+
 const PhotoPickerModule = lazy(() => import("@/modules/photo-picker"));
 const MvdConvertApp = lazy(() => import("@/modules/mvd-convert/MvdConvertApp"));
 const ResourcesApp = lazy(() => import("@/modules/resources/ResourcesApp"));
 const ContactTheSheetApp = lazy(() => import("@/modules/contact-the-sheet"));
 const PhotoCounterApp = lazy(() => import("@/modules/photo-counter"));
-import { DonateModal } from "@/core/components/DonateModal";
-import { AnnouncementPopup } from "@/core/components/AnnouncementPopup";
-import { LicenseManager } from "@/core/license/LicenseManager";
 
 export function AppLayout() {
   const activeTab = useAppStore((s) => s.activeTab);
   const activeModule = useAppStore((s) => s.activeModule);
   const hasSeenWelcome = useAppStore((s) => s.hasSeenWelcome);
   const subscriptionExpired = useAuthStore((s) => s.subscriptionExpired);
-  const lastClickPos = useAppStore((s) => s.lastClickPos);
   const [showLicenseModal, setShowLicenseModal] = useState(false);
 
-  const originStyle = lastClickPos 
-    ? { transformOrigin: `${lastClickPos.x}px ${lastClickPos.y}px` }
-    : { transformOrigin: 'center center' };
-
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-background text-foreground p-2 gap-2 relative select-none">
-      
+    <div className="h-screen w-screen flex flex-row overflow-hidden bg-background text-foreground select-none relative">
       {!hasSeenWelcome && <WelcomeScreen />}
       <DonateModal />
       <AnnouncementPopup />
@@ -44,16 +37,20 @@ export function AppLayout() {
           initialMode="packages"
         />
       )}
-      
-      {/* TopBar Glass Wrapper */}
-      <div className="rounded-xl shrink-0 relative z-50 bg-card border border-border shadow-sm overflow-visible">
-        <TopBar />
-      </div>
 
-      {/* Pages Container */}
-      <div className="flex-1 relative flex flex-col min-h-0 z-10">
+      {/* Persistent Left macOS Sidebar */}
+      <EcosystemSidebar />
+
+      {/* Right Unified Window Content */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 h-full overflow-hidden relative">
+        {/* Top macOS Bar */}
+        <div className="shrink-0 z-30 px-4 pt-2 pb-1.5 border-b border-border/50">
+          <TopBar />
+        </div>
+
+        {/* Expired Subscription Blocker */}
         {subscriptionExpired && activeTab !== "settings" && (
-          <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-background/85 backdrop-blur-md rounded-2xl border border-destructive/30 pointer-events-auto p-6 text-center select-none animate-fade-in shadow-2xl">
+          <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-background/85 backdrop-blur-md pointer-events-auto p-6 text-center select-none animate-fade-in shadow-2xl">
             <div className="w-14 h-14 rounded-2xl bg-destructive/15 border border-destructive/30 flex items-center justify-center text-destructive mb-3.5 shadow-inner">
               <AlertCircle className="w-8 h-8" />
             </div>
@@ -74,26 +71,24 @@ export function AppLayout() {
           </div>
         )}
 
-        <div className={`flex-1 flex flex-row min-h-0 min-w-0 w-full h-full gap-2 ${subscriptionExpired && activeTab !== "settings" ? "opacity-30 pointer-events-none" : ""}`}>
-          
-          {activeModule !== "launcher" && <EcosystemSidebar />}
-
-          <div 
-            key={activeModule} 
-            className="flex-1 relative flex flex-col min-h-0 min-w-0 w-full overflow-hidden animate-app-enter"
-            style={originStyle}
-          >
-            {activeModule === "launcher" && <LauncherPage />}
-            {activeModule === "system" && <SystemModule />}
-            <Suspense fallback={null}>
-              {activeModule === "photo-picker" && <PhotoPickerModule />}
-              {activeModule === "mvd-convert" && <MvdConvertApp />}
-              {activeModule === "resources" && <ResourcesApp />}
-              {activeModule === "contact-the-sheet" && <ContactTheSheetApp />}
-              {activeModule === "photo-counter" && <PhotoCounterApp />}
-            </Suspense>
-          </div>
-        </div>
+        {/* Active Module Container with Symmetrical Left and Right Padding */}
+        <main
+          className={`flex-1 relative flex flex-col min-h-0 min-w-0 w-full overflow-hidden px-4 pb-3.5 pt-2 ${
+            subscriptionExpired && activeTab !== "settings"
+              ? "opacity-30 pointer-events-none"
+              : ""
+          }`}
+        >
+          {activeModule === "launcher" && <LauncherPage />}
+          {activeModule === "system" && <SystemModule />}
+          <Suspense fallback={null}>
+            {activeModule === "photo-picker" && <PhotoPickerModule />}
+            {activeModule === "mvd-convert" && <MvdConvertApp />}
+            {activeModule === "resources" && <ResourcesApp />}
+            {activeModule === "contact-the-sheet" && <ContactTheSheetApp />}
+            {activeModule === "photo-counter" && <PhotoCounterApp />}
+          </Suspense>
+        </main>
       </div>
     </div>
   );

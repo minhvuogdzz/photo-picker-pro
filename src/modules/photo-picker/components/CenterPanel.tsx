@@ -63,7 +63,8 @@ export function CenterPanel() {
     const activeFolder = selectedInputFolders[0] || inputFolders[0];
     if (activeFolder) {
       const folderName = activeFolder.split(/[/\\]+/).filter(Boolean).pop() || activeFolder;
-      await autoFindService.fetchAndApplyCodesForCustomer(activeFolder, folderName);
+      autoFindService.clearCache();
+      await autoFindService.fetchAndApplyCodesForCustomer(activeFolder, folderName, { forceFresh: true });
     }
   };
 

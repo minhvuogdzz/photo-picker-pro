@@ -2,6 +2,29 @@
 
 Tất cả các bản phát hành của **DH Studio Pro** (phát triển & thuộc sở hữu bản quyền của **DevHouse Software**) đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
 
+## [v2.9.4] - 2026-10-30
+
+### Trong bản cập nhật này, chúng tôi đã:
+
+#### 🎨 Tái thiết lập giao diện Studio Dashboard & Phong cách macOS hiện đại
+- **Bảng màu Light Mode & Dark Mode cao cấp:** Tinh chỉnh hệ màu chuẩn theo phong cách macOS, nền canvas mềm mại, thẻ bo tròn mềm mại và bóng mờ tinh tế.
+- **Bố cục Hero Card đôi song song:** Hai thẻ tiêu điểm quan trọng nhất (Chỉ số RAM/Bộ nhớ hệ thống & Kho Tài Nguyên Creative) được mở rộng kích thước đặt song song ở hàng trên cùng.
+- **Khối ứng dụng Studio dạng mini-card:** 4 ứng dụng cốt lõi (Photo Picker Pro, Contact The Sheet, MVD Convert, Thống kê) được chuyển đổi thành các khối nhỏ xinh, cân đối và hiển thị trọn vẹn thông tin nghiệp vụ.
+- **Căn giữa giao diện thông minh:** Tự động căn giữa nội dung theo chiều dọc và chiều ngang, thu gọn khoảng cách (gap) giữa các thẻ, mang lại bố cục hoàn hảo trên màn hình rộng không còn khoảng trống chết.
+
+#### 🧭 Hệ thống Thanh bên sinh thái (Ecosystem Sidebar) & Hub người dùng
+- **Nhận diện thương hiệu nguyên bản:** Đảm bảo chính xác thương hiệu **DH Studio Pro** cùng đơn vị phát triển **DevHouse Software** và biểu tượng logo chính thức.
+- **Hub tài khoản & Bản quyền trực quan ở chân thanh bên:** Di chuyển toàn bộ thông tin tài khoản người dùng, gói thời hạn bản quyền, phím nạp Key và nút Donate Cafe xuống đáy thanh bên.
+- **Tinh gọn danh mục điều hướng:** Bỏ mục Thùng rác và Lịch sử thao tác dư thừa trên thanh bên để tối ưu hóa không gian cho các phân hệ chính.
+
+#### ⚡ Tối ưu thanh TopBar & Không gian làm việc
+- **Bộ chuyển đổi theme capsule trực quan:** Bổ sung switch 3 chế độ [ 🌓 Tự động | ☀️ Sáng | 🌙 Tối ] nhanh chóng và hiện đại.
+- **Loại bỏ tab thừa:** Bỏ các tab riêng của Photo Picker trên thanh đầu trang, tăng diện tích cho thanh tìm kiếm thông minh Smart Search.
+- **Cân đối khoảng cách:** Căn lề đối xứng 16px giữa thanh bên, nội dung và mép phải cửa sổ.
+- **Toàn vẹn chức năng:** Bảo toàn 100% tất cả các tính năng, IPC và luồng logic nghiệp vụ của tất cả các app trong hệ sinh thái.
+
+---
+
 ## [v2.9.3] - 2026-10-28
 
 ### Trong bản cập nhật này, chúng tôi đã:

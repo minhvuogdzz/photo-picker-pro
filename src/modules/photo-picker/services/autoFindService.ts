@@ -84,7 +84,7 @@ class AutoFindService {
    */
   private tabRowsCache = new Map<string, CachedTabEntry>();
   private sheetMetadataCache = new Map<string, { tabs: string[]; timestamp: number }>();
-  private readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+  private readonly CACHE_TTL_MS = 60 * 1000; // 60 seconds (fresh enough for active studio workflows)
 
   private cacheKey(spreadsheetId: string, tabTitle: string, startRow: number): string {
     return `${spreadsheetId}::${tabTitle}::${startRow}`;
@@ -96,6 +96,18 @@ class AutoFindService {
   public clearCache(): void {
     this.tabRowsCache.clear();
     this.sheetMetadataCache.clear();
+  }
+
+  /**
+   * Invalidate cached rows for a specific tab.
+   */
+  public clearTabCache(spreadsheetId: string, tabTitle: string): void {
+    const prefix = `${spreadsheetId}::${tabTitle}::`;
+    for (const key of Array.from(this.tabRowsCache.keys())) {
+      if (key.startsWith(prefix)) {
+        this.tabRowsCache.delete(key);
+      }
+    }
   }
 
   /**
@@ -156,14 +168,15 @@ class AutoFindService {
     spreadsheetId: string,
     tabTitle: string,
     startRow: number,
-    isMock: boolean
+    isMock: boolean,
+    forceFresh: boolean = false
   ): Promise<Array<{ row: number; values: Record<string, string> }>> {
     const key = this.cacheKey(spreadsheetId, tabTitle, startRow);
     const existing = this.tabRowsCache.get(key);
     const now = Date.now();
 
-    // 1. Return fresh cached rows immediately (0ms latency, 0 API quota)
-    if (existing && now - existing.timestamp < this.CACHE_TTL_MS) {
+    // 1. Return fresh cached rows immediately if not forced fresh
+    if (!forceFresh && existing && now - existing.timestamp < this.CACHE_TTL_MS) {
       return existing.rows;
     }
 
@@ -209,8 +222,12 @@ class AutoFindService {
    */
   public async fetchAndApplyCodesForCustomer(
     folderPath: string,
-    providedFolderName?: string
+    providedFolderName?: string,
+    options?: { forceFresh?: boolean }
   ): Promise<AutoFindResult> {
+    if (options?.forceFresh) {
+      this.clearCache();
+    }
     const rawName =
       providedFolderName ||
       getFolderName(folderPath) ||
@@ -343,7 +360,13 @@ class AutoFindService {
       if (primaryCandidateTab && checkedTabs.length > 1) {
         try {
           const startRow = getTabStartRow(profile, primaryCandidateTab);
-          const rows = await this.getTabRowsCached(profile.spreadsheetId, primaryCandidateTab, startRow, isMock);
+          const rows = await this.getTabRowsCached(
+            profile.spreadsheetId,
+            primaryCandidateTab,
+            startRow,
+            isMock,
+            options?.forceFresh
+          );
           tabRows.push({ tabTitle: primaryCandidateTab, rows });
 
           // Fast check on primary tab
@@ -355,9 +378,26 @@ class AutoFindService {
             configuredStatusValue
           );
 
-          if (candidateExtraction.status !== "NO_MATCH" && candidateExtraction.matchedRow) {
+          const candidateHasCodes = (candidateExtraction.candidateColumns || []).some(
+            (c: any) => c.codeCount > 0
+          );
+
+          // Fast-path only claims victory if it actually found a row WITH CODES!
+          // If the customer row exists but has 0 codes on this primary tab,
+          // we MUST proceed to load the remaining tabs to find where the codes actually reside.
+          if (
+            candidateExtraction.status !== "NO_MATCH" &&
+            candidateExtraction.matchedRow &&
+            candidateHasCodes
+          ) {
             extraction = candidateExtraction;
-            console.log(`[AutoFindService] Fast-path match succeeded on primary tab "${primaryCandidateTab}"!`);
+            console.log(
+              `[AutoFindService] Fast-path match succeeded with codes on primary tab "${primaryCandidateTab}"!`
+            );
+          } else {
+            console.log(
+              `[AutoFindService] Primary tab "${primaryCandidateTab}" yielded no codes for "${rawName}". Continuing search on remaining tabs...`
+            );
           }
         } catch (fetchErr) {
           console.warn(`[AutoFindService] Primary tab "${primaryCandidateTab}" fetch error:`, fetchErr);
@@ -365,13 +405,19 @@ class AutoFindService {
         }
       }
 
-      // If fast-path did not produce a match, fetch the remaining checked tabs in parallel
+      // If fast-path did not produce a match with codes, fetch the remaining checked tabs in parallel
       if (!extraction) {
         const remainingTabs = checkedTabs.filter((t) => t !== primaryCandidateTab);
         if (remainingTabs.length > 0) {
           const fetchPromises = remainingTabs.map(async (tabTitle) => {
             const startRow = getTabStartRow(profile, tabTitle);
-            const rows = await this.getTabRowsCached(profile.spreadsheetId, tabTitle, startRow, isMock);
+            const rows = await this.getTabRowsCached(
+              profile.spreadsheetId,
+              tabTitle,
+              startRow,
+              isMock,
+              options?.forceFresh
+            );
             return { tabTitle, rows };
           });
 
@@ -430,7 +476,13 @@ class AutoFindService {
         const fallbackResults = await Promise.allSettled(
           batchFallback.map(async (fallbackTab) => {
             const startRow = getTabStartRow(profile, fallbackTab);
-            const rows = await this.getTabRowsCached(profile.spreadsheetId, fallbackTab, startRow, isMock);
+            const rows = await this.getTabRowsCached(
+              profile.spreadsheetId,
+              fallbackTab,
+              startRow,
+              isMock,
+              options?.forceFresh
+            );
             return { fallbackTab, rows };
           })
         );
@@ -510,9 +562,100 @@ class AutoFindService {
         };
       }
 
+      // 7.1. Check if the matched row has NO codes, but another sameFileRow or candidateRow DOES have codes!
+      let candidateCols = extraction.candidateColumns || [];
+      let columnsWithCodes = candidateCols.filter((c: any) => c.codeCount > 0);
+
+      if (columnsWithCodes.length === 0 && extraction.sameFileRows && extraction.sameFileRows.length > 1) {
+        const altSameFile =
+          extraction.sameFileRows.find((r) => r.hasCodes && !r.isCompleted) ||
+          extraction.sameFileRows.find((r) => r.hasCodes);
+
+        if (altSameFile) {
+          const altExtraction = extractCodesAcrossTabs(
+            rawName,
+            folderPath,
+            tabRows,
+            profile,
+            configuredStatusValue,
+            { tabTitle: altSameFile.tabTitle, row: altSameFile.row }
+          );
+          if (altExtraction.candidateColumns.some((c: any) => c.codeCount > 0)) {
+            extraction = altExtraction;
+            candidateCols = extraction.candidateColumns || [];
+            columnsWithCodes = candidateCols.filter((c: any) => c.codeCount > 0);
+            console.log(
+              `[AutoFindService] Switched to same-file row with codes: Row ${altSameFile.row} on Tab "${altSameFile.tabTitle}"`
+            );
+          }
+        }
+      }
+
+      if (columnsWithCodes.length === 0 && extraction.candidateRows && extraction.candidateRows.length > 0) {
+        for (const cand of extraction.candidateRows) {
+          if (cand.row === extraction.matchedRow && cand.tabTitle === extraction.matchedTabTitle) continue;
+          const candTab = cand.tabTitle || profile.selectedTabTitle || checkedTabs[0] || "";
+          const tabProfile = getTabProfile(profile, candTab);
+          const cols = sheetExtractorService.detectCodeColumns(tabProfile, cand.values);
+          if (cols.some((c: any) => c.codeCount > 0)) {
+            extraction = {
+              ...extraction,
+              matchedRow: cand.row,
+              matchedTabTitle: candTab,
+              status: "READY",
+              reason: `Khớp theo hàng có mã ảnh (${cand.matchedFields.join(", ")})`,
+              targetSnapshot: cand.values,
+              candidateColumns: cols,
+            };
+            candidateCols = cols;
+            columnsWithCodes = candidateCols.filter((c: any) => c.codeCount > 0);
+            console.log(
+              `[AutoFindService] Switched to candidate row with codes: Row ${cand.row} on Tab "${candTab}"`
+            );
+            break;
+          }
+        }
+      }
+
+      // 7.2. ULTRA STABILITY FEATURE: Auto fresh fetch from Google Sheets if row is found but codes are empty!
+      // This happens when the Google Sheet was JUST updated by studio staff but the app was using cached rows.
+      if (columnsWithCodes.length === 0 && extraction.matchedRow && !options?.forceFresh) {
+        const matchedTab = extraction.matchedTabTitle || primaryCandidateTab;
+        console.log(
+          `[AutoFindService] Row ${extraction.matchedRow} on "${matchedTab}" has 0 codes in cache. Invalidation and fresh fetch from Google Sheets...`
+        );
+        this.clearTabCache(profile.spreadsheetId, matchedTab);
+        try {
+          const startRow = getTabStartRow(profile, matchedTab);
+          const freshRows = await this.getTabRowsCached(
+            profile.spreadsheetId,
+            matchedTab,
+            startRow,
+            isMock,
+            true
+          );
+          const freshExtraction = extractCodesAcrossTabs(
+            rawName,
+            folderPath,
+            [{ tabTitle: matchedTab, rows: freshRows }],
+            profile,
+            configuredStatusValue,
+            { tabTitle: matchedTab, row: extraction.matchedRow }
+          );
+          if (freshExtraction.candidateColumns.some((c: any) => c.codeCount > 0)) {
+            extraction = freshExtraction;
+            candidateCols = extraction.candidateColumns || [];
+            columnsWithCodes = candidateCols.filter((c: any) => c.codeCount > 0);
+            console.log(
+              `[AutoFindService] Fresh fetch succeeded! Found codes for Row ${extraction.matchedRow}!`
+            );
+          }
+        } catch (freshErr) {
+          console.warn("[AutoFindService] Fresh fetch retry failed:", freshErr);
+        }
+      }
+
       // 8. Pick candidate columns with codes
-      const candidateCols = extraction.candidateColumns || [];
-      const columnsWithCodes = candidateCols.filter((c: any) => c.codeCount > 0);
       const activeCols = columnsWithCodes.length > 0 ? columnsWithCodes : candidateCols.slice(0, 1);
 
       const formattedCodes = sheetExtractorService.formatExtractedCodes(activeCols);
@@ -556,7 +699,7 @@ class AutoFindService {
         profileId: profile.id,
         spreadsheetId: profile.spreadsheetId,
         tabTitle: matchedTab,
-        matchedRow: extraction.matchedRow,
+        matchedRow: extraction.matchedRow!,
         jobName: extraction.jobFolderName,
         folderName: rawName,
         statusColumnLetter: statusMapping?.columnLetter,

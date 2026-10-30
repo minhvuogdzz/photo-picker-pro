@@ -15,10 +15,46 @@ export interface VersionReleaseNote {
 
 export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
   {
+    version: "v2.9.4",
+    date: "2026-10-30",
+    title: "Tái thiết lập giao diện Studio Dashboard toàn diện & Tối ưu không gian làm việc macOS",
+    isCurrent: true,
+    sections: [
+      {
+        title: "🎨 Tái thiết lập giao diện Studio Dashboard & Phong cách macOS hiện đại",
+        type: "design",
+        items: [
+          "Tái thiết kế toàn diện bảng màu Light Mode & Dark Mode theo ngôn ngữ thiết kế macOS hiện đại, độ tương phản mượt mà, chiều sâu viền và bóng đổ mềm mại.",
+          "Tối ưu bố cục Launcher với 2 Hero Card lớn đặt song song: Thẻ giám sát bộ nhớ & RAM với đồng hồ đo tỷ lệ tròn (Circular Gauge) cùng Thẻ tiêu điểm Kho Tài Nguyên Creative.",
+          "Tinh chỉnh 4 ứng dụng Studio (Photo Picker Pro, Contact The Sheet, MVD Convert, Thống kê) thành các khối module nhỏ gọn, cân đối, hiển thị đầy đủ thông tin trạng thái.",
+          "Căn giữa bảng điều khiển tự nhiên theo chiều dọc và ngang, thu gọn khoảng cách (gap) giữa các thành phần, loại bỏ khoảng trống thừa trên màn hình độ phân giải cao.",
+        ],
+      },
+      {
+        title: "🧭 Tối ưu hóa Thanh bên sinh thái (Ecosystem Sidebar) & Hub người dùng",
+        type: "design",
+        items: [
+          "Tích hợp đầy đủ nhận diện thương hiệu DH Studio Pro & DevHouse Software cùng logo chính thức.",
+          "Chuyển toàn bộ thông tin người dùng, trạng thái gói bản quyền (Full App), mã kích hoạt Key và nút ủng hộ Cafe xuống chân thanh bên (footer) gọn gàng, trực quan.",
+          "Lược bỏ các mục điều hướng không cần thiết như Thùng rác và Lịch sử thao tác trên thanh bên chính.",
+        ],
+      },
+      {
+        title: "⚡ Tinh chỉnh thanh điều hướng TopBar & Trải nghiệm tổng thể",
+        type: "improvement",
+        items: [
+          "Bổ sung bộ chuyển đổi giao diện hình con nhộng trực quan [ 🌓 Tự động | ☀️ Sáng | 🌙 Tối ] ngay trên thanh TopBar.",
+          "Lược bỏ các tab con chuyển chế độ riêng lẻ của Photo Picker trên thanh đầu trang, tăng cường diện tích thanh tìm kiếm thông minh.",
+          "Căn chỉnh đối xứng lề trái và phải (16px) cho khu vực làm việc chính của ứng dụng.",
+          "Đảm bảo 100% tất cả các tính năng, kết nối IPC và luồng xử lý dữ liệu của các ứng dụng hoạt động ổn định và chính xác.",
+        ],
+      },
+    ],
+  },
+  {
     version: "v2.9.3",
     date: "2026-10-28",
     title: "Tự động đổi trạng thái lọc & Khắc phục phân quyền Batch Contact The Sheet",
-    isCurrent: true,
     sections: [
       {
         title: "⚡ Tự động hóa Trạng thái lọc (Status Automation)",

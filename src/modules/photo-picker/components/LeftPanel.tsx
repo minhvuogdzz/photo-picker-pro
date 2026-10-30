@@ -91,6 +91,9 @@ export function LeftPanel() {
           if (pickerMode !== "multi") {
             setPickerMode("multi");
           }
+          // Turn off Auto Find by default when dropping/adding folders into multi-customer mode
+          useAppStore.getState().setAutoFindEnabled(false);
+          useAppStore.getState().setAutoFindStatus(null);
           setIsExpandingBatch(true);
           try {
             await batchFolderService.expandAndIngestFolders(paths);
@@ -174,6 +177,9 @@ export function LeftPanel() {
           if (pickerMode !== "multi") {
             setPickerMode("multi");
           }
+          // Turn off Auto Find by default when adding folders into multi-customer mode
+          useAppStore.getState().setAutoFindEnabled(false);
+          useAppStore.getState().setAutoFindStatus(null);
           setIsExpandingBatch(true);
           try {
             await batchFolderService.expandAndIngestFolders(folders);

@@ -154,12 +154,14 @@ export class SheetExtractorService {
       });
     }
 
-    // If configured code columns were found in profile, return them directly without guessing other unrelated columns!
-    if (results.length > 0) {
+    // If configured code columns were found in profile and contain codes, return them directly!
+    if (results.length > 0 && results.some((r) => r.codeCount > 0)) {
       return results;
     }
 
-    // 2. Fallback ONLY if no code columns were configured in profile:
+    // 2. Fallback: If no code columns were configured OR configured code columns are empty on this row,
+    // check remaining columns that match code-related headers:
+    const fallbackResults: ExtractedCodeColumn[] = [];
     for (const mapping of profile.fieldMappings) {
       if (seenCols.has(mapping.columnLetter)) continue;
 
@@ -172,16 +174,22 @@ export class SheetExtractorService {
         if (val && !val.startsWith("#") && !val.startsWith("http://") && !val.startsWith("https://")) {
           seenCols.add(mapping.columnLetter);
           const parsed = this.parseTokenList(val);
-          results.push({
-            columnLetter: mapping.columnLetter,
-            columnHeader: mapping.columnHeader || `Cột ${mapping.columnLetter}`,
-            value: val,
-            codeCount: parsed.length,
-            sampleCodes: parsed.slice(0, 5),
-            isPrimary: results.length === 0,
-          });
+          if (parsed.length > 0) {
+            fallbackResults.push({
+              columnLetter: mapping.columnLetter,
+              columnHeader: mapping.columnHeader || `Cột ${mapping.columnLetter}`,
+              value: val,
+              codeCount: parsed.length,
+              sampleCodes: parsed.slice(0, 5),
+              isPrimary: results.length === 0 && fallbackResults.length === 0,
+            });
+          }
         }
       }
+    }
+
+    if (fallbackResults.length > 0) {
+      return [...results, ...fallbackResults];
     }
 
     return results;

@@ -4,6 +4,8 @@
 @theme {
   --color-background: var(--color-background);
   --color-foreground: var(--color-foreground);
+  --color-sidebar: var(--color-sidebar);
+  --color-sidebar-foreground: var(--color-sidebar-foreground);
   --color-card: var(--color-card);
   --color-card-foreground: var(--color-card-foreground);
   --color-popover: var(--color-popover);
@@ -58,59 +60,63 @@
 
 @layer base {
   :root {
-    /* Light theme — soft cool canvas with pure white elevated cards.
-       Text/brand colors are chosen to clear WCAG AA (4.5:1) on both the canvas and the cards. */
-    --color-background: #e9eef6;
+    /* Light theme — refined macOS-style palette referenced from MClean.
+       Pure white elevated cards on soft cool canvas with Apple Blue accents. */
+    --color-background: #f4f6fb;
+    --color-sidebar: #e9ecf2;
+    --color-sidebar-foreground: #475569;
     --color-foreground: #0f172a;
     --color-card: #ffffff;
     --color-card-foreground: #0f172a;
     --color-popover: #ffffff;
     --color-popover-foreground: #0f172a;
 
-    --color-primary: #1d5fe0;
+    --color-primary: #007aff;
     --color-primary-foreground: #ffffff;
 
     --color-secondary: #eef2f8;
     --color-secondary-foreground: #1e293b;
 
     --color-muted: #edf1f7;
-    --color-muted-foreground: #56627a;
+    --color-muted-foreground: #64748b;
 
     --color-accent: #e2e8f2;
     --color-accent-foreground: #0f172a;
 
-    --color-destructive: #d92d2d;
+    --color-destructive: #ef4444;
     --color-destructive-foreground: #ffffff;
-    --color-success: #0b7a55;
-    --color-warning: #a15c07;
-    --color-info: #0369a1;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-info: #0284c7;
 
-    --color-border: #d6dfeb;
-    --color-border-strong: #b4c0d2;
+    --color-border: #e2e7ef;
+    --color-border-strong: #cbd5e1;
     --color-input: #ffffff;
-    --color-ring: #1d5fe0;
+    --color-ring: #007aff;
   }
 
   .dark {
-    /* Dark theme — deep matte slate canvas with layered cards.
-       Brand and status colors switch to lighter tonal variants (with dark foregrounds) so they stay legible. */
-    --color-background: #13161c;
-    --color-foreground: #f1f4f9;
-    --color-card: #1b1f28;
-    --color-card-foreground: #f1f4f9;
-    --color-popover: #1f2430;
-    --color-popover-foreground: #f1f4f9;
+    /* Dark theme — deep obsidian macOS-style palette referenced from MClean.
+       Layered matte dark cards on obsidian canvas with vivid glowing accents. */
+    --color-background: #121316;
+    --color-sidebar: #18191d;
+    --color-sidebar-foreground: #94a3b8;
+    --color-foreground: #f8fafc;
+    --color-card: #1c1d22;
+    --color-card-foreground: #f8fafc;
+    --color-popover: #1f2026;
+    --color-popover-foreground: #f8fafc;
 
-    --color-primary: #4f94ff;
-    --color-primary-foreground: #07122b;
+    --color-primary: #0a84ff;
+    --color-primary-foreground: #ffffff;
 
-    --color-secondary: #262b37;
+    --color-secondary: #262932;
     --color-secondary-foreground: #e2e8f0;
 
-    --color-muted: #212631;
-    --color-muted-foreground: #98a6bb;
+    --color-muted: #22242c;
+    --color-muted-foreground: #94a3b8;
 
-    --color-accent: #2a3041;
+    --color-accent: #2a2d38;
     --color-accent-foreground: #ffffff;
 
     --color-destructive: #f87171;
@@ -119,10 +125,10 @@
     --color-warning: #fbbf24;
     --color-info: #38bdf8;
 
-    --color-border: #2c3342;
-    --color-border-strong: #424b60;
-    --color-input: #11141a;
-    --color-ring: #4f94ff;
+    --color-border: rgba(255, 255, 255, 0.08);
+    --color-border-strong: rgba(255, 255, 255, 0.16);
+    --color-input: #15161b;
+    --color-ring: #0a84ff;
   }
 
   /* Keyboard focus: one consistent, visible ring for every interactive control (utilities can still override). */
