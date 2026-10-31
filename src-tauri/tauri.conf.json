@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "DH Studio Pro",
-  "version": "2.9.5",
+  "version": "2.9.6",
   "identifier": "com.minhvuong.devtool",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -13,6 +13,7 @@
     "windows": [
       {
         "title": "DH Studio Pro",
+        "label": "main",
         "width": 1280,
         "height": 800,
         "minWidth": 1024,
@@ -20,6 +21,20 @@
         "center": true,
         "resizable": true,
         "decorations": true
+      },
+      {
+        "title": "DH Studio Pro Control Hub",
+        "label": "tray-panel",
+        "url": "index.html?panel=tray",
+        "width": 340,
+        "height": 415,
+        "resizable": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "visible": false,
+        "shadow": false
       }
     ],
     "security": {

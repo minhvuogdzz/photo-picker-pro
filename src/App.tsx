@@ -3,12 +3,16 @@ import { AppLayout } from "@/layouts/MainLayout";
 import { AuthGuard } from "@/core/auth/AuthGuard";
 import { useSettingsStore } from "@/core/stores/useSettingsStore";
 import { useAuthStore } from "@/core/stores/useAuthStore";
+import { useAppStore } from "@/core/stores/useAppStore";
 import { UpdateDialog } from "@/core/updater_ui";
+import { InAppNotificationBanner } from "@/core/components/InAppNotificationBanner";
 import { useUpdaterStore } from "@/core/stores/useUpdaterStore";
 import { invoke } from "@tauri-apps/api/core";
 import { logout, validateSubscription, getNextSubscriptionCheckDelay } from "@/core/services/authApi";
 import { isOnline } from "@/core/services/apiClient";
 import { socketService } from "@/core/services/socketService";
+import { urgentCustomerScannerService } from "@/modules/photo-picker/services/urgentCustomerScannerService";
+import { TrayControlPanel } from "@/modules/tray-panel/TrayControlPanel";
 import type { AppSettings } from "@/core/types";
 
 function AppContent() {
@@ -137,36 +141,85 @@ function AppContent() {
 }
 
 function App() {
+  const isTrayPanel = typeof window !== "undefined" && window.location.search.includes("panel=tray");
+
+  if (isTrayPanel) {
+    if (typeof document !== "undefined") {
+      document.documentElement.classList.add("panel-tray");
+      document.body.classList.add("panel-tray");
+    }
+    return <TrayControlPanel />;
+  }
+
   const theme = useSettingsStore((s) => s.settings.theme);
   const setSettings = useSettingsStore((s) => s.setSettings);
   const autoCheck = useSettingsStore((s) => s.settings.auto_check_updates);
   const checkUpdates = useUpdaterStore((s) => s.checkForUpdates);
 
-  // Load settings on app start (globally)
+  // Listen for navigation requests from Tray menu bar popover
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    import("@tauri-apps/api/event").then(({ listen }) => {
+      listen<{ module: string }>("navigate-to-module", (event) => {
+        if (event.payload?.module) {
+          useAppStore.getState().setActiveModule(event.payload.module as any);
+        }
+      }).then((fn) => {
+        unlisten = fn;
+      });
+    });
+    return () => {
+      if (unlisten) unlisten();
+    };
+  }, []);
+
+  // Load settings on app start (globally) & sync system autostart
   useEffect(() => {
     const loadSettings = async () => {
       try {
         const loaded = await invoke<AppSettings>("load_settings");
         setSettings(loaded);
+        if (loaded.auto_start !== false) {
+          invoke("set_autostart", { enable: true }).catch(() => {});
+        }
       } catch (error) {
         console.error("Failed to load settings:", error);
       }
     };
     loadSettings();
+    urgentCustomerScannerService.ensurePermission().catch(() => {});
+    invoke("request_os_notification_permission").catch(() => {});
   }, [setSettings]);
+
+  // Periodic 5-minute background urgent customer sheet scanner
+  useEffect(() => {
+    urgentCustomerScannerService.startPeriodicScanner(5 * 60 * 1000);
+    return () => {
+      urgentCustomerScannerService.stopPeriodicScanner();
+    };
+  }, []);
 
   // Apply theme globally (even on LoginPage)
   useEffect(() => {
     const html = document.documentElement;
     const media = window.matchMedia("(prefers-color-scheme: dark)");
 
-    const applyCurrentTheme = () => {
+    let transitionTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const applyCurrentTheme = async () => {
       let isDark = false;
       if (theme === "system") {
-        isDark = media.matches;
+        try {
+          isDark = await invoke<boolean>("is_system_dark_mode");
+        } catch {
+          isDark = media.matches;
+        }
       } else {
         isDark = theme === "dark";
       }
+
+      // Kích hoạt transition mượt mà cho toàn bộ giao diện app (không giật)
+      html.classList.add("theme-transitioning");
 
       if (isDark) {
         html.classList.add("dark");
@@ -174,14 +227,28 @@ function App() {
         html.classList.remove("dark");
       }
 
+      localStorage.setItem("mvd_app_theme", isDark ? "dark" : "light");
+      localStorage.setItem("mvd_theme_mode", theme);
+      import("@tauri-apps/api/event").then(({ emit }) => {
+        emit("app-theme-changed", { theme, isDark });
+      }).catch(() => {});
+
       // Synchronize macOS Dock icon dynamically with light / dark state
       invoke("update_system_theme_icon", { theme: isDark ? "dark" : "light" }).catch(() => {});
+
+      if (transitionTimer) clearTimeout(transitionTimer);
+      transitionTimer = setTimeout(() => {
+        html.classList.remove("theme-transitioning");
+      }, 260);
     };
 
     applyCurrentTheme();
 
     media.addEventListener("change", applyCurrentTheme);
-    return () => media.removeEventListener("change", applyCurrentTheme);
+    return () => {
+      if (transitionTimer) clearTimeout(transitionTimer);
+      media.removeEventListener("change", applyCurrentTheme);
+    };
   }, [theme]);
 
   // Startup update check with intelligent retry (cold start)
@@ -243,6 +310,7 @@ function App() {
         <AppContent />
       </AuthGuard>
       <UpdateDialog />
+      <InAppNotificationBanner />
     </>
   );
 }

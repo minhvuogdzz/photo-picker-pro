@@ -160,12 +160,25 @@ pub fn save_file_bytes(file_path: String, bytes: Vec<u8>) -> Result<String, Stri
 extern "C" {
     fn macos_set_dock_icon_png(bytes: *const u8, length: usize);
     fn macos_is_system_dark_mode() -> i32;
+    fn macos_set_window_theme(is_dark: i32);
 }
 
 #[cfg(target_os = "macos")]
 const DOCK_ICON_DARK_PNG: &[u8] = include_bytes!("../../../public/brand/dh_app_icon_dock_dark.png");
 #[cfg(target_os = "macos")]
 const DOCK_ICON_LIGHT_PNG: &[u8] = include_bytes!("../../../public/brand/dh_app_icon_dock_light.png");
+
+#[tauri::command]
+pub fn is_system_dark_mode() -> Result<bool, String> {
+    #[cfg(target_os = "macos")]
+    {
+        Ok(unsafe { macos_is_system_dark_mode() == 1 })
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        Ok(false)
+    }
+}
 
 #[tauri::command]
 pub fn update_system_theme_icon(_theme: String) -> Result<(), String> {
@@ -184,6 +197,7 @@ pub fn update_system_theme_icon(_theme: String) -> Result<(), String> {
 
         unsafe {
             macos_set_dock_icon_png(bytes.as_ptr(), bytes.len());
+            macos_set_window_theme(if is_dark { 1 } else { 0 });
         }
     }
     Ok(())
@@ -243,6 +257,124 @@ pub fn resolve_smart_input_folders(paths: Vec<String>) -> Result<Vec<String>, St
     }
 
     Ok(resolved_paths)
+}
+
+#[tauri::command]
+pub fn set_autostart(app: tauri::AppHandle, enable: bool) -> Result<(), String> {
+    use tauri_plugin_autostart::ManagerExt;
+    let autolaunch = app.autolaunch();
+    if enable {
+        autolaunch.enable().map_err(|e| e.to_string())?;
+    } else {
+        autolaunch.disable().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn is_autostart_enabled(app: tauri::AppHandle) -> Result<bool, String> {
+    use tauri_plugin_autostart::ManagerExt;
+    app.autolaunch().is_enabled().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn hide_tray_panel(app: tauri::AppHandle) -> Result<(), String> {
+    use tauri::Manager;
+    if let Some(panel) = app.get_webview_window("tray-panel") {
+        let _ = panel.hide();
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn show_main_window_from_tray(app: tauri::AppHandle, target_module: Option<String>) -> Result<(), String> {
+    use tauri::{Emitter, Manager};
+    if let Some(panel) = app.get_webview_window("tray-panel") {
+        let _ = panel.hide();
+    }
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+        if let Some(module) = target_module {
+            let _ = window.emit("navigate-to-module", serde_json::json!({ "module": module }));
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn exit_app_cleanly(app: tauri::AppHandle) -> Result<(), String> {
+    app.exit(0);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn open_system_notification_settings() -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        let _ = std::process::Command::new("open")
+            .arg("x-apple.systempreferences:com.apple.Notifications-Settings.extension")
+            .spawn();
+    }
+    #[cfg(target_os = "windows")]
+    {
+        let _ = std::process::Command::new("cmd")
+            .args(["/C", "start", "ms-settings:notifications"])
+            .spawn();
+    }
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+extern "C" {
+    fn macos_request_notification_permission();
+    fn macos_send_native_notification(title: *const std::os::raw::c_char, body: *const std::os::raw::c_char);
+}
+
+#[tauri::command]
+pub fn request_os_notification_permission() -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    unsafe {
+        macos_request_notification_permission();
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn send_os_notification(app: tauri::AppHandle, title: String, body: String) -> Result<(), String> {
+    // 1. On macOS, play chime sound and trigger native UNUserNotificationCenter banner
+    #[cfg(target_os = "macos")]
+    {
+        // Play system chime sound
+        let _ = std::process::Command::new("afplay")
+            .arg("/System/Library/Sounds/Glass.aiff")
+            .spawn();
+
+        let c_title = std::ffi::CString::new(title.clone()).unwrap_or_default();
+        let c_body = std::ffi::CString::new(body.clone()).unwrap_or_default();
+        unsafe {
+            macos_send_native_notification(c_title.as_ptr(), c_body.as_ptr());
+        }
+    }
+
+    // 2. Native Tauri plugin notification
+    use tauri_plugin_notification::NotificationExt;
+    let _ = app.notification()
+        .builder()
+        .title(&title)
+        .body(&body)
+        .show();
+
+    // 3. Emit event to webview so in-app banner immediately pops up
+    use tauri::Emitter;
+    let _ = app.emit("native-os-notification-fired", serde_json::json!({
+        "title": title,
+        "body": body,
+        "timestamp": std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis()
+    }));
+
+    Ok(())
 }
 
 #[cfg(test)]

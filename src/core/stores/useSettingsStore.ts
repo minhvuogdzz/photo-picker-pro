@@ -21,6 +21,12 @@ const defaultSettings: AppSettings = {
   auto_download_updates: true,
   install_on_exit: true,
   beta_channel: false,
+  close_to_tray: true,
+  auto_start: true,
+  system_notifications_enabled: true,
+  urgent_scanner_enabled: true,
+  urgent_notify_phones: "",
+  zalo_webhook_url: "",
 };
 
 export const useSettingsStore = create<SettingsState>((set) => ({
@@ -29,9 +35,15 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setSettings: (settings) => set({ settings }),
 
   updateSetting: (key, value) =>
-    set((state) => ({
-      settings: { ...state.settings, [key]: value },
-    })),
+    set((state) => {
+      const updated = { ...state.settings, [key]: value };
+      import("@tauri-apps/api/core")
+        .then(({ invoke }) => {
+          invoke("save_settings", { settings: updated }).catch(() => {});
+        })
+        .catch(() => {});
+      return { settings: updated };
+    }),
 
   addFavoriteFolder: (folder) =>
     set((state) => {

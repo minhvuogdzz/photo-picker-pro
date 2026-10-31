@@ -148,6 +148,10 @@ pub enum ExportFormat {
     Json,
 }
 
+fn default_true() -> bool {
+    true
+}
+
 /// Application settings
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppSettings {
@@ -162,6 +166,18 @@ pub struct AppSettings {
     pub auto_download_updates: bool,
     pub install_on_exit: bool,
     pub beta_channel: bool,
+    #[serde(default = "default_true")]
+    pub close_to_tray: bool,
+    #[serde(default = "default_true")]
+    pub auto_start: bool,
+    #[serde(default = "default_true")]
+    pub system_notifications_enabled: bool,
+    #[serde(default = "default_true")]
+    pub urgent_scanner_enabled: bool,
+    #[serde(default)]
+    pub urgent_notify_phones: String,
+    #[serde(default)]
+    pub zalo_webhook_url: String,
 }
 
 impl Default for AppSettings {
@@ -178,6 +194,12 @@ impl Default for AppSettings {
             auto_download_updates: true,
             install_on_exit: true,
             beta_channel: false,
+            close_to_tray: true,
+            auto_start: true,
+            system_notifications_enabled: true,
+            urgent_scanner_enabled: true,
+            urgent_notify_phones: String::new(),
+            zalo_webhook_url: String::new(),
         }
     }
 }

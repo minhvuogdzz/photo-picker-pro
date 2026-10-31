@@ -16,9 +16,14 @@ import {
   Check,
   Info,
   CalendarClock,
+  Bell,
+  Loader2,
 } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "@/core/stores/useAppStore";
+import { useSettingsStore } from "@/core/stores/useSettingsStore";
 import { useContactSheetStore } from "@/modules/contact-the-sheet/stores/useContactSheetStore";
+import { urgentCustomerScannerService } from "@/modules/photo-picker/services/urgentCustomerScannerService";
 import { sheetDiscoveryService } from "@/modules/contact-the-sheet/services/sheetDiscoveryService";
 import type { SheetRowRecord } from "@/modules/contact-the-sheet/services/jobMatchingService";
 import { getFolderName } from "@/core/lib/utils";
@@ -159,7 +164,92 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
     }
   });
 
+  const [linkEditColumn, setLinkEditColumn] = useState<string>(() => {
+    try {
+      return localStorage.getItem("mvd_check_link_edit_column") || "O";
+    } catch {
+      return "O";
+    }
+  });
+
   const todayLabel = useMemo(() => formatDateKey(getVietnamTodayKey()), [isOpen]);
+
+  // Urgent 5-minute sheet notification settings & state
+  const settings = useSettingsStore((s) => s.settings);
+  const updateSetting = useSettingsStore((s) => s.updateSetting);
+
+  const [isScanningEntireSheet, setIsScanningEntireSheet] = useState(false);
+  const [entireSheetScanResult, setEntireSheetScanResult] = useState<string | null>(null);
+  const [isSendingTestNotif, setIsSendingTestNotif] = useState(false);
+  const [testNotifFeedback, setTestNotifFeedback] = useState<string | null>(null);
+
+  // Auto-persist column configurations so the 5-minute background scanner always uses active settings
+  useEffect(() => {
+    try {
+      localStorage.setItem("mvd_check_status_column", statusColumn);
+      localStorage.setItem("mvd_check_status_value", targetStatusValue.trim());
+      localStorage.setItem("mvd_check_photo_code1_column", photoCode1Column);
+      localStorage.setItem("mvd_check_photo_code2_column", photoCode2Column);
+      localStorage.setItem("mvd_check_due_date_enabled", dueDateEnabled ? "1" : "0");
+      localStorage.setItem("mvd_check_due_date_column", dueDateColumn);
+      localStorage.setItem("mvd_check_link_edit_column", linkEditColumn);
+      localStorage.setItem("mvd_check_selected_tabs", JSON.stringify(activeSelectedTabs));
+    } catch {}
+  }, [
+    statusColumn,
+    targetStatusValue,
+    photoCode1Column,
+    photoCode2Column,
+    dueDateEnabled,
+    dueDateColumn,
+    linkEditColumn,
+    activeSelectedTabs,
+  ]);
+
+  const handleToggleUrgentNotify = (enable: boolean) => {
+    updateSetting("urgent_scanner_enabled", enable);
+    localStorage.setItem("mvd_check_urgent_notify_enabled", enable ? "1" : "0");
+    invoke("save_settings", { settings: { ...settings, urgent_scanner_enabled: enable } }).catch(console.error);
+    if (enable && !dueDateEnabled) {
+      setDueDateEnabled(true);
+    }
+  };
+
+  const handleScanEntireSheetNow = async () => {
+    setIsScanningEntireSheet(true);
+    setEntireSheetScanResult(null);
+    try {
+      const res = await urgentCustomerScannerService.scanNow(true);
+      if (res.urgentCount > 0) {
+        setEntireSheetScanResult(
+          `Phát hiện ${res.urgentCount} khách hàng tới hạn cần lọc gấp hôm nay trên toàn bộ trang tính!`
+        );
+      } else {
+        setEntireSheetScanResult(
+          "Không có khách nào thỏa mãn đồng thời 3 điều kiện cần lọc gấp hôm nay."
+        );
+      }
+    } catch (err) {
+      setEntireSheetScanResult("Lỗi quét trang tính: " + String(err));
+    } finally {
+      setIsScanningEntireSheet(false);
+      setTimeout(() => setEntireSheetScanResult(null), 8000);
+    }
+  };
+
+  const handleSendTestNotificationModal = async () => {
+    setIsSendingTestNotif(true);
+    setTestNotifFeedback(null);
+    try {
+      await urgentCustomerScannerService.sendTestNotification();
+      setTestNotifFeedback("Đã gửi thông báo & chuông báo thành công!");
+    } catch (err) {
+      setTestNotifFeedback("Lỗi: " + String(err));
+    } finally {
+      setIsSendingTestNotif(false);
+      setTimeout(() => setTestNotifFeedback(null), 4000);
+    }
+  };
 
   // Processing & Results State
   const [isChecking, setIsChecking] = useState(false);
@@ -265,6 +355,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
         photoCode1Column: photoCode1Column !== "OFF" ? photoCode1Column : null,
         photoCode2Column: photoCode2Column !== "OFF" ? photoCode2Column : null,
         dueDateColumn: dueDateEnabled ? dueDateColumn : null,
+        linkEditColumn: dueDateEnabled && linkEditColumn !== "OFF" ? linkEditColumn : null,
         todayKey: getVietnamTodayKey(),
       };
 
@@ -587,7 +678,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
           {/* Config Box: Due Date Scan (Advanced, checkbox) */}
           <div
             className={`p-3.5 rounded-xl bg-card border shadow-xs space-y-3 transition-colors ${
-              dueDateEnabled ? "border-violet-500/40" : "border-border"
+              dueDateEnabled || settings.urgent_scanner_enabled !== false ? "border-violet-500/40" : "border-border"
             }`}
           >
             <label className="flex items-center justify-between gap-2 text-xs font-semibold text-foreground cursor-pointer">
@@ -606,7 +697,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
               </span>
             </label>
 
-            {dueDateEnabled && (
+            {(dueDateEnabled || settings.urgent_scanner_enabled !== false) && (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
@@ -631,11 +722,146 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                       />
                     </div>
                   </div>
+
+                  <div>
+                    <label className="block text-[11px] text-muted-foreground font-medium mb-1">
+                      Cột "Link edit / Bàn giao" (Kiểm tra ô rỗng)
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={linkEditColumn}
+                        onChange={(e) => setLinkEditColumn(e.target.value)}
+                        className="w-full appearance-none px-3 py-1.5 text-xs font-semibold rounded-lg bg-background border border-amber-500/40 text-foreground focus:outline-none focus:border-primary cursor-pointer pr-8"
+                      >
+                        <option value="OFF">TẮT — Không kiểm tra link edit</option>
+                        {STANDARD_LETTERS.map((col) => (
+                          <option key={col} value={col}>
+                            Cột {col} {col === "O" ? "(Cột O - Mặc định Link edit)" : col === "N" ? "(Cột N)" : ""}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown
+                        size={14}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="text-[10px] text-violet-600 dark:text-violet-400 bg-violet-500/10 border border-violet-500/20 rounded-lg px-2.5 py-1.5 leading-relaxed">
-                  <strong>Logic:</strong> Chỉ giữ khách khi đồng thời <strong>(1)</strong> ngày hẹn trả ở Cột {dueDateColumn} là{" "}
-                  <strong>{todayLabel} hoặc trước đó</strong> và <strong>(2)</strong> Cột {statusColumn} là "{targetStatusValue}". Ô hẹn trả trống hoặc sai định dạng sẽ bị đá ra.
+                {dueDateEnabled && (
+                  <div className="text-[10px] text-violet-600 dark:text-violet-400 bg-violet-500/10 border border-violet-500/20 rounded-lg px-2.5 py-1.5 leading-relaxed">
+                    <strong>Logic lọc file đầu vào:</strong> Chỉ giữ khách trong hàng đợi khi đồng thời <strong>(1)</strong> ngày hẹn trả ở Cột {dueDateColumn} là{" "}
+                    <strong>{todayLabel} hoặc trước đó</strong> và <strong>(2)</strong> Cột {statusColumn} là "{targetStatusValue}". Ô hẹn trả trống hoặc sai định dạng sẽ bị đá ra.
+                  </div>
+                )}
+
+                {/* Tùy chọn gửi thông báo khẩn cấp (Quét toàn bộ Sheet mỗi 5 phút, không cần đầu vào) */}
+                <div className="pt-2.5 border-t border-border/70 space-y-2.5">
+                  <label className="flex items-start justify-between gap-3 cursor-pointer group">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="checkbox"
+                          checked={settings.urgent_scanner_enabled !== false}
+                          onChange={(e) => handleToggleUrgentNotify(e.target.checked)}
+                          className="w-3.5 h-3.5 accent-amber-500 cursor-pointer mt-0.5"
+                        />
+                        <Bell size={13} className="text-amber-500" />
+                        <span className="text-xs font-bold text-foreground group-hover:text-amber-500 transition-colors">
+                          Gửi thông báo khẩn cấp hệ điều hành (Quét toàn bộ Sheet 5 phút/lần)
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground leading-relaxed pl-5">
+                        Quét <strong>toàn bộ trang tính Google Sheet</strong> định kỳ 5 phút/lần (<strong>kể cả khi không có thư mục đầu vào</strong>). Tự động bắn thông báo khẩn cấp lên macOS / Windows khi có khách tới hạn.
+                      </p>
+                    </div>
+                    <div
+                      className={`shrink-0 w-8 h-4.5 rounded-full p-0.5 transition-colors ${
+                        settings.urgent_scanner_enabled !== false ? "bg-amber-500" : "bg-muted-foreground/30"
+                      }`}
+                    >
+                      <div
+                        className={`w-3.5 h-3.5 bg-white rounded-full shadow-sm transform transition-transform ${
+                          settings.urgent_scanner_enabled !== false ? "translate-x-3.5" : "translate-x-0"
+                        }`}
+                      />
+                    </div>
+                  </label>
+
+                  {settings.urgent_scanner_enabled !== false && (
+                    <div className="pl-5 space-y-2">
+                      <div className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/25 rounded-lg p-2 leading-relaxed space-y-1">
+                        <p className="font-bold">⚡ 3 điều kiện đồng thời xảy ra trên toàn bộ Sheet:</p>
+                        <ul className="list-disc pl-3.5 space-y-0.5">
+                          <li>
+                            Trạng thái (<strong>Cột {statusColumn}</strong>): Bằng "<strong>{targetStatusValue}</strong>".
+                          </li>
+                          <li>
+                            Hạn trả ảnh (<strong>Cột {dueDateColumn}</strong>): Tới ngày hạn (<strong>{todayLabel}</strong>) hoặc quá ngày hạn.
+                          </li>
+                          <li>
+                            Phần Link edit: Đang <strong>rỗng</strong> (chưa có dữ liệu).
+                          </li>
+                        </ul>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={handleScanEntireSheetNow}
+                          disabled={isScanningEntireSheet}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border hover:border-foreground/20 bg-muted/60 hover:bg-muted text-foreground text-[10px] font-semibold transition-all cursor-pointer shadow-xs active:scale-97"
+                        >
+                          {isScanningEntireSheet ? (
+                            <Loader2 size={11} className="animate-spin text-amber-500" />
+                          ) : (
+                            <RefreshCw size={11} className="text-amber-500" />
+                          )}
+                          <span>Quét toàn bộ Sheet ngay</span>
+                        </button>
+
+                        {import.meta.env.DEV && (
+                          <button
+                            type="button"
+                            onClick={handleSendTestNotificationModal}
+                            disabled={isSendingTestNotif}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border hover:border-foreground/20 bg-muted/60 hover:bg-muted text-foreground text-[10px] font-semibold transition-all cursor-pointer shadow-xs active:scale-97"
+                          >
+                            {isSendingTestNotif ? (
+                              <Loader2 size={11} className="animate-spin text-primary" />
+                            ) : (
+                              <Bell size={11} className="text-primary" />
+                            )}
+                            <span>Gửi thông báo thử nghiệm</span>
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onClose();
+                            useAppStore.getState().setActiveModule("notifications");
+                          }}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-[10px] font-semibold transition-all cursor-pointer shadow-xs active:scale-97"
+                        >
+                          <Bell size={11} />
+                          <span>Xem lịch sử thông báo</span>
+                        </button>
+
+                        {entireSheetScanResult && (
+                          <span className="text-[10px] font-semibold text-amber-500 animate-fade-in w-full block">
+                            {entireSheetScanResult}
+                          </span>
+                        )}
+
+                        {testNotifFeedback && (
+                          <span className="text-[10px] font-semibold text-emerald-500 animate-fade-in w-full block">
+                            {testNotifFeedback}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             )}

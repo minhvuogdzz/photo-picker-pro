@@ -28,6 +28,8 @@ export interface FilterCheckConditions {
   photoCode1Column: string | null;
   photoCode2Column: string | null;
   dueDateColumn: string | null;
+  /** Link edit column — when enabled, must be EMPTY (chưa có dữ liệu link bàn giao/link edit) */
+  linkEditColumn?: string | null;
   /** Today in Vietnam as yyyymmdd (see getVietnamTodayKey) */
   todayKey: number;
 }
@@ -155,19 +157,24 @@ export function evaluateRow(
   const code2Val = code2Col ? cellValue(row, code2Col) : null;
   const dueVal = dueCol ? cellValue(row, dueCol) : null;
   const dueKey = dueVal ? parseDueDateKey(dueVal, conditions.todayKey) : null;
+  const linkEditCol = conditions.linkEditColumn?.toUpperCase().trim() || null;
+  const linkEditVal = linkEditCol ? cellValue(row, linkEditCol) : null;
 
   // Status must match AND photo code columns (if enabled) must NOT be empty
   // AND due date (if enabled) must be today or earlier (Vietnam time)
+  // AND link edit column (if enabled) must be EMPTY (chưa có dữ liệu / rỗng)
   const statusOk = foldText(actualVal) === foldText(conditions.targetStatusValue);
   const code1Ok = code1Col === null || code1Val !== "";
   const code2Ok = code2Col === null || code2Val !== "";
   const dueOk = dueCol === null || (dueKey !== null && dueKey <= conditions.todayKey);
-  const isKept = statusOk && code1Ok && code2Ok && dueOk;
+  const linkEditOk = linkEditCol === null || linkEditVal === "";
+  const isKept = statusOk && code1Ok && code2Ok && dueOk && linkEditOk;
 
   let reason: string;
   if (isKept) {
     reason = `Khớp trạng thái "${actualVal}" (Dòng ${row.row})`;
     if (dueCol && dueKey !== null) reason += ` • Tới hạn trả ${formatDateKey(dueKey)}`;
+    if (linkEditCol) reason += ` • Link edit đang rỗng`;
   } else {
     const reasons: string[] = [];
     if (!statusOk) {
@@ -183,6 +190,9 @@ export function evaluateRow(
       } else {
         reasons.push(`Hẹn trả ${formatDateKey(dueKey)} — chưa tới hạn (hôm nay ${formatDateKey(conditions.todayKey)})`);
       }
+    }
+    if (!linkEditOk) {
+      reasons.push(`Cột ${linkEditCol} (Link edit) đã có dữ liệu — đã xong, không cần lọc gấp`);
     }
     reason = reasons.join(" • ");
   }

@@ -1,5 +1,6 @@
 import { useSettingsStore } from "@/core/stores/useSettingsStore";
 import { useAuthStore } from "@/core/stores/useAuthStore";
+import { useAppStore } from "@/core/stores/useAppStore";
 import { useTranslation } from "@/core/lib/i18n";
 import { invoke } from "@tauri-apps/api/core";
 import { useState, useEffect } from "react";
@@ -27,6 +28,10 @@ import {
   Laptop,
   FileImage,
   History,
+  Bell,
+  Phone,
+  Power,
+  Clock,
 } from "lucide-react";
 import { useUpdaterStore } from "@/core/stores/useUpdaterStore";
 import { apiRequest } from "@/core/services/apiClient";
@@ -83,6 +88,9 @@ export function SystemModule() {
   const handleSave = async () => {
     try {
       await invoke("save_settings", { settings });
+      if (settings.auto_start !== undefined) {
+        await invoke("set_autostart", { enable: settings.auto_start !== false }).catch(() => {});
+      }
       alert(t("settings_saved"));
     } catch (error) {
       console.error("Failed to save settings:", error);
@@ -260,6 +268,89 @@ export function SystemModule() {
                 </div>
               </div>
 
+              {/* Menu Bar & Khởi động cùng hệ thống */}
+              <div className="space-y-3 pt-3 border-t border-border">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                    Thanh Menu & Khởi động cùng hệ thống
+                  </h3>
+                </div>
+
+                <div className="bg-card/60 rounded-2xl p-4 border border-border space-y-4 w-full shadow-sm">
+                  {/* Khởi động cùng hệ thống */}
+                  <label className="flex items-center justify-between cursor-pointer group">
+                    <div className="space-y-0.5 pr-4">
+                      <div className="flex items-center gap-1.5">
+                        <Power size={13} className="text-primary" />
+                        <span className="block text-xs font-bold text-foreground group-hover:text-primary transition-colors">
+                          Tự động khởi động cùng hệ thống (Auto Launch on Boot)
+                        </span>
+                      </div>
+                      <span className="block text-[11px] text-muted-foreground leading-relaxed">
+                        Mặc định bật. Khi bật máy tính, ứng dụng sẽ tự khởi động và chạy ngầm trên thanh Menu Bar macOS / Windows Taskbar để sẵn sàng làm việc.
+                      </span>
+                    </div>
+                    <div
+                      className={`shrink-0 w-9 h-5 rounded-full p-0.5 transition-colors ${
+                        settings.auto_start !== false ? "bg-primary" : "bg-muted-foreground/30"
+                      }`}
+                    >
+                      <div
+                        className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${
+                          settings.auto_start !== false ? "translate-x-4" : "translate-x-0"
+                        }`}
+                      />
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={settings.auto_start !== false}
+                      onChange={(e) => {
+                        const val = e.target.checked;
+                        updateSetting("auto_start", val);
+                        invoke("set_autostart", { enable: val }).catch(console.error);
+                        invoke("save_settings", { settings: { ...settings, auto_start: val } }).catch(console.error);
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+
+                  <div className="h-px bg-border" />
+
+                  {/* Chạy ngầm Menu Bar */}
+                  <label className="flex items-center justify-between cursor-pointer group">
+                    <div className="space-y-0.5 pr-4">
+                      <span className="block text-xs font-bold text-foreground group-hover:text-primary transition-colors">
+                        Chạy ngầm trên Menu Bar khi đóng cửa sổ
+                      </span>
+                      <span className="block text-[11px] text-muted-foreground leading-relaxed">
+                        Khi nhấn nút đóng (X), ẩn cửa sổ xuống thanh Menu Bar thay vì thoát app hoàn toàn. Bấm vào icon máy ảnh DH trên Menu Bar để mở lại tức thì.
+                      </span>
+                    </div>
+                    <div
+                      className={`shrink-0 w-9 h-5 rounded-full p-0.5 transition-colors ${
+                        settings.close_to_tray !== false ? "bg-primary" : "bg-muted-foreground/30"
+                      }`}
+                    >
+                      <div
+                        className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${
+                          settings.close_to_tray !== false ? "translate-x-4" : "translate-x-0"
+                        }`}
+                      />
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={settings.close_to_tray !== false}
+                      onChange={(e) => {
+                        const val = e.target.checked;
+                        updateSetting("close_to_tray", val);
+                        invoke("save_settings", { settings: { ...settings, close_to_tray: val } }).catch(console.error);
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+
               {/* Software Updates */}
               <div className="space-y-3 pt-3 border-t border-border">
                 <div className="flex items-center justify-between">
@@ -412,7 +503,7 @@ export function SystemModule() {
                       <FileImage size={14} />
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-foreground">MVD Convert Fast</h4>
+                      <h4 className="text-xs font-bold text-foreground">Chuyển đổi file (Convert file)</h4>
                       <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">
                         Bộ nén & chuyển đổi đa luồng RAW, JPG, PNG, WebP giữ trọn dải màu và độ sắc nét.
                       </p>

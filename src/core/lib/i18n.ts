@@ -67,6 +67,7 @@ const translations = {
     version: "Version 1.0.0",
     same_as_original_hint: "Photos will be saved to a Selects subfolder inside their original location.",
     remove: "Remove",
+    convert_file: "Convert file",
     footer_text: "Minh Vuong Dev All right server - Nếu thấy hay hãy ủng hộ tác giả nhé.",
     // Auth
     login: "Login",
@@ -198,6 +199,7 @@ const translations = {
     version: "Phiên bản 1.0.0",
     same_as_original_hint: "Ảnh sẽ được lưu vào thư mục con Selects nằm ngay trong thư mục chứa ảnh gốc.",
     remove: "Xoá",
+    convert_file: "Chuyển đổi file",
     footer_text: "Minh Vuong Dev All right server - Nếu thấy hay hãy ủng hộ tác giả nhé.",
     // Auth
     login: "Đăng nhập",

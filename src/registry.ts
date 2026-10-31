@@ -93,8 +93,8 @@ export const modules: AppModule[] = [
   },
   {
     id: "mvd-convert",
-    name: "MVD Convert",
-    shortName: "Convert",
+    name: "Chuyển đổi file",
+    shortName: "Convert file",
     icon: FileImage,
     path: "/mvd-convert",
     description: "Chuyển đổi đa luồng định dạng ảnh hàng loạt từ RAW (CR2, CR3, NEF, ARW) sang JPG/PNG/WebP chất lượng cao.",

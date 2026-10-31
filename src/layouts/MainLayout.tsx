@@ -2,6 +2,7 @@ import { useAppStore } from "@/core/stores/useAppStore";
 import { useAuthStore } from "@/core/stores/useAuthStore";
 import { LauncherPage } from "@/core/pages/LauncherPage";
 import { SystemModule } from "@/modules/system/SystemModule";
+import { NotificationCenterModule } from "@/modules/notifications/NotificationCenterModule";
 import { WelcomeScreen } from "@/core/components/WelcomeScreen";
 import { TopBar } from "./TopBar";
 import { lazy, Suspense, useState } from "react";
@@ -85,6 +86,7 @@ export function AppLayout() {
           >
             {activeModule === "launcher" && <LauncherPage />}
             {activeModule === "system" && <SystemModule />}
+            {activeModule === "notifications" && <NotificationCenterModule />}
             <Suspense fallback={null}>
               {activeModule === "photo-picker" && <PhotoPickerModule />}
               {activeModule === "mvd-convert" && <MvdConvertApp />}

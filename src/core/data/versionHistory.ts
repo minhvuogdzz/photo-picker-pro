@@ -15,10 +15,51 @@ export interface VersionReleaseNote {
 
 export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
   {
+    version: "v2.9.6",
+    date: "2026-10-31",
+    title: "Trung tâm Thông báo Hệ điều hành, Tối ưu Menu Bar Popover và Chuyển đổi Theme Siêu Mượt",
+    isCurrent: true,
+    sections: [
+      {
+        title: "Trung tâm Thông báo và Cảnh báo Khẩn cấp",
+        type: "feature",
+        items: [
+          "Tích hợp UserNotifications.framework chuẩn native Cocoa trên macOS: Quản lý quyền thông báo hệ thống và đăng ký ứng dụng DH Studio Pro chính thức trong Cài đặt Hệ thống macOS.",
+          "Cá nhân hóa nội dung thông báo khẩn cấp theo họ và tên tài khoản người dùng đang đăng nhập.",
+          "Chuẩn hóa cấu trúc Trung tâm thông báo: Tập trung vào 3 tác vụ chính gồm Lịch sử thông báo, Đọc tất cả và Cấu hình thông báo.",
+          "Tự động ẩn nút kiểm tra thông báo trên các bản phát hành chính thức, chỉ hiển thị trong môi trường phát triển (DEV).",
+          "Tự động đồng bộ hóa lịch sử thông báo theo thời gian thực giữa cửa sổ chính và thanh menu ngầm.",
+        ],
+      },
+      {
+        title: "Menu Bar Tray Popover và Trải nghiệm Điều khiển Nhanh",
+        type: "improvement",
+        items: [
+          "Căn chỉnh vị trí cửa sổ Overview nằm sát chân Menu Bar macOS, khắc phục triệt để khoảng cách trống dư thừa.",
+          "Lược bỏ thẻ trạng thái ổn định khi không có khách cần lọc gấp, chỉ hiển thị cảnh báo nổi bật khi phát hiện khách hàng tới hạn hoặc quá hạn.",
+          "Áp dụng biểu tượng ứng dụng Lọc ảnh Pro chuẩn nhận diện thay cho các ký tự phụ.",
+          "Tích hợp hiệu ứng drop-down trượt nhẹ và bo góc tròn 22px chuẩn thiết kế macOS Control Center hiện đại.",
+          "Cấu hình Tray Icon thành Template Image, tự động đổi màu sắc tương thích hoàn hảo với cả chế độ Menu Bar sáng và tối.",
+        ],
+      },
+      {
+        title: "Tối ưu hóa Hiệu năng và Đồng bộ Giao diện",
+        type: "fix",
+        items: [
+          "Loại bỏ hoàn toàn hiện tượng giật khung hình khi đổi chế độ Sáng, Tối và Auto nhờ cơ chế đồng pha chuyển tiếp 250ms toàn diện.",
+          "Tách biệt hoạt ảnh co giãn của thanh bên khỏi luồng xử lý màu sắc để loại bỏ độ trễ tính toán bố cục DOM.",
+          "Đồng bộ tức thời trạng thái giao diện giữa cửa sổ ứng dụng chính và cửa sổ thả xuống từ Menu Bar.",
+          "Khôi phục thanh tiêu đề cửa sổ chuẩn macOS và bổ sung vùng kéo di chuyển cửa sổ linh hoạt trên thanh công cụ.",
+          "Gỡ bỏ mục cấu hình thông báo trùng lặp trong Cài đặt hệ thống để tối ưu hóa không gian làm việc.",
+        ],
+      },
+    ],
+  },
+  {
     version: "v2.9.5",
     date: "2026-10-31",
     title: "Hệ thống Giám sát Hiệu suất Thực (Real System Monitor), Tùy chỉnh Avatar & Trải nghiệm Dashboard Pro",
-    isCurrent: true,
+    isCurrent: false,
     sections: [
       {
         title: "⚡ Hệ thống Giám sát Hiệu suất Thực (Native OS System Performance)",

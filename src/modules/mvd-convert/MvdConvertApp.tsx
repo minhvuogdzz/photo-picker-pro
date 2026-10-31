@@ -4,8 +4,10 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { UploadCloud, FolderOpen, Image as ImageIcon, Play, FileDown, CheckCircle2, AlertCircle, X, ChevronDown, FileImage, Layers, Settings2, FolderDown, ScrollText } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "@/core/lib/i18n";
 
 export default function MvdConvertApp() {
+  const { t } = useTranslation();
   const store = useConvertStore();
   const [isHovering, setIsHovering] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -109,7 +111,7 @@ export default function MvdConvertApp() {
             <FileImage size={16} />
           </div>
           <div>
-            <h2 className="text-sm font-semibold tracking-tight text-foreground">MVD Convert</h2>
+            <h2 className="text-sm font-semibold tracking-tight text-foreground">{t("convert_file") || "Chuyển đổi file"}</h2>
             <p className="text-[11px] text-muted-foreground">Chuyển đổi đa luồng hàng loạt · Giữ nguyên Color Profile</p>
           </div>
         </div>

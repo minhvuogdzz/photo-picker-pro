@@ -111,6 +111,12 @@ export interface AppSettings {
   auto_download_updates: boolean;
   install_on_exit: boolean;
   beta_channel: boolean;
+  close_to_tray?: boolean;
+  auto_start?: boolean;
+  system_notifications_enabled?: boolean;
+  urgent_scanner_enabled?: boolean;
+  urgent_notify_phones?: string;
+  zalo_webhook_url?: string;
 }
 
 /** A history entry recording a past operation */

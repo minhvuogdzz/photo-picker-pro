@@ -28,7 +28,9 @@ import {
   Sun,
   Moon,
   CircleDot,
+  Bell,
 } from "lucide-react";
+import { useNotificationStore } from "@/core/stores/useNotificationStore";
 
 export function EcosystemSidebar() {
   const activeModule = useAppStore((s) => s.activeModule);
@@ -43,6 +45,7 @@ export function EcosystemSidebar() {
   const theme = useSettingsStore((s) => s.settings.theme);
   const updateSetting = useSettingsStore((s) => s.updateSetting);
   const { t } = useTranslation();
+  const unreadCount = useNotificationStore((s) => s.getUnreadCount());
 
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLicenseManager, setShowLicenseManager] = useState(false);
@@ -92,6 +95,15 @@ export function EcosystemSidebar() {
           onClick: () => handleNavigate("launcher"),
         },
         {
+          id: "notifications",
+          label: "Trung tâm thông báo",
+          icon: Bell,
+          iconColor: "text-amber-500 dark:text-amber-400",
+          isActive: activeModule === "notifications",
+          badge: unreadCount > 0 ? unreadCount : undefined,
+          onClick: () => handleNavigate("notifications"),
+        },
+        {
           id: "photo-counter",
           label: "Thống kê",
           icon: BarChart3,
@@ -125,7 +137,7 @@ export function EcosystemSidebar() {
         },
         {
           id: "mvd-convert",
-          label: "MVD Convert",
+          label: t("convert_file") || "Chuyển đổi file",
           icon: FileImage,
           iconColor: "text-pink-500 dark:text-pink-400",
           isActive: activeModule === "mvd-convert",
@@ -160,12 +172,12 @@ export function EcosystemSidebar() {
 
   return (
     <aside
-      className={`shrink-0 h-full flex flex-col justify-between transition-all duration-300 ease-in-out border-r border-border select-none z-40 ${
+      className={`shrink-0 h-full flex flex-col justify-between transition-[width] duration-300 ease-in-out border-r border-border select-none z-40 ${
         isCollapsed ? "w-[68px]" : "w-[260px]"
       } bg-[#eef1f6] dark:bg-[#16171a] text-foreground relative`}
     >
       {/* Top Header: Brand Logo + App Name + Sidebar Toggle Button */}
-      <div className="h-14 px-4 flex items-center justify-between shrink-0 border-b border-border/40">
+      <div className="h-14 px-4 flex items-center justify-between shrink-0 border-b border-border/40" data-tauri-drag-region>
         {!isCollapsed ? (
           <div className="flex items-center gap-3 min-w-0">
             <BrandLogo
@@ -255,8 +267,20 @@ export function EcosystemSidebar() {
                     />
 
                     {!isCollapsed && (
-                      <span className="text-[13px] truncate tracking-normal">
+                      <span className="text-[13px] truncate tracking-normal flex-1">
                         {item.label}
+                      </span>
+                    )}
+
+                    {item.badge !== undefined && item.badge > 0 && (
+                      <span
+                        className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                          active
+                            ? "bg-white text-[#007aff]"
+                            : "bg-amber-500 text-black shadow-xs"
+                        } ${isCollapsed ? "absolute top-1 right-1 text-[9px] px-1 py-0" : ""}`}
+                      >
+                        {item.badge}
                       </span>
                     )}
                   </button>

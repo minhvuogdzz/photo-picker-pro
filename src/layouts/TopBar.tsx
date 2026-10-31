@@ -27,7 +27,7 @@ export function TopBar() {
       case "contact-the-sheet":
         return "Contact the Sheet";
       case "mvd-convert":
-        return "MVD Convert";
+        return t("convert_file") || "Chuyển đổi file";
       case "resources":
         return "Kho Tài nguyên Creative";
       case "photo-counter":
@@ -40,7 +40,7 @@ export function TopBar() {
   };
 
   return (
-    <header className="h-full w-full flex items-center justify-between gap-4 select-none">
+    <header className="h-full w-full flex items-center justify-between gap-4 select-none" data-tauri-drag-region>
       {/* Left: Module Title Breadcrumb */}
       <div className="flex items-center gap-3 shrink-0">
         {/* Current Module Title Breadcrumb */}
