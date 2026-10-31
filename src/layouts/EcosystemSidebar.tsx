@@ -30,6 +30,7 @@ import {
   CircleDot,
   Bell,
 } from "lucide-react";
+import { PhotoPickerIcon } from "@/core/components/PhotoPickerIcon";
 import { useNotificationStore } from "@/core/stores/useNotificationStore";
 
 export function EcosystemSidebar() {
@@ -82,7 +83,18 @@ export function EcosystemSidebar() {
     authLogout();
   };
 
-  const navSections = [
+  interface NavItem {
+    id: string;
+    label: string;
+    icon: React.ElementType;
+    iconColor?: string;
+    isActive: boolean;
+    badge?: number;
+    tooltip?: string;
+    onClick: () => void;
+  }
+
+  const navSections: { title: string; items: NavItem[] }[] = [
     {
       title: "Tổng quan",
       items: [
@@ -119,8 +131,8 @@ export function EcosystemSidebar() {
         {
           id: "photo-picker",
           label: "Lọc ảnh Pro",
-          icon: Camera,
-          iconColor: "text-violet-500 dark:text-violet-400",
+          icon: PhotoPickerIcon,
+          iconColor: "text-blue-500 dark:text-blue-400",
           isActive:
             activeModule === "photo-picker" &&
             activeTab !== "history" &&

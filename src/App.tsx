@@ -162,7 +162,9 @@ function App() {
     import("@tauri-apps/api/event").then(({ listen }) => {
       listen<{ module: string }>("navigate-to-module", (event) => {
         if (event.payload?.module) {
-          useAppStore.getState().setActiveModule(event.payload.module as any);
+          let mod = event.payload.module;
+          if (mod === "contact-sheet") mod = "contact-the-sheet";
+          useAppStore.getState().setActiveModule(mod as any);
         }
       }).then((fn) => {
         unlisten = fn;

@@ -25,7 +25,7 @@ export function TopBar() {
       case "photo-picker":
         return "Lọc ảnh Pro";
       case "contact-the-sheet":
-        return "Contact the Sheet";
+        return "Contact Sheet";
       case "mvd-convert":
         return t("convert_file") || "Chuyển đổi file";
       case "resources":

@@ -10,10 +10,10 @@ import {
   RefreshCw,
   FileSpreadsheet,
   FileImage,
-  Camera,
   Bell,
   ChevronRight,
 } from "lucide-react";
+import { PhotoPickerIcon } from "@/core/components/PhotoPickerIcon";
 import { systemPerformanceService } from "@/core/services/systemPerformanceService";
 import type { SystemPerformanceReport } from "@/core/components/system-performance/types";
 import {
@@ -434,7 +434,7 @@ export function TrayControlPanel() {
               >
                 <div className="flex items-center gap-2.5 text-xs font-semibold">
                   <div className="w-5 h-5 flex items-center justify-center shrink-0">
-                    <Camera size={14} className="text-blue-500 dark:text-blue-400" />
+                    <PhotoPickerIcon size={14} className="text-blue-500 dark:text-blue-400" />
                   </div>
                   <span>Lọc ảnh Pro</span>
                 </div>
@@ -446,10 +446,10 @@ export function TrayControlPanel() {
                 />
               </button>
 
-              {/* Contact the Sheet */}
+              {/* Contact Sheet */}
               <button
                 type="button"
-                onClick={() => handleOpenModule("contact-sheet")}
+                onClick={() => handleOpenModule("contact-the-sheet")}
                 className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left transition-colors cursor-pointer group ${
                   isDark ? "hover:bg-white/[0.08]" : "hover:bg-black/[0.05]"
                 }`}
@@ -458,7 +458,7 @@ export function TrayControlPanel() {
                   <div className="w-5 h-5 flex items-center justify-center shrink-0">
                     <FileSpreadsheet size={14} className="text-emerald-500" />
                   </div>
-                  <span>Contact the Sheet</span>
+                  <span>Contact Sheet</span>
                 </div>
                 <ChevronRight
                   size={12}

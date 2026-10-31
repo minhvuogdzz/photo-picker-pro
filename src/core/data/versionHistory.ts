@@ -25,7 +25,8 @@ export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
         type: "improvement",
         items: [
           "Cấu hình biểu tượng thanh trạng thái hiển thị chuẩn màu trắng sắc nét trên menu bar macOS, khắc phục triệt để lỗi biểu tượng bị ám đen khi chuyển đổi chế độ hệ thống.",
-          "Chuẩn hóa biểu tượng Lọc ảnh Pro trong khay điều khiển nhanh đồng bộ nhận diện thương hiệu với thanh điều hướng chính.",
+          "Khôi phục và chuẩn hóa biểu tượng Lọc ảnh Pro (kính lúp kết hợp khung ảnh) đồng bộ trên toàn bộ thanh điều hướng chính và khay điều khiển nhanh.",
+          "Chuẩn hóa tên gọi Contact Sheet và sửa lỗi điều hướng truy cập nhanh từ Menu Bar popover vào giao diện ứng dụng chính.",
           "Căn chỉnh vị trí cửa sổ Overview bám sát chân Menu Bar macOS, tối ưu trải nghiệm bật mở mượt mà và trực quan.",
         ],
       },
