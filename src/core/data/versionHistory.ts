@@ -35,6 +35,7 @@ export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
         type: "feature",
         items: [
           "Tích hợp kiến trúc thông báo bản địa trên macOS thông qua UserNotifications.framework, hỗ trợ hiển thị banner và âm thanh theo thời gian thực.",
+          "Nâng cấp kiến trúc lưu trữ Cấu hình thông báo bằng persistent store: Đảm bảo toàn bộ thiết lập studio, tab, điều kiện quét và quyền thông báo được lưu trữ vĩnh viễn và đồng bộ ngay cả khi chuyển tab hoặc khởi động lại ứng dụng.",
           "Cá nhân hóa nội dung thông báo khẩn cấp theo thông tin tài khoản người dùng đang đăng nhập.",
           "Tối ưu quy trình quét hạn và đồng bộ dữ liệu thông báo tức thời giữa cửa sổ chính và khay hệ thống.",
           "Tự động ẩn các nút kiểm tra thông báo trong bản phát hành chính thức, giữ giao diện gọn gàng.",

@@ -25,6 +25,7 @@ import {
   useNotificationStore,
   type AppNotification,
 } from "@/core/stores/useNotificationStore";
+import { useNotificationConfigStore } from "@/core/stores/useNotificationConfigStore";
 import {
   urgentCustomerScannerService,
   type UrgentScanResult,
@@ -41,8 +42,23 @@ const STANDARD_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const COMMON_STATUS_SUGGESTIONS = ["Chưa lọc", "Chờ lọc", "Đang xử lý", "Chưa sửa"];
 
 export function NotificationCenterModule() {
-  const [activeTab, setActiveTab] = useState<"history" | "config">("history");
-  const [configSubTab, setConfigSubTab] = useState<"sheet" | "system">("sheet");
+  const config = useNotificationConfigStore();
+  const activeTab = config.activeTab;
+  const setActiveTab = config.setActiveTab;
+  const configSubTab = config.configSubTab;
+  const setConfigSubTab = config.setConfigSubTab;
+
+  const selectedProfileId = config.profileId;
+  const setSelectedProfileId = config.setProfileId;
+  const selectedTabs = config.selectedTabs;
+  const statusColumn = config.statusColumn;
+  const setStatusColumn = config.setStatusColumn;
+  const targetStatusValue = config.targetStatusValue;
+  const setTargetStatusValue = config.setTargetStatusValue;
+  const dueDateColumn = config.dueDateColumn;
+  const setDueDateColumn = config.setDueDateColumn;
+  const linkEditColumn = config.linkEditColumn;
+  const setLinkEditColumn = config.setLinkEditColumn;
 
   const notifications = useNotificationStore((s) => s.notifications);
   const markAsRead = useNotificationStore((s) => s.markAsRead);
@@ -65,10 +81,12 @@ export function NotificationCenterModule() {
   const settings = useSettingsStore((s) => s.settings);
   const updateSetting = useSettingsStore((s) => s.updateSetting);
 
-  // Configuration State for Sheet Scanning
-  const [selectedProfileId, setSelectedProfileId] = useState<string>(() => {
-    return localStorage.getItem("mvd_urgent_profile_id") || activeProfile?.id || "";
-  });
+  // Auto-sync profileId if empty or not in profiles
+  useEffect(() => {
+    if (!selectedProfileId && (activeProfile?.id || profiles[0]?.id)) {
+      setSelectedProfileId(activeProfile?.id || profiles[0]?.id || "");
+    }
+  }, [selectedProfileId, activeProfile?.id, profiles, setSelectedProfileId]);
 
   const targetProfile = useMemo(() => {
     if (selectedProfileId) {
@@ -106,27 +124,12 @@ export function NotificationCenterModule() {
       : ["Edit 9/2026", "Edit 10/2026", "Edit 11/2026", "Edit 12/2026"];
   }, [remoteTabs, targetProfile]);
 
-  const [selectedTabs, setSelectedTabs] = useState<string[]>(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem("mvd_check_selected_tabs") || "[]");
-      if (Array.isArray(saved) && saved.length > 0) return saved;
-    } catch {}
-    return availableTabs.slice(0, 4);
-  });
-
-  // Columns & Values
-  const [statusColumn, setStatusColumn] = useState<string>(() => {
-    return localStorage.getItem("mvd_check_status_column") || "M";
-  });
-  const [targetStatusValue, setTargetStatusValue] = useState<string>(() => {
-    return localStorage.getItem("mvd_check_status_value") || "Chưa lọc";
-  });
-  const [dueDateColumn, setDueDateColumn] = useState<string>(() => {
-    return localStorage.getItem("mvd_check_due_date_column") || "L";
-  });
-  const [linkEditColumn, setLinkEditColumn] = useState<string>(() => {
-    return localStorage.getItem("mvd_check_link_edit_column") || "O";
-  });
+  // When available tabs finish loading, auto-select first few if none selected
+  useEffect(() => {
+    if (availableTabs.length > 0 && selectedTabs.length === 0) {
+      config.setSelectedTabs(availableTabs.slice(0, 4));
+    }
+  }, [availableTabs, selectedTabs.length, config]);
 
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [liveScanResult, setLiveScanResult] = useState<UrgentScanResult | null>(null);
@@ -134,26 +137,17 @@ export function NotificationCenterModule() {
   const todayLabel = useMemo(() => formatDateKey(getVietnamTodayKey()), []);
 
   const toggleTab = (tab: string) => {
-    setSelectedTabs((prev) =>
-      prev.includes(tab) ? prev.filter((t) => t !== tab) : [...prev, tab]
-    );
+    config.toggleTab(tab);
   };
 
-  const handleSelectAllTabs = () => setSelectedTabs([...availableTabs]);
-  const handleDeselectAllTabs = () => setSelectedTabs([]);
+  const handleSelectAllTabs = () => config.selectAllTabs(availableTabs);
+  const handleDeselectAllTabs = () => config.deselectAllTabs();
 
-  const handleSaveConfig = () => {
-    try {
-      localStorage.setItem("mvd_urgent_profile_id", selectedProfileId);
-      localStorage.setItem("mvd_check_status_column", statusColumn);
-      localStorage.setItem("mvd_check_status_value", targetStatusValue.trim());
-      localStorage.setItem("mvd_check_due_date_column", dueDateColumn);
-      localStorage.setItem("mvd_check_link_edit_column", linkEditColumn);
-      localStorage.setItem("mvd_check_selected_tabs", JSON.stringify(selectedTabs));
+  const handleSaveConfig = async () => {
+    const ok = await config.saveAll();
+    if (ok) {
       setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (err) {
-      console.error("Save config error:", err);
+      setTimeout(() => setSaveSuccess(false), 3500);
     }
   };
 
@@ -277,6 +271,23 @@ export function NotificationCenterModule() {
           </button>
         </div>
       </div>
+
+      {/* Save Success banner */}
+      {saveSuccess && (
+        <div className="px-6 py-2.5 bg-emerald-500/15 border-b border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center justify-between animate-fade-in shadow-xs">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 size={16} className="text-emerald-500" />
+            <span>Đã lưu toàn bộ cấu hình thông báo thành công! Mọi thay đổi đã được ghi nhận vào hệ thống.</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSaveSuccess(false)}
+            className="text-[10px] underline hover:opacity-80 cursor-pointer"
+          >
+            Đóng
+          </button>
+        </div>
+      )}
 
       {/* Status banner */}
       {scanMessage && (
@@ -823,16 +834,17 @@ export function NotificationCenterModule() {
                   </p>
                 </div>
                 <div
-                  onClick={() =>
-                    updateSetting("urgent_scanner_enabled", settings.urgent_scanner_enabled === false)
-                  }
+                  onClick={() => {
+                    const nextVal = config.urgentScannerEnabled === false;
+                    config.setUrgentScannerEnabled(nextVal);
+                  }}
                   className={`shrink-0 w-9 h-5 rounded-full p-0.5 transition-colors cursor-pointer ${
-                    settings.urgent_scanner_enabled !== false ? "bg-emerald-500" : "bg-muted-foreground/30"
+                    config.urgentScannerEnabled !== false ? "bg-emerald-500" : "bg-muted-foreground/30"
                   }`}
                 >
                   <div
                     className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${
-                      settings.urgent_scanner_enabled !== false ? "translate-x-4" : "translate-x-0"
+                      config.urgentScannerEnabled !== false ? "translate-x-4" : "translate-x-0"
                     }`}
                   />
                 </div>
@@ -920,10 +932,10 @@ export function NotificationCenterModule() {
                       </div>
                       <input
                         type="checkbox"
-                        checked={settings.system_notifications_enabled}
+                        checked={config.systemNotificationsEnabled}
                         onChange={(e) => {
                           const val = e.target.checked;
-                          updateSetting("system_notifications_enabled", val);
+                          config.setSystemNotificationsEnabled(val);
                           if (val) {
                             invoke("request_os_notification_permission").catch(() => {});
                             urgentCustomerScannerService.ensurePermission().catch(() => {});
@@ -945,8 +957,8 @@ export function NotificationCenterModule() {
                       </div>
                       <input
                         type="checkbox"
-                        checked={settings.urgent_scanner_enabled}
-                        onChange={(e) => updateSetting("urgent_scanner_enabled", e.target.checked)}
+                        checked={config.urgentScannerEnabled}
+                        onChange={(e) => config.setUrgentScannerEnabled(e.target.checked)}
                         className="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer"
                       />
                     </div>
@@ -971,6 +983,18 @@ export function NotificationCenterModule() {
                       >
                         <ExternalLink size={12} />
                         <span>Mở Cài đặt Mac</span>
+                      </button>
+                    </div>
+
+                    {/* Nút lưu cài đặt hệ thống */}
+                    <div className="pt-3 border-t border-border/60 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={handleSaveConfig}
+                        className="h-8 px-4 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-97"
+                      >
+                        {saveSuccess ? <Check size={13} /> : <Save size={13} />}
+                        <span>{saveSuccess ? "Đã lưu cài đặt!" : "Lưu cài đặt thông báo"}</span>
                       </button>
                     </div>
                   </div>
