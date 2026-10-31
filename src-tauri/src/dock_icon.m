@@ -1,6 +1,13 @@
 #import <Cocoa/Cocoa.h>
 #import <UserNotifications/UserNotifications.h>
 
+static inline BOOL dh_is_macos_at_least(NSInteger major, NSInteger minor) {
+    NSOperatingSystemVersion v = [[NSProcessInfo processInfo] operatingSystemVersion];
+    if (v.majorVersion > major) return YES;
+    if (v.majorVersion == major && v.minorVersion >= minor) return YES;
+    return NO;
+}
+
 @interface DHNotificationDelegate : NSObject <UNUserNotificationCenterDelegate>
 + (instancetype)sharedDelegate;
 @end
@@ -18,20 +25,19 @@
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center
        willPresentNotification:(UNNotification *)notification
          withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler {
-    // Luôn luôn hiển thị banner, âm thanh và danh sách thông báo trên macOS kể cả khi app đang mở
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-    if (@available(macOS 11.0, *)) {
-        completionHandler(UNNotificationPresentationOptionBanner | UNNotificationPresentationOptionSound | UNNotificationPresentationOptionList);
+    // Tránh sử dụng @available để không phát sinh ký hiệu ___isPlatformVersionAtLeast khi Rustc liên kết
+    if (dh_is_macos_at_least(11, 0)) {
+        // UNNotificationPresentationOptionBanner (16) | UNNotificationPresentationOptionSound (2) | UNNotificationPresentationOptionList (8)
+        completionHandler((UNNotificationPresentationOptions)(16 | 2 | 8));
     } else {
-        completionHandler(UNNotificationPresentationOptionAlert | UNNotificationPresentationOptionSound);
+        // UNNotificationPresentationOptionAlert (4) | UNNotificationPresentationOptionSound (2)
+        completionHandler((UNNotificationPresentationOptions)(4 | 2));
     }
-#pragma clang diagnostic pop
 }
 @end
 
 void macos_request_notification_permission(void) {
-    if (@available(macOS 10.14, *)) {
+    if (NSClassFromString(@"UNUserNotificationCenter") != nil && dh_is_macos_at_least(10, 14)) {
         dispatch_async(dispatch_get_main_queue(), ^{
             UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
             center.delegate = [DHNotificationDelegate sharedDelegate];
@@ -53,7 +59,7 @@ void macos_send_native_notification(const char* title_cstr, const char* body_cst
         NSString *title = [NSString stringWithUTF8String:title_cstr];
         NSString *body = [NSString stringWithUTF8String:body_cstr];
 
-        if (@available(macOS 10.14, *)) {
+        if (NSClassFromString(@"UNUserNotificationCenter") != nil && dh_is_macos_at_least(10, 14)) {
             UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
             center.delegate = [DHNotificationDelegate sharedDelegate];
 
@@ -76,6 +82,12 @@ void macos_send_native_notification(const char* title_cstr, const char* body_cst
                     [appleScript executeAndReturnError:nil];
                 }
             }];
+        } else {
+            NSString *escapedTitle = [title stringByReplacingOccurrencesOfString:@"\"" withString:@"\\\""];
+            NSString *escapedBody = [body stringByReplacingOccurrencesOfString:@"\"" withString:@"\\\""];
+            NSString *script = [NSString stringWithFormat:@"display notification \"%@\" with title \"%@\" sound name \"Glass\"", escapedBody, escapedTitle];
+            NSAppleScript *appleScript = [[NSAppleScript alloc] initWithSource:script];
+            [appleScript executeAndReturnError:nil];
         }
     }
 }
@@ -133,7 +145,11 @@ void macos_configure_tray_panel_window(void) {
 
 void macos_set_window_theme(int is_dark) {
     dispatch_async(dispatch_get_main_queue(), ^{
-        NSAppearance *appearance = [NSAppearance appearanceNamed:is_dark ? NSAppearanceNameDarkAqua : NSAppearanceNameAqua];
+        NSAppearanceName appearanceName = is_dark ? @"NSAppearanceNameDarkAqua" : @"NSAppearanceNameAqua";
+        NSAppearance *appearance = [NSAppearance appearanceNamed:appearanceName];
+        if (!appearance) {
+            appearance = [NSAppearance appearanceNamed:is_dark ? NSAppearanceNameVibrantDark : NSAppearanceNameVibrantLight];
+        }
         for (NSWindow *window in [NSApp windows]) {
             [window setAppearance:appearance];
             [window invalidateShadow];

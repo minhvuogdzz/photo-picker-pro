@@ -22,7 +22,7 @@ pub fn create_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
 
     let builder = TrayIconBuilder::with_id("main-tray")
         .icon(icon)
-        .icon_as_template(true)
+        .icon_as_template(false)
         .menu(&menu)
         .show_menu_on_left_click(false)
         .tooltip("DH Studio Pro");

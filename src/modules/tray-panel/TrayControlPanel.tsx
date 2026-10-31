@@ -10,10 +10,10 @@ import {
   RefreshCw,
   FileSpreadsheet,
   FileImage,
+  Camera,
   Bell,
   ChevronRight,
 } from "lucide-react";
-import { PhotoPickerIcon } from "@/core/components/PhotoPickerIcon";
 import { systemPerformanceService } from "@/core/services/systemPerformanceService";
 import type { SystemPerformanceReport } from "@/core/components/system-performance/types";
 import {
@@ -434,7 +434,7 @@ export function TrayControlPanel() {
               >
                 <div className="flex items-center gap-2.5 text-xs font-semibold">
                   <div className="w-5 h-5 flex items-center justify-center shrink-0">
-                    <PhotoPickerIcon size={16} className="text-blue-500 dark:text-blue-400" />
+                    <Camera size={14} className="text-blue-500 dark:text-blue-400" />
                   </div>
                   <span>Lọc ảnh Pro</span>
                 </div>

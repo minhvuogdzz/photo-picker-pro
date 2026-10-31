@@ -15,10 +15,46 @@ export interface VersionReleaseNote {
 
 export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
   {
+    version: "v3.0.0",
+    date: "2026-10-31",
+    title: "Phát hành phiên bản lớn 3.0 - Nâng cấp Trung tâm Thông báo, Tinh chỉnh Khay hệ thống và Tối ưu Bản phát hành",
+    isCurrent: true,
+    sections: [
+      {
+        title: "Khay hệ thống Menu Bar và Điều khiển Nhanh",
+        type: "improvement",
+        items: [
+          "Cấu hình biểu tượng thanh trạng thái hiển thị chuẩn màu trắng sắc nét trên menu bar macOS, khắc phục triệt để lỗi biểu tượng bị ám đen khi chuyển đổi chế độ hệ thống.",
+          "Chuẩn hóa biểu tượng Lọc ảnh Pro trong khay điều khiển nhanh đồng bộ nhận diện thương hiệu với thanh điều hướng chính.",
+          "Căn chỉnh vị trí cửa sổ Overview bám sát chân Menu Bar macOS, tối ưu trải nghiệm bật mở mượt mà và trực quan.",
+        ],
+      },
+      {
+        title: "Trung tâm Thông báo và Cảnh báo Tới hạn",
+        type: "feature",
+        items: [
+          "Tích hợp kiến trúc thông báo bản địa trên macOS thông qua UserNotifications.framework, hỗ trợ hiển thị banner và âm thanh theo thời gian thực.",
+          "Cá nhân hóa nội dung thông báo khẩn cấp theo thông tin tài khoản người dùng đang đăng nhập.",
+          "Tối ưu quy trình quét hạn và đồng bộ dữ liệu thông báo tức thời giữa cửa sổ chính và khay hệ thống.",
+          "Tự động ẩn các nút kiểm tra thông báo trong bản phát hành chính thức, giữ giao diện gọn gàng.",
+        ],
+      },
+      {
+        title: "Tối ưu hóa Hệ thống và Quy trình Phát hành",
+        type: "fix",
+        items: [
+          "Khắc phục triệt để lỗi biên dịch liên kết thư viện nền tảng trên quy trình phát hành macOS Apple Silicon và Intel.",
+          "Tối ưu hóa hiệu ứng chuyển đổi chủ đề Sáng và Tối, loại bỏ hoàn toàn độ trễ hiển thị.",
+          "Cải thiện độ ổn định và quản lý tài nguyên khi ứng dụng chạy chế độ nền.",
+        ],
+      },
+    ],
+  },
+  {
     version: "v2.9.6",
     date: "2026-10-31",
     title: "Trung tâm Thông báo Hệ điều hành, Tối ưu Menu Bar Popover và Chuyển đổi Theme Siêu Mượt",
-    isCurrent: true,
+    isCurrent: false,
     sections: [
       {
         title: "Trung tâm Thông báo và Cảnh báo Khẩn cấp",
