@@ -445,7 +445,7 @@ export function SystemModule() {
               
               <div className="space-y-0.5">
                 <h1 className="text-sm md:text-base font-extrabold tracking-wider text-foreground uppercase">
-                  DH STUDIO PRO
+                  DH Studio Pro
                 </h1>
                 <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">
                   HỆ SINH THÁI STUDIO CHUYÊN NGHIỆP • DEVHOUSE SOFTWARE • PHIÊN BẢN V{version}

@@ -791,7 +791,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                   {settings.urgent_scanner_enabled !== false && (
                     <div className="pl-5 space-y-2">
                       <div className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/25 rounded-lg p-2 leading-relaxed space-y-1">
-                        <p className="font-bold">⚡ 3 điều kiện đồng thời xảy ra trên toàn bộ Sheet:</p>
+                        <p className="font-bold">3 điều kiện đồng thời xảy ra trên toàn bộ Sheet:</p>
                         <ul className="list-disc pl-3.5 space-y-0.5">
                           <li>
                             Trạng thái (<strong>Cột {statusColumn}</strong>): Bằng "<strong>{targetStatusValue}</strong>".

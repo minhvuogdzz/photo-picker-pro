@@ -15,10 +15,56 @@ export interface VersionReleaseNote {
 
 export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
   {
+    version: "v3.1.0",
+    date: "2026-11-02",
+    title: "Giao diện mới Devhouse Liquid Glass - Gọn gàng, hiện đại và nhất quán",
+    isCurrent: true,
+    sections: [
+      {
+        title: "Ngôn ngữ thiết kế Liquid Glass",
+        type: "design",
+        items: [
+          "Thiết kế lại toàn bộ giao diện theo phong cách Liquid Glass: bề mặt kính mờ trong suốt, viền sáng tinh tế và bóng đổ mềm, nổi trên nền canvas có ánh màu thương hiệu.",
+          "Bảng màu mới theo nhận diện Devhouse (xanh ngọc, cyan, xanh dương trên nền navy). Các tông tím, hồng, cam rời rạc được hợp nhất để toàn bộ ứng dụng đồng nhất một hệ màu.",
+          "Hoàn thiện song song chế độ Sáng và Tối: kính trắng mờ trên nền sáng, kính khói trên nền navy sâu, cửa sổ hộp thoại được làm đặc hơn để luôn dễ đọc.",
+          "Bộ icon đơn sắc nét mảnh thống nhất, loại bỏ emoji và các biểu tượng nhiều màu gây rối mắt.",
+          "Chuẩn hóa nhãn tiêu đề sang kiểu viết hoa đầu câu, bỏ các nhãn chữ in hoa giãn chữ.",
+        ],
+      },
+      {
+        title: "Thanh bên, thanh trên và tìm kiếm",
+        type: "improvement",
+        items: [
+          "Thanh bên dạng tấm kính nổi bo góc, mục đang chọn hiển thị dạng viên kính nổi với icon màu thương hiệu.",
+          "Chân thanh bên tinh gọn: gói bản quyền, ủng hộ tác giả, bộ chuyển giao diện Sáng, Tối, Tự động và thẻ tài khoản có chấm trạng thái trực tuyến.",
+          "Thanh trên có nút quay lại Bảng điều khiển, tiêu đề lớn rõ ràng và nhãn cập nhật phiên bản dễ nhận biết.",
+          "Thanh tìm kiếm thông minh dạng viên kính, danh sách kết quả trên tấm kính mờ.",
+        ],
+      },
+      {
+        title: "Bảng điều khiển thông minh",
+        type: "feature",
+        items: [
+          "Lời chào theo thời điểm trong ngày kèm ngày tháng và số ứng dụng đang sẵn sàng.",
+          "Thẻ ứng dụng mới với biểu tượng màu thương hiệu, trạng thái bản quyền dạng chấm màu và thao tác mở nhanh.",
+          "Khu vực Hiệu suất hệ thống và Kho Tài Nguyên Creative được làm lại gọn gàng, dễ quét thông tin.",
+        ],
+      },
+      {
+        title: "Sửa lỗi giao diện",
+        type: "fix",
+        items: [
+          "Sửa lỗi viền mặc định ghi đè các phần tử cần viền trong suốt, khiến một số nút và hàng hiển thị khung thừa.",
+          "Bổ sung tiêu đề cho màn Trung tâm thông báo trên thanh trên.",
+        ],
+      },
+    ],
+  },
+  {
     version: "v3.0.0",
     date: "2026-10-31",
     title: "Phát hành phiên bản lớn 3.0 - Nâng cấp Trung tâm Thông báo, Tinh chỉnh Khay hệ thống và Tối ưu Bản phát hành",
-    isCurrent: true,
+    isCurrent: false,
     sections: [
       {
         title: "Khay hệ thống Menu Bar và Điều khiển Nhanh",
@@ -100,7 +146,7 @@ export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
     isCurrent: false,
     sections: [
       {
-        title: "⚡ Hệ thống Giám sát Hiệu suất Thực (Native OS System Performance)",
+        title: "Hệ thống Giám sát Hiệu suất Thực (Native OS System Performance)",
         type: "feature",
         items: [
           "Thu thập 100% dữ liệu thực từ hệ điều hành qua Rust backend: Theo dõi riêng biệt CPU (%) và RAM (MB/GB) tiêu thụ bởi tiến trình DH Studio Pro.",
@@ -110,7 +156,7 @@ export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
         ],
       },
       {
-        title: "👤 Tùy biến Avatar & Trải nghiệm người dùng",
+        title: "Tùy biến Avatar & Trải nghiệm người dùng",
         type: "improvement",
         items: [
           "Hỗ trợ người dùng đổi ảnh đại diện cá nhân hóa (PNG, JPG, WebP), tự động crop vuông tâm và tối ưu hóa kích thước 256×256 px.",
@@ -120,7 +166,7 @@ export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
         ],
       },
       {
-        title: "🎨 Tái cấu trúc Bố cục Dashboard & Điều hướng chuyên nghiệp",
+        title: "Tái cấu trúc Bố cục Dashboard & Điều hướng chuyên nghiệp",
         type: "design",
         items: [
           "Thiết lập chuẩn thứ tự ưu tiên: 1. Ứng dụng làm việc (4 công cụ cốt lõi) -> 2. Kho Tài Nguyên Creative -> 3. Giám sát hiệu suất.",
@@ -130,7 +176,7 @@ export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
         ],
       },
       {
-        title: "🧭 Hoàn thiện Thanh bên (Sidebar) & Nhận diện thương hiệu",
+        title: "Hoàn thiện Thanh bên (Sidebar) & Nhận diện thương hiệu",
         type: "design",
         items: [
           "Bố trí chân thanh bên thoáng đãng: Mỗi mục một hàng riêng biệt (Bản quyền, Key, Donate, Theme Switcher 3 chế độ, Thẻ người dùng và Trạng thái).",
@@ -148,7 +194,7 @@ export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
     isCurrent: false,
     sections: [
       {
-        title: "🎨 Tái thiết lập giao diện Studio Dashboard & Phong cách macOS hiện đại",
+        title: "Tái thiết lập giao diện Studio Dashboard & Phong cách macOS hiện đại",
         type: "design",
         items: [
           "Tái thiết kế toàn diện bảng màu Light Mode & Dark Mode theo ngôn ngữ thiết kế macOS hiện đại, độ tương phản mượt mà, chiều sâu viền và bóng đổ mềm mại.",
@@ -158,7 +204,7 @@ export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
         ],
       },
       {
-        title: "🧭 Tối ưu hóa Thanh bên sinh thái (Ecosystem Sidebar) & Hub người dùng",
+        title: "Tối ưu hóa Thanh bên sinh thái (Ecosystem Sidebar) & Hub người dùng",
         type: "design",
         items: [
           "Tích hợp đầy đủ nhận diện thương hiệu DH Studio Pro & Devhouse Software cùng logo chính thức.",
@@ -167,10 +213,10 @@ export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
         ],
       },
       {
-        title: "⚡ Tinh chỉnh thanh điều hướng TopBar & Trải nghiệm tổng thể",
+        title: "Tinh chỉnh thanh điều hướng TopBar & Trải nghiệm tổng thể",
         type: "improvement",
         items: [
-          "Bổ sung bộ chuyển đổi giao diện hình con nhộng trực quan [ 🌓 Tự động | ☀️ Sáng | 🌙 Tối ] ngay trên thanh TopBar.",
+          "Bổ sung bộ chuyển đổi giao diện hình con nhộng trực quan (Tự động, Sáng, Tối) ngay trên thanh TopBar.",
           "Lược bỏ các tab con chuyển chế độ riêng lẻ của Photo Picker trên thanh đầu trang, tăng cường diện tích thanh tìm kiếm thông minh.",
           "Căn chỉnh đối xứng lề trái và phải (16px) cho khu vực làm việc chính của ứng dụng.",
           "Đảm bảo 100% tất cả các tính năng, kết nối IPC và luồng xử lý dữ liệu của các ứng dụng hoạt động ổn định và chính xác.",
@@ -184,7 +230,7 @@ export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
     title: "Tự động đổi trạng thái lọc & Khắc phục phân quyền Batch Contact The Sheet",
     sections: [
       {
-        title: "⚡ Tự động hóa Trạng thái lọc (Status Automation)",
+        title: "Tự động hóa Trạng thái lọc (Status Automation)",
         type: "feature",
         items: [
           "Tự động điền trạng thái lọc hoàn tất (ví dụ 'Đã lọc') vào cột Trạng Thái Lọc (cột M) trên Google Sheets khi thực thi Batch hoàn thành cùng Tên Editor và Link Edit.",
@@ -193,7 +239,7 @@ export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
         ],
       },
       {
-        title: "🛠️ Khắc phục phân quyền ghi và đồng bộ Drive trong Batch Runner",
+        title: "Khắc phục phân quyền ghi và đồng bộ Drive trong Batch Runner",
         type: "fix",
         items: [
           "Loại bỏ hoàn toàn lỗi hiển thị sai 'Bị chặn bởi quyền hạn' khi chuyển tiếp tự động từ màn hình Đồng bộ tên thư mục sang Thực thi Batch.",
@@ -203,7 +249,7 @@ export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
         ],
       },
       {
-        title: "🚀 Tối ưu hóa hiệu năng & độ trễ chuyển tiếp",
+        title: "Tối ưu hóa hiệu năng & độ trễ chuyển tiếp",
         type: "improvement",
         items: [
           "Tăng độ trễ chuyển tiếp an toàn lên 1.5s để Google Drive Desktop kịp đồng bộ siêu dữ liệu file system cục bộ.",
@@ -218,7 +264,7 @@ export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
     title: "Chế độ Auto Find thông minh đa khách hàng & Hiệu ứng Thùng rác tương tác",
     sections: [
       {
-        title: "⚡ Auto Find — Lọc liên tục nhiều khách hàng",
+        title: "Auto Find — Lọc liên tục nhiều khách hàng",
         type: "feature",
         items: [
           "Bổ sung công tắc Auto Find cạnh chế độ so khớp, tự động truy xuất và nạp mã khách tiếp theo từ Google Sheet ngay khi hoàn tất khách trước.",
@@ -230,7 +276,7 @@ export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
         ],
       },
       {
-        title: "🗑️ Hiệu ứng Thùng rác tương tác (macOS Trash Toss)",
+        title: "Hiệu ứng Thùng rác tương tác (macOS Trash Toss)",
         type: "design",
         items: [
           "Thùng rác thu nhỏ (Mini Trash Bin) tại cột Dashboard với nắp mở đóng tương tác bật nảy.",
@@ -241,7 +287,7 @@ export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
         ],
       },
       {
-        title: "🛠️ Sửa lỗi & Tối ưu luồng truy xuất trang tính",
+        title: "Sửa lỗi & Tối ưu luồng truy xuất trang tính",
         type: "fix",
         items: [
           "Khắc phục sự cố lệch tên Tab Google Sheet giữa Auto Find và modal Truy xuất trang tính thủ công.",
@@ -257,7 +303,7 @@ export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
     title: "Làm mới giao diện Đăng nhập & Bổ sung Lịch sử phiên bản (Release Notes)",
     sections: [
       {
-        title: "🎨 Làm mới giao diện Đăng nhập (Auth UI)",
+        title: "Làm mới giao diện Đăng nhập (Auth UI)",
         type: "design",
         items: [
           "Bố cục Split-screen hiện đại: Trình chiếu ảnh dự án mượt mà bên trái, biểu mẫu đăng nhập liền mạch bên phải.",
@@ -267,7 +313,7 @@ export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
         ],
       },
       {
-        title: "📋 Lịch sử phiên bản & Ghi chú phát hành (Release Notes)",
+        title: "Lịch sử phiên bản & Ghi chú phát hành (Release Notes)",
         type: "feature",
         items: [
           "Bổ sung cửa sổ xem lịch sử 7 phiên bản gần nhất kèm ghi chú phát hành chi tiết từng bản cập nhật.",
@@ -276,7 +322,7 @@ export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
         ],
       },
       {
-        title: "🛠️ Sửa lỗi hiển thị đồ họa",
+        title: "Sửa lỗi hiển thị đồ họa",
         type: "fix",
         items: [
           "Khắc phục triệt để lỗi vỡ nền / ô vuông màu trên WebKit macOS khi chuyển đổi màn hình đăng nhập bằng dải màu Radial Gradients GPU.",

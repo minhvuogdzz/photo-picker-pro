@@ -33,15 +33,16 @@
   --color-input: var(--color-input);
   --color-ring: var(--color-ring);
 
-  --radius: 0.5rem;
-  --radius-sm: 0.25rem;
-  --radius-md: 0.375rem;
-  --radius-lg: 0.5rem;
-  --radius-xl: 0.75rem;
-  --radius-2xl: 1rem;
-  --radius-3xl: 1.25rem;
+  /* Liquid glass leans on soft, continuous corners. */
+  --radius: 0.625rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.125rem;
+  --radius-3xl: 1.5rem;
 
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Segoe UI", system-ui, sans-serif;
   --font-mono: "SF Mono", "JetBrains Mono", ui-monospace, monospace;
 
   /* Type scale. The root is 13px, so Tailwind's defaults land on 9.75px (xs) and 11.4px (sm),
@@ -51,84 +52,333 @@
   --text-sm: 0.9231rem;
   --text-sm--line-height: 1.45;
 
-  /* Elevation scale shared by cards, popovers and modals. */
-  --shadow-xs: 0 1px 2px rgb(15 23 42 / 0.05);
-  --shadow-sm: 0 1px 3px rgb(15 23 42 / 0.08), 0 1px 2px rgb(15 23 42 / 0.04);
-  --shadow-md: 0 6px 16px -4px rgb(15 23 42 / 0.12), 0 2px 6px -2px rgb(15 23 42 / 0.06);
-  --shadow-lg: 0 18px 40px -12px rgb(15 23 42 / 0.22), 0 6px 14px -6px rgb(15 23 42 / 0.1);
+  /* Elevation scale shared by cards, popovers and modals: wide, navy-tinted and soft,
+     so translucent surfaces float over the canvas instead of sitting on it. */
+  --shadow-xs: 0 1px 2px rgb(11 19 36 / 0.04), 0 1px 1px rgb(11 19 36 / 0.02);
+  --shadow-sm: 0 2px 8px -2px rgb(11 19 36 / 0.08), 0 1px 2px rgb(11 19 36 / 0.04);
+  --shadow-md: 0 10px 28px -10px rgb(11 19 36 / 0.16), 0 2px 6px -2px rgb(11 19 36 / 0.06);
+  --shadow-lg: 0 24px 56px -18px rgb(11 19 36 / 0.28), 0 8px 18px -8px rgb(11 19 36 / 0.1);
+  --shadow-xl: 0 32px 72px -20px rgb(11 19 36 / 0.34), 0 12px 24px -10px rgb(11 19 36 / 0.12);
+  --shadow-2xl: 0 40px 96px -24px rgb(11 19 36 / 0.42);
+}
+
+@theme static {
+  /* Devhouse palette. Brand families are tuned to the logo (teal -> cyan -> blue);
+     every other hue family is folded into one of them so the app reads as one system:
+     purple/indigo/pink -> blue/cyan, green -> teal, orange/yellow -> amber, rose -> red, warm greys -> slate. */
+  --color-blue-50: #eef4ff;
+  --color-blue-100: #dce8ff;
+  --color-blue-200: #bfd4ff;
+  --color-blue-300: #93b6ff;
+  --color-blue-400: #6494ff;
+  --color-blue-500: #3a77ff;
+  --color-blue-600: #1f5fe0;
+  --color-blue-700: #1a4cc0;
+  --color-blue-800: #1b3f99;
+  --color-blue-900: #1c3778;
+  --color-blue-950: #142349;
+  --color-cyan-50: #ebfbfe;
+  --color-cyan-100: #cdf3fb;
+  --color-cyan-200: #a1e7f7;
+  --color-cyan-300: #63d4ee;
+  --color-cyan-400: #27bcdd;
+  --color-cyan-500: #12a5c6;
+  --color-cyan-600: #0e84a6;
+  --color-cyan-700: #126a87;
+  --color-cyan-800: #17566e;
+  --color-cyan-900: #18485d;
+  --color-cyan-950: #0a2e3e;
+  --color-teal-50: #eafcf7;
+  --color-teal-100: #c9f6ea;
+  --color-teal-200: #98ecd8;
+  --color-teal-300: #5edcc1;
+  --color-teal-400: #2ec5a6;
+  --color-teal-500: #16a98c;
+  --color-teal-600: #0e8873;
+  --color-teal-700: #106c5e;
+  --color-teal-800: #12564c;
+  --color-teal-900: #134740;
+  --color-teal-950: #052a26;
+  --color-indigo-50: var(--color-blue-50);
+  --color-indigo-100: var(--color-blue-100);
+  --color-indigo-200: var(--color-blue-200);
+  --color-indigo-300: var(--color-blue-300);
+  --color-indigo-400: var(--color-blue-400);
+  --color-indigo-500: var(--color-blue-500);
+  --color-indigo-600: var(--color-blue-600);
+  --color-indigo-700: var(--color-blue-700);
+  --color-indigo-800: var(--color-blue-800);
+  --color-indigo-900: var(--color-blue-900);
+  --color-indigo-950: var(--color-blue-950);
+  --color-violet-50: var(--color-blue-50);
+  --color-violet-100: var(--color-blue-100);
+  --color-violet-200: var(--color-blue-200);
+  --color-violet-300: var(--color-blue-300);
+  --color-violet-400: var(--color-blue-400);
+  --color-violet-500: var(--color-blue-500);
+  --color-violet-600: var(--color-blue-600);
+  --color-violet-700: var(--color-blue-700);
+  --color-violet-800: var(--color-blue-800);
+  --color-violet-900: var(--color-blue-900);
+  --color-violet-950: var(--color-blue-950);
+  --color-purple-50: var(--color-blue-50);
+  --color-purple-100: var(--color-blue-100);
+  --color-purple-200: var(--color-blue-200);
+  --color-purple-300: var(--color-blue-300);
+  --color-purple-400: var(--color-blue-400);
+  --color-purple-500: var(--color-blue-500);
+  --color-purple-600: var(--color-blue-600);
+  --color-purple-700: var(--color-blue-700);
+  --color-purple-800: var(--color-blue-800);
+  --color-purple-900: var(--color-blue-900);
+  --color-purple-950: var(--color-blue-950);
+  --color-fuchsia-50: var(--color-blue-50);
+  --color-fuchsia-100: var(--color-blue-100);
+  --color-fuchsia-200: var(--color-blue-200);
+  --color-fuchsia-300: var(--color-blue-300);
+  --color-fuchsia-400: var(--color-blue-400);
+  --color-fuchsia-500: var(--color-blue-500);
+  --color-fuchsia-600: var(--color-blue-600);
+  --color-fuchsia-700: var(--color-blue-700);
+  --color-fuchsia-800: var(--color-blue-800);
+  --color-fuchsia-900: var(--color-blue-900);
+  --color-fuchsia-950: var(--color-blue-950);
+  --color-sky-50: var(--color-cyan-50);
+  --color-sky-100: var(--color-cyan-100);
+  --color-sky-200: var(--color-cyan-200);
+  --color-sky-300: var(--color-cyan-300);
+  --color-sky-400: var(--color-cyan-400);
+  --color-sky-500: var(--color-cyan-500);
+  --color-sky-600: var(--color-cyan-600);
+  --color-sky-700: var(--color-cyan-700);
+  --color-sky-800: var(--color-cyan-800);
+  --color-sky-900: var(--color-cyan-900);
+  --color-sky-950: var(--color-cyan-950);
+  --color-pink-50: var(--color-cyan-50);
+  --color-pink-100: var(--color-cyan-100);
+  --color-pink-200: var(--color-cyan-200);
+  --color-pink-300: var(--color-cyan-300);
+  --color-pink-400: var(--color-cyan-400);
+  --color-pink-500: var(--color-cyan-500);
+  --color-pink-600: var(--color-cyan-600);
+  --color-pink-700: var(--color-cyan-700);
+  --color-pink-800: var(--color-cyan-800);
+  --color-pink-900: var(--color-cyan-900);
+  --color-pink-950: var(--color-cyan-950);
+  --color-emerald-50: var(--color-teal-50);
+  --color-emerald-100: var(--color-teal-100);
+  --color-emerald-200: var(--color-teal-200);
+  --color-emerald-300: var(--color-teal-300);
+  --color-emerald-400: var(--color-teal-400);
+  --color-emerald-500: var(--color-teal-500);
+  --color-emerald-600: var(--color-teal-600);
+  --color-emerald-700: var(--color-teal-700);
+  --color-emerald-800: var(--color-teal-800);
+  --color-emerald-900: var(--color-teal-900);
+  --color-emerald-950: var(--color-teal-950);
+  --color-green-50: var(--color-teal-50);
+  --color-green-100: var(--color-teal-100);
+  --color-green-200: var(--color-teal-200);
+  --color-green-300: var(--color-teal-300);
+  --color-green-400: var(--color-teal-400);
+  --color-green-500: var(--color-teal-500);
+  --color-green-600: var(--color-teal-600);
+  --color-green-700: var(--color-teal-700);
+  --color-green-800: var(--color-teal-800);
+  --color-green-900: var(--color-teal-900);
+  --color-green-950: var(--color-teal-950);
+  --color-lime-50: var(--color-teal-50);
+  --color-lime-100: var(--color-teal-100);
+  --color-lime-200: var(--color-teal-200);
+  --color-lime-300: var(--color-teal-300);
+  --color-lime-400: var(--color-teal-400);
+  --color-lime-500: var(--color-teal-500);
+  --color-lime-600: var(--color-teal-600);
+  --color-lime-700: var(--color-teal-700);
+  --color-lime-800: var(--color-teal-800);
+  --color-lime-900: var(--color-teal-900);
+  --color-lime-950: var(--color-teal-950);
+  --color-yellow-50: var(--color-amber-50);
+  --color-yellow-100: var(--color-amber-100);
+  --color-yellow-200: var(--color-amber-200);
+  --color-yellow-300: var(--color-amber-300);
+  --color-yellow-400: var(--color-amber-400);
+  --color-yellow-500: var(--color-amber-500);
+  --color-yellow-600: var(--color-amber-600);
+  --color-yellow-700: var(--color-amber-700);
+  --color-yellow-800: var(--color-amber-800);
+  --color-yellow-900: var(--color-amber-900);
+  --color-yellow-950: var(--color-amber-950);
+  --color-orange-50: var(--color-amber-50);
+  --color-orange-100: var(--color-amber-100);
+  --color-orange-200: var(--color-amber-200);
+  --color-orange-300: var(--color-amber-300);
+  --color-orange-400: var(--color-amber-400);
+  --color-orange-500: var(--color-amber-500);
+  --color-orange-600: var(--color-amber-600);
+  --color-orange-700: var(--color-amber-700);
+  --color-orange-800: var(--color-amber-800);
+  --color-orange-900: var(--color-amber-900);
+  --color-orange-950: var(--color-amber-950);
+  --color-rose-50: var(--color-red-50);
+  --color-rose-100: var(--color-red-100);
+  --color-rose-200: var(--color-red-200);
+  --color-rose-300: var(--color-red-300);
+  --color-rose-400: var(--color-red-400);
+  --color-rose-500: var(--color-red-500);
+  --color-rose-600: var(--color-red-600);
+  --color-rose-700: var(--color-red-700);
+  --color-rose-800: var(--color-red-800);
+  --color-rose-900: var(--color-red-900);
+  --color-rose-950: var(--color-red-950);
+  --color-gray-50: var(--color-slate-50);
+  --color-gray-100: var(--color-slate-100);
+  --color-gray-200: var(--color-slate-200);
+  --color-gray-300: var(--color-slate-300);
+  --color-gray-400: var(--color-slate-400);
+  --color-gray-500: var(--color-slate-500);
+  --color-gray-600: var(--color-slate-600);
+  --color-gray-700: var(--color-slate-700);
+  --color-gray-800: var(--color-slate-800);
+  --color-gray-900: var(--color-slate-900);
+  --color-gray-950: var(--color-slate-950);
+  --color-zinc-50: var(--color-slate-50);
+  --color-zinc-100: var(--color-slate-100);
+  --color-zinc-200: var(--color-slate-200);
+  --color-zinc-300: var(--color-slate-300);
+  --color-zinc-400: var(--color-slate-400);
+  --color-zinc-500: var(--color-slate-500);
+  --color-zinc-600: var(--color-slate-600);
+  --color-zinc-700: var(--color-slate-700);
+  --color-zinc-800: var(--color-slate-800);
+  --color-zinc-900: var(--color-slate-900);
+  --color-zinc-950: var(--color-slate-950);
+  --color-neutral-50: var(--color-slate-50);
+  --color-neutral-100: var(--color-slate-100);
+  --color-neutral-200: var(--color-slate-200);
+  --color-neutral-300: var(--color-slate-300);
+  --color-neutral-400: var(--color-slate-400);
+  --color-neutral-500: var(--color-slate-500);
+  --color-neutral-600: var(--color-slate-600);
+  --color-neutral-700: var(--color-slate-700);
+  --color-neutral-800: var(--color-slate-800);
+  --color-neutral-900: var(--color-slate-900);
+  --color-neutral-950: var(--color-slate-950);
+  --color-stone-50: var(--color-slate-50);
+  --color-stone-100: var(--color-slate-100);
+  --color-stone-200: var(--color-slate-200);
+  --color-stone-300: var(--color-slate-300);
+  --color-stone-400: var(--color-slate-400);
+  --color-stone-500: var(--color-slate-500);
+  --color-stone-600: var(--color-slate-600);
+  --color-stone-700: var(--color-slate-700);
+  --color-stone-800: var(--color-slate-800);
+  --color-stone-900: var(--color-slate-900);
+  --color-stone-950: var(--color-slate-950);
 }
 
 @layer base {
   :root {
-    /* Light theme — refined macOS-style palette referenced from MClean.
-       Pure white elevated cards on soft cool canvas with Apple Blue accents. */
-    --color-background: #f4f6fb;
-    --color-sidebar: #e9ecf2;
-    --color-sidebar-foreground: #475569;
-    --color-foreground: #0f172a;
-    --color-card: #ffffff;
-    --color-card-foreground: #0f172a;
-    --color-popover: #ffffff;
-    --color-popover-foreground: #0f172a;
+    /* Light theme — Devhouse liquid glass.
+       Frosted white surfaces over a pale canvas washed with the logo's teal -> cyan -> blue. */
+    --color-background: #eef2f8;
+    --color-sidebar: rgb(255 255 255 / 0.5);
+    --color-sidebar-foreground: #46556c;
+    --color-foreground: #0b1324;
+    --color-card: rgb(255 255 255 / 0.68);
+    --color-card-foreground: #0b1324;
+    --color-popover: rgb(255 255 255 / 0.92);
+    --color-popover-foreground: #0b1324;
 
-    --color-primary: #007aff;
+    --color-primary: #1f5fe0;
     --color-primary-foreground: #ffffff;
 
-    --color-secondary: #eef2f8;
-    --color-secondary-foreground: #1e293b;
+    --color-secondary: rgb(11 19 36 / 0.045);
+    --color-secondary-foreground: #1b2638;
 
-    --color-muted: #edf1f7;
-    --color-muted-foreground: #64748b;
+    --color-muted: rgb(11 19 36 / 0.045);
+    --color-muted-foreground: #586880;
 
-    --color-accent: #e2e8f2;
-    --color-accent-foreground: #0f172a;
+    --color-accent: rgb(31 95 224 / 0.08);
+    --color-accent-foreground: #0b1324;
 
-    --color-destructive: #ef4444;
+    --color-destructive: #e5484d;
     --color-destructive-foreground: #ffffff;
-    --color-success: #10b981;
-    --color-warning: #f59e0b;
-    --color-info: #0284c7;
+    --color-success: #0e8873;
+    --color-warning: #c27a06;
+    --color-info: #0e84a6;
 
-    --color-border: #e2e7ef;
-    --color-border-strong: #cbd5e1;
-    --color-input: #ffffff;
-    --color-ring: #007aff;
+    --color-border: rgb(11 19 36 / 0.08);
+    --color-border-strong: rgb(11 19 36 / 0.14);
+    --color-input: rgb(255 255 255 / 0.72);
+    --color-ring: #1f5fe0;
+
+    /* Glass material */
+    --glass-fill: rgb(255 255 255 / 0.56);
+    --glass-fill-strong: rgb(255 255 255 / 0.8);
+    --glass-edge: rgb(255 255 255 / 0.75);
+    --glass-rim-hi: rgb(255 255 255 / 0.95);
+    --glass-rim-lo: rgb(255 255 255 / 0.25);
+    --glass-hairline: rgb(11 19 36 / 0.07);
+    --glass-highlight: rgb(255 255 255 / 0.7);
+    --glass-blur: 28px;
+
+    /* Canvas washes */
+    --canvas-base: #eef2f8;
+    --canvas-teal: rgb(46 197 166 / 0.2);
+    --canvas-cyan: rgb(39 188 221 / 0.16);
+    --canvas-blue: rgb(58 119 255 / 0.18);
+
+    --brand-gradient: linear-gradient(135deg, #2ec5a6 0%, #12a5c6 42%, #1f5fe0 100%);
   }
 
   .dark {
-    /* Dark theme — deep obsidian macOS-style palette referenced from MClean.
-       Layered matte dark cards on obsidian canvas with vivid glowing accents. */
-    --color-background: #121316;
-    --color-sidebar: #18191d;
-    --color-sidebar-foreground: #94a3b8;
-    --color-foreground: #f8fafc;
-    --color-card: #1c1d22;
-    --color-card-foreground: #f8fafc;
-    --color-popover: #1f2026;
-    --color-popover-foreground: #f8fafc;
+    /* Dark theme — Devhouse liquid glass.
+       Smoked glass over a deep navy canvas lit by the same teal -> blue glow as the logo. */
+    --color-background: #070b14;
+    --color-sidebar: rgb(14 21 38 / 0.5);
+    --color-sidebar-foreground: #93a1b8;
+    --color-foreground: #e8edf6;
+    --color-card: rgb(22 31 52 / 0.58);
+    --color-card-foreground: #e8edf6;
+    --color-popover: rgb(15 22 39 / 0.94);
+    --color-popover-foreground: #e8edf6;
 
-    --color-primary: #0a84ff;
+    --color-primary: #3a77ff;
     --color-primary-foreground: #ffffff;
 
-    --color-secondary: #262932;
-    --color-secondary-foreground: #e2e8f0;
+    --color-secondary: rgb(255 255 255 / 0.06);
+    --color-secondary-foreground: #dbe3f0;
 
-    --color-muted: #22242c;
-    --color-muted-foreground: #94a3b8;
+    --color-muted: rgb(255 255 255 / 0.05);
+    --color-muted-foreground: #8e9cb4;
 
-    --color-accent: #2a2d38;
+    --color-accent: rgb(255 255 255 / 0.08);
     --color-accent-foreground: #ffffff;
 
-    --color-destructive: #f87171;
+    --color-destructive: #ff6369;
     --color-destructive-foreground: #1c0707;
-    --color-success: #34d399;
-    --color-warning: #fbbf24;
-    --color-info: #38bdf8;
+    --color-success: #2ec5a6;
+    --color-warning: #f5b544;
+    --color-info: #27bcdd;
 
-    --color-border: rgba(255, 255, 255, 0.08);
-    --color-border-strong: rgba(255, 255, 255, 0.16);
-    --color-input: #15161b;
-    --color-ring: #0a84ff;
+    --color-border: rgb(255 255 255 / 0.08);
+    --color-border-strong: rgb(255 255 255 / 0.15);
+    --color-input: rgb(255 255 255 / 0.04);
+    --color-ring: #6494ff;
+
+    --glass-fill: rgb(18 26 45 / 0.5);
+    --glass-fill-strong: rgb(16 23 40 / 0.82);
+    --glass-edge: rgb(255 255 255 / 0.09);
+    --glass-rim-hi: rgb(255 255 255 / 0.22);
+    --glass-rim-lo: rgb(255 255 255 / 0.02);
+    --glass-hairline: rgb(255 255 255 / 0.06);
+    --glass-highlight: rgb(255 255 255 / 0.07);
+
+    --canvas-base: #070b14;
+    --canvas-teal: rgb(22 169 140 / 0.16);
+    --canvas-cyan: rgb(18 165 198 / 0.12);
+    --canvas-blue: rgb(31 95 224 / 0.24);
   }
 
   /* Keyboard focus: one consistent, visible ring for every interactive control (utilities can still override). */
@@ -147,8 +397,11 @@
   }
 }
 
-*, ::before, ::after {
-  border-color: var(--color-border);
+/* Default border colour lives in the base layer so border-* utilities (e.g. border-transparent) can override it. */
+@layer base {
+  *, ::before, ::after {
+    border-color: var(--color-border);
+  }
 }
 
 html {
@@ -167,7 +420,11 @@ body {
 }
 
 html:not(.panel-tray) body {
-  background-color: var(--color-background);
+  background-color: var(--canvas-base);
+  background-image:
+    radial-gradient(60% 55% at 0% 0%, var(--canvas-teal) 0%, transparent 70%),
+    radial-gradient(70% 65% at 100% 100%, var(--canvas-blue) 0%, transparent 72%);
+  background-attachment: fixed;
 }
 
 html.panel-tray,
@@ -210,19 +467,107 @@ html.theme-transitioning *::after {
   background-color: oklch(0.5 0 0 / 0.4);
 }
 
+/* ===== LIQUID GLASS MATERIAL ===== */
+/* Layered as components so utilities (absolute, fixed, border-*, shadow-*) still win. */
+@layer components {
+
+  /* App canvas: a still, low-contrast wash of the brand colours. Glass needs something
+     behind it to refract; this gives every translucent surface the same quiet backdrop. */
+  .app-canvas {
+    background-color: var(--canvas-base);
+    background-image:
+      radial-gradient(60% 55% at 0% 0%, var(--canvas-teal) 0%, transparent 70%),
+      radial-gradient(45% 40% at 55% 0%, var(--canvas-cyan) 0%, transparent 70%),
+      radial-gradient(70% 65% at 100% 100%, var(--canvas-blue) 0%, transparent 72%);
+    background-attachment: fixed;
+  }
+
+  /* The blur and fill live on ::before so the element itself never becomes a containing
+     block for position:fixed children (menus and overlays inside the sidebar keep working).
+     ::after draws the specular rim: bright where light hits the top-left edge, fading out. */
+  .liquid-glass {
+    position: relative;
+    isolation: isolate;
+    border: 1px solid var(--glass-hairline);
+    box-shadow: var(--shadow-md), inset 0 1px 0 var(--glass-highlight);
+  }
+
+  .liquid-glass::before,
+  .liquid-glass::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  .liquid-glass::before {
+    z-index: -1;
+    background: var(--glass-fill);
+    backdrop-filter: blur(var(--glass-blur)) saturate(1.8);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.8);
+  }
+
+  .liquid-glass::after {
+    padding: 1px;
+    background: linear-gradient(155deg, var(--glass-rim-hi) 0%, var(--glass-rim-lo) 38%, transparent 62%, var(--glass-rim-lo) 100%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  }
+
+  .liquid-glass-strong::before {
+    background: var(--glass-fill-strong);
+  }
+
+  /* Selected state for nav rows and segmented controls: a small raised lens. */
+  .glass-pill {
+    background: var(--glass-fill-strong);
+    box-shadow: 0 1px 2px rgb(11 19 36 / 0.06), 0 4px 12px -4px rgb(11 19 36 / 0.12), inset 0 1px 0 var(--glass-highlight);
+    border: 1px solid var(--glass-hairline);
+  }
+
+  .dark .glass-pill {
+    background: rgb(255 255 255 / 0.09);
+    box-shadow: 0 4px 14px -6px rgb(0 0 0 / 0.5), inset 0 1px 0 rgb(255 255 255 / 0.08);
+  }
+
+  .brand-gradient {
+    background-image: var(--brand-gradient);
+  }
+
+  .brand-gradient-text {
+    background-image: var(--brand-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
+
+/* Surfaces inside a modal sit over a dimmed, blurred overlay; give them a denser fill so
+   light-mode glass does not turn grey and text behind never shows through. */
+html .fixed.inset-0 :is([class*="bg-card"], [class*="bg-popover"]) {
+  background-color: var(--color-popover);
+}
+
+html .fixed.inset-0 :is([class*="bg-card"], [class*="bg-popover"]) :is([class*="bg-card"]) {
+  background-color: rgb(127 140 160 / 0.06);
+}
+
+/* Section labels are sentence case: the old all-caps, letter-spaced micro labels read as noise
+   at desktop sizes. Every label's source text is already written in sentence case. */
+.uppercase[class*="tracking-wide"] {
+  text-transform: none;
+  letter-spacing: -0.003em;
+}
+
 /* ===== COMPONENT STYLES ===== */
 
 .panel {
   background-color: var(--color-card);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-2xl);
   border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-.dark .panel {
-  box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  box-shadow: var(--shadow-sm), inset 0 1px 0 var(--glass-highlight);
 }
 
 .panel-header {
@@ -234,11 +579,10 @@ html.theme-transitioning *::after {
 }
 
 .panel-title {
-  font-size: 0.8077rem;
+  font-size: 0.9231rem;
   font-weight: 600;
   color: var(--color-foreground);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: -0.005em;
 }
 
 .panel-body {
@@ -281,7 +625,7 @@ html.theme-transitioning *::after {
 .btn-primary {
   background: var(--color-primary);
   color: var(--color-primary-foreground);
-  box-shadow: 0 1px 2px oklch(0 0 0 / 0.08);
+  box-shadow: 0 6px 16px -6px color-mix(in oklab, var(--color-primary) 70%, transparent), inset 0 1px 0 rgb(255 255 255 / 0.22);
   border: 1px solid transparent;
 }
 
@@ -290,9 +634,10 @@ html.theme-transitioning *::after {
 }
 
 .btn-secondary {
-  background-color: var(--color-secondary);
+  background-color: var(--glass-fill-strong);
   color: var(--color-secondary-foreground);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--glass-hairline);
+  box-shadow: var(--shadow-xs), inset 0 1px 0 var(--glass-highlight);
 }
 
 .btn-secondary:hover:not(:disabled) {
@@ -322,13 +667,13 @@ html.theme-transitioning *::after {
 
 .btn-outline {
   background: var(--color-card);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   color: var(--color-foreground);
 }
 
 .btn-outline:hover:not(:disabled) {
   background-color: var(--color-accent);
-  border-color: var(--color-primary);
+  border-color: color-mix(in oklab, var(--color-primary) 45%, transparent);
 }
 
 /* Badges */
@@ -340,11 +685,11 @@ html.theme-transitioning *::after {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  border-radius: var(--radius-md);
+  border-radius: 9999px;
   padding: 0.125rem 0.5rem;
   font-size: 0.7692rem;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
@@ -397,15 +742,15 @@ html.theme-transitioning *::after {
 
 .input-field:focus {
   outline: none;
-  box-shadow: 0 0 0 2px var(--color-ring), inset 0 1px 2px oklch(0 0 0 / 0.04);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-ring) 22%, transparent);
   border-color: var(--color-primary);
-  background-color: var(--color-background);
+  background-color: var(--glass-fill-strong);
 }
 
 /* Stats */
 .stat-card {
   background: var(--color-card);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   border: 1px solid var(--color-border);
   box-shadow: none;
   padding: 0.625rem;
@@ -425,11 +770,9 @@ html.theme-transitioning *::after {
 }
 
 .stat-label {
-  font-size: 0.7692rem;
+  font-size: 0.8462rem;
   color: var(--color-muted-foreground);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 /* Folder item */
@@ -442,7 +785,7 @@ html.theme-transitioning *::after {
   transition: all 0.12s ease;
   cursor: default;
   border: 1px solid transparent;
-  background-color: var(--color-background);
+  background-color: var(--color-muted);
 }
 
 .folder-item:hover {
@@ -452,11 +795,9 @@ html.theme-transitioning *::after {
 
 /* Table */
 .table-header {
-  font-size: 0.8077rem;
-  font-weight: 600;
+  font-size: 0.8462rem;
+  font-weight: 500;
   color: var(--color-muted-foreground);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   padding: 0.5rem 0.75rem;
   text-align: left;
   border-bottom: 1px solid var(--color-border);
@@ -483,25 +824,17 @@ html.theme-transitioning *::after {
 }
 
 .glass {
-  background: oklch(1 0 0 / 0.65);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-top: 1px solid var(--color-border);
-}
-.dark .glass {
-  background: oklch(0.14 0.01 260 / 0.65);
-  border-top: 1px solid oklch(1 0 0 / 0.04);
+  background: var(--glass-fill);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.8);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.8);
+  border-top: 1px solid var(--glass-hairline);
 }
 
 .glass-nav {
-  background: oklch(1 0 0 / 0.65);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--color-border);
-}
-.dark .glass-nav {
-  background: oklch(0.14 0.01 260 / 0.65);
-  border-bottom: 1px solid oklch(1 0 0 / 0.04);
+  background: var(--glass-fill);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.8);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.8);
+  border-bottom: 1px solid var(--glass-hairline);
 }
 
 /* Animations — kept minimal */
@@ -623,11 +956,10 @@ html.theme-transitioning *::after {
   background: linear-gradient(
     105deg,
     #ffffff 0%,
-    #e0f2fe 18%,
-    #bae6fd 32%,
-    #c4b5fd 48%,
-    #f472b6 65%,
-    #fed7aa 82%,
+    #cdf3fb 20%,
+    #5edcc1 40%,
+    #63d4ee 58%,
+    #93b6ff 78%,
     #ffffff 100%
   );
   background-size: 260% auto;

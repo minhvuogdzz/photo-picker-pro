@@ -806,7 +806,7 @@ export function NotificationCenterModule() {
 
               {/* Tóm tắt logic 3 điều kiện */}
               <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-600 dark:text-amber-400 space-y-1">
-                <p className="font-bold">⚡ Tóm tắt logic kích hoạt thông báo khẩn cấp:</p>
+                <p className="font-bold">Tóm tắt logic kích hoạt thông báo khẩn cấp:</p>
                 <p className="leading-relaxed">
                   Một hàng khách hàng sẽ được báo khẩn cấp khi đồng thời: <strong>(1)</strong> Cột {statusColumn} là "{targetStatusValue}", <strong>(2)</strong> Ngày hẹn trả ở Cột {dueDateColumn} là {todayLabel} hoặc trước đó, và <strong>(3)</strong> Cột {linkEditColumn !== "OFF" ? linkEditColumn : "(đang tắt)"} đang rỗng (chưa có dữ liệu link edit bàn giao).
                 </p>

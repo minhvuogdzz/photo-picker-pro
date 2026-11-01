@@ -361,7 +361,7 @@ export default function ResourcesApp() {
             <div className="flex items-center gap-2">
               <h1 className="text-xs font-semibold text-foreground tracking-tight">Kho Tài Nguyên Creative</h1>
               <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20">
-                PRO VAULT
+                Pro Vault
               </span>
             </div>
             <p className="text-[10px] text-muted-foreground">

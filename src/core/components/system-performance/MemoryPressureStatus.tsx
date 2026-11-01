@@ -52,7 +52,7 @@ export function MemoryPressureStatus({ pressure, compact = false }: MemoryPressu
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-            ÁP LỰC BỘ NHỚ (MEMORY PRESSURE)
+            Áp lực bộ nhớ
           </span>
           <span
             className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${

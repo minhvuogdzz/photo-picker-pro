@@ -889,7 +889,7 @@ export default function PhotoCounterApp() {
                     </div>
                     <div>
                       <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                        TỔNG THU NHẬP THỰC LĨNH
+                        Tổng thu nhập thực lĩnh
                       </span>
                       <span className="text-xs font-semibold text-foreground">
                         {monthName || "Tháng này"}
@@ -906,7 +906,7 @@ export default function PhotoCounterApp() {
                     ) : (
                       <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/40 flex items-center gap-1 shadow-2xs">
                         <AlertCircle size={11} className="text-amber-500" />
-                        CHƯA ĐẠT KPI
+                        Chưa đạt KPI
                       </span>
                     )}
                   </div>

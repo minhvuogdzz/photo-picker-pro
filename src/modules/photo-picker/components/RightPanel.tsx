@@ -405,7 +405,7 @@ export function RightPanel() {
               )}
               {sheetUpdateStatus.state === "success" && (
                 <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/15 border border-emerald-500/30 font-mono">
-                  ĐÃ ĐỔI TRẠNG THÁI
+                  Đã đổi trạng thái
                 </span>
               )}
             </div>

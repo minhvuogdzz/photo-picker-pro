@@ -67,7 +67,7 @@ export function InAppNotificationBanner() {
         <div className="flex-1 min-w-0 pr-4">
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              DH STUDIO PRO
+              DH Studio Pro
             </span>
             <span className="text-[10px] text-muted-foreground/60">• Vừa xong</span>
           </div>

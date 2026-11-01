@@ -2,8 +2,9 @@ import { useAppStore } from "@/core/stores/useAppStore";
 import { useAuthStore } from "@/core/stores/useAuthStore";
 import { useTranslation } from "@/core/lib/i18n";
 import {
+  ArrowUpCircle,
+  ChevronLeft,
   Clock,
-  RefreshCw,
 } from "lucide-react";
 import { useUpdaterStore } from "@/core/stores/useUpdaterStore";
 import { SmartSearchBar } from "./SmartSearchBar";
@@ -34,6 +35,8 @@ export function TopBar() {
         return "Thống kê sản lượng";
       case "system":
         return "Cài đặt & Bản quyền";
+      case "notifications":
+        return "Trung tâm thông báo";
       default:
         return "DH Studio Pro";
     }
@@ -42,23 +45,22 @@ export function TopBar() {
   return (
     <header className="h-full w-full flex items-center justify-between gap-4 select-none" data-tauri-drag-region>
       {/* Left: Module Title Breadcrumb */}
-      <div className="flex items-center gap-3 shrink-0">
-        {/* Current Module Title Breadcrumb */}
-        <div className="flex items-center gap-2">
-          <span className="text-[13px] font-bold text-foreground tracking-tight">
-            {getModuleTitle()}
-          </span>
+      <div className="flex items-center gap-2 shrink-0 min-w-0">
+        {activeModule !== "launcher" && (
+          <button
+            type="button"
+            onClick={() => setActiveModule("launcher")}
+            className="w-7 h-7 -ml-1 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-foreground/[0.06] transition-colors cursor-pointer"
+            title="Về Bảng điều khiển"
+            aria-label="Về Bảng điều khiển"
+          >
+            <ChevronLeft size={17} strokeWidth={1.75} />
+          </button>
+        )}
 
-          {activeModule !== "launcher" && (
-            <button
-              type="button"
-              onClick={() => setActiveModule("launcher")}
-              className="text-[11px] text-muted-foreground hover:text-primary transition-colors cursor-pointer"
-            >
-              · Về Bảng điều khiển
-            </button>
-          )}
-        </div>
+        <h1 className="text-[15px] font-semibold text-foreground tracking-tight truncate">
+          {getModuleTitle()}
+        </h1>
 
         {/* Update badge */}
         {updateResult?.hasUpdate && (
@@ -67,11 +69,11 @@ export function TopBar() {
               e.stopPropagation();
               openModal();
             }}
-            className="text-[10px] py-0.5 px-2 bg-primary/10 hover:bg-primary/15 text-primary font-medium flex items-center gap-1 rounded-full cursor-pointer border border-primary/20 transition-all"
+            className="ml-1 h-6 px-2.5 text-[11px] bg-primary/10 hover:bg-primary/15 text-primary font-medium flex items-center gap-1.5 rounded-full cursor-pointer transition-colors"
             title={`Có bản cập nhật mới v${updateResult.version}`}
           >
-            <RefreshCw size={10} className="shrink-0 animate-spin" />
-            <span>v{updateResult.version}</span>
+            <ArrowUpCircle size={12} strokeWidth={2} className="shrink-0" />
+            <span>Cập nhật v{updateResult.version}</span>
           </button>
         )}
       </div>
@@ -90,14 +92,14 @@ export function TopBar() {
         {/* Session Countdown (only when expiring soon or limited) */}
         {session && !isUnlimited && (
           <div
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-mono border transition-all select-none ${
+            className={`h-7 flex items-center gap-1.5 px-2.5 rounded-full text-[11px] tabular-nums transition-colors select-none ${
               isExpiringSoon
-                ? "bg-destructive/10 text-destructive border-destructive/30 font-semibold animate-pulse"
-                : "bg-black/5 dark:bg-white/10 text-muted-foreground border-border/40"
+                ? "bg-destructive/10 text-destructive font-medium"
+                : "glass-pill text-muted-foreground"
             }`}
             title="Thời gian phiên làm việc còn lại"
           >
-            <Clock size={10} className={isExpiringSoon ? "text-destructive" : "text-muted-foreground"} />
+            <Clock size={12} strokeWidth={1.75} />
             <span>{formattedTime}</span>
           </div>
         )}

@@ -198,7 +198,7 @@ export function FoundPhotosPreviewModal({
           <div className="flex items-center gap-3 min-w-0">
             <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold tracking-wide shrink-0">
               <CheckCircle size={13} />
-              ĐÃ TÌM THẤY
+              Đã tìm thấy
             </span>
 
             {currentMatch && (

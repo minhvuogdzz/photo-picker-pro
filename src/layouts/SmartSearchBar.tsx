@@ -242,11 +242,11 @@ export function SmartSearchBar() {
     <div className="relative" ref={dropdownRef}>
       {/* Search Input in TopBar */}
       <div 
-        className={`flex items-center gap-2 px-3 py-1.5 rounded-xl bg-muted/40 hover:bg-muted/60 border transition-all duration-200 w-56 md:w-64 text-left shadow-xs ${
-          isOpen ? "border-primary/50 ring-2 ring-primary/20 shadow-sm" : "border-border/80 hover:border-border"
+        className={`glass-pill flex items-center gap-2 h-8 px-3 rounded-full transition-shadow duration-200 w-60 md:w-72 text-left ${
+          isOpen ? "ring-[3px] ring-primary/20" : ""
         }`}
       >
-        <Search size={13} className={`shrink-0 transition-colors ${isOpen ? "text-primary" : "text-muted-foreground"}`} />
+        <Search size={14} strokeWidth={1.75} className={`shrink-0 transition-colors ${isOpen ? "text-primary" : "text-muted-foreground"}`} />
         
         <input
           ref={inputRef}
@@ -259,8 +259,8 @@ export function SmartSearchBar() {
             if (!isOpen) setIsOpen(true);
           }}
           onKeyDown={handleKeyDown}
-          placeholder="Tìm app, công cụ... (⌘K)"
-          className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground/85 focus:outline-none"
+          placeholder="Tìm ứng dụng, công cụ, tài nguyên"
+          className="w-full bg-transparent text-[12.5px] text-foreground placeholder:text-muted-foreground focus:outline-none"
         />
 
         {query ? (
@@ -269,12 +269,12 @@ export function SmartSearchBar() {
               setQuery("");
               inputRef.current?.focus();
             }}
-            className="w-4 h-4 rounded-full bg-muted hover:bg-accent text-muted-foreground hover:text-foreground flex items-center justify-center text-[10px] cursor-pointer"
+            className="w-4 h-4 rounded-full bg-foreground/10 hover:bg-foreground/15 text-muted-foreground hover:text-foreground flex items-center justify-center cursor-pointer"
           >
             <X size={10} />
           </button>
         ) : (
-          <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1 py-0.2 text-[10px] font-medium font-mono text-muted-foreground bg-muted border border-border rounded">
+          <kbd className="hidden sm:inline-flex items-center px-1.5 h-[18px] text-[10.5px] font-medium text-muted-foreground bg-foreground/[0.06] rounded-md">
             ⌘K
           </kbd>
         )}
@@ -283,12 +283,12 @@ export function SmartSearchBar() {
       {/* Anchored Suggestions Dropdown Menu */}
       {isOpen && (
         <div 
-          className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-[460px] max-w-[92vw] bg-card/98 backdrop-blur-xl border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col z-50 animate-slide-up"
+          className="liquid-glass liquid-glass-strong absolute top-full mt-2 left-1/2 -translate-x-1/2 w-[480px] max-w-[92vw] rounded-2xl shadow-xl overflow-hidden flex flex-col z-50 animate-slide-up"
           style={{ maxHeight: "70vh" }}
         >
           {/* Quick Filter Tag Hints Bar */}
-          <div className="px-4 py-2.5 border-b border-border/70 bg-muted/30 flex items-center gap-2 overflow-x-auto text-xs text-muted-foreground shrink-0 custom-scrollbar">
-            <span className="font-semibold text-foreground/80 text-[11px] shrink-0">Gợi ý:</span>
+          <div className="px-3 py-2.5 border-b border-border flex items-center gap-1.5 overflow-x-auto text-xs text-muted-foreground shrink-0 custom-scrollbar">
+            <span className="text-[11px] text-muted-foreground shrink-0 pl-1 pr-0.5">Gợi ý</span>
             {[
               { label: "Photo Picker", q: "lọc ảnh" },
               { label: "Contact Sheet", q: "contact" },
@@ -303,7 +303,7 @@ export function SmartSearchBar() {
                   setSelectedIndex(0);
                   inputRef.current?.focus();
                 }}
-                className="px-2.5 py-1 rounded-lg bg-muted/60 hover:bg-primary/15 hover:text-primary text-muted-foreground border border-border/70 hover:border-primary/30 text-[11px] font-medium transition-all whitespace-nowrap cursor-pointer shrink-0"
+                className="h-6 px-2.5 rounded-full bg-foreground/[0.05] hover:bg-primary/10 hover:text-primary text-foreground/80 text-[11px] font-medium transition-colors whitespace-nowrap cursor-pointer shrink-0"
               >
                 {hint.label}
               </button>
@@ -311,7 +311,7 @@ export function SmartSearchBar() {
           </div>
 
           {/* Results List */}
-          <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-1.5 space-y-0.5 custom-scrollbar">
             {filteredItems.length === 0 ? (
               <div className="py-8 text-center text-muted-foreground">
                 <p className="text-xs font-medium text-foreground/80">Không tìm thấy kết quả cho "{query}"</p>
@@ -329,33 +329,33 @@ export function SmartSearchBar() {
                     key={item.id}
                     onClick={() => item.action()}
                     onMouseEnter={() => setSelectedIndex(index)}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all duration-150 ${
+                    className={`flex items-center gap-3 px-2.5 py-2 rounded-xl cursor-pointer transition-colors duration-150 ${
                       isSelected
-                        ? "bg-primary/10 text-foreground border border-primary/20 shadow-xs"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50 border border-transparent"
+                        ? "bg-primary/10 text-foreground"
+                        : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     <div
-                      className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border transition-colors ${
+                      className={`w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0 transition-colors ${
                         isSelected
-                          ? "bg-primary/20 border-primary/35 text-primary shadow-xs"
-                          : "bg-muted/70 border-border text-muted-foreground"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-foreground/[0.05] text-muted-foreground"
                       }`}
                     >
-                      <Icon size={16} />
+                      <Icon size={16} strokeWidth={1.75} />
                     </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className={`text-[11px] font-semibold truncate ${isSelected ? "text-primary" : "text-foreground"}`}>
+                        <span className="text-[12.5px] font-medium truncate text-foreground">
                           {item.name}
                         </span>
                         {item.badge && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border font-mono uppercase">
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-foreground/[0.06] text-muted-foreground">
                             {item.badge}
                           </span>
                         )}
-                        <span className="text-[10px] text-muted-foreground/85 ml-auto shrink-0 font-medium">
+                        <span className="text-[11px] text-muted-foreground ml-auto shrink-0">
                           {item.categoryName}
                         </span>
                       </div>
@@ -366,8 +366,9 @@ export function SmartSearchBar() {
 
                     <ArrowRight
                       size={14}
-                      className={`shrink-0 transition-transform ${
-                        isSelected ? "text-primary translate-x-1 opacity-100" : "opacity-0"
+                      strokeWidth={1.75}
+                      className={`shrink-0 transition-opacity ${
+                        isSelected ? "text-primary opacity-100" : "opacity-0"
                       }`}
                     />
                   </div>
@@ -377,12 +378,12 @@ export function SmartSearchBar() {
           </div>
 
           {/* Footer hints */}
-          <div className="px-4 py-2 border-t border-border/70 bg-muted/20 flex items-center justify-between text-[10px] text-muted-foreground">
+          <div className="px-4 py-2 border-t border-border flex items-center justify-between text-[11px] text-muted-foreground">
             <div className="flex items-center gap-3">
-              <span><kbd className="px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px]">↑</kbd> <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px]">↓</kbd> di chuyển</span>
-              <span><kbd className="px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px]">↵</kbd> chọn</span>
+              <span><kbd className="px-1.5 py-0.5 rounded-md bg-foreground/[0.06] text-[10px]">↑</kbd> <kbd className="px-1.5 py-0.5 rounded-md bg-foreground/[0.06] text-[10px]">↓</kbd> di chuyển</span>
+              <span><kbd className="px-1.5 py-0.5 rounded-md bg-foreground/[0.06] text-[10px]">↵</kbd> chọn</span>
             </div>
-            <span className="text-muted-foreground/85">DH Studio Pro · Devhouse Software</span>
+            <span>DH Studio Pro</span>
           </div>
         </div>
       )}

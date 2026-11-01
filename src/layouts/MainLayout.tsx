@@ -26,7 +26,7 @@ export function AppLayout() {
   const [showLicenseModal, setShowLicenseModal] = useState(false);
 
   return (
-    <div className="h-screen w-screen flex flex-row overflow-hidden bg-background text-foreground select-none relative">
+    <div className="app-canvas h-screen w-screen flex flex-row overflow-hidden text-foreground select-none relative">
       {!hasSeenWelcome && <WelcomeScreen />}
       <DonateModal />
       <AnnouncementPopup />
@@ -44,37 +44,37 @@ export function AppLayout() {
 
       {/* Right Unified Window Content */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0 h-full overflow-hidden relative">
-        {/* Top macOS Bar - Exactly matching sidebar header height (h-14) for seamless border alignment */}
-        <div className="h-14 shrink-0 z-30 px-4 flex items-center border-b border-border/40">
+        {/* Top bar: transparent over the canvas, same height as the sidebar header */}
+        <div className="h-14 shrink-0 z-30 pl-4 pr-5 flex items-center">
           <TopBar />
         </div>
 
         {/* Expired Subscription Blocker */}
         {subscriptionExpired && activeTab !== "settings" && (
-          <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-background/85 backdrop-blur-md pointer-events-auto p-6 text-center select-none animate-fade-in shadow-2xl">
-            <div className="w-14 h-14 rounded-2xl bg-destructive/15 border border-destructive/30 flex items-center justify-center text-destructive mb-3.5 shadow-inner">
-              <AlertCircle className="w-8 h-8" />
-            </div>
-            <h2 className="text-base font-bold text-foreground mb-1">Gói dịch vụ đã hết hạn</h2>
-            <p className="text-xs text-muted-foreground max-w-sm mb-4 leading-relaxed">
-              Các tính năng xử lý ảnh tạm thời bị vô hiệu hoá. Bạn có thể gia hạn gói ngay hoặc nhập mã License Key để tiếp tục sử dụng.
-            </p>
-            <div className="flex items-center gap-2.5">
+          <div className="absolute inset-0 z-40 flex items-center justify-center bg-background/60 backdrop-blur-xl pointer-events-auto p-6 select-none animate-fade-in">
+            <div className="liquid-glass liquid-glass-strong rounded-3xl px-8 py-7 max-w-md flex flex-col items-center text-center">
+              <div className="w-11 h-11 rounded-2xl bg-destructive/10 flex items-center justify-center text-destructive mb-4">
+                <AlertCircle size={20} strokeWidth={1.75} />
+              </div>
+              <h2 className="text-lg font-semibold tracking-tight text-foreground mb-1.5">Gói dịch vụ đã hết hạn</h2>
+              <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+                Các tính năng xử lý ảnh tạm thời bị vô hiệu hoá. Gia hạn gói hoặc nhập License Key để tiếp tục sử dụng.
+              </p>
               <button
                 type="button"
                 onClick={() => setShowLicenseModal(true)}
-                className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold text-xs shadow-lg hover:bg-primary/90 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                className="btn-base btn-primary px-5"
               >
-                <Key size={14} />
-                Gia Hạn / Kích Hoạt Key Ngay
+                <Key size={14} strokeWidth={2} />
+                Gia hạn hoặc kích hoạt Key
               </button>
             </div>
           </div>
         )}
 
-        {/* Active Module Container with Symmetrical Left and Right Padding */}
+        {/* Active module */}
         <main
-          className={`flex-1 relative flex flex-col min-h-0 min-w-0 w-full overflow-hidden px-4 pb-3.5 pt-2 ${
+          className={`flex-1 relative flex flex-col min-h-0 min-w-0 w-full overflow-hidden pl-4 pr-5 pb-4 pt-1 ${
             subscriptionExpired && activeTab !== "settings"
               ? "opacity-30 pointer-events-none"
               : ""

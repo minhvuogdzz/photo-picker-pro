@@ -34,20 +34,18 @@ export function SystemPerformanceDashboard() {
   const disks = report?.storage || [];
 
   return (
-    <div className="w-full bg-card/60 rounded-2xl p-3 sm:p-3.5 border border-border/70 shadow-xs flex flex-col gap-2.5 text-foreground transition-all">
+    <div className="w-full bg-card rounded-[22px] p-4 border border-border shadow-sm flex flex-col gap-3 text-foreground">
       {/* Header: Title + Live Status + Refresh */}
-      <div className="flex items-center justify-between gap-2 px-0.5 pb-1 border-b border-border/40">
+      <div className="flex items-center justify-between gap-2 px-0.5">
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-md bg-muted border border-border/60 flex items-center justify-center text-foreground shrink-0">
-            <Activity size={12} className="text-primary" />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-              GIÁM SÁT HIỆU SUẤT (SYSTEM PERFORMANCE)
+          <Activity size={14} strokeWidth={1.75} className="text-muted-foreground shrink-0" />
+          <div className="flex items-center gap-2.5">
+            <span className="text-[13px] font-semibold text-foreground">
+              Hiệu suất hệ thống
             </span>
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[8px] font-mono bg-muted text-muted-foreground border border-border/40">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Real-time
+            <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <span className="w-1.5 h-1.5 rounded-full bg-success" />
+              Trực tiếp
             </span>
           </div>
         </div>
@@ -57,11 +55,11 @@ export function SystemPerformanceDashboard() {
           type="button"
           onClick={handleManualRefresh}
           disabled={isRefreshing}
-          className="w-6 h-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer border border-transparent hover:border-border disabled:opacity-50"
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-foreground/[0.06] transition-colors cursor-pointer disabled:opacity-50"
           title="Làm mới thông số ngay"
           aria-label="Làm mới"
         >
-          <RefreshCw size={11} className={isRefreshing ? "animate-spin text-primary" : ""} />
+          <RefreshCw size={13} strokeWidth={1.75} className={isRefreshing ? "animate-spin text-primary" : ""} />
         </button>
       </div>
 

@@ -4,6 +4,7 @@ import { useAuthStore } from "@/core/stores/useAuthStore";
 import { modules } from "@/registry";
 import {
   ArrowRight,
+  ArrowUpRight,
   LayoutGrid,
   Layers,
   ExternalLink,
@@ -28,7 +29,7 @@ export function LauncherPage() {
   const setLastClickPos = useAppStore((s) => s.setLastClickPos);
   const session = useAuthStore((s) => s.session);
 
-  const [version, setVersion] = useState("3.0.0");
+  const [version, setVersion] = useState("3.1.0");
   const [companyUrl, setCompanyUrl] = useState("");
   const [showLicenseManager, setShowLicenseManager] = useState(false);
 
@@ -74,30 +75,52 @@ export function LauncherPage() {
 
   const resourcesAccess = checkAppAccess(session, "resources");
 
+  const firstName = session?.name?.trim().split(/\s+/).pop() || "";
+  const hour = new Date().getHours();
+  const greeting = hour < 11 ? "Chào buổi sáng" : hour < 14 ? "Chào buổi trưa" : hour < 18 ? "Chào buổi chiều" : "Chào buổi tối";
+  const todayLabel = new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "long" });
+  const readyCount = workflowApps.filter((m) => checkAppAccess(session, m.id).hasAccess).length;
+
   return (
-    <div className="flex-1 flex flex-col h-full overflow-y-auto custom-scrollbar text-foreground select-none p-2 sm:p-4">
-      {/* Vertically centered inner container: balanced across all viewport sizes */}
-      <div className="w-full max-w-7xl mx-auto my-auto flex flex-col gap-4 py-2 shrink-0">
-        
-        {/* ========================================================= */}
-        {/* SECTION 1: ỨNG DỤNG LÀM VIỆC (ƯU TIÊN 1 - THẤY NGAY)     */}
-        {/* ========================================================= */}
-        <section className="flex flex-col gap-2 shrink-0">
+    <div className="flex-1 flex flex-col h-full overflow-y-auto custom-scrollbar text-foreground select-none px-1">
+      <div className="w-full max-w-6xl mx-auto flex flex-col gap-6 pt-3 pb-4 shrink-0">
+
+        {/* Greeting */}
+        <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 px-1">
+          <div className="min-w-0">
+            <p className="text-[12px] text-muted-foreground first-letter:uppercase">{todayLabel}</p>
+            <h2 className="text-[26px] leading-tight font-semibold tracking-tight text-foreground mt-0.5 truncate">
+              {greeting}{firstName ? `, ${firstName}` : ""}
+            </h2>
+          </div>
+          <p className="text-[12.5px] text-muted-foreground shrink-0">
+            {readyCount}/{workflowApps.length} ứng dụng sẵn sàng
+          </p>
+        </header>
+
+        {/* Workflow apps */}
+        <section className="flex flex-col gap-2.5 shrink-0">
           <div className="flex items-center justify-between px-1">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <LayoutGrid size={13} className="text-primary" />
+            <h2 className="text-[13px] font-semibold text-foreground flex items-center gap-2">
+              <LayoutGrid size={14} strokeWidth={1.75} className="text-muted-foreground" />
               <span>Ứng dụng làm việc</span>
             </h2>
-            <span className="text-[11px] text-muted-foreground font-medium">
-              {workflowApps.length} công cụ studio sẵn sàng
-            </span>
           </div>
 
-          {/* 4 App Cards Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {workflowApps.map((mod) => {
               const Icon = mod.icon;
               const modAccess = checkAppAccess(session, mod.id);
+              const statusLabel = modAccess.hasAccess
+                ? !modAccess.isTrial
+                  ? `Đã mua · ${formatRemainingDays(modAccess.daysRemaining)}`
+                  : `Dùng thử · ${modAccess.daysRemaining ?? 0} ngày`
+                : "Chưa kích hoạt";
+              const statusDot = modAccess.hasAccess
+                ? !modAccess.isTrial
+                  ? "bg-success"
+                  : "bg-warning"
+                : "bg-muted-foreground/40";
 
               return (
                 <div
@@ -107,53 +130,35 @@ export function LauncherPage() {
                   aria-label={`Mở ${mod.name}`}
                   onClick={(e) => handleLaunch(mod.id, e)}
                   onKeyDown={launchOnKey(mod.id)}
-                  className="group bg-card rounded-2xl p-3.5 border border-border hover:border-primary/50 shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[148px]"
+                  className="group bg-card rounded-[20px] p-4 border border-border shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-[box-shadow,transform] duration-200 cursor-pointer flex flex-col gap-4 min-h-[172px]"
                 >
-                  <div className="flex flex-col">
-                    {/* Header: Icon + License Badge */}
-                    <div className="flex items-start justify-between gap-2 mb-1.5">
-                      <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary group-hover:scale-105 transition-transform duration-200 shrink-0">
-                        <Icon size={15} />
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        {modAccess.hasAccess ? (
-                          !modAccess.isTrial ? (
-                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
-                              Đã mua · {formatRemainingDays(modAccess.daysRemaining)}
-                            </span>
-                          ) : (
-                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
-                              Dùng thử · {modAccess.daysRemaining ?? 0} ngày
-                            </span>
-                          )
-                        ) : (
-                          <span className="text-[9px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
-                            Chưa kích hoạt
-                          </span>
-                        )}
-                      </div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="w-10 h-10 rounded-[12px] brand-gradient flex items-center justify-center text-white shadow-sm shrink-0">
+                      <Icon size={18} strokeWidth={1.75} />
                     </div>
+                    <ArrowUpRight
+                      size={16}
+                      strokeWidth={1.75}
+                      className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                    />
+                  </div>
 
-                    {/* App Title */}
-                    <h3 className="text-xs font-bold text-foreground group-hover:text-primary transition-colors tracking-tight">
+                  <div className="flex flex-col flex-1">
+                    <h3 className="text-[14px] font-semibold text-foreground tracking-tight">
                       {mod.name}
                     </h3>
-
-                    {/* Description: full text, no ellipsis */}
-                    <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">
+                    <p className="text-[12px] text-muted-foreground leading-relaxed mt-1">
                       {mod.description}
                     </p>
                   </div>
 
-                  {/* Card Action Footer */}
-                  <div className="pt-2 border-t border-border/50 flex items-center justify-between text-[10px] font-semibold text-primary">
-                    <span className="text-muted-foreground font-normal text-[9px]">
-                      {modAccess.hasAccess ? "Sẵn sàng" : "Cần kích hoạt"}
+                  <div className="flex items-center justify-between gap-2 text-[11.5px]">
+                    <span className="flex items-center gap-1.5 text-muted-foreground min-w-0">
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDot}`} />
+                      <span className="truncate">{statusLabel}</span>
                     </span>
-                    <span className="flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
-                      <span>{modAccess.hasAccess ? "Khởi chạy" : "Kích hoạt"}</span>
-                      <ArrowRight size={11} />
+                    <span className="font-medium text-primary shrink-0">
+                      {modAccess.hasAccess ? "Mở" : "Kích hoạt"}
                     </span>
                   </div>
                 </div>
@@ -162,9 +167,7 @@ export function LauncherPage() {
           </div>
         </section>
 
-        {/* ========================================================= */}
-        {/* SECTION 2: KHO TÀI NGUYÊN CREATIVE                        */}
-        {/* ========================================================= */}
+        {/* Creative resources */}
         <section className="shrink-0">
           <div
             role="button"
@@ -172,19 +175,27 @@ export function LauncherPage() {
             aria-label="Mở Kho Tài Nguyên Creative"
             onClick={(e) => handleLaunch("resources", e)}
             onKeyDown={launchOnKey("resources")}
-            className="w-full bg-card rounded-3xl p-4 sm:p-5 border border-border hover:border-primary/50 shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group relative overflow-hidden"
+            className="w-full bg-card rounded-[22px] p-5 border border-border shadow-sm hover:shadow-lg transition-shadow duration-200 cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 group"
           >
-            {/* Left: Icon + Title + Description + Tags */}
-            <div className="flex items-start sm:items-center gap-3.5 min-w-0">
-              <div className="w-11 h-11 rounded-2xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-200 shadow-xs mt-0.5 sm:mt-0">
-                <Layers size={20} />
+            <div className="flex items-start gap-4 min-w-0">
+              <div className="w-11 h-11 rounded-[13px] bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <Layers size={20} strokeWidth={1.75} />
               </div>
               <div className="flex flex-col min-w-0">
-                <div className="flex items-center gap-2.5">
-                  <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors tracking-tight truncate">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h3 className="text-[15px] font-semibold text-foreground tracking-tight">
                     Kho Tài Nguyên Creative
                   </h3>
-                  <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-muted text-muted-foreground border border-border/60 shrink-0">
+                  <span className="flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        resourcesAccess.hasAccess
+                          ? !resourcesAccess.isTrial
+                            ? "bg-success"
+                            : "bg-warning"
+                          : "bg-muted-foreground/40"
+                      }`}
+                    />
                     {resourcesAccess.hasAccess
                       ? !resourcesAccess.isTrial
                         ? `Đã mua · ${formatRemainingDays(resourcesAccess.daysRemaining)}`
@@ -192,14 +203,14 @@ export function LauncherPage() {
                       : "Chưa kích hoạt"}
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground leading-relaxed mt-1">
-                  Tuyển chọn đầy đủ Presets Lightroom, Actions Photoshop Retouch da chuyên sâu, Brushes vẽ tóc & LUTs màu ảnh cưới/studio độc quyền.
+                <p className="text-[12.5px] text-muted-foreground leading-relaxed mt-1 max-w-2xl">
+                  Presets Lightroom, Actions Photoshop retouch da chuyên sâu, Brushes vẽ tóc và LUTs màu ảnh cưới, studio độc quyền.
                 </p>
-                <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                <div className="flex flex-wrap items-center gap-1.5 mt-3">
                   {["10.000+ Presets", "Actions Retouch Da", "LUTs Cinematic", "Brushes Studio", "RAW Profiles"].map((tag, idx) => (
                     <span
                       key={idx}
-                      className="text-[10px] text-muted-foreground font-medium px-2 py-0.5 rounded-full bg-muted/50 border border-border/40"
+                      className="text-[11px] text-muted-foreground px-2.5 h-6 inline-flex items-center rounded-full bg-foreground/[0.05]"
                     >
                       {tag}
                     </span>
@@ -208,12 +219,9 @@ export function LauncherPage() {
               </div>
             </div>
 
-            {/* Right: Action Button */}
-            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-              <div className="py-2.5 px-4 rounded-xl bg-primary/10 group-hover:bg-primary/20 border border-primary/25 text-primary font-bold text-xs transition-all flex items-center gap-2 shrink-0">
-                <span>{resourcesAccess.hasAccess ? "Khám phá Kho Tài Nguyên" : "Kích hoạt gói ngay"}</span>
-                <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
-              </div>
+            <div className="btn-base btn-primary shrink-0 self-end sm:self-center rounded-full px-5">
+              <span>{resourcesAccess.hasAccess ? "Khám phá" : "Kích hoạt gói"}</span>
+              <ArrowRight size={14} strokeWidth={2} className="group-hover:translate-x-0.5 transition-transform" />
             </div>
           </div>
         </section>
@@ -228,12 +236,11 @@ export function LauncherPage() {
         {/* ========================================================= */}
         {/* FOOTER BAR                                                */}
         {/* ========================================================= */}
-        <footer className="pt-2 border-t border-border/40 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] text-muted-foreground shrink-0">
+        <footer className="pt-3 px-1 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-muted-foreground shrink-0">
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-foreground">DH Studio Pro</span>
-            <span>·</span>
+            <span className="font-medium text-foreground/80">DH Studio Pro</span>
             <span>v{version}</span>
-            <span>·</span>
+            <span className="text-muted-foreground/50">·</span>
             <span>© {new Date().getFullYear()} Devhouse Software</span>
           </div>
 
@@ -259,7 +266,7 @@ export function LauncherPage() {
                   title={`Mở trang web ${displayUrl}`}
                 >
                   <span>{displayUrl}</span>
-                  <ExternalLink size={10} />
+                  <ExternalLink size={11} strokeWidth={1.75} />
                 </button>
               );
             })()}
