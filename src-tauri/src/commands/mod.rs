@@ -8,6 +8,7 @@ pub mod scanner;
 pub mod system_utils;
 pub mod types;
 pub mod converter;
+pub mod exif_engine;
 pub mod sheet_auth;
 pub mod sheet_fs;
 pub mod photo_counter;

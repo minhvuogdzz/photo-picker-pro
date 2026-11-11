@@ -2,6 +2,24 @@
 
 Tất cả các bản phát hành của **DH Studio Pro** (phát triển & thuộc sở hữu bản quyền của **Devhouse Software**) đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
 
+## [v3.3.0] - 2026-11-11
+
+**Nâng cấp Chuyển đổi file - Sửa ngày chụp EXIF hàng loạt hiệu năng cao**
+
+#### Sửa ngày chụp EXIF hàng loạt (Batch EXIF Date Correction)
+- Tích hợp tính năng "Sửa ngày chụp" trực tiếp vào quy trình Chuyển đổi file hiện tại mà không thay đổi thao tác chọn nguồn đầu vào hay thư mục xuất.
+- Quét nhanh header EXIF và phân loại tự động thành 4 nhóm: Hợp lệ, Có dấu hiệu bất thường, Thiếu metadata và Không xác định.
+- Nhận diện linh hoạt các trường hợp bất thường: thiếu trường DateTimeOriginal hoặc CreateDate, lệch thời gian giữa DateTimeOriginal và CreateDate, ngày reset thiết bị (1970, 1980, 1999, 2000), ngày chụp trong tương lai, chuỗi ngày giờ lỗi hoặc sai múi giờ; đồng thời bảo toàn tuyệt đối các ảnh chụp cũ có ngày giờ hợp lệ.
+- Hỗ trợ 4 nguồn ngày giờ thay thế: Ngày hiện tại (giờ hệ thống), Ngày tạo file (tùy chọn Creation Time hoặc Modification Time), Ngày tùy chỉnh (hỗ trợ giữ nguyên giờ:phút:giây gốc và chỉ đổi ngày) và Ngày từ ảnh tham chiếu.
+- Đồng bộ đầy đủ 6 trường EXIF chuẩn (DateTimeOriginal, CreateDate, ModifyDate, OffsetTimeOriginal, OffsetTimeDigitized, OffsetTime) và giữ nguyên toàn bộ thông tin máy ảnh (Make, Model, Lens, ISO, khẩu độ, tốc độ, tiêu cự, GPS, Rating, ICC Color Profile).
+
+#### Kiến trúc Metadata-Only & Tăng tốc đa luồng
+- Sửa metadata trực tiếp trên cấu trúc container đầu ra (JPEG APP1, PNG eXIf, WebP EXIF, TIFF IFD) mà không giải mã hay nén lại pixel ảnh, đạt tốc độ xử lý trên 9.000 file JPEG/giây.
+- Nâng cấp bộ chuyển đổi file sang thực thi đa luồng giới hạn tài nguyên (bounded concurrency), kèm cơ chế ghi nguyên tử (atomic write), tự động xác thực EXIF sau xử lý và khôi phục an toàn (rollback) nếu phát sinh lỗi.
+- Bổ sung bảng thống kê kết quả xử lý trực quan (số file convert thành công, đã sửa EXIF, giữ nguyên, không hỗ trợ metadata, tốc độ xử lý) và nút dừng tác vụ ngay trên giao diện.
+
+---
+
 ## [v3.2.0] - 2026-11-11
 
 **Tinh gọn Contact the Sheet - Bỏ chức năng đồng bộ tên thư mục con**

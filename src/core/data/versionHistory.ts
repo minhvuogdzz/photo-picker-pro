@@ -15,10 +15,37 @@ export interface VersionReleaseNote {
 
 export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
   {
+    version: "v3.3.0",
+    date: "2026-11-11",
+    title: "Nâng cấp Chuyển đổi file - Sửa ngày chụp EXIF hàng loạt hiệu năng cao",
+    isCurrent: true,
+    sections: [
+      {
+        title: "Sửa ngày chụp EXIF hàng loạt",
+        type: "feature",
+        items: [
+          "Tích hợp tính năng \"Sửa ngày chụp\" trực tiếp vào quy trình Chuyển đổi file hiện tại mà không thay đổi thao tác chọn nguồn đầu vào hay thư mục xuất.",
+          "Quét nhanh header EXIF và phân loại tự động thành 4 nhóm: Hợp lệ, Có dấu hiệu bất thường, Thiếu metadata và Không xác định.",
+          "Nhận diện linh hoạt các bất thường: thiếu DateTimeOriginal/CreateDate, lệch thời gian giữa các trường, ngày reset thiết bị (1970, 1980, 1999, 2000), ngày tương lai, định dạng ngày lỗi; đồng thời giữ nguyên tuyệt đối các ảnh cũ có ngày chụp hợp lệ.",
+          "Hỗ trợ 4 nguồn ngày giờ thay thế: Ngày hiện tại, Ngày tạo file (Creation/Modification Time), Ngày tùy chỉnh (hỗ trợ giữ nguyên giờ chụp gốc) và Ngày từ ảnh tham chiếu.",
+          "Đồng bộ nhất quán 6 trường ngày giờ & múi giờ EXIF, bảo toàn 100% thông tin máy ảnh (Camera Model, Lens, ISO, khẩu độ, tốc độ, GPS, Rating, ICC Color Profile).",
+        ],
+      },
+      {
+        title: "Kiến trúc Metadata-Only & Tăng tốc đa luồng",
+        type: "improvement",
+        items: [
+          "Sửa metadata trực tiếp trên container đầu ra (JPEG APP1, PNG eXIf, WebP EXIF, TIFF IFD) không giải mã hay nén lại pixel ảnh, đạt tốc độ trên 9.000 file JPEG/giây.",
+          "Thực thi chuyển đổi đa luồng giới hạn tài nguyên kèm cơ chế ghi nguyên tử (atomic rollback) và xác thực EXIF tự động sau xử lý.",
+          "Bổ sung thẻ báo cáo kết quả xử lý chi tiết và nút dừng tiến trình trực tiếp.",
+        ],
+      },
+    ],
+  },
+  {
     version: "v3.2.0",
     date: "2026-11-11",
     title: "Tinh gọn Contact the Sheet - Bỏ chức năng đồng bộ tên thư mục con",
-    isCurrent: true,
     sections: [
       {
         title: "Contact the Sheet",
