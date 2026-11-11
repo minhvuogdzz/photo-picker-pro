@@ -8,6 +8,12 @@ static inline BOOL dh_is_macos_at_least(NSInteger major, NSInteger minor) {
     return NO;
 }
 
+// UNUserNotificationCenter ném NSException nếu process không chạy từ .app bundle (ví dụ `tauri dev`).
+static inline BOOL dh_can_use_user_notifications(void) {
+    return [[NSBundle mainBundle] bundleIdentifier] != nil
+        && [[[NSBundle mainBundle] bundlePath] hasSuffix:@".app"];
+}
+
 @interface DHNotificationDelegate : NSObject <UNUserNotificationCenterDelegate>
 + (instancetype)sharedDelegate;
 @end
@@ -37,7 +43,7 @@ static inline BOOL dh_is_macos_at_least(NSInteger major, NSInteger minor) {
 @end
 
 void macos_request_notification_permission(void) {
-    if (NSClassFromString(@"UNUserNotificationCenter") != nil && dh_is_macos_at_least(10, 14)) {
+    if (dh_can_use_user_notifications() && NSClassFromString(@"UNUserNotificationCenter") != nil && dh_is_macos_at_least(10, 14)) {
         dispatch_async(dispatch_get_main_queue(), ^{
             UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
             center.delegate = [DHNotificationDelegate sharedDelegate];
@@ -59,7 +65,7 @@ void macos_send_native_notification(const char* title_cstr, const char* body_cst
         NSString *title = [NSString stringWithUTF8String:title_cstr];
         NSString *body = [NSString stringWithUTF8String:body_cstr];
 
-        if (NSClassFromString(@"UNUserNotificationCenter") != nil && dh_is_macos_at_least(10, 14)) {
+        if (dh_can_use_user_notifications() && NSClassFromString(@"UNUserNotificationCenter") != nil && dh_is_macos_at_least(10, 14)) {
             UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
             center.delegate = [DHNotificationDelegate sharedDelegate];
 

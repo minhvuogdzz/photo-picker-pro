@@ -6,7 +6,6 @@ import {
   AlertTriangle,
   Play,
   Sliders,
-  FolderSync,
   History,
   HardDrive,
   Sparkles,
@@ -24,21 +23,12 @@ import { BatchRunnerView } from "./components/BatchRunnerView";
 import { WorkspaceWizard } from "./components/WorkspaceWizard";
 import { DriveConfigModal } from "./components/DriveConfigModal";
 import { AuditHistoryView } from "./components/AuditHistoryView";
-import { FolderSyncView } from "./components/FolderSyncView";
 
-type ActiveTab = "sync-folders" | "batch" | "workspace" | "drive" | "audit";
+type ActiveTab = "batch" | "workspace" | "drive" | "audit";
 
 export default function ContactTheSheetApp() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("batch");
-  const [pendingBatchFolderPaths, setPendingBatchFolderPaths] = useState<string[] | null>(null);
   const [isDriveModalOpen, setIsDriveModalOpen] = useState(false);
-
-  const handleGoToBatch = (paths?: string[]) => {
-    if (paths && paths.length > 0) {
-      setPendingBatchFolderPaths(paths);
-    }
-    setActiveTab("batch");
-  };
 
   const session = useAuthStore((s) => s.session);
 
@@ -81,19 +71,6 @@ export default function ContactTheSheetApp() {
 
         {/* Center: View Tabs */}
         <div className="flex items-center gap-0.5 p-1 bg-muted/30 border border-border rounded-lg overflow-x-auto max-w-full custom-scrollbar shrink-0">
-          <button
-            onClick={() => setActiveTab("sync-folders")}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
-              activeTab === "sync-folders"
-                ? "bg-primary text-primary-foreground shadow-sm font-semibold"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-            }`}
-            title="Đồng bộ tên thư mục con"
-          >
-            <FolderSync size={12} />
-            <span className="hidden xl:inline">Đồng bộ tên thư mục con</span>
-            <span className="xl:hidden">Đồng bộ</span>
-          </button>
           <button
             onClick={() => setActiveTab("batch")}
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
@@ -187,14 +164,8 @@ export default function ContactTheSheetApp() {
 
       {/* Main Tab Content */}
       <div className="flex-1 flex flex-col min-h-0 min-w-0 w-full max-w-full relative overflow-hidden">
-        {activeTab === "sync-folders" && (
-          <FolderSyncView onGoToBatch={handleGoToBatch} />
-        )}
         {activeTab === "batch" && (
-          <BatchRunnerView
-            initialFolderPaths={pendingBatchFolderPaths}
-            onClearInitialPaths={() => setPendingBatchFolderPaths(null)}
-          />
+          <BatchRunnerView />
         )}
         {activeTab === "workspace" && <WorkspaceWizard />}
         {activeTab === "audit" && <AuditHistoryView />}

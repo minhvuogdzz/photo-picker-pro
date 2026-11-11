@@ -15,10 +15,33 @@ export interface VersionReleaseNote {
 
 export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
   {
+    version: "v3.2.0",
+    date: "2026-11-11",
+    title: "Tinh gọn Contact the Sheet - Bỏ chức năng đồng bộ tên thư mục con",
+    isCurrent: true,
+    sections: [
+      {
+        title: "Contact the Sheet",
+        type: "improvement",
+        items: [
+          "Gỡ bỏ chức năng \"Đồng bộ tên thư mục con\" cùng toàn bộ quy trình đổi tên thư mục tự động. Ứng dụng không còn đổi tên thư mục của bạn trên đĩa trong quá trình xử lý.",
+          "Thanh điều hướng gọn hơn: các tab còn lại gồm Thực thi Batch, Cấu hình Sheet, Google Drive và Nhật ký.",
+          "Thực thi Batch vẫn nhận thư mục bằng kéo thả hoặc nút chọn thư mục, với tính năng mở rộng thư mục thông minh giữ nguyên như trước.",
+        ],
+      },
+      {
+        title: "Sửa lỗi hệ thống",
+        type: "fix",
+        items: [
+          "Khắc phục lỗi ứng dụng tự đóng khi chạy ở chế độ phát triển trên macOS do khởi tạo thông báo hệ thống ngoài gói ứng dụng.",
+        ],
+      },
+    ],
+  },
+  {
     version: "v3.1.0",
     date: "2026-11-02",
     title: "Giao diện mới Devhouse Liquid Glass - Gọn gàng, hiện đại và nhất quán",
-    isCurrent: true,
     sections: [
       {
         title: "Ngôn ngữ thiết kế Liquid Glass",

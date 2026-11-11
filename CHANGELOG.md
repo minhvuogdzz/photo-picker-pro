@@ -2,6 +2,20 @@
 
 Tất cả các bản phát hành của **DH Studio Pro** (phát triển & thuộc sở hữu bản quyền của **Devhouse Software**) đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
 
+## [v3.2.0] - 2026-11-11
+
+**Tinh gọn Contact the Sheet - Bỏ chức năng đồng bộ tên thư mục con**
+
+#### Contact the Sheet
+- Gỡ bỏ chức năng "Đồng bộ tên thư mục con" cùng toàn bộ quy trình đổi tên thư mục tự động. Ứng dụng không còn đổi tên thư mục của bạn trên đĩa trong quá trình xử lý.
+- Thanh điều hướng gọn hơn: các tab còn lại gồm Thực thi Batch, Cấu hình Sheet, Google Drive và Nhật ký.
+- Thực thi Batch vẫn nhận thư mục bằng kéo thả hoặc nút chọn thư mục, với tính năng mở rộng thư mục thông minh giữ nguyên như trước.
+
+#### Sửa lỗi hệ thống
+- Khắc phục lỗi ứng dụng tự đóng khi chạy ở chế độ phát triển trên macOS do khởi tạo thông báo hệ thống ngoài gói ứng dụng.
+
+---
+
 ## [v3.1.0] - 2026-11-02
 
 **Giao diện mới Devhouse Liquid Glass - Gọn gàng, hiện đại và nhất quán**

@@ -11,7 +11,6 @@ import {
   Layers,
   Sparkles,
   Check,
-  FolderSync,
   X,
   Ban,
   RotateCcw,
@@ -29,15 +28,7 @@ import { ConflictResolverDialog } from "./ConflictResolverDialog";
 import type { DiscoveredJob } from "../types";
 import type { SheetRowRecord } from "../services/jobMatchingService";
 
-interface BatchRunnerViewProps {
-  initialFolderPaths?: string[] | null;
-  onClearInitialPaths?: () => void;
-}
-
-export function BatchRunnerView({
-  initialFolderPaths,
-  onClearInitialPaths,
-}: BatchRunnerViewProps = {}) {
+export function BatchRunnerView() {
   const activeProfile = useContactSheetStore((s) => s.activeProfile);
   const discoveredJobs = useContactSheetStore((s) => s.discoveredJobs);
   const setDiscoveredJobs = useContactSheetStore((s) => s.setDiscoveredJobs);
@@ -136,14 +127,6 @@ export function BatchRunnerView({
       if (unlisten) unlisten();
     };
   }, [activeProfile]);
-
-  // Automatically process initial folder paths (e.g. transferred from Subfolder Sync)
-  useEffect(() => {
-    if (initialFolderPaths && initialFolderPaths.length > 0 && activeProfile) {
-      handleProcessFolderPaths(initialFolderPaths);
-      onClearInitialPaths?.();
-    }
-  }, [initialFolderPaths, activeProfile]);
 
   const handlePickFolders = async () => {
     try {
