@@ -240,7 +240,7 @@ export function TrayControlPanel() {
         >
           <div className="flex items-center gap-2">
             <img
-              src={isDark ? "/brand/dh_app_icon_dark_squircle.png" : "/brand/dh_app_icon_light_squircle.png"}
+              src="/brand/dh_app_icon_light_squircle.png"
               alt="DH Studio Pro"
               className="w-5 h-5 rounded-md shadow-xs"
             />

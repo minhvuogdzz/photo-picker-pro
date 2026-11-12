@@ -1,21 +1,11 @@
 import React, { useState } from "react";
 import {
-  FileSpreadsheet,
-  Cloud,
-  CheckCircle2,
-  AlertTriangle,
   Play,
   Sliders,
   History,
   HardDrive,
-  Sparkles,
-  ExternalLink,
-  ShieldCheck,
-  Zap,
-  ArrowLeft,
 } from "lucide-react";
 import { useAuthStore } from "@/core/stores/useAuthStore";
-import { useAppStore } from "@/core/stores/useAppStore";
 import { checkAppAccess } from "@/core/services/appEntitlementPolicy";
 import { AppLockGateScreen } from "@/core/components/AppLockGateScreen";
 import { useContactSheetStore } from "./stores/useContactSheetStore";
@@ -39,90 +29,95 @@ export default function ContactTheSheetApp() {
 
   const appAccess = checkAppAccess(session, "contact-the-sheet");
 
-  // Gatekeeper Screen if user has no access (trial expired and not purchased)
   if (!appAccess.hasAccess) {
     return <AppLockGateScreen appId="contact-the-sheet" appName="Contact the Sheet" />;
   }
 
-  return (
-    <div className="flex-1 flex flex-col h-full w-full min-w-0 max-w-full overflow-hidden bg-card/90 backdrop-blur-md rounded-xl border border-border text-foreground relative select-none">
-      {/* Top Header & Navigation Bar */}
-      <div className="px-3 sm:px-5 py-2.5 sm:py-3 border-b border-border bg-muted/30 flex flex-wrap items-center justify-between gap-3 shrink-0 min-w-0">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-            <FileSpreadsheet size={16} />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <h1 className="font-semibold text-xs tracking-tight text-foreground truncate">
-                Contact the Sheet
-              </h1>
-              <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase tracking-wider shrink-0">
-                Workflow
-              </span>
-            </div>
-            <p className="text-[10px] text-muted-foreground truncate max-w-[200px] sm:max-w-xs md:max-w-sm">
-              {activeProfile
-                ? `Không gian: ${activeProfile.displayName} — Tab: ${activeProfile.selectedTabTitle || "Edit 9/2026"}`
-                : "Chưa cấu hình Workspace"}
-            </p>
-          </div>
-        </div>
+  const configuredTabCount = activeProfile?.tabConfigurations
+    ? Object.keys(activeProfile.tabConfigurations).length
+    : 0;
 
-        {/* Center: View Tabs */}
-        <div className="flex items-center gap-0.5 p-1 bg-muted/30 border border-border rounded-lg overflow-x-auto max-w-full custom-scrollbar shrink-0">
+  return (
+    <div className="flex-1 flex flex-col h-full w-full min-w-0 max-w-full overflow-hidden liquid-glass rounded-[22px] text-foreground relative select-none">
+      {/* Clean Unified Toolbar */}
+      <div className="px-4 sm:px-5 py-2.5 border-b border-border flex flex-wrap items-center justify-between gap-3 shrink-0 min-w-0">
+        {/* Left: Segmented View Navigation */}
+        <div
+          role="tablist"
+          aria-label="Điều hướng Contact Sheet"
+          className="flex items-center gap-0.5 p-1 bg-foreground/[0.04] border border-border rounded-[12px] overflow-x-auto max-w-full custom-scrollbar shrink-0"
+        >
           <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "batch"}
             onClick={() => setActiveTab("batch")}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
+            className={`flex items-center gap-1.5 px-3 h-7 rounded-[9px] text-[12px] transition-colors cursor-pointer whitespace-nowrap border ${
               activeTab === "batch"
-                ? "bg-primary text-primary-foreground shadow-sm font-semibold"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                ? "glass-pill text-foreground font-medium"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
-            title="Thực thi Batch"
           >
-            <Play size={12} />
-            <span className="hidden md:inline">Thực thi Batch</span>
-            <span className="md:hidden">Batch</span>
+            <Play size={13} strokeWidth={1.75} className={activeTab === "batch" ? "text-primary" : ""} />
+            <span>Thực thi Batch</span>
           </button>
+
           <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "workspace"}
             onClick={() => setActiveTab("workspace")}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
+            className={`flex items-center gap-1.5 px-3 h-7 rounded-[9px] text-[12px] transition-colors cursor-pointer whitespace-nowrap border ${
               activeTab === "workspace"
-                ? "bg-primary text-primary-foreground shadow-sm font-semibold"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                ? "glass-pill text-foreground font-medium"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
-            title="Cấu hình Sheet"
           >
-            <Sliders size={12} />
-            <span className="hidden md:inline">Cấu hình Sheet</span>
-            <span className="md:hidden">Sheet</span>
+            <Sliders size={13} strokeWidth={1.75} className={activeTab === "workspace" ? "text-primary" : ""} />
+            <span>Cấu hình Sheet</span>
           </button>
+
           <button
+            type="button"
             onClick={() => setIsDriveModalOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer whitespace-nowrap"
-            title="Google Drive"
+            className="flex items-center gap-1.5 px-3 h-7 rounded-[9px] text-[12px] border border-transparent text-muted-foreground hover:text-foreground transition-colors cursor-pointer whitespace-nowrap"
           >
-            <HardDrive size={12} />
-            <span className="hidden md:inline">Google Drive</span>
-            <span className="md:hidden">Drive</span>
+            <HardDrive size={13} strokeWidth={1.75} />
+            <span>Google Drive</span>
           </button>
+
           <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "audit"}
             onClick={() => setActiveTab("audit")}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
+            className={`flex items-center gap-1.5 px-3 h-7 rounded-[9px] text-[12px] transition-colors cursor-pointer whitespace-nowrap border ${
               activeTab === "audit"
-                ? "bg-primary text-primary-foreground shadow-sm font-semibold"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                ? "glass-pill text-foreground font-medium"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
-            title="Nhật ký"
           >
-            <History size={12} />
+            <History size={13} strokeWidth={1.75} className={activeTab === "audit" ? "text-primary" : ""} />
             <span>Nhật ký</span>
           </button>
         </div>
 
-        {/* Right Status Actions */}
-        <div className="flex items-center gap-2">
-          {/* Active Workspace Selector */}
+        {/* Right: Context & Google Connection Status */}
+        <div className="flex items-center gap-2.5 min-w-0">
+          {activeProfile && (
+            <div className="hidden lg:flex items-center gap-1.5 text-[11.5px] text-muted-foreground truncate">
+              <span>Tab chính:</span>
+              <span className="font-medium text-foreground">
+                {activeProfile.selectedTabTitle || "Edit 9/2026"}
+              </span>
+              {configuredTabCount > 1 && (
+                <span className="text-muted-foreground/70">
+                  ({configuredTabCount} tab đã áp dụng)
+                </span>
+              )}
+            </div>
+          )}
+
           {profiles.length > 1 && (
             <select
               value={activeProfile?.id}
@@ -130,7 +125,7 @@ export default function ContactTheSheetApp() {
                 const p = profiles.find((x) => x.id === e.target.value);
                 if (p) setActiveProfile(p.id);
               }}
-              className="px-2.5 py-1 rounded-lg bg-background/60 border border-border text-[11px] text-muted-foreground hover:text-foreground cursor-pointer outline-none"
+              className="h-7 px-2.5 rounded-lg bg-background/60 border border-border text-[11.5px] text-foreground cursor-pointer outline-none"
             >
               {profiles.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -140,20 +135,20 @@ export default function ContactTheSheetApp() {
             </select>
           )}
 
-          {/* Google Auth Status Badge */}
-          <div
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-medium transition-colors ${
-              googleConnection.status === "CONNECTED"
-                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/25"
-                : googleConnection.status === "CONNECTING"
-                ? "bg-amber-500/10 text-amber-500 border-amber-500/25"
-                : "bg-muted/40 text-muted-foreground border-border"
-            }`}
-          >
-            <Cloud size={13} className={googleConnection.status === "CONNECTED" ? "text-emerald-500" : ""} />
-            <span className="truncate max-w-[140px]">
+          {/* Minimalist Google Status Pill */}
+          <div className="h-7 px-2.5 rounded-full bg-foreground/[0.04] border border-border flex items-center gap-2 text-[11.5px] text-muted-foreground">
+            <span
+              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                googleConnection.status === "CONNECTED"
+                  ? "bg-success"
+                  : googleConnection.status === "CONNECTING"
+                  ? "bg-warning"
+                  : "bg-muted-foreground/40"
+              }`}
+            />
+            <span className="truncate max-w-[160px] text-foreground/85">
               {googleConnection.status === "CONNECTED"
-                ? googleConnection.accountEmail || "Google Connected"
+                ? googleConnection.accountEmail || "Đã kết nối Google"
                 : googleConnection.status === "CONNECTING"
                 ? "Đang kết nối..."
                 : "Chưa kết nối Google"}
@@ -164,9 +159,7 @@ export default function ContactTheSheetApp() {
 
       {/* Main Tab Content */}
       <div className="flex-1 flex flex-col min-h-0 min-w-0 w-full max-w-full relative overflow-hidden">
-        {activeTab === "batch" && (
-          <BatchRunnerView />
-        )}
+        {activeTab === "batch" && <BatchRunnerView />}
         {activeTab === "workspace" && <WorkspaceWizard />}
         {activeTab === "audit" && <AuditHistoryView />}
       </div>

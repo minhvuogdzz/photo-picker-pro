@@ -133,16 +133,21 @@ export function DriveConfigModal({ onClose }: Props) {
   };
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="dlg-DriveConfigModal-1" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
-      <div className="bg-card border border-border shadow-2xl rounded-2xl w-full max-w-lg overflow-hidden flex flex-col animate-scale-in max-h-[90vh]">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="dlg-DriveConfigModal-1"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in p-4"
+    >
+      <div className="bg-card border border-border/80 shadow-xl rounded-xl w-full max-w-lg overflow-hidden flex flex-col animate-scale-in max-h-[90vh]">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-border flex items-center justify-between bg-muted/20 shrink-0">
+        <div className="px-5 py-3.5 border-b border-border/60 flex items-center justify-between bg-muted/15 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center text-primary">
-              <HardDrive size={16} />
+            <div className="w-7 h-7 rounded-lg bg-muted/40 border border-border/60 flex items-center justify-center text-foreground">
+              <HardDrive size={14} />
             </div>
             <div>
-              <h3 id="dlg-DriveConfigModal-1" className="font-extrabold text-sm text-foreground">
+              <h3 id="dlg-DriveConfigModal-1" className="font-semibold text-xs text-foreground">
                 Cấu hình Google Drive Desktop
               </h3>
               <p className="text-[11px] text-muted-foreground">
@@ -150,11 +155,12 @@ export function DriveConfigModal({ onClose }: Props) {
               </p>
             </div>
           </div>
-          <button aria-label="Đóng"
+          <button
+            aria-label="Đóng"
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted transition-colors cursor-pointer"
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
@@ -162,8 +168,8 @@ export function DriveConfigModal({ onClose }: Props) {
         <div className="p-5 flex flex-col gap-4 text-xs overflow-y-auto custom-scrollbar">
           {/* Local Root Path */}
           <div className="flex flex-col gap-1.5">
-            <label className="font-bold text-foreground flex items-center justify-between">
-              <span>Thư mục gốc Google Drive trên máy (Local Root):</span>
+            <label className="font-medium text-foreground">
+              Thư mục gốc Google Drive trên máy (Local Root)
             </label>
             <div className="flex gap-2">
               <input
@@ -174,27 +180,26 @@ export function DriveConfigModal({ onClose }: Props) {
                   setTestResult(null);
                 }}
                 placeholder="/Users/username/Library/CloudStorage/GoogleDrive-user@studio.com/My Drive"
-                className="flex-1 px-3 py-2 bg-background border border-border rounded-xl text-foreground font-mono text-[11px] focus:outline-none focus:ring-1 focus:ring-primary"
+                className="flex-1 px-3 py-1.5 bg-background border border-border/70 rounded-lg text-foreground font-mono text-[11px] focus:outline-none focus:ring-1 focus:ring-primary"
               />
               <button
                 type="button"
                 onClick={handlePickLocalRoot}
-                className="px-3 py-2 bg-muted/50 hover:bg-muted border border-border text-foreground font-semibold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                className="px-3 py-1.5 bg-muted/40 hover:bg-muted border border-border/60 text-foreground font-medium rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
               >
-                <Folder size={14} />
+                <Folder size={13} />
                 <span>Chọn thư mục</span>
               </button>
             </div>
             <span className="text-[11px] text-muted-foreground">
-              Ví dụ: Thư mục "My Drive" hoặc "File hoàn thiện/Vương" trong ứng dụng Google Drive Desktop.
+              Ví dụ: Thư mục "My Drive" hoặc thư mục làm việc trong Google Drive Desktop.
             </span>
 
-            {/* Shortcut Target Detection Badge */}
             {shortcutTargetMatch && (
-              <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20 flex items-center gap-2 text-primary text-[11px]">
-                <Link2 size={14} className="shrink-0" />
+              <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60 flex items-center gap-2 text-foreground text-[11px]">
+                <Link2 size={13} className="shrink-0 text-primary" />
                 <span className="truncate">
-                  Nhận diện lối tắt Google Drive (.shortcut-targets-by-id): ID gốc <strong>{shortcutTargetMatch[1]}</strong>
+                  Nhận diện lối tắt Google Drive: ID gốc <span className="font-mono font-medium">{shortcutTargetMatch[1]}</span>
                 </span>
               </div>
             )}
@@ -207,39 +212,39 @@ export function DriveConfigModal({ onClose }: Props) {
                 type="button"
                 onClick={handleTestConnection}
                 disabled={isTesting || !localRoot.trim()}
-                className="px-3 py-1.5 bg-muted/60 hover:bg-muted border border-border text-foreground font-medium rounded-lg text-[11px] flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                className="px-3 py-1.5 bg-muted/40 hover:bg-muted border border-border/60 text-foreground font-medium rounded-lg text-[11px] flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
               >
-                {isTesting ? <Loader2 size={13} className="animate-spin text-primary" /> : <HardDrive size={13} />}
+                {isTesting ? <Loader2 size={12} className="animate-spin text-primary" /> : <HardDrive size={12} />}
                 <span>Kiểm tra nhận diện thư mục Drive</span>
               </button>
             </div>
 
             {testResult && (
               <div
-                className={`p-3 rounded-xl border text-[11px] flex items-start gap-2.5 ${
+                className={`p-3 rounded-lg border text-[11px] flex items-start gap-2 ${
                   testResult.success
-                    ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-600 dark:text-emerald-400"
-                    : "bg-destructive/10 border-destructive/25 text-destructive"
+                    ? "bg-emerald-500/8 border-emerald-500/20 text-foreground"
+                    : "bg-destructive/8 border-destructive/20 text-destructive"
                 }`}
               >
                 {testResult.success ? (
-                  <CheckCircle2 size={15} className="shrink-0 mt-0.5" />
+                  <CheckCircle2 size={14} className="shrink-0 mt-0.5 text-emerald-500" />
                 ) : (
-                  <AlertCircle size={15} className="shrink-0 mt-0.5" />
+                  <AlertCircle size={14} className="shrink-0 mt-0.5" />
                 )}
                 <div className="flex flex-col gap-0.5 min-w-0">
                   {testResult.success ? (
                     <>
-                      <span className="font-bold">
-                        Đã nhận diện thành công: "{testResult.folderName}"
+                      <span className="font-medium">
+                        Đã nhận diện: "{testResult.folderName}"
                       </span>
-                      <span className="text-[10px] opacity-90 truncate font-mono">
+                      <span className="text-[10px] text-muted-foreground truncate font-mono">
                         Drive Folder ID: {testResult.folderId}
                       </span>
-                      <span className="text-[10px] opacity-90">
-                        Chứa {testResult.childCount ?? 0} thư mục con •{" "}
+                      <span className="text-[10px] text-muted-foreground">
+                        Chứa {testResult.childCount ?? 0} thư mục con ·{" "}
                         {testResult.isOwnerMatched
-                          ? "Khớp chủ sở hữu tài khoản đăng nhập"
+                          ? "Khớp chủ sở hữu tài khoản"
                           : "Thư mục dùng chung / chia sẻ"}
                       </span>
                     </>
@@ -253,8 +258,8 @@ export function DriveConfigModal({ onClose }: Props) {
 
           {/* Remote Root ID */}
           <div className="flex flex-col gap-1.5">
-            <label className="font-bold text-foreground">
-              Remote Drive Folder ID (Tùy chọn):
+            <label className="font-medium text-foreground">
+              Remote Drive Folder ID (Tùy chọn)
             </label>
             <input
               type="text"
@@ -264,20 +269,20 @@ export function DriveConfigModal({ onClose }: Props) {
                 setTestResult(null);
               }}
               placeholder="root (hoặc ID thư mục Drive tương ứng)"
-              className="px-3 py-2 bg-background border border-border rounded-xl text-foreground font-mono text-[11px] focus:outline-none focus:ring-1 focus:ring-primary"
+              className="px-3 py-1.5 bg-background border border-border/70 rounded-lg text-foreground font-mono text-[11px] focus:outline-none focus:ring-1 focus:ring-primary"
             />
             <span className="text-[11px] text-muted-foreground">
-              Mặc định để "root" nếu ánh xạ toàn bộ Drive cá nhân hoặc hệ thống sẽ tự động dò từ đường dẫn cục bộ.
+              Mặc định để "root" nếu ánh xạ toàn bộ Drive cá nhân hoặc tự động dò từ đường dẫn cục bộ.
             </span>
           </div>
 
           {/* Owner Verification Option */}
           <div className="flex flex-col gap-1.5">
-            <label className="font-bold text-foreground flex items-center gap-1.5">
-              <UserCheck size={13} className="text-primary" />
-              <span>Kiểm tra chủ sở hữu thư mục (Chống nhầm link ảnh gốc):</span>
+            <label className="font-medium text-foreground flex items-center gap-1.5">
+              <UserCheck size={13} className="text-muted-foreground" />
+              <span>Kiểm tra chủ sở hữu thư mục (Chống nhầm link ảnh gốc)</span>
             </label>
-            <div className="p-3 rounded-xl bg-background/80 border border-border flex items-start gap-2.5">
+            <div className="p-3 rounded-lg bg-background/60 border border-border/60 flex items-start gap-2.5">
               <input
                 type="checkbox"
                 id="require_owner_match"
@@ -286,15 +291,15 @@ export function DriveConfigModal({ onClose }: Props) {
                 className="mt-0.5 rounded text-primary focus:ring-primary cursor-pointer"
               />
               <label htmlFor="require_owner_match" className="flex flex-col gap-0.5 cursor-pointer">
-                <span className="font-semibold text-foreground">
-                  Ưu tiên / Giới hạn thư mục do chính tài khoản Google này tạo
+                <span className="font-medium text-foreground">
+                  Ưu tiên / giới hạn thư mục do chính tài khoản Google này tạo
                 </span>
                 <span className="text-[11px] text-muted-foreground">
                   Tài khoản hiện tại:{" "}
-                  <strong className="text-foreground">
+                  <span className="font-medium text-foreground">
                     {accountEmail || "Chưa kết nối Google"}
-                  </strong>
-                  . Tự động loại bỏ link ảnh gốc do thợ hoặc khách tải lên từ tài khoản khác.
+                  </span>
+                  . Tự động loại bỏ link ảnh gốc do tài khoản khác tải lên.
                 </span>
               </label>
             </div>
@@ -302,11 +307,11 @@ export function DriveConfigModal({ onClose }: Props) {
 
           {/* Sharing Policy */}
           <div className="flex flex-col gap-1.5">
-            <label className="font-bold text-foreground flex items-center gap-1">
-              <Shield size={13} className="text-primary" />
-              <span>Chính sách quyền truy cập Drive (Sharing Policy):</span>
+            <label className="font-medium text-foreground flex items-center gap-1.5">
+              <Shield size={13} className="text-muted-foreground" />
+              <span>Chính sách quyền truy cập Drive</span>
             </label>
-            <div className="p-3 rounded-xl bg-background/80 border border-border flex flex-col gap-2">
+            <div className="p-3 rounded-lg bg-background/60 border border-border/60 flex flex-col gap-1.5">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
@@ -315,30 +320,30 @@ export function DriveConfigModal({ onClose }: Props) {
                   onChange={() => setSharingPolicy("KEEP_EXISTING")}
                   className="text-primary focus:ring-primary"
                 />
-                <span className="font-semibold text-foreground">
-                  Giữ nguyên quyền hiện tại của thư mục (Mặc định / An toàn nhất)
+                <span className="font-medium text-foreground">
+                  Giữ nguyên quyền hiện tại của thư mục (Mặc định)
                 </span>
               </label>
               <p className="text-[11px] text-muted-foreground pl-5">
-                Không tự ý thay đổi quyền chia sẻ của khách hàng. Chỉ lấy đường dẫn Drive và điền vào bảng tính.
+                Không thay đổi quyền chia sẻ của thư mục. Chỉ lấy đường dẫn Drive và điền vào bảng tính.
               </p>
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-border flex items-center justify-end gap-2 bg-muted/20 shrink-0">
+        <div className="px-5 py-3 border-t border-border/60 flex items-center justify-end gap-2 bg-muted/15 shrink-0">
           <button
             onClick={onClose}
-            className="px-3.5 py-1.5 rounded-xl border border-border text-muted-foreground hover:text-foreground text-xs font-semibold cursor-pointer"
+            className="px-3 py-1.5 rounded-lg border border-border/60 text-muted-foreground hover:text-foreground text-xs font-medium cursor-pointer"
           >
             Hủy
           </button>
           <button
             onClick={handleSave}
-            className="px-4 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold shadow-sm hover:opacity-95 transition-all cursor-pointer flex items-center gap-1.5"
+            className="px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-95 transition-all cursor-pointer flex items-center gap-1.5"
           >
-            <Check size={14} />
+            <Check size={13} />
             <span>Lưu cấu hình</span>
           </button>
         </div>

@@ -15,10 +15,35 @@ export interface VersionReleaseNote {
 
 export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
   {
+    version: "v3.4.0",
+    date: "2026-11-12",
+    title: "Tái thiết giao diện Contact the Sheet & Bộ nhận diện Logo Camera Light mới",
+    isCurrent: true,
+    sections: [
+      {
+        title: "Contact the Sheet — Quản lý Tab thông minh & Tái thiết giao diện",
+        type: "improvement",
+        items: [
+          "Tái thiết toàn bộ giao diện Contact the Sheet theo phong cách tối giản, gọn gàng, loại bỏ các nhãn màu rực và bố cục rườm rà.",
+          "Khung chọn Tab ở Thực thi Batch tự động thu gọn khi có nhiều tab (chỉ hiển thị bản tóm tắt gọn gàng và có thể mở rộng kèm ô tìm kiếm nhanh).",
+          "Bổ sung nút \"Bỏ chọn tất cả\" và \"Chọn tất cả\" ngay trên thanh Thực thi Batch, cho phép bỏ chọn tự do hoặc gỡ từng tab khỏi danh sách thực thi.",
+          "Hỗ trợ \"Hoàn tác\" khi lỡ bấm \"Áp dụng cho tất cả Tab\" và cho phép bật/tắt áp dụng cấu hình riêng lẻ cho từng tab trong Cấu hình Sheet.",
+        ],
+      },
+      {
+        title: "Bộ nhận diện Logo App mới (Camera Lens Light Theme)",
+        type: "design",
+        items: [
+          "Thiết kế lại biểu tượng ứng dụng (App Icon & Brand Logo) trên nền sáng tinh tế, khung máy ảnh tối giản bên ngoài bao bọc biểu tượng hình học DH bên trong ống kính.",
+          "Đồng bộ nhất quán biểu tượng giao diện sáng trên thanh Dock, Sidebar, Launcher và toàn bộ hệ thống.",
+        ],
+      },
+    ],
+  },
+  {
     version: "v3.3.0",
     date: "2026-11-11",
     title: "Nâng cấp Chuyển đổi file - Sửa ngày chụp EXIF hàng loạt hiệu năng cao",
-    isCurrent: true,
     sections: [
       {
         title: "Sửa ngày chụp EXIF hàng loạt",

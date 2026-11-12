@@ -1,9 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  Sliders,
   Cloud,
   CheckCircle2,
-  AlertTriangle,
   ArrowRight,
   ArrowLeft,
   Save,
@@ -20,6 +18,7 @@ import {
   Settings2,
   User,
   X,
+  RotateCcw,
 } from "lucide-react";
 import {
   useContactSheetStore,
@@ -47,13 +46,21 @@ export function WorkspaceWizard() {
   const googleConnection = useContactSheetStore((s) => s.googleConnection);
   const lastSheetUrl = useContactSheetStore((s) => s.lastSheetUrl);
   const setLastSheetUrl = useContactSheetStore((s) => s.setLastSheetUrl);
+  const setTabConfigurations = useContactSheetStore((s) => s.setTabConfigurations);
+  const previousTabConfigurationsSnapshot = useContactSheetStore(
+    (s) => s.previousTabConfigurationsSnapshot
+  );
+  const setPreviousTabConfigurationsSnapshot = useContactSheetStore(
+    (s) => s.setPreviousTabConfigurationsSnapshot
+  );
+  const undoApplyAllTabs = useContactSheetStore((s) => s.undoApplyAllTabs);
 
   const [wizardStep, setWizardStep] = useState<1 | 2 | 3 | 4>(1);
   const [sheetUrl, setSheetUrl] = useState(
     lastSheetUrl ||
       (activeProfile?.spreadsheetId
         ? `https://docs.google.com/spreadsheets/d/${activeProfile.spreadsheetId}/edit`
-        : "https://docs.google.com/spreadsheets/d/1mQQ7FeFvy93kked5T_ob7wiiRa8XhX9lC54i6M_J0ak/edit")
+        : "")
   );
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
@@ -65,7 +72,12 @@ export function WorkspaceWizard() {
   const [analysisResult, setAnalysisResult] = useState<TabAnalysisResult | null>(null);
   const [selectedHeaderRow, setSelectedHeaderRow] = useState<number>(activeProfile?.headerRow || 3);
 
-  // Fallback to full 19 columns if activeProfile mappings are incomplete
+  useEffect(() => {
+    if (activeProfile?.tabConfigurations) {
+      setTabConfigs(activeProfile.tabConfigurations);
+    }
+  }, [activeProfile?.tabConfigurations]);
+
   const initialMappings =
     activeProfile?.fieldMappings && activeProfile.fieldMappings.length >= 10
       ? activeProfile.fieldMappings
@@ -83,7 +95,6 @@ export function WorkspaceWizard() {
   const [pickCompletedStatus, setPickCompletedStatus] = useState(pickValue);
   const [startRow, setStartRow] = useState(activeProfile?.rowScope?.startRow || 4);
 
-  // State for adding custom column
   const [isAddingColumn, setIsAddingColumn] = useState(false);
   const [newColLetter, setNewColLetter] = useState("");
   const [newColHeader, setNewColHeader] = useState("");
@@ -94,7 +105,7 @@ export function WorkspaceWizard() {
     const letter = newColLetter.trim().toUpperCase();
     const header = newColHeader.trim();
     if (!letter || !header) {
-      alert("Vui lòng nhập Chữ cái cột (ví dụ: T) và Tiêu đề cột");
+      alert("Vui lòng nhập chữ cái cột (ví dụ: T) và tiêu đề cột");
       return;
     }
     let colIdx = 0;
@@ -110,7 +121,7 @@ export function WorkspaceWizard() {
       semanticField: newColSemantic,
       permission: newColPermission,
       isFormulaDerived: false,
-      writePolicy: newColPermission === "READ_WRITE" ? "SET_IF_EMPTY" : "SET_IF_EMPTY",
+      writePolicy: "SET_IF_EMPTY",
     };
 
     setFieldMappings([...fieldMappings, newMapping]);
@@ -126,7 +137,7 @@ export function WorkspaceWizard() {
   };
 
   const handleResetToStandard19 = () => {
-    if (confirm("Khôi phục đầy đủ 19 cột chuẩn Studio (A - S)? Các cột tùy chỉnh thêm sẽ được đặt lại.")) {
+    if (confirm("Khôi phục đầy đủ 19 cột chuẩn Studio (A - S)?")) {
       setFieldMappings(STANDARD_19_STUDIO_MAPPINGS);
     }
   };
@@ -150,6 +161,21 @@ export function WorkspaceWizard() {
     await googleCredentialManager.disconnectGoogle();
   };
 
+  const buildTabConfigForTab = (tabTitle: string, sheetId: number): TabConfiguration => {
+    const fingerprint = schemaMappingService.generateSchemaFingerprint(
+      fieldMappings.map((m) => ({ index: m.columnIndex, headerName: m.columnHeader }))
+    );
+    return {
+      sheetId,
+      tabTitle,
+      headerRow: selectedHeaderRow,
+      fieldMappings: [...fieldMappings],
+      rowScope: { startRow, ignoreEmptyRows: true },
+      schemaFingerprint: fingerprint,
+      updatedAt: new Date().toISOString(),
+    };
+  };
+
   const handleSurveyTab = async (targetTab: SheetTabInfo) => {
     setIsAnalyzing(true);
     try {
@@ -159,13 +185,12 @@ export function WorkspaceWizard() {
         spreadsheetId,
         targetTab,
         40,
-        false // Never mock
+        false
       );
 
       setAnalysisResult(analysis);
       setSelectedTab(targetTab);
 
-      // Check if this tab already has saved config
       const existingConfig = tabConfigs[targetTab.title];
       if (existingConfig) {
         setSelectedHeaderRow(existingConfig.headerRow);
@@ -173,7 +198,6 @@ export function WorkspaceWizard() {
         setStartRow(existingConfig.rowScope.startRow);
       } else {
         setSelectedHeaderRow(analysis.detectedHeaderRow);
-        // Transfer / clone existing mapping intents or generate smart mappings
         const base = fieldMappings.length > 0 ? fieldMappings : activeProfile?.fieldMappings || [];
         const newMappings = sheetDiscoveryService.autoDetectOrCloneMappings(analysis.columns, base);
         setFieldMappings(newMappings);
@@ -184,7 +208,7 @@ export function WorkspaceWizard() {
       console.error("Survey tab error:", err);
       const msg = err?.message || String(err);
       if (msg.includes("GOOGLE_REFRESH_TOKEN_NOT_FOUND") || msg.includes("GOOGLE_NOT_CONNECTED")) {
-        alert("Phiên làm việc Google đã hết hạn hoặc chưa kết nối. Vui lòng bấm nút 'Kết nối Google' để đăng nhập lại.");
+        alert("Phiên làm việc Google đã hết hạn hoặc chưa kết nối. Vui lòng bấm 'Kết nối Google' để đăng nhập lại.");
       } else {
         alert(msg);
       }
@@ -195,7 +219,7 @@ export function WorkspaceWizard() {
 
   const handleAnalyzeSheet = async () => {
     if (googleConnection.status !== "CONNECTED" && !googleCredentialManager.isConnected()) {
-      alert("Vui lòng bấm nút 'Kết nối Google' để đăng nhập tài khoản trước khi khảo sát bảng tính.");
+      alert("Vui lòng bấm 'Kết nối Google' trước khi khảo sát bảng tính.");
       return;
     }
 
@@ -216,7 +240,7 @@ export function WorkspaceWizard() {
       console.error("Analyze sheet error:", err);
       const msg = err?.message || String(err);
       if (msg.includes("GOOGLE_REFRESH_TOKEN_NOT_FOUND") || msg.includes("GOOGLE_NOT_CONNECTED")) {
-        alert("Phiên làm việc Google đã hết hạn hoặc chưa kết nối. Vui lòng bấm nút 'Kết nối Google' để đăng nhập lại.");
+        alert("Phiên làm việc Google đã hết hạn hoặc chưa kết nối. Vui lòng bấm 'Kết nối Google' để đăng nhập lại.");
       } else {
         alert(msg);
       }
@@ -226,68 +250,91 @@ export function WorkspaceWizard() {
   };
 
   const handleSwitchTabInWizard = async (tab: SheetTabInfo) => {
-    // 1. Save current tab in memory before switching
-    if (selectedTab) {
-      const fingerprint = schemaMappingService.generateSchemaFingerprint(
-        fieldMappings.map((m) => ({ index: m.columnIndex, headerName: m.columnHeader }))
-      );
-      const currentConfig: TabConfiguration = {
-        sheetId: selectedTab.sheetId,
-        tabTitle: selectedTab.title,
-        headerRow: selectedHeaderRow,
-        fieldMappings,
-        rowScope: { startRow, ignoreEmptyRows: true },
-        schemaFingerprint: fingerprint,
-        updatedAt: new Date().toISOString(),
-      };
-      setTabConfigs((prev) => ({ ...prev, [selectedTab.title]: currentConfig }));
-    }
-
-    // 2. Survey target tab
     await handleSurveyTab(tab);
   };
 
   const handleCopyCurrentConfigToAllTabs = () => {
     if (availableTabs.length <= 1) return;
     const confirmCopy = window.confirm(
-      `Bạn có muốn sao chép toàn bộ cấu hình cột (Field Mappings) và phạm vi hàng (từ dòng ${startRow}) từ tab "${selectedTab?.title || "hiện tại"}" sang TẤT CẢ ${availableTabs.length} tabs khác trong bảng không?`
+      `Áp dụng cấu hình cột và phạm vi hàng từ tab "${selectedTab?.title || "hiện tại"}" cho toàn bộ ${availableTabs.length} tab trong bảng tính?\n(Bạn có thể bấm "Hoàn tác" bất cứ lúc nào nếu muốn hủy)`
     );
     if (!confirmCopy) return;
 
-    const fingerprint = schemaMappingService.generateSchemaFingerprint(
-      fieldMappings.map((m) => ({ index: m.columnIndex, headerName: m.columnHeader }))
-    );
+    // Save snapshot before applying to all tabs so user can undo
+    const currentSnapshot =
+      Object.keys(tabConfigs).length > 0
+        ? { ...tabConfigs }
+        : selectedTab
+        ? { [selectedTab.title]: buildTabConfigForTab(selectedTab.title, selectedTab.sheetId) }
+        : {};
+    setPreviousTabConfigurationsSnapshot(currentSnapshot);
 
-    const newConfigs: Record<string, TabConfiguration> = { ...tabConfigs };
+    const newConfigs: Record<string, TabConfiguration> = {};
     for (const tab of availableTabs) {
-      newConfigs[tab.title] = {
-        sheetId: tab.sheetId,
-        tabTitle: tab.title,
-        headerRow: selectedHeaderRow,
-        fieldMappings: [...fieldMappings],
-        rowScope: { startRow, ignoreEmptyRows: true },
-        schemaFingerprint: fingerprint,
-        updatedAt: new Date().toISOString(),
-      };
+      newConfigs[tab.title] = buildTabConfigForTab(tab.title, tab.sheetId);
     }
     setTabConfigs(newConfigs);
-    alert(`Đã áp dụng cấu hình này cho toàn bộ ${availableTabs.length} tabs trong bảng tính thành công! Hãy bấm "Lưu Cấu hình Workspace" ở Bước 4 để hoàn tất.`);
+    setTabConfigurations(newConfigs);
+  };
+
+  const handleUndoCopyAllTabs = () => {
+    const restored = undoApplyAllTabs();
+    // If selectedTab is set and restored is empty or doesn't match, ensure selectedTab is preserved
+    if (selectedTab && Object.keys(restored).length <= 1) {
+      const singleConfig = {
+        [selectedTab.title]:
+          restored[selectedTab.title] || buildTabConfigForTab(selectedTab.title, selectedTab.sheetId),
+      };
+      setTabConfigs(singleConfig);
+      setTabConfigurations(singleConfig);
+    } else {
+      setTabConfigs(restored);
+    }
+  };
+
+  const handleToggleTabConfig = (tab: SheetTabInfo) => {
+    const isCurrentlyConfigured = !!tabConfigs[tab.title];
+    const nextConfigs = { ...tabConfigs };
+
+    if (isCurrentlyConfigured) {
+      if (Object.keys(nextConfigs).length <= 1) {
+        alert("Cần giữ lại ít nhất 1 tab được áp dụng cấu hình.");
+        return;
+      }
+      delete nextConfigs[tab.title];
+    } else {
+      nextConfigs[tab.title] = buildTabConfigForTab(tab.title, tab.sheetId);
+    }
+
+    setTabConfigs(nextConfigs);
+    setTabConfigurations(nextConfigs);
   };
 
   const handleSaveProfile = () => {
     const spreadsheetId = sheetDiscoveryService.parseSpreadsheetId(sheetUrl);
     setLastSheetUrl(sheetUrl);
 
-    const targetTabTitle = selectedTab?.title || analysisResult?.tab.title || activeProfile?.selectedTabTitle || "Edit 9/2026";
-    const targetTabId = selectedTab?.sheetId ?? analysisResult?.tab.sheetId ?? activeProfile?.selectedTabId ?? 0;
+    const targetTabTitle =
+      selectedTab?.title ||
+      analysisResult?.tab.title ||
+      activeProfile?.selectedTabTitle ||
+      "Edit 9/2026";
+    const targetTabId =
+      selectedTab?.sheetId ??
+      analysisResult?.tab.sheetId ??
+      activeProfile?.selectedTabId ??
+      0;
 
     const fingerprint = schemaMappingService.generateSchemaFingerprint(
       fieldMappings.map((m) => ({ index: m.columnIndex, headerName: m.columnHeader }))
     );
 
-    // Ensure PHOTO_PICK_STATUS is READ_WRITE when pickCompletedStatus is configured
     const effectiveFieldMappings = fieldMappings.map((m) => {
-      if (m.semanticField === "PHOTO_PICK_STATUS" && pickCompletedStatus.trim() && m.permission !== "IGNORE") {
+      if (
+        m.semanticField === "PHOTO_PICK_STATUS" &&
+        pickCompletedStatus.trim() &&
+        m.permission !== "IGNORE"
+      ) {
         return {
           ...m,
           permission: "READ_WRITE" as const,
@@ -337,7 +384,7 @@ export function WorkspaceWizard() {
         ignoreEmptyRows: true,
       },
       driveConfig: activeProfile?.driveConfig || {
-        localRootPath: "/Users/vuongdev/Library/CloudStorage/GoogleDrive-ougn.it2@gmail.com/My Drive",
+        localRootPath: "",
         remoteRootDriveId: "root",
         sharingPolicy: "KEEP_EXISTING",
         sharingAutomationEnabled: false,
@@ -350,86 +397,120 @@ export function WorkspaceWizard() {
       updatedAt: new Date().toISOString(),
     };
 
+    setTabConfigs(updatedTabConfigs);
     saveProfile(newProfile);
-    alert(`Đã lưu cấu hình Workspace và cấu hình cho tab "${targetTabTitle}" thành công! Dữ liệu đã được lưu bền vững.`);
+    alert(`Đã lưu cấu hình cho tab "${targetTabTitle}" (${Object.keys(updatedTabConfigs).length} tab hiển thị ở Thực thi Batch).`);
   };
 
+  const configuredTabCount = Object.keys(tabConfigs).length;
+
   return (
-    <div className="flex-1 flex flex-col h-full w-full min-w-0 max-w-full overflow-y-auto overflow-x-hidden p-6 gap-6 text-foreground custom-scrollbar">
-      {/* Wizard Progress Stepper - Fully Clickable */}
-      <div className="flex items-center justify-between p-3.5 bg-card/60 border border-border/80 rounded-2xl shrink-0 w-full min-w-0 overflow-x-auto gap-3 backdrop-blur-md shadow-sm">
-        {[
-          { step: 1, label: "Kết nối & URL Sheet" },
-          { step: 2, label: "Khảo sát Header & Cột" },
-          { step: 3, label: "Phân quyền & Khớp trường" },
-          { step: 4, label: "Giá trị Dropdown & Phạm vi" },
-        ].map((s) => (
-          <button
-            key={s.step}
-            type="button"
-            onClick={() => setWizardStep(s.step as any)}
-            className={`flex items-center gap-2.5 transition-all cursor-pointer bg-transparent border-0 p-1 text-left rounded-xl hover:bg-muted/40 ${
-              wizardStep === s.step
-                ? "text-primary font-bold"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <div
-              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                wizardStep === s.step
-                  ? "bg-primary text-primary-foreground shadow-sm ring-2 ring-primary/30"
-                  : "bg-muted text-muted-foreground"
-              }`}
+    <div className="flex-1 flex flex-col h-full w-full min-w-0 max-w-full overflow-y-auto overflow-x-hidden p-5 gap-5 text-foreground custom-scrollbar">
+      {/* Clean Wizard Stepper Bar */}
+      <div className="flex flex-wrap items-center justify-between p-2.5 bg-card border border-border rounded-2xl shrink-0 w-full min-w-0 gap-2 shadow-xs">
+        <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar">
+          {[
+            { step: 1, label: "Kết nối & Bảng tính" },
+            { step: 2, label: "Khảo sát Tiêu đề & Tab" },
+            { step: 3, label: "Phân quyền & Ánh xạ cột" },
+            { step: 4, label: "Giá trị tự động & Lưu" },
+          ].map((s) => {
+            const active = wizardStep === s.step;
+            return (
+              <button
+                key={s.step}
+                type="button"
+                onClick={() => setWizardStep(s.step as any)}
+                className={`flex items-center gap-2 h-8 px-3 rounded-xl text-[12px] transition-colors cursor-pointer border ${
+                  active
+                    ? "glass-pill text-foreground font-medium"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <span
+                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-medium ${
+                    active
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-foreground/[0.06] text-muted-foreground"
+                  }`}
+                >
+                  {s.step}
+                </span>
+                <span className="whitespace-nowrap">{s.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Quick Undo & Save in Stepper Header */}
+        <div className="flex items-center gap-2 shrink-0">
+          {configuredTabCount > 1 && (
+            <button
+              type="button"
+              onClick={handleUndoCopyAllTabs}
+              className="h-8 px-3 rounded-xl bg-foreground/[0.04] hover:bg-foreground/[0.08] border border-border text-foreground text-[11.5px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Hoàn tác việc áp dụng cho tất cả các tab — chỉ giữ lại tab đang làm việc"
             >
-              {s.step}
-            </div>
-            <span className="text-xs font-semibold whitespace-nowrap">{s.label}</span>
+              <RotateCcw size={12.5} strokeWidth={1.75} />
+              <span>Hoàn tác áp dụng tất cả ({configuredTabCount} tab)</span>
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleSaveProfile}
+            className="btn-base btn-primary h-8 px-3.5 rounded-xl text-[11.5px]"
+          >
+            <Save size={13} strokeWidth={1.75} />
+            <span>Lưu cấu hình</span>
           </button>
-        ))}
+        </div>
       </div>
 
       {/* STEP 1: Connect Google & Sheet URL */}
       {wizardStep === 1 && (
-        <div className="flex flex-col gap-5 max-w-2xl mx-auto w-full py-2">
-          {/* Google Connection Box */}
-          <div className="p-5 rounded-2xl bg-card border border-border flex flex-col gap-3 shadow-sm">
-            <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 max-w-2xl mx-auto w-full py-1">
+          {/* Google Connection Card */}
+          <div className="p-5 rounded-2xl bg-card border border-border flex flex-col gap-3 shadow-xs">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/15 border border-primary/25 flex items-center justify-center text-primary">
-                  <Cloud size={20} />
+                <div className="w-9 h-9 rounded-xl bg-foreground/[0.05] border border-border flex items-center justify-center text-foreground">
+                  <Cloud size={17} strokeWidth={1.75} />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-sm text-foreground">
+                  <h3 className="font-semibold text-[13.5px] text-foreground">
                     1. Tài khoản Google Studio
                   </h3>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-[11.5px] text-muted-foreground">
                     {googleConnection.status === "CONNECTED"
                       ? `Đã kết nối: ${googleConnection.accountEmail || "Tài khoản Google"}`
-                      : "Chỉ cần kết nối 1 lần duy nhất để đối soát Sheet và lấy link Drive."}
+                      : "Kết nối tài khoản Google để đối soát Sheet và lấy link Drive."}
                   </p>
                 </div>
               </div>
 
               {googleConnection.status === "CONNECTED" ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-emerald-400 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-1">
-                    <Check size={12} /> Đang kết nối
+                  <span className="h-7 px-2.5 rounded-full bg-foreground/[0.04] border border-border text-[11.5px] text-foreground flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-success" />
+                    <span>Đang kết nối</span>
                   </span>
                   <button
+                    type="button"
                     onClick={handleDisconnectGoogle}
-                    className="px-3 py-1.5 bg-destructive/15 hover:bg-destructive/25 text-destructive rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                    className="h-7 px-2.5 bg-foreground/[0.04] hover:bg-destructive/10 text-muted-foreground hover:text-destructive border border-border rounded-lg text-[11.5px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
-                    <LogOut size={13} />
+                    <LogOut size={12.5} strokeWidth={1.75} />
                     <span>Đổi tài khoản</span>
                   </button>
                 </div>
               ) : (
                 <button
+                  type="button"
                   onClick={handleConnectGoogle}
                   disabled={isConnectingGoogle}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-bold shadow-md hover:opacity-95 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="btn-base btn-primary h-8 px-4 rounded-xl text-[12px]"
                 >
-                  <Cloud size={14} />
+                  <Cloud size={14} strokeWidth={1.75} />
                   <span>{isConnectingGoogle ? "Đang mở trình duyệt..." : "Kết nối Google"}</span>
                 </button>
               )}
@@ -437,13 +518,16 @@ export function WorkspaceWizard() {
           </div>
 
           {/* Sheet URL Input */}
-          <div className="p-5 rounded-2xl bg-card border border-border flex flex-col gap-3 shadow-sm">
-            <h3 className="font-extrabold text-sm text-foreground">
-              2. Liên kết Google Sheet Studio
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Đường link bảng tính Google Sheets đối soát (được tự động lưu lại cho các lần sau):
-            </p>
+          <div className="p-5 rounded-2xl bg-card border border-border flex flex-col gap-3 shadow-xs">
+            <div>
+              <h3 className="font-semibold text-[13.5px] text-foreground">
+                2. Liên kết Google Sheet Studio
+              </h3>
+              <p className="text-[11.5px] text-muted-foreground mt-0.5">
+                Dán đường link bảng tính Google Sheets cần đối soát:
+              </p>
+            </div>
+
             <input
               type="text"
               value={sheetUrl}
@@ -452,61 +536,61 @@ export function WorkspaceWizard() {
                 setSheetUrl(val);
                 setLastSheetUrl(val);
               }}
-              placeholder="https://docs.google.com/spreadsheets/d/1mQQ7FeFvy93kked5T_ob7wiiRa8XhX9lC54i6M_J0ak/edit..."
-              className="px-3.5 py-2.5 bg-background border border-border rounded-xl text-foreground font-mono text-xs focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
+              placeholder="https://docs.google.com/spreadsheets/d/..."
+              className="h-9 px-3.5 bg-background border border-border rounded-xl text-foreground font-mono text-[12px] focus:outline-none focus:border-primary"
             />
 
-            <div className="flex items-center justify-between mt-2">
+            <div className="flex items-center justify-between mt-1">
               <span className="text-[11px] text-muted-foreground">
-                Tự động nhớ link gần nhất khi mở lại app.
+                Tự động lưu đường dẫn bảng tính cho lần mở tiếp theo.
               </span>
               <button
+                type="button"
                 onClick={handleAnalyzeSheet}
                 disabled={isAnalyzing || !sheetUrl.trim()}
-                className="px-5 py-2.5 bg-primary text-primary-foreground font-bold rounded-xl text-xs shadow-md hover:opacity-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-40"
+                className="btn-base btn-primary h-8 px-4 rounded-xl text-[12px]"
               >
-                <Search size={14} />
-                <span>{isAnalyzing ? "Đang khảo sát cấu trúc..." : "Khảo sát Cấu trúc Bảng tính"}</span>
+                <Search size={13.5} strokeWidth={1.75} />
+                <span>{isAnalyzing ? "Đang khảo sát..." : "Khảo sát bảng tính"}</span>
               </button>
             </div>
 
             {/* Discovered Tabs List */}
             {availableTabs.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-border flex flex-col gap-2.5">
+              <div className="mt-2 pt-3 border-t border-border flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-xs text-foreground">
-                    Các trang tính (Tabs) trong bảng ({availableTabs.length}):
+                  <span className="font-medium text-[12px] text-foreground">
+                    Các trang tính trong bảng ({availableTabs.length} tab):
                   </span>
                   <span className="text-[11px] text-muted-foreground">
-                    Bấm vào tab để khảo sát cấu trúc riêng
+                    Đã áp dụng Batch: {configuredTabCount || 1} tab
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto custom-scrollbar pr-1">
                   {availableTabs.map((t) => {
                     const isConfigured = !!tabConfigs[t.title];
                     const isCurrent = selectedTab?.sheetId === t.sheetId;
                     return (
                       <button
+                        type="button"
                         key={t.sheetId}
                         onClick={() => handleSurveyTab(t)}
                         disabled={isAnalyzing}
-                        className={`flex items-center justify-between p-3 rounded-xl border text-xs font-semibold transition-all text-left cursor-pointer ${
+                        className={`flex items-center justify-between px-3 py-2 rounded-xl border text-[12px] font-medium transition-colors text-left cursor-pointer ${
                           isCurrent
-                            ? "bg-primary/10 border-primary/40 text-primary shadow-sm"
-                            : "bg-background/80 hover:bg-muted/40 border-border text-foreground"
+                            ? "bg-primary/10 border-primary/30 text-primary"
+                            : "bg-background/60 hover:bg-foreground/[0.04] border-border text-foreground"
                         }`}
                       >
                         <div className="flex items-center gap-2 overflow-hidden">
-                          <Table size={14} className="text-primary shrink-0" />
+                          <Table size={13.5} className="text-muted-foreground shrink-0" />
                           <span className="truncate">{t.title}</span>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
                           {isConfigured && (
-                            <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 text-[10px] font-bold">
-                              Đã lưu
-                            </span>
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary" title="Đã áp dụng vào Thực thi Batch" />
                           )}
-                          <span className="text-[10px] text-muted-foreground">
+                          <span className="text-[10.5px] text-muted-foreground tabular-nums">
                             {t.columnCount} cột
                           </span>
                         </div>
@@ -518,13 +602,14 @@ export function WorkspaceWizard() {
             )}
           </div>
 
-          <div className="flex items-center justify-end pt-2">
+          <div className="flex items-center justify-end">
             <button
+              type="button"
               onClick={() => setWizardStep(2)}
-              className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-md hover:opacity-95 flex items-center gap-1.5 cursor-pointer"
+              className="btn-base btn-secondary h-8 px-4 rounded-xl text-[12px]"
             >
-              <span>Tiếp tục: Khảo sát Header & Cột</span>
-              <ArrowRight size={14} />
+              <span>Tiếp tục: Khảo sát Tiêu đề & Tab</span>
+              <ArrowRight size={13.5} />
             </button>
           </div>
         </div>
@@ -532,7 +617,7 @@ export function WorkspaceWizard() {
 
       {/* STEP 2: Header Confirmation & Column Profiles */}
       {wizardStep === 2 && (
-        <div className="flex flex-col gap-5 w-full min-w-0 max-w-full">
+        <div className="flex flex-col gap-4 w-full min-w-0 max-w-full">
           {availableTabs.length > 0 && (
             <SheetTabManager
               availableTabs={availableTabs}
@@ -541,8 +626,33 @@ export function WorkspaceWizard() {
               isAnalyzing={isAnalyzing}
               onSelectTab={handleSwitchTabInWizard}
               onCopyConfigToAllTabs={handleCopyCurrentConfigToAllTabs}
-              subtitle="Chọn hoặc chuyển đổi giữa các trang tính để khảo sát tiêu đề và số cột tương ứng."
+              onUndoCopyAllTabs={handleUndoCopyAllTabs}
+              onToggleTabConfig={handleToggleTabConfig}
+              canUndoCopyAll={Boolean(previousTabConfigurationsSnapshot) || configuredTabCount > 1}
+              subtitle="Chọn tab cần áp dụng cấu hình. Chỉ những tab được áp dụng tại đây mới hiển thị ở phần Thực thi Batch."
             />
+          )}
+
+          {/* If user has > 1 configured tabs from previous session even before analyzing sheet */}
+          {availableTabs.length === 0 && configuredTabCount > 1 && (
+            <div className="p-4 rounded-2xl bg-card border border-border flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[12.5px] font-semibold text-foreground">
+                  Đang áp dụng cấu hình cho {configuredTabCount} tab trong Thực thi Batch
+                </span>
+                <span className="text-[11.5px] text-muted-foreground">
+                  Nếu bạn lỡ tay ấn "Áp dụng cho tất cả Tab", bấm nút bên cạnh để hoàn tác và chỉ giữ lại tab chính ({activeProfile?.selectedTabTitle}).
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleUndoCopyAllTabs}
+                className="h-8 px-3 rounded-xl bg-primary/10 hover:bg-primary/15 border border-primary/25 text-primary text-[11.5px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <RotateCcw size={13} strokeWidth={1.75} />
+                <span>Hoàn tác ({configuredTabCount} → 1 tab)</span>
+              </button>
+            </div>
           )}
 
           {analysisResult ? (
@@ -552,29 +662,29 @@ export function WorkspaceWizard() {
               onConfirmHeader={(row) => setSelectedHeaderRow(row)}
             />
           ) : (
-            /* Direct Profile View when entering Step 2 directly */
-            <div className="p-5 rounded-2xl bg-card border border-border flex flex-col gap-4 shadow-sm">
-              <div className="flex items-center justify-between">
+            <div className="p-5 rounded-2xl bg-card border border-border flex flex-col gap-4 shadow-xs">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
-                  <h3 className="font-extrabold text-sm text-foreground">
+                  <h3 className="font-semibold text-[13.5px] text-foreground">
                     Cấu hình Dòng Tiêu đề (Header Row)
                   </h3>
-                  <p className="text-xs text-muted-foreground">
-                    Đang sử dụng cấu hình đã lưu cho tab <b className="text-foreground font-semibold">{activeProfile?.selectedTabTitle || "Edit 9/2026"}</b>. Bạn có thể thay đổi số dòng hoặc bấm khảo sát trực tiếp từ Google Sheet.
+                  <p className="text-[11.5px] text-muted-foreground mt-0.5">
+                    Tab đang chọn: <span className="text-foreground font-medium">{activeProfile?.selectedTabTitle || "Edit 9/2026"}</span>
                   </p>
                 </div>
                 <button
+                  type="button"
                   onClick={handleAnalyzeSheet}
                   disabled={isAnalyzing || !sheetUrl.trim()}
-                  className="px-3.5 py-2 bg-muted/60 hover:bg-muted text-foreground border border-border text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="h-8 px-3 bg-foreground/[0.04] hover:bg-foreground/[0.08] text-foreground border border-border text-[11.5px] font-medium rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <RotateCw size={13} className={isAnalyzing ? "animate-spin" : ""} />
-                  <span>{isAnalyzing ? "Đang đồng bộ..." : "Khảo sát lại từ Sheet"}</span>
+                  <RotateCw size={12.5} className={isAnalyzing ? "animate-spin" : ""} />
+                  <span>{isAnalyzing ? "Đang đồng bộ..." : "Khảo sát các tab từ Sheet"}</span>
                 </button>
               </div>
 
-              <div className="flex items-center gap-3 p-3 bg-background/60 border border-border rounded-xl">
-                <span className="text-xs font-bold text-foreground">Dòng tiêu đề hiện tại:</span>
+              <div className="flex items-center gap-3 p-3 bg-background/50 border border-border rounded-xl">
+                <span className="text-[12px] font-medium text-foreground">Dòng tiêu đề hiện tại:</span>
                 <input
                   type="number"
                   min={1}
@@ -585,26 +695,25 @@ export function WorkspaceWizard() {
                     setSelectedHeaderRow(val);
                     setStartRow(val + 1);
                   }}
-                  className="w-20 px-2.5 py-1.5 bg-card border border-border rounded-lg text-foreground font-bold text-xs focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
+                  className="w-20 h-8 px-2.5 bg-card border border-border rounded-lg text-foreground font-medium text-[12px] focus:outline-none focus:border-primary"
                 />
-                <span className="text-xs text-muted-foreground">
+                <span className="text-[11.5px] text-muted-foreground">
                   (Dòng chứa tên cột: Ngày, Giờ, Tên khách, Tên file, Tên Edit, Link Edit...)
                 </span>
               </div>
 
-              {/* Column list overview from existing mappings */}
               <div className="flex flex-col gap-2">
-                <span className="text-xs font-bold text-muted-foreground">
-                  Các cột đã cấu hình ({fieldMappings.length} cột):
+                <span className="text-[11.5px] font-medium text-muted-foreground">
+                  Các cột đã ánh xạ ({fieldMappings.length} cột):
                 </span>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                   {fieldMappings.map((m) => (
                     <div
                       key={m.columnIndex}
-                      className="p-2.5 rounded-xl bg-background/50 border border-border flex items-center justify-between gap-2 text-xs"
+                      className="p-2.5 rounded-xl bg-background/50 border border-border flex items-center justify-between gap-2 text-[12px]"
                     >
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="font-mono font-bold text-primary px-1.5 py-0.5 rounded bg-primary/10 text-[11px]">
+                        <span className="font-mono font-semibold text-foreground px-1.5 py-0.5 rounded bg-foreground/[0.05] text-[11px]">
                           {m.columnLetter}
                         </span>
                         <span className="font-medium text-foreground truncate" title={m.columnHeader}>
@@ -612,10 +721,10 @@ export function WorkspaceWizard() {
                         </span>
                       </div>
                       <span
-                        className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                        className={`text-[10.5px] font-medium px-1.5 py-0.5 rounded ${
                           m.permission === "READ_WRITE"
-                            ? "bg-emerald-500/15 text-emerald-400"
-                            : "bg-muted text-muted-foreground"
+                            ? "bg-primary/10 text-primary"
+                            : "bg-foreground/[0.04] text-muted-foreground"
                         }`}
                       >
                         {m.permission === "READ_WRITE" ? "Ghi" : "Đọc"}
@@ -627,37 +736,30 @@ export function WorkspaceWizard() {
             </div>
           )}
 
-          <div className="flex items-center justify-between pt-2">
+          <div className="flex items-center justify-between pt-1">
             <button
+              type="button"
               onClick={() => setWizardStep(1)}
-              className="px-4 py-2 rounded-xl border border-border text-muted-foreground hover:text-foreground text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+              className="h-8 px-3.5 rounded-xl border border-border text-muted-foreground hover:text-foreground text-[12px] font-medium flex items-center gap-1.5 cursor-pointer"
             >
-              <ArrowLeft size={14} />
+              <ArrowLeft size={13.5} />
               <span>Quay lại</span>
             </button>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleSaveProfile}
-                className="px-4 py-2 rounded-xl bg-muted/60 hover:bg-muted text-foreground border border-border text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <Save size={13} />
-                <span>Lưu cấu hình</span>
-              </button>
-              <button
-                onClick={() => setWizardStep(3)}
-                className="px-5 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-md hover:opacity-95 flex items-center gap-1.5 cursor-pointer"
-              >
-                <span>Tiếp tục: Phân quyền & Khớp trường</span>
-                <ArrowRight size={14} />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setWizardStep(3)}
+              className="btn-base btn-secondary h-8 px-4 rounded-xl text-[12px]"
+            >
+              <span>Tiếp tục: Phân quyền & Ánh xạ cột</span>
+              <ArrowRight size={13.5} />
+            </button>
           </div>
         </div>
       )}
 
       {/* STEP 3: Field Mapping & Permissions */}
       {wizardStep === 3 && (
-        <div className="flex flex-col gap-5 w-full min-w-0 max-w-full pb-10">
+        <div className="flex flex-col gap-4 w-full min-w-0 max-w-full pb-8">
           {availableTabs.length > 0 && (
             <SheetTabManager
               availableTabs={availableTabs}
@@ -666,26 +768,24 @@ export function WorkspaceWizard() {
               isAnalyzing={isAnalyzing}
               onSelectTab={handleSwitchTabInWizard}
               onCopyConfigToAllTabs={handleCopyCurrentConfigToAllTabs}
-              subtitle="Cấu hình ánh xạ cột riêng biệt cho từng trang tính. Tab khác nhau có thứ tự cột khác nhau."
+              onUndoCopyAllTabs={handleUndoCopyAllTabs}
+              onToggleTabConfig={handleToggleTabConfig}
+              canUndoCopyAll={Boolean(previousTabConfigurationsSnapshot) || configuredTabCount > 1}
+              subtitle="Cấu hình ánh xạ cột riêng cho từng trang tính hoặc chọn các tab cần áp dụng."
             />
           )}
 
           {/* Step 3 Header & Action Bar */}
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="min-w-0">
-              <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
-                <span>Cấu hình Phân quyền & Khớp trường ngữ nghĩa</span>
-                <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-[11px] font-bold">
+              <h3 className="font-semibold text-[13.5px] text-foreground flex items-center gap-2">
+                <span>Phân quyền & Khớp trường dữ liệu</span>
+                <span className="px-2 py-0.5 rounded-md bg-foreground/[0.05] text-muted-foreground text-[11px] font-medium">
                   {fieldMappings.length} cột
                 </span>
-                {selectedTab && (
-                  <span className="text-xs text-muted-foreground font-normal">
-                    (Tab: {selectedTab.title})
-                  </span>
-                )}
               </h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Chỉ định trường ngữ nghĩa cho từng cột trên tab này. Các cột công thức (IMPORTRANGE / Formula) được bảo vệ READ_ONLY an toàn.
+              <p className="text-[11.5px] text-muted-foreground mt-0.5">
+                Chỉ định ý nghĩa từng cột. Các cột công thức được khóa chỉ đọc tự động để bảo vệ bảng tính.
               </p>
             </div>
 
@@ -693,79 +793,68 @@ export function WorkspaceWizard() {
               <button
                 type="button"
                 onClick={() => setIsAddingColumn(!isAddingColumn)}
-                className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="h-8 px-3 bg-foreground/[0.04] hover:bg-foreground/[0.08] text-foreground border border-border rounded-xl text-[11.5px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Plus size={13} />
-                <span>Thêm cột mapping</span>
+                <span>Thêm cột</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleResetToStandard19}
-                className="px-3 py-1.5 bg-muted/60 hover:bg-muted text-foreground border border-border rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                title="Khôi phục đầy đủ 19 cột chuẩn Studio từ A đến S"
+                className="h-8 px-3 bg-foreground/[0.04] hover:bg-foreground/[0.08] text-foreground border border-border rounded-xl text-[11.5px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <RefreshCw size={12} />
                 <span>Chuẩn 19 cột Studio</span>
               </button>
-
-              <button
-                type="button"
-                onClick={handleAnalyzeSheet}
-                disabled={isAnalyzing || !sheetUrl.trim()}
-                className="px-3 py-1.5 bg-muted/60 hover:bg-muted text-foreground border border-border rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40"
-              >
-                <RotateCw size={12} className={isAnalyzing ? "animate-spin" : ""} />
-                <span>{isAnalyzing ? "Đang dò..." : "Khảo sát từ Sheet"}</span>
-              </button>
             </div>
           </div>
 
-          {/* Form thêm cột mới */}
           {isAddingColumn && (
-            <div className="p-4 bg-card border border-primary/30 rounded-2xl flex flex-col gap-3 shadow-md animate-in fade-in">
+            <div className="p-4 bg-card border border-border rounded-2xl flex flex-col gap-3 shadow-xs">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-extrabold text-foreground flex items-center gap-1.5">
-                  <Plus size={14} className="text-primary" />
-                  <span>Thêm cột mapping tùy chỉnh vào bảng</span>
+                <h4 className="text-[12.5px] font-semibold text-foreground">
+                  Thêm cột tùy chỉnh
                 </h4>
-                <button aria-label="Đóng"
+                <button
+                  type="button"
+                  aria-label="Đóng"
                   onClick={() => setIsAddingColumn(false)}
-                  className="text-muted-foreground hover:text-foreground p-1 rounded-lg"
+                  className="text-muted-foreground hover:text-foreground p-1 rounded-lg cursor-pointer"
                 >
                   <X size={14} />
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-[12px]">
                 <div className="flex flex-col gap-1">
-                  <label className="font-bold text-foreground">Chữ cái cột (A, B, C...):</label>
+                  <label className="font-medium text-foreground">Chữ cái cột:</label>
                   <input
                     type="text"
                     placeholder="T"
                     value={newColLetter}
                     onChange={(e) => setNewColLetter(e.target.value.toUpperCase())}
-                    className="px-3 py-2 bg-background border border-border rounded-xl font-mono text-xs font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
+                    className="h-8 px-3 bg-background border border-border rounded-lg font-mono text-[12px] font-medium text-foreground focus:outline-none focus:border-primary"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1 sm:col-span-2">
-                  <label className="font-bold text-foreground">Tiêu đề cột trên Sheet:</label>
+                  <label className="font-medium text-foreground">Tiêu đề cột trên Sheet:</label>
                   <input
                     type="text"
-                    placeholder="Ghi chú thêm, Mã phụ..."
+                    placeholder="Ghi chú thêm..."
                     value={newColHeader}
                     onChange={(e) => setNewColHeader(e.target.value)}
-                    className="px-3 py-2 bg-background border border-border rounded-xl text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
+                    className="h-8 px-3 bg-background border border-border rounded-lg text-[12px] text-foreground focus:outline-none focus:border-primary"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="font-bold text-foreground">Trường ngữ nghĩa:</label>
+                  <label className="font-medium text-foreground">Trường ngữ nghĩa:</label>
                   <select
                     value={newColSemantic}
                     onChange={(e) => setNewColSemantic(e.target.value as SemanticField)}
-                    className="px-2.5 py-2 bg-background border border-border rounded-xl text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
+                    className="h-8 px-2.5 bg-background border border-border rounded-lg text-[12px] text-foreground focus:outline-none focus:border-primary"
                   >
                     <option value="NOTES">-- Bỏ qua / Ghi chú --</option>
                     <option value="CUSTOMER_NAME">Tên khách hàng</option>
@@ -780,40 +869,40 @@ export function WorkspaceWizard() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-border/60">
+              <div className="flex justify-end gap-2 pt-2 border-t border-border">
                 <button
                   type="button"
                   onClick={() => setIsAddingColumn(false)}
-                  className="px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground rounded-lg"
+                  className="h-7 px-3 text-[11.5px] text-muted-foreground hover:text-foreground rounded-lg cursor-pointer"
                 >
                   Hủy
                 </button>
                 <button
                   type="button"
                   onClick={handleAddColumn}
-                  className="px-4 py-1.5 bg-primary text-primary-foreground text-xs font-bold rounded-xl shadow-sm hover:opacity-95"
+                  className="btn-base btn-primary h-7 px-3.5 rounded-lg text-[11.5px]"
                 >
-                  Xác nhận thêm cột
+                  Thêm cột
                 </button>
               </div>
             </div>
           )}
 
           {/* Mapping Table */}
-          <div className="w-full min-w-0 max-w-full bg-background/60 border border-border rounded-2xl overflow-x-auto shadow-inner">
-            <table className="w-full min-w-[760px] text-left text-xs border-collapse">
+          <div className="w-full min-w-0 max-w-full bg-card border border-border rounded-2xl overflow-x-auto">
+            <table className="w-full min-w-[720px] text-left text-[12px] border-collapse">
               <thead>
-                <tr className="border-b border-border bg-muted/40 text-muted-foreground font-bold">
-                  <th className="py-2.5 px-4 w-12 text-center">Cột</th>
-                  <th className="py-2.5 px-4">Tiêu đề trên Sheet</th>
-                  <th className="py-2.5 px-4">Phân loại dữ liệu</th>
-                  <th className="py-2.5 px-4">Trường Ngữ nghĩa (Semantic)</th>
-                  <th className="py-2.5 px-4">Quyền hạn ghi</th>
-                  <th className="py-2.5 px-4">Chính sách ghi đè</th>
-                  <th className="py-2.5 px-3 w-12 text-center">Thao tác</th>
+                <tr className="border-b border-border bg-foreground/[0.03] text-muted-foreground font-medium">
+                  <th className="py-2.5 px-4 w-12 text-center font-medium">Cột</th>
+                  <th className="py-2.5 px-4 font-medium">Tiêu đề trên Sheet</th>
+                  <th className="py-2.5 px-4 font-medium">Loại ô</th>
+                  <th className="py-2.5 px-4 font-medium">Trường dữ liệu</th>
+                  <th className="py-2.5 px-4 font-medium">Quyền hạn</th>
+                  <th className="py-2.5 px-4 font-medium">Chính sách ghi</th>
+                  <th className="py-2.5 px-3 w-12 text-center font-medium">Xóa</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/60">
+              <tbody className="divide-y divide-border">
                 {fieldMappings.map((m, idx) => {
                   const isCoreField =
                     m.semanticField === "CUSTOMER_NAME" ||
@@ -822,25 +911,25 @@ export function WorkspaceWizard() {
                     m.semanticField === "DELIVERY_LINK";
 
                   return (
-                    <tr key={`${m.columnIndex}-${idx}`} className="hover:bg-muted/20 transition-colors">
-                      <td className="py-2.5 px-4 font-mono font-extrabold text-primary text-center">
+                    <tr key={`${m.columnIndex}-${idx}`} className="hover:bg-foreground/[0.02] transition-colors">
+                      <td className="py-2 px-4 font-mono font-semibold text-foreground text-center">
                         {m.columnLetter}
                       </td>
-                      <td className="py-2.5 px-4 font-bold text-foreground">
+                      <td className="py-2 px-4 font-medium text-foreground">
                         {m.columnHeader}
                       </td>
-                      <td className="py-2.5 px-4">
+                      <td className="py-2 px-4">
                         {m.isFormulaDerived ? (
-                          <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-semibold">
-                            Công thức (Bảo vệ)
+                          <span className="px-2 py-0.5 rounded-md bg-foreground/[0.05] text-muted-foreground text-[11px]">
+                            Công thức
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-semibold">
-                            Dữ liệu thường
+                          <span className="text-muted-foreground text-[11px]">
+                            Thường
                           </span>
                         )}
                       </td>
-                      <td className="py-2.5 px-4">
+                      <td className="py-2 px-4">
                         <select
                           value={m.semanticField}
                           onChange={(e) => {
@@ -849,20 +938,20 @@ export function WorkspaceWizard() {
                             updated[idx] = { ...m, semanticField: val };
                             setFieldMappings(updated);
                           }}
-                          className="bg-muted/40 border border-border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary font-medium text-foreground"
+                          className="h-7 bg-background border border-border rounded-lg px-2 text-[11.5px] focus:outline-none focus:border-primary text-foreground"
                         >
                           <option value="NOTES">-- Bỏ qua / Ghi chú --</option>
-                          <option value="CUSTOMER_NAME">Tên khách hàng (CUSTOMER_NAME)</option>
-                          <option value="JOB_FOLDER_NAME">Tên file / Job Folder (JOB_FOLDER_NAME)</option>
-                          <option value="SHOOT_DATE">Ngày chụp (SHOOT_DATE)</option>
-                          <option value="SHOOT_TIME">Giờ chụp (SHOOT_TIME)</option>
-                          <option value="EDITOR">Tên Editor (EDITOR)</option>
-                          <option value="DELIVERY_LINK">Link Drive Trả ảnh (DELIVERY_LINK)</option>
-                          <option value="PHOTO_PICK_STATUS">Trạng thái lọc ảnh (PHOTO_PICK_STATUS)</option>
-                          <option value="EDIT_COMPLETED_AT">Thời gian hoàn thành (EDIT_COMPLETED_AT)</option>
+                          <option value="CUSTOMER_NAME">Tên khách hàng</option>
+                          <option value="JOB_FOLDER_NAME">Tên file / Job Folder</option>
+                          <option value="SHOOT_DATE">Ngày chụp</option>
+                          <option value="SHOOT_TIME">Giờ chụp</option>
+                          <option value="EDITOR">Tên Editor</option>
+                          <option value="DELIVERY_LINK">Link Drive Trả ảnh</option>
+                          <option value="PHOTO_PICK_STATUS">Trạng thái lọc ảnh</option>
+                          <option value="EDIT_COMPLETED_AT">Thời gian hoàn thành</option>
                         </select>
                       </td>
-                      <td className="py-2.5 px-4">
+                      <td className="py-2 px-4">
                         <select
                           disabled={m.isFormulaDerived}
                           value={m.permission}
@@ -872,18 +961,18 @@ export function WorkspaceWizard() {
                             updated[idx] = { ...m, permission: val };
                             setFieldMappings(updated);
                           }}
-                          className={`border rounded-lg px-2 py-1 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary ${
+                          className={`h-7 border rounded-lg px-2 text-[11.5px] font-medium focus:outline-none focus:border-primary ${
                             m.permission === "READ_WRITE"
-                              ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                              : "bg-muted/40 text-muted-foreground border-border"
+                              ? "bg-primary/10 text-primary border-primary/25"
+                              : "bg-background text-muted-foreground border-border"
                           }`}
                         >
-                          <option value="READ_ONLY">Chỉ đọc (READ_ONLY)</option>
-                          <option value="READ_WRITE">Cho phép ghi (READ_WRITE)</option>
-                          <option value="IGNORE">Bỏ qua (IGNORE)</option>
+                          <option value="READ_ONLY">Chỉ đọc</option>
+                          <option value="READ_WRITE">Cho phép ghi</option>
+                          <option value="IGNORE">Bỏ qua</option>
                         </select>
                       </td>
-                      <td className="py-2.5 px-4">
+                      <td className="py-2 px-4">
                         {m.permission === "READ_WRITE" ? (
                           <select
                             value={m.writePolicy}
@@ -893,24 +982,25 @@ export function WorkspaceWizard() {
                               updated[idx] = { ...m, writePolicy: val };
                               setFieldMappings(updated);
                             }}
-                            className="bg-muted/40 border border-border rounded-lg px-2 py-1 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
+                            className="h-7 bg-background border border-border rounded-lg px-2 text-[11.5px] focus:outline-none focus:border-primary text-foreground"
                           >
-                            <option value="SET_IF_EMPTY">Chỉ ghi nếu ô trống (SET_IF_EMPTY)</option>
-                            <option value="ASK_BEFORE_OVERWRITE">Hỏi trước khi ghi đè (ASK_BEFORE_OVERWRITE)</option>
-                            <option value="ALWAYS_REPLACE">Luôn ghi đè (ALWAYS_REPLACE)</option>
-                            <option value="APPEND">Nối tiếp dòng mới (APPEND)</option>
+                            <option value="SET_IF_EMPTY">Chỉ ghi nếu ô trống</option>
+                            <option value="ASK_BEFORE_OVERWRITE">Hỏi trước khi ghi đè</option>
+                            <option value="ALWAYS_REPLACE">Luôn ghi đè</option>
+                            <option value="APPEND">Nối tiếp dòng mới</option>
                           </select>
                         ) : (
-                          <span className="text-muted-foreground italic text-[11px]">-</span>
+                          <span className="text-muted-foreground text-[11px]">—</span>
                         )}
                       </td>
-                      <td className="py-2.5 px-3 text-center">
+                      <td className="py-2 px-3 text-center">
                         {!isCoreField && (
                           <button
                             type="button"
                             onClick={() => handleRemoveColumn(m.columnIndex)}
-                            title="Xóa cột này khỏi danh sách mapping" aria-label="Xóa cột này khỏi danh sách mapping"
-                            className="p-1 hover:bg-destructive/15 text-muted-foreground hover:text-destructive rounded-lg transition-colors cursor-pointer"
+                            title="Xóa cột này"
+                            aria-label="Xóa cột này"
+                            className="w-7 h-7 inline-flex items-center justify-center hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors cursor-pointer"
                           >
                             <Trash2 size={13} />
                           </button>
@@ -923,70 +1013,79 @@ export function WorkspaceWizard() {
             </table>
           </div>
 
-          {/* Card: Thiết lập Giá trị Điền tự động & Phạm vi dữ liệu (NỘI DUNG BÊN DƯỚI BẢNG) */}
-          <div className="p-5 rounded-2xl bg-card border border-border flex flex-col gap-4 shadow-sm">
-            <div className="flex items-center justify-between border-b border-border/60 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                  <Settings2 size={16} />
-                </div>
-                <div>
-                  <h4 className="font-extrabold text-xs text-foreground">
-                    Cấu hình Giá trị Điền Tự Động & Phạm vi dữ liệu
-                  </h4>
-                  <p className="text-[11px] text-muted-foreground">
-                    Thiết lập tên Editor và trạng thái ghi đè khi thực thi cập nhật hàng loạt lên Google Sheets.
-                  </p>
-                </div>
-              </div>
-              <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold flex items-center gap-1">
-                <ShieldCheck size={12} />
-                <span>Bảo vệ an toàn 2 lớp</span>
-              </span>
+          <div className="flex items-center justify-between pt-1">
+            <button
+              type="button"
+              onClick={() => setWizardStep(2)}
+              className="h-8 px-3.5 rounded-xl border border-border text-muted-foreground hover:text-foreground text-[12px] font-medium flex items-center gap-1.5 cursor-pointer"
+            >
+              <ArrowLeft size={13.5} />
+              <span>Quay lại</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setWizardStep(4)}
+              className="btn-base btn-secondary h-8 px-4 rounded-xl text-[12px]"
+            >
+              <span>Tiếp tục: Giá trị tự động & Lưu</span>
+              <ArrowRight size={13.5} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 4: Dropdown Values & Row Scope Overview */}
+      {wizardStep === 4 && (
+        <div className="flex flex-col gap-4 max-w-2xl mx-auto w-full py-1 pb-8">
+          <div className="p-5 rounded-2xl bg-card border border-border flex flex-col gap-4 shadow-xs">
+            <div>
+              <h3 className="font-semibold text-[13.5px] text-foreground">
+                Giá trị điền tự động & Phạm vi dữ liệu
+              </h3>
+              <p className="text-[11.5px] text-muted-foreground mt-0.5">
+                Thiết lập giá trị mặc định khi cập nhật hàng loạt lên Google Sheets.
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-              {/* Editor Name */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[12px]">
               <div className="flex flex-col gap-1.5 p-3.5 rounded-xl bg-background/50 border border-border">
-                <label className="font-bold text-foreground flex items-center gap-1.5">
-                  <User size={13} className="text-primary" />
-                  <span>Tên Editor của bạn:</span>
+                <label className="font-medium text-foreground flex items-center gap-1.5">
+                  <User size={13} className="text-muted-foreground" />
+                  <span>Tên Editor</span>
                 </label>
                 <input
                   type="text"
                   value={currentUserEditor}
                   onChange={(e) => setCurrentUserEditor(e.target.value)}
                   placeholder="Vương"
-                  className="px-3 py-2 bg-card border border-border rounded-lg text-foreground font-semibold text-xs focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
+                  className="h-8 px-3 bg-card border border-border rounded-lg text-foreground font-medium text-[12px] focus:outline-none focus:border-primary"
                 />
-                <span className="text-[10px] text-muted-foreground">
-                  Khớp với dropdown Tên Edit trên Sheet (Vương, Hân, Ngân...)
+                <span className="text-[11px] text-muted-foreground">
+                  Điền vào cột Tên Edit (N)
                 </span>
               </div>
 
-              {/* Pick Completed Status */}
               <div className="flex flex-col gap-1.5 p-3.5 rounded-xl bg-background/50 border border-border">
-                <label className="font-bold text-foreground flex items-center gap-1.5">
-                  <CheckCircle2 size={13} className="text-emerald-400" />
-                  <span>Trạng thái lọc hoàn tất:</span>
+                <label className="font-medium text-foreground flex items-center gap-1.5">
+                  <CheckCircle2 size={13} className="text-muted-foreground" />
+                  <span>Trạng thái lọc</span>
                 </label>
                 <input
                   type="text"
                   value={pickCompletedStatus}
                   onChange={(e) => setPickCompletedStatus(e.target.value)}
                   placeholder="Đã lọc"
-                  className="px-3 py-2 bg-card border border-border rounded-lg text-foreground font-semibold text-xs focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
+                  className="h-8 px-3 bg-card border border-border rounded-lg text-foreground font-medium text-[12px] focus:outline-none focus:border-primary"
                 />
-                <span className="text-[10px] text-muted-foreground">
-                  Giá trị đánh dấu sau khi lọc (Đã lọc, Chưa lọc, Đã lọc 2...)
+                <span className="text-[11px] text-muted-foreground">
+                  Điền vào cột Trạng Thái Lọc (M)
                 </span>
               </div>
 
-              {/* Start Row */}
               <div className="flex flex-col gap-1.5 p-3.5 rounded-xl bg-background/50 border border-border">
-                <label className="font-bold text-foreground flex items-center gap-1.5">
-                  <Layers size={13} className="text-purple-400" />
-                  <span>Dòng bắt đầu chứa dữ liệu khách:</span>
+                <label className="font-medium text-foreground flex items-center gap-1.5">
+                  <Layers size={13} className="text-muted-foreground" />
+                  <span>Dòng dữ liệu bắt đầu</span>
                 </label>
                 <input
                   type="number"
@@ -994,156 +1093,55 @@ export function WorkspaceWizard() {
                   max={100}
                   value={startRow}
                   onChange={(e) => setStartRow(parseInt(e.target.value) || 4)}
-                  className="px-3 py-2 bg-card border border-border rounded-lg text-foreground font-semibold text-xs focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
+                  className="h-8 px-3 bg-card border border-border rounded-lg text-foreground font-medium text-[12px] focus:outline-none focus:border-primary"
                 />
-                <span className="text-[10px] text-muted-foreground">
-                  Chỉ đọc và ghi từ dòng này trở xuống (Mặc định: Dòng 4)
+                <span className="text-[11px] text-muted-foreground">
+                  Chỉ đọc & ghi từ dòng này trở xuống
                 </span>
               </div>
             </div>
 
-            {/* Security Guarantee Notice */}
-            <div className="p-3 bg-muted/30 border border-border/80 rounded-xl flex items-center gap-2.5 text-[11px] text-muted-foreground">
-              <ShieldCheck size={16} className="text-emerald-400 shrink-0" />
-              <span>
-                <b>Nguyên tắc bảo vệ dữ liệu:</b> Cột công thức (A, B, H, S...) được khóa <b>READ_ONLY</b> tuyệt đối. Hệ thống ghi vào các cột được cấu hình: <b>M (Trạng Thái Lọc)</b>, <b>N (Tên Edit)</b> và <b>O (Link Edit)</b>.
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between pt-2">
-            <button
-              onClick={() => setWizardStep(2)}
-              className="px-4 py-2 rounded-xl border border-border text-muted-foreground hover:text-foreground text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-            >
-              <ArrowLeft size={14} />
-              <span>Quay lại: Bước 2</span>
-            </button>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleSaveProfile}
-                className="px-4 py-2 rounded-xl bg-muted/60 hover:bg-muted text-foreground border border-border text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <Save size={13} />
-                <span>Lưu cấu hình</span>
-              </button>
-              <button
-                onClick={() => setWizardStep(4)}
-                className="px-5 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-md hover:opacity-95 flex items-center gap-1.5 cursor-pointer"
-              >
-                <span>Tiếp tục: Bước 4 (Tổng quan)</span>
-                <ArrowRight size={14} />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* STEP 4: Dropdown Values & Row Scope Overview */}
-      {wizardStep === 4 && (
-        <div className="flex flex-col gap-5 max-w-2xl mx-auto w-full py-2 pb-10">
-          <div className="p-6 rounded-2xl bg-card border border-border flex flex-col gap-5 shadow-sm">
-            <div>
-              <h3 className="font-extrabold text-sm text-foreground">
-                Tổng quan Cấu hình Workspace & Giá trị tự động
-              </h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Xem lại các thông số tự động điền trước khi bắt đầu sử dụng chức năng Thực thi Batch.
-              </p>
-            </div>
-
-            {/* Current Editor Value */}
-            <div className="flex flex-col gap-1.5">
-              <label className="font-bold text-xs text-foreground flex items-center gap-1.5">
-                <User size={13} className="text-primary" />
-                <span>Tên Editor của bạn (Giá trị sẽ điền vào cột Tên Edit):</span>
-              </label>
-              <input
-                type="text"
-                value={currentUserEditor}
-                onChange={(e) => setCurrentUserEditor(e.target.value)}
-                placeholder="Vương"
-                className="px-3.5 py-2 bg-background border border-border rounded-xl text-foreground text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
-              />
-              <span className="text-[11px] text-muted-foreground">
-                Khớp đúng với danh sách dropdown trên Sheet (ví dụ: Vương, Hân, Ngân...).
-              </span>
-            </div>
-
-            {/* Pick Completed Status */}
-            <div className="flex flex-col gap-1.5">
-              <label className="font-bold text-xs text-foreground flex items-center gap-1.5">
-                <CheckCircle2 size={13} className="text-emerald-400" />
-                <span>Trạng thái lọc ảnh (Giá trị sẽ điền vào cột Trạng Thái Lọc):</span>
-              </label>
-              <input
-                type="text"
-                value={pickCompletedStatus}
-                onChange={(e) => setPickCompletedStatus(e.target.value)}
-                placeholder="Đã lọc"
-                className="px-3.5 py-2 bg-background border border-border rounded-xl text-foreground text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
-              />
-              <span className="text-[11px] text-muted-foreground">
-                Giá trị trạng thái sau khi hoàn tất lọc ảnh (ví dụ: Đã lọc, Đã lọc xong).
-              </span>
-            </div>
-
-            {/* Start Row Scope */}
-            <div className="flex flex-col gap-1.5">
-              <label className="font-bold text-xs text-foreground flex items-center gap-1.5">
-                <Layers size={13} className="text-purple-400" />
-                <span>Dòng bắt đầu chứa dữ liệu khách hàng (Row Scope):</span>
-              </label>
-              <input
-                type="number"
-                value={startRow}
-                onChange={(e) => setStartRow(parseInt(e.target.value) || 4)}
-                min={2}
-                className="px-3.5 py-2 bg-background border border-border rounded-xl text-foreground text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary shadow-inner w-32"
-              />
-              <span className="text-[11px] text-muted-foreground">
-                Hệ thống chỉ được phép đọc và ghi từ dòng này trở xuống. Tuyệt đối không chạm vào dòng tiêu đề hoặc tóm tắt phía trên.
-              </span>
-            </div>
-
-            {/* Workspace Summary Box */}
-            <div className="p-4 bg-muted/30 border border-border/80 rounded-xl flex flex-col gap-2 text-xs">
-              <span className="font-bold text-foreground">Tóm tắt cấu hình:</span>
-              <div className="grid grid-cols-2 gap-2 text-[11px]">
+            <div className="p-3.5 bg-foreground/[0.03] border border-border rounded-xl flex flex-col gap-2 text-[12px]">
+              <span className="font-medium text-foreground">Tóm tắt cấu hình hiện tại:</span>
+              <div className="grid grid-cols-2 gap-2 text-[11.5px]">
                 <div>
-                  <span className="text-muted-foreground">Số cột đã ánh xạ: </span>
-                  <b className="text-primary">{fieldMappings.length} cột</b>
+                  <span className="text-muted-foreground">Tab chính: </span>
+                  <span className="font-medium text-foreground">
+                    {selectedTab?.title || activeProfile?.selectedTabTitle || "Edit 9/2026"}
+                  </span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Cột cho phép ghi: </span>
-                  <b className="text-foreground font-semibold">Tên Edit (N), Link Edit (O)</b>
+                  <span className="text-muted-foreground">Số tab hiển thị ở Batch: </span>
+                  <span className="font-medium text-foreground">{configuredTabCount || 1} tab</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Dòng tiêu đề: </span>
-                  <b className="text-foreground">Dòng {selectedHeaderRow}</b>
+                  <span className="font-medium text-foreground">Dòng {selectedHeaderRow}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Dòng dữ liệu bắt đầu: </span>
-                  <b className="text-foreground">Dòng {startRow}</b>
+                  <span className="text-muted-foreground">Dòng bắt đầu dữ liệu: </span>
+                  <span className="font-medium text-foreground">Dòng {startRow}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-2">
+          <div className="flex items-center justify-between pt-1">
             <button
+              type="button"
               onClick={() => setWizardStep(3)}
-              className="px-4 py-2 rounded-xl border border-border text-muted-foreground hover:text-foreground text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+              className="h-8 px-3.5 rounded-xl border border-border text-muted-foreground hover:text-foreground text-[12px] font-medium flex items-center gap-1.5 cursor-pointer"
             >
-              <ArrowLeft size={14} />
-              <span>Quay lại: Bước 3</span>
+              <ArrowLeft size={13.5} />
+              <span>Quay lại</span>
             </button>
             <button
+              type="button"
               onClick={handleSaveProfile}
-              className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-extrabold shadow-md hover:opacity-95 flex items-center gap-2 cursor-pointer"
+              className="btn-base btn-primary h-9 px-5 rounded-xl text-[12px]"
             >
-              <Save size={14} />
-              <span>Lưu Workspace & Bắt đầu sử dụng</span>
+              <Save size={14} strokeWidth={1.75} />
+              <span>Lưu cấu hình Workspace</span>
             </button>
           </div>
         </div>

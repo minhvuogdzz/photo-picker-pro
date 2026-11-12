@@ -82,12 +82,9 @@ export function BrandLogo({
 
   let src = "";
   if (variant === "logo" || variant === "icon") {
-    // Squircle app icon: Dark squircle for dark mode, Light squircle for light mode
-    src = isDark
-      ? "/brand/dh_app_icon_dark_squircle.png"
-      : "/brand/dh_app_icon_light_squircle.png";
+    // Unified clean light-theme squircle app icon across all modes
+    src = "/brand/dh_app_icon_light_squircle.png";
   } else if (variant === "transparent-icon") {
-    // Transparent icon
     src = isDark
       ? "/brand/dh_app_icon_white_transparent.png"
       : "/brand/dh_app_icon_transparent.png";

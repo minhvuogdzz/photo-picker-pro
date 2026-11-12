@@ -70,8 +70,6 @@ extern "C" {
 }
 
 #[cfg(target_os = "macos")]
-const DOCK_ICON_DARK_PNG: &[u8] = include_bytes!("../../../public/brand/dh_app_icon_dock_dark.png");
-#[cfg(target_os = "macos")]
 const DOCK_ICON_LIGHT_PNG: &[u8] = include_bytes!("../../../public/brand/dh_app_icon_dock_light.png");
 
 #[tauri::command]
@@ -95,11 +93,7 @@ pub fn update_system_theme_icon(_theme: String) -> Result<(), String> {
         } else {
             _theme.to_lowercase() == "dark"
         };
-        let bytes = if is_dark {
-            DOCK_ICON_DARK_PNG
-        } else {
-            DOCK_ICON_LIGHT_PNG
-        };
+        let bytes = DOCK_ICON_LIGHT_PNG;
 
         unsafe {
             macos_set_dock_icon_png(bytes.as_ptr(), bytes.len());

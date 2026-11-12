@@ -39,6 +39,12 @@ interface ContactSheetState {
   deleteProfile: (id: string) => void;
   switchActiveTab: (tabTitle: string) => void;
   saveTabConfiguration: (tabConfig: TabConfiguration) => void;
+  setTabConfigurations: (tabConfigs: Record<string, TabConfiguration>) => void;
+  removeTabConfiguration: (tabTitle: string) => void;
+  keepOnlyTabConfigurations: (tabTitlesToKeep: string[]) => void;
+  previousTabConfigurationsSnapshot: Record<string, TabConfiguration> | null;
+  setPreviousTabConfigurationsSnapshot: (snapshot: Record<string, TabConfiguration> | null) => void;
+  undoApplyAllTabs: () => Record<string, TabConfiguration>;
   resetToStandard19Profile: () => void;
 
   // Persisted Sheet URL & Drive Config
@@ -436,6 +442,123 @@ export const useContactSheetStore = create<ContactSheetState>()(
             profiles: state.profiles.map((p) => (p.id === updated.id ? updated : p)),
           };
         }),
+
+      setTabConfigurations: (tabConfigs) =>
+        set((state) => {
+          const currentProfile = state.activeProfile || state.profiles[0];
+          if (!currentProfile) return state;
+          const updated: WorkspaceProfile = {
+            ...currentProfile,
+            tabConfigurations: tabConfigs,
+            updatedAt: new Date().toISOString(),
+          };
+          return {
+            activeProfile: updated,
+            profiles: state.profiles.map((p) => (p.id === updated.id ? updated : p)),
+          };
+        }),
+
+      removeTabConfiguration: (tabTitle) =>
+        set((state) => {
+          const currentProfile = state.activeProfile || state.profiles[0];
+          if (!currentProfile) return state;
+          const existing = { ...(currentProfile.tabConfigurations || {}) };
+          delete existing[tabTitle];
+          const remainingKeys = Object.keys(existing);
+          const nextSelectedTab =
+            currentProfile.selectedTabTitle === tabTitle && remainingKeys.length > 0
+              ? remainingKeys[0]
+              : currentProfile.selectedTabTitle;
+          const updated: WorkspaceProfile = {
+            ...currentProfile,
+            selectedTabTitle: nextSelectedTab,
+            tabConfigurations: existing,
+            updatedAt: new Date().toISOString(),
+          };
+          return {
+            activeProfile: updated,
+            profiles: state.profiles.map((p) => (p.id === updated.id ? updated : p)),
+          };
+        }),
+
+      keepOnlyTabConfigurations: (tabTitlesToKeep) =>
+        set((state) => {
+          const currentProfile = state.activeProfile || state.profiles[0];
+          if (!currentProfile) return state;
+          const existing = currentProfile.tabConfigurations || {};
+          const filtered: Record<string, TabConfiguration> = {};
+          for (const t of tabTitlesToKeep) {
+            if (existing[t]) {
+              filtered[t] = existing[t];
+            } else if (t === currentProfile.selectedTabTitle) {
+              filtered[t] = {
+                sheetId: currentProfile.selectedTabId,
+                tabTitle: currentProfile.selectedTabTitle,
+                headerRow: currentProfile.headerRow,
+                fieldMappings: currentProfile.fieldMappings,
+                rowScope: currentProfile.rowScope,
+                schemaFingerprint: currentProfile.schemaFingerprint,
+                updatedAt: new Date().toISOString(),
+              };
+            }
+          }
+          const updated: WorkspaceProfile = {
+            ...currentProfile,
+            tabConfigurations: filtered,
+            updatedAt: new Date().toISOString(),
+          };
+          return {
+            activeProfile: updated,
+            profiles: state.profiles.map((p) => (p.id === updated.id ? updated : p)),
+          };
+        }),
+
+      previousTabConfigurationsSnapshot: null,
+      setPreviousTabConfigurationsSnapshot: (previousTabConfigurationsSnapshot) =>
+        set({ previousTabConfigurationsSnapshot }),
+
+      undoApplyAllTabs: () => {
+        const state = get();
+        const currentProfile = state.activeProfile || state.profiles[0];
+        if (!currentProfile) return {};
+        const currentConfigs = currentProfile.tabConfigurations || {};
+        const currentCount = Object.keys(currentConfigs).length;
+        const snapshot = state.previousTabConfigurationsSnapshot;
+
+        let restored: Record<string, TabConfiguration> = {};
+        if (snapshot && Object.keys(snapshot).length > 0 && Object.keys(snapshot).length < currentCount) {
+          restored = { ...snapshot };
+        } else {
+          const primaryTab = currentProfile.selectedTabTitle || Object.keys(currentConfigs)[0] || "Edit 9/2026";
+          if (currentConfigs[primaryTab]) {
+            restored = { [primaryTab]: currentConfigs[primaryTab] };
+          } else {
+            restored = {
+              [primaryTab]: {
+                sheetId: currentProfile.selectedTabId,
+                tabTitle: primaryTab,
+                headerRow: currentProfile.headerRow,
+                fieldMappings: currentProfile.fieldMappings,
+                rowScope: currentProfile.rowScope,
+                schemaFingerprint: currentProfile.schemaFingerprint,
+                updatedAt: new Date().toISOString(),
+              },
+            };
+          }
+        }
+
+        const updated: WorkspaceProfile = {
+          ...currentProfile,
+          tabConfigurations: restored,
+          updatedAt: new Date().toISOString(),
+        };
+        set({
+          activeProfile: updated,
+          profiles: state.profiles.map((p) => (p.id === updated.id ? updated : p)),
+          previousTabConfigurationsSnapshot: null,
+        });
+        return restored;
+      },
 
       resetToStandard19Profile: () =>
         set((state) => {
