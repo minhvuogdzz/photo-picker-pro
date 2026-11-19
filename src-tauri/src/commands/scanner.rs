@@ -1,5 +1,5 @@
 use std::path::Path;
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -70,7 +70,9 @@ fn extract_number_from_filename(filename: &str) -> String {
     }
 }
 
-/// Scans multiple folders for image files using multi-threaded traversal.
+/// Scans multiple folders for image files using fast single-pass directory traversal.
+/// Avoids per-file `stat()` / `metadata()` calls during scanning so Google Drive (CloudStorage),
+/// network drives, and external disks never stall or deadlock on "indexing...".
 /// Emits progress events back to the frontend via Tauri's event system.
 #[tauri::command]
 pub async fn scan_folders(
@@ -79,156 +81,137 @@ pub async fn scan_folders(
     options: super::types::ScanOptions,
     cancelled: tauri::State<'_, Arc<AtomicBool>>,
 ) -> Result<ScanResult, String> {
-    let start = Instant::now();
     cancelled.store(false, Ordering::SeqCst);
     let cancelled_flag = cancelled.inner().clone();
 
-    // First pass: count total files for progress calculation
-    let total_files = Arc::new(AtomicUsize::new(0));
-    let processed_files = Arc::new(AtomicUsize::new(0));
-    let total_folders = Arc::new(AtomicUsize::new(0));
+    tauri::async_runtime::spawn_blocking(move || {
+        let start = Instant::now();
+        let mut total_folders: usize = 0;
+        let mut photos: Vec<PhotoFile> = Vec::with_capacity(512);
+        let mut last_emit = Instant::now();
 
-    // Collect all file entries first
-    let mut all_entries: Vec<walkdir::DirEntry> = Vec::new();
+        let _ = app.emit(
+            "scan-progress",
+            ProgressEvent {
+                current: 0,
+                total: 0,
+                percentage: 0.0,
+                message: "Đang đọc danh sách file ảnh...".to_string(),
+                eta_seconds: None,
+                speed: None,
+            },
+        );
 
-    for path in &paths {
-        if cancelled_flag.load(Ordering::SeqCst) {
-            return Ok(ScanResult {
-                total_files: 0,
-                total_folders: 0,
-                files: Vec::new(),
-                elapsed_ms: start.elapsed().as_millis() as u64,
-            });
-        }
+        for path in &paths {
+            if cancelled_flag.load(Ordering::Relaxed) {
+                return Ok(ScanResult {
+                    total_files: 0,
+                    total_folders: 0,
+                    files: Vec::new(),
+                    elapsed_ms: start.elapsed().as_millis() as u64,
+                });
+            }
 
-        let mut walker = WalkDir::new(path).into_iter();
-        
-        while let Some(entry_result) = walker.next() {
-            if let Ok(entry) = entry_result {
-                if entry.file_type().is_dir() {
-                    // If not recursive and depth > 0, skip this directory
+            let mut walker = WalkDir::new(path).into_iter();
+
+            while let Some(entry_result) = walker.next() {
+                if cancelled_flag.load(Ordering::Relaxed) {
+                    return Ok(ScanResult {
+                        total_files: 0,
+                        total_folders: 0,
+                        files: Vec::new(),
+                        elapsed_ms: start.elapsed().as_millis() as u64,
+                    });
+                }
+
+                let Ok(entry) = entry_result else {
+                    continue;
+                };
+
+                let file_type = entry.file_type();
+                if file_type.is_dir() {
                     if !options.recursive && entry.depth() > 0 {
                         walker.skip_current_dir();
                         continue;
                     }
-                    total_folders.fetch_add(1, Ordering::Relaxed);
-                } else if entry.file_type().is_file() {
-                    let path = entry.path();
-                    if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
-                        let ext_lower = ext.to_lowercase();
-                        if accepts_extension(&ext_lower, options.filter_raw, options.filter_jpg) {
-                            all_entries.push(entry);
-                        }
+                    total_folders += 1;
+                } else if file_type.is_file() {
+                    let entry_path = entry.path();
+                    let Some(ext) = entry_path.extension().and_then(|e| e.to_str()) else {
+                        continue;
+                    };
+                    let ext_lower = ext.to_ascii_lowercase();
+                    if !accepts_extension(&ext_lower, options.filter_raw, options.filter_jpg) {
+                        continue;
+                    }
+
+                    let filename = entry_path
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("")
+                        .to_string();
+                    let full_path = entry_path.to_string_lossy().to_string();
+                    let folder = entry_path
+                        .parent()
+                        .map(|p| p.to_string_lossy().to_string())
+                        .unwrap_or_default();
+                    let normalized_number = extract_number_from_filename(&filename);
+
+                    photos.push(PhotoFile {
+                        full_path,
+                        filename,
+                        extension: ext_lower,
+                        folder,
+                        // Skip per-file stat() during scan to avoid CloudStorage/FileProvider stalls
+                        size: 0,
+                        normalized_number,
+                    });
+
+                    let count = photos.len();
+                    if count % 150 == 0 && last_emit.elapsed().as_millis() >= 45 {
+                        last_emit = Instant::now();
+                        let elapsed_secs = start.elapsed().as_secs_f64().max(0.001);
+                        let speed = count as f64 / elapsed_secs;
+                        let _ = app.emit(
+                            "scan-progress",
+                            ProgressEvent {
+                                current: count,
+                                total: count,
+                                percentage: 50.0,
+                                message: format!("Đã quét {} file ảnh...", count),
+                                eta_seconds: None,
+                                speed: Some(format!("{:.0} files/s", speed)),
+                            },
+                        );
                     }
                 }
             }
         }
-    }
 
-    let total = all_entries.len();
-    total_files.store(total, Ordering::SeqCst);
+        let total = photos.len();
+        let elapsed = start.elapsed().as_millis() as u64;
 
-    let _ = app.emit(
-        "scan-progress",
-        ProgressEvent {
-            current: 0,
-            total,
-            percentage: 0.0,
-            message: format!("Found {} image files, indexing...", total),
-            eta_seconds: None,
-            speed: None,
-        },
-    );
+        let _ = app.emit(
+            "scan-progress",
+            ProgressEvent {
+                current: total,
+                total,
+                percentage: 100.0,
+                message: format!("Hoàn tất quét: {} file trong {}ms", total, elapsed),
+                eta_seconds: Some(0.0),
+                speed: None,
+            },
+        );
 
-    // Process files in parallel using rayon
-    let app_clone = app.clone();
-    let processed_clone = processed_files.clone();
-    let cancelled_clone = cancelled_flag.clone();
-    let start_clone = start;
-
-    let photos: Vec<PhotoFile> = all_entries
-        .par_iter()
-        .filter_map(|entry| {
-            if cancelled_clone.load(Ordering::SeqCst) {
-                return None;
-            }
-
-            let path = entry.path();
-            let full_path = path.to_string_lossy().to_string();
-            let filename = path
-                .file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or("")
-                .to_string();
-            let extension = path
-                .extension()
-                .and_then(|e| e.to_str())
-                .unwrap_or("")
-                .to_lowercase();
-            let folder = path
-                .parent()
-                .map(|p| p.to_string_lossy().to_string())
-                .unwrap_or_default();
-            let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
-            let normalized_number = extract_number_from_filename(&filename);
-
-            let current = processed_clone.fetch_add(1, Ordering::SeqCst) + 1;
-
-            // Emit progress every 500 files to avoid flooding
-            if current % 500 == 0 || current == total {
-                let elapsed = start_clone.elapsed().as_secs_f64();
-                let speed = current as f64 / elapsed;
-                let remaining = total.saturating_sub(current) as f64 / speed;
-
-                let _ = app_clone.emit(
-                    "scan-progress",
-                    ProgressEvent {
-                        current,
-                        total,
-                        percentage: (current as f64 / total as f64) * 100.0,
-                        message: format!("Indexing: {}/{}", current, total),
-                        eta_seconds: Some(remaining),
-                        speed: Some(format!("{:.0} files/s", speed)),
-                    },
-                );
-            }
-
-            Some(PhotoFile {
-                full_path,
-                filename,
-                extension,
-                folder,
-                size,
-                normalized_number,
-            })
+        Ok(ScanResult {
+            total_files: total,
+            total_folders,
+            files: photos,
+            elapsed_ms: elapsed,
         })
-        .collect();
-
-    let elapsed = start.elapsed().as_millis() as u64;
-    let folder_count = total_folders.load(Ordering::SeqCst);
-
-    let _ = app.emit(
-        "scan-progress",
-        ProgressEvent {
-            current: total,
-            total,
-            percentage: 100.0,
-            message: format!(
-                "Scan complete: {} files in {}ms",
-                photos.len(),
-                elapsed
-            ),
-            eta_seconds: Some(0.0),
-            speed: None,
-        },
-    );
-
-    Ok(ScanResult {
-        total_files: photos.len(),
-        total_folders: folder_count,
-        files: photos,
-        elapsed_ms: elapsed,
     })
+    .await
+    .map_err(|e| format!("Scan task failed: {}", e))?
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -342,7 +325,13 @@ fn get_immediate_subdirs(dir: &Path) -> Vec<std::path::PathBuf> {
 /// into a flat list of individual Customer Folder items with 2-level parallel traversal.
 /// Ultra-fast: avoids deep file counting to prevent hanging on Google Drive / network drives.
 #[tauri::command]
-pub fn expand_batch_customer_folders(paths: Vec<String>) -> Result<Vec<CustomerFolderItem>, String> {
+pub async fn expand_batch_customer_folders(paths: Vec<String>) -> Result<Vec<CustomerFolderItem>, String> {
+    tauri::async_runtime::spawn_blocking(move || expand_batch_customer_folders_sync(paths))
+        .await
+        .map_err(|e| format!("Expand folders task failed: {}", e))?
+}
+
+pub fn expand_batch_customer_folders_sync(paths: Vec<String>) -> Result<Vec<CustomerFolderItem>, String> {
     use std::collections::HashSet;
     let mut results: Vec<CustomerFolderItem> = Vec::new();
     let mut seen_paths: HashSet<String> = HashSet::new();
@@ -530,7 +519,7 @@ mod tests {
         File::create(cust3.join("IMG_0003.ARW")).unwrap();
 
         let month_path = temp_dir.join("Tháng 9").to_string_lossy().to_string();
-        let items = expand_batch_customer_folders(vec![month_path]).unwrap();
+        let items = expand_batch_customer_folders_sync(vec![month_path]).unwrap();
 
         assert_eq!(items.len(), 3);
         let names: Vec<String> = items.into_iter().map(|it| it.folder_name).collect();

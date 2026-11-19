@@ -94,6 +94,8 @@ interface AppState {
   // Scan results
   readonly scannedFiles: PhotoFile[];
   setScannedFiles: (files: PhotoFile[]) => void;
+  readonly lastScanSignature: string | null;
+  setLastScanSignature: (sig: string | null) => void;
 
   // Match results
   readonly matchResult: MatchResult | null;
@@ -232,6 +234,7 @@ const initialState = {
   rawCodeInput: "",
   parsedCodes: [] as CustomerCode[],
   scannedFiles: [] as PhotoFile[],
+  lastScanSignature: null as string | null,
   matchResult: null as MatchResult | null,
   copyResult: null as CopyResult | null,
   outputFolder: "",
@@ -369,10 +372,20 @@ export const useAppStore = create<AppState>((set) => ({
       };
 
       if (state.pickerMode === "single") {
+        const isDifferent = state.selectedInputFolders[0] !== folder;
         return {
           inputFolders: [folder],
           selectedInputFolders: [folder],
           batchCustomerFolders: [newItem],
+          ...(isDifferent
+            ? {
+                scannedFiles: [],
+                lastScanSignature: null,
+                matchResult: null,
+                copyResult: null,
+                phase: "idle" as AppPhase,
+              }
+            : {}),
         };
       } else {
         if (state.inputFolders.includes(folder)) return state;
@@ -436,12 +449,23 @@ export const useAppStore = create<AppState>((set) => ({
     }),
 
   selectSingleInputFolder: (folder) =>
-    set({
-      selectedInputFolders: [folder],
+    set((state) => {
+      if (state.selectedInputFolders.length === 1 && state.selectedInputFolders[0] === folder) {
+        return state;
+      }
+      return {
+        selectedInputFolders: [folder],
+        scannedFiles: [],
+        lastScanSignature: null,
+        matchResult: null,
+        copyResult: null,
+        phase: "idle",
+      };
     }),
 
   removeInputFolder: (folder) =>
     set((state) => {
+      const wasSelected = state.selectedInputFolders.includes(folder);
       const nextInputFolders = state.inputFolders.filter((f) => f !== folder);
       const nextBatchFolders = state.batchCustomerFolders.filter((f) => f.folder_path !== folder);
       let nextSelected = state.selectedInputFolders.filter((f) => f !== folder);
@@ -452,6 +476,15 @@ export const useAppStore = create<AppState>((set) => ({
         inputFolders: nextInputFolders,
         batchCustomerFolders: nextBatchFolders,
         selectedInputFolders: nextSelected,
+        ...(wasSelected
+          ? {
+              scannedFiles: [],
+              lastScanSignature: null,
+              matchResult: null,
+              copyResult: null,
+              phase: "idle" as AppPhase,
+            }
+          : {}),
       };
     }),
 
@@ -460,6 +493,11 @@ export const useAppStore = create<AppState>((set) => ({
       inputFolders: [],
       selectedInputFolders: [],
       batchCustomerFolders: [],
+      scannedFiles: [],
+      lastScanSignature: null,
+      matchResult: null,
+      copyResult: null,
+      phase: "idle",
     }),
 
   toggleInputFolderSelection: (folder) =>
@@ -481,6 +519,7 @@ export const useAppStore = create<AppState>((set) => ({
   setRawCodeInput: (input) => set({ rawCodeInput: input }),
   setParsedCodes: (codes) => set({ parsedCodes: codes }),
   setScannedFiles: (files) => set({ scannedFiles: files }),
+  setLastScanSignature: (sig) => set({ lastScanSignature: sig }),
   setMatchResult: (result) => set({ matchResult: result }),
   setCopyResult: (result) => set({ copyResult: result }),
   setOutputFolder: (folder) => set({ outputFolder: folder }),
@@ -488,7 +527,11 @@ export const useAppStore = create<AppState>((set) => ({
   setOutputMode: (mode) => set({ outputMode: mode }),
   setPhase: (phase) => set({ phase: phase }),
   setProgress: (progress) => set({ progress: progress }),
-  setScanOptions: (options) => set((state) => ({ scanOptions: { ...state.scanOptions, ...options } })),
+  setScanOptions: (options) =>
+    set((state) => ({
+      scanOptions: { ...state.scanOptions, ...options },
+      lastScanSignature: null,
+    })),
   setMatchMode: (mode) => set({ matchMode: mode }),
   setRegexPattern: (pattern) => set({ regexPattern: pattern }),
   setSheetFilterContext: (ctx) => set({ sheetFilterContext: ctx }),

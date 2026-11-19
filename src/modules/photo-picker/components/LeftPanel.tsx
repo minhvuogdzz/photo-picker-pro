@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { getFolderName } from "@/core/lib/utils";
 import { batchFolderService } from "../services/batchFolderService";
+import { autoFindService } from "../services/autoFindService";
 import { FolderPreviewModal } from "./FolderPreviewModal";
 import { FoundPhotosPreviewModal } from "./FoundPhotosPreviewModal";
 
@@ -76,6 +77,15 @@ export function LeftPanel() {
   const handleOpenPreview = (folder: string) => {
     setPreviewFolder(folder);
     setIsPreviewOpen(true);
+  };
+
+  const handleSelectCustomer = (folder: string) => {
+    const currentActive = useAppStore.getState().selectedInputFolders[0];
+    selectSingleInputFolder(folder);
+    if (currentActive !== folder && useAppStore.getState().autoFindEnabled) {
+      const folderName = getFolderName(folder);
+      void autoFindService.fetchAndApplyCodesForCustomer(folder, folderName);
+    }
   };
 
   useEffect(() => {
@@ -548,7 +558,7 @@ export function LeftPanel() {
                   data-customer-folder={folder}
                   data-folder-name={folderName}
                   data-active-customer={isSelected ? "true" : "false"}
-                  onClick={() => selectSingleInputFolder(folder)}
+                  onClick={() => handleSelectCustomer(folder)}
                   className={`flex items-center gap-2 p-2 rounded-lg border transition-all cursor-pointer group select-none ${
                     isSelected
                       ? "bg-primary/10 border-primary/50 shadow-2xs"
@@ -559,7 +569,7 @@ export function LeftPanel() {
                   <input
                     type="checkbox"
                     checked={isSelected}
-                    onChange={() => selectSingleInputFolder(folder)}
+                    onChange={() => handleSelectCustomer(folder)}
                     onClick={(e) => e.stopPropagation()}
                     className="rounded border-border text-primary focus:ring-primary/40 cursor-pointer w-3.5 h-3.5 shrink-0"
                   />

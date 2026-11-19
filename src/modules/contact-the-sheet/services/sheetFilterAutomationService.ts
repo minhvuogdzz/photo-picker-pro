@@ -1,4 +1,4 @@
-import { useAppStore } from "../../../core/stores/useAppStore.ts";
+import { useAppStore, type SheetFilterContext } from "../../../core/stores/useAppStore.ts";
 import { useAuthStore } from "../../../core/stores/useAuthStore.ts";
 import { useContactSheetStore } from "../stores/useContactSheetStore.ts";
 import { googleCredentialManager } from "./googleCredentialBridge.ts";
@@ -15,7 +15,8 @@ export class SheetFilterAutomationService {
    */
   public async updateStatusOnFilterComplete(
     inputFolders: string[],
-    copyResult?: CopyResult | null
+    copyResult?: CopyResult | null,
+    explicitContext?: SheetFilterContext | null
   ): Promise<{ success: boolean; message: string }> {
     // If copyResult is provided and no files were copied or processed, skip update
     if (copyResult && copyResult.success_count === 0 && copyResult.skipped_count === 0) {
@@ -23,7 +24,8 @@ export class SheetFilterAutomationService {
       return { success: false, message: "Không có file nào được chép thành công." };
     }
 
-    const { sheetFilterContext, setSheetUpdateStatus } = useAppStore.getState();
+    const { sheetFilterContext: currentContext, setSheetUpdateStatus } = useAppStore.getState();
+    const sheetFilterContext = explicitContext !== undefined ? explicitContext : currentContext;
     const { activeProfile, profiles } = useContactSheetStore.getState();
 
     const targetProfile =

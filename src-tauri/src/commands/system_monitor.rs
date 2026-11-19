@@ -48,6 +48,7 @@ pub struct SystemPerformanceReport {
 pub struct SystemMonitorState {
     pub sys: Mutex<System>,
     pub current_pid: Pid,
+    pub cached_disks: Mutex<Option<(std::time::Instant, Vec<DiskStorageItem>)>>,
 }
 
 impl SystemMonitorState {
@@ -66,6 +67,7 @@ impl SystemMonitorState {
         Self {
             sys: Mutex::new(sys),
             current_pid,
+            cached_disks: Mutex::new(None),
         }
     }
 }
@@ -337,59 +339,90 @@ pub fn collect_storage_disks() -> Vec<DiskStorageItem> {
 }
 
 #[tauri::command]
-pub fn get_system_performance_metrics(
-    state: tauri::State<SystemMonitorState>,
+pub async fn get_system_performance_metrics(
+    state: tauri::State<'_, SystemMonitorState>,
 ) -> Result<SystemPerformanceReport, String> {
-    let mut sys = state.sys.lock().map_err(|e| format!("Lock error: {}", e))?;
+    let (app_cpu, app_mem, total_mem, used_mem, avail_mem, mem_usage_pct, sys_cpu, pressure_status, pressure_desc) = {
+        let mut sys = state.sys.lock().map_err(|e| format!("Lock error: {}", e))?;
 
-    // Refresh system CPU and Memory
-    sys.refresh_cpu_specifics(CpuRefreshKind::nothing().with_cpu_usage());
-    sys.refresh_memory();
+        // Refresh system CPU and Memory
+        sys.refresh_cpu_specifics(CpuRefreshKind::nothing().with_cpu_usage());
+        sys.refresh_memory();
 
-    // Refresh current process specifics
-    sys.refresh_processes_specifics(
-        ProcessesToUpdate::Some(&[state.current_pid]),
-        true,
-        ProcessRefreshKind::nothing().with_cpu().with_memory(),
-    );
+        // Refresh current process specifics
+        sys.refresh_processes_specifics(
+            ProcessesToUpdate::Some(&[state.current_pid]),
+            true,
+            ProcessRefreshKind::nothing().with_cpu().with_memory(),
+        );
 
-    let (app_cpu, app_mem) = if let Some(proc) = sys.process(state.current_pid) {
-        (proc.cpu_usage(), proc.memory())
-    } else {
-        (0.0, 0)
+        let (app_cpu, app_mem) = if let Some(proc) = sys.process(state.current_pid) {
+            (proc.cpu_usage(), proc.memory())
+        } else {
+            (0.0, 0)
+        };
+
+        let total_mem = sys.total_memory();
+        let used_mem = sys.used_memory();
+        let avail_mem = sys.available_memory();
+        let mem_usage_pct = if total_mem > 0 {
+            ((used_mem as f64 / total_mem as f64) * 100.0) as f32
+        } else {
+            0.0
+        };
+
+        let sys_cpu = sys.global_cpu_usage();
+
+        #[cfg(target_os = "macos")]
+        let (pressure_status, pressure_desc) = detect_memory_pressure();
+
+        #[cfg(target_os = "windows")]
+        let (pressure_status, pressure_desc) = detect_memory_pressure(
+            total_mem,
+            avail_mem,
+            sys.total_swap(),
+            sys.used_swap(),
+        );
+
+        #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+        let (pressure_status, pressure_desc) = detect_memory_pressure(
+            total_mem,
+            avail_mem,
+            sys.total_swap(),
+            sys.used_swap(),
+        );
+
+        (app_cpu, app_mem, total_mem, used_mem, avail_mem, mem_usage_pct, sys_cpu, pressure_status, pressure_desc)
     };
 
-    let total_mem = sys.total_memory();
-    let used_mem = sys.used_memory();
-    let avail_mem = sys.available_memory();
-    let mem_usage_pct = if total_mem > 0 {
-        ((used_mem as f64 / total_mem as f64) * 100.0) as f32
-    } else {
-        0.0
+    // Cache disk list for 30s so frequent metric polling doesn't hammer DiskArbitration / statfs
+    // while Photo Picker is scanning or copying on CloudStorage / external drives.
+    let storage = {
+        let cached = state
+            .cached_disks
+            .lock()
+            .ok()
+            .and_then(|guard| {
+                guard.as_ref().and_then(|(ts, items)| {
+                    if ts.elapsed().as_secs() < 30 {
+                        Some(items.clone())
+                    } else {
+                        None
+                    }
+                })
+            });
+
+        if let Some(items) = cached {
+            items
+        } else {
+            let fresh = collect_storage_disks();
+            if let Ok(mut guard) = state.cached_disks.lock() {
+                *guard = Some((std::time::Instant::now(), fresh.clone()));
+            }
+            fresh
+        }
     };
 
-    let sys_cpu = sys.global_cpu_usage();
-
-    #[cfg(target_os = "macos")]
-    let (pressure_status, pressure_desc) = detect_memory_pressure();
-
-    #[cfg(target_os = "windows")]
-    let (pressure_status, pressure_desc) = detect_memory_pressure(
-        total_mem,
-        avail_mem,
-        sys.total_swap(),
-        sys.used_swap(),
-    );
-
-    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-    let (pressure_status, pressure_desc) = detect_memory_pressure(
-        total_mem,
-        avail_mem,
-        sys.total_swap(),
-        sys.used_swap(),
-    );
-
-    let storage = collect_storage_disks();
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()

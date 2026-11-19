@@ -15,10 +15,35 @@ export interface VersionReleaseNote {
 
 export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
   {
+    version: "v3.4.1",
+    date: "2026-11-19",
+    title: "Bản vá tối ưu hiệu năng Lọc ảnh Pro — Xử lý triệt để lỗi treo khi quét và tăng tốc chép file",
+    isCurrent: true,
+    sections: [
+      {
+        title: "Lọc ảnh Pro — Sửa lỗi treo Indexing & Khớp mã tức thì khi chỉnh sửa",
+        type: "fix",
+        items: [
+          "Loại bỏ hoàn toàn bước gọi stat()/metadata() đa luồng lên từng file khi quét thư mục, khắc phục triệt để lỗi đơ ở 0.0% (Found ... image files, indexing...) trên Google Drive (CloudStorage) và ổ cứng ngoài.",
+          "Lưu bộ nhớ đệm phiên quét thông minh trong RAM: khi sửa mã trực tiếp trong ô nhập, ứng dụng tự động đối chiếu lại ngay lập tức (< 1ms) hoặc phản hồi tức thì khi bấm Quét file mà không phải quét lại ổ đĩa.",
+          "Khắc phục lỗi độ trễ debounce làm sót mã vừa chỉnh sửa khi sửa mã xong và bấm Quét file ngay.",
+        ],
+      },
+      {
+        title: "Tăng tốc Lọc & Chép file đa luồng (Fast Copy Engine)",
+        type: "improvement",
+        items: [
+          "Nâng cấp bộ chép file sang kiến trúc đa luồng 4 luồng song song kết hợp cơ chế nhân bản tức thì clonefile (APFS Copy-on-Write) trên macOS, tăng tốc độ lọc gấp 3–4 lần.",
+          "Khóa ngữ cảnh dòng khách hàng vừa lọc xong trước khi Auto Find chuyển sang khách kế tiếp để cập nhật trạng thái \"Đã lọc\" chính xác trên Google Sheet.",
+          "Tắt tiến trình ngầm quét ổ đĩa mỗi 1.5 giây khi Tray Popover đang ẩn, loại bỏ hoàn toàn hiện tượng tranh chấp I/O làm tốc độ lọc lúc nhanh lúc chậm.",
+        ],
+      },
+    ],
+  },
+  {
     version: "v3.4.0",
     date: "2026-11-12",
     title: "Tái thiết giao diện Contact the Sheet & Bộ nhận diện Logo Camera Light mới",
-    isCurrent: true,
     sections: [
       {
         title: "Contact the Sheet — Quản lý Tab thông minh & Tái thiết giao diện",

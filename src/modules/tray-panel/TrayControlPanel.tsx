@@ -169,13 +169,14 @@ export function TrayControlPanel() {
     return () => window.removeEventListener("blur", handleBlur);
   }, []);
 
-  // Đăng ký nhận chỉ số hiệu năng thời gian thực
+  // Đăng ký nhận chỉ số hiệu năng thời gian thực (chỉ poll khi popover đang hiển thị)
   useEffect(() => {
+    if (!isOpen) return;
     const unsubscribe = systemPerformanceService.subscribe((report) => {
       setMetrics(report);
     });
     return () => unsubscribe();
-  }, []);
+  }, [isOpen]);
 
   // Đăng ký nhận kết quả quét khách hàng tới hạn
   useEffect(() => {

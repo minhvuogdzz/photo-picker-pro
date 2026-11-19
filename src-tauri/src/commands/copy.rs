@@ -1,9 +1,11 @@
+use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
+use rayon::prelude::*;
 use tauri::{AppHandle, Emitter};
 
 use super::types::{
@@ -11,10 +13,32 @@ use super::types::{
     MatchStatus, MatchedPhoto, ProgressEvent,
 };
 
+/// Fast file copy that attempts macOS APFS copy-on-write (`clonefile`) first
+/// for instant 0-byte-copy same-volume operations, falling back to `std::fs::copy`.
+fn fast_copy_file(src: &str, dest: &Path) -> std::io::Result<()> {
+    #[cfg(target_os = "macos")]
+    {
+        use std::ffi::CString;
+        use std::os::unix::ffi::OsStrExt;
+        if let (Ok(c_src), Ok(c_dest)) = (
+            CString::new(src.as_bytes()),
+            CString::new(dest.as_os_str().as_bytes()),
+        ) {
+            let ret = unsafe { libc::clonefile(c_src.as_ptr(), c_dest.as_ptr(), 0) };
+            if ret == 0 {
+                return Ok(());
+            }
+        }
+    }
+    fs::copy(src, dest).map(|_| ())
+}
+
 /// Copies or moves matched photos to the output folder.
 ///
 /// Supports multiple operations (Copy, Move, HardLink, SymbolicLink),
 /// duplicate policies, and folder structure modes (Flat, Preserve).
+/// Runs off the main async runtime thread and uses bounded parallel I/O
+/// to avoid stalling on CloudStorage (Google Drive) or large RAW batches.
 #[tauri::command]
 pub async fn copy_files(
     app: AppHandle,
@@ -24,147 +48,215 @@ pub async fn copy_files(
 ) -> Result<CopyResult, String> {
     cancelled.store(false, Ordering::SeqCst);
     let cancelled_flag = cancelled.inner().clone();
-    let start = Instant::now();
 
-    // Create output directory
-    fs::create_dir_all(&options.output_folder)
-        .map_err(|e| format!("Failed to create output folder: {}", e))?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let start = Instant::now();
 
-    // Collect files to process based on duplicate policy
-    let mut tasks: Vec<(String, PathBuf)> = Vec::new();
-
-    for matched in &matches {
-        if matched.status == MatchStatus::Missing {
-            continue;
+        if !options.output_folder.is_empty() {
+            fs::create_dir_all(&options.output_folder)
+                .map_err(|e| format!("Failed to create output folder: {}", e))?;
         }
 
-        let files_to_copy = match options.duplicate_policy {
-            DuplicatePolicy::CopyFirst => {
-                matched.photo.as_ref().map(|p| vec![p.clone()]).unwrap_or_default()
-            }
-            DuplicatePolicy::CopyAll => matched.all_matches.clone(),
-            DuplicatePolicy::RenameAutomatically => matched.all_matches.clone(),
-            DuplicatePolicy::Skip => {
-                if matched.status == MatchStatus::Duplicate {
-                    continue;
-                }
-                matched.photo.as_ref().map(|p| vec![p.clone()]).unwrap_or_default()
-            }
-        };
+        // Collect files to process based on duplicate policy
+        let mut tasks: Vec<(String, PathBuf)> = Vec::new();
+        let mut seen_dests: HashSet<PathBuf> = HashSet::new();
 
-        for (idx, file) in files_to_copy.iter().enumerate() {
-            let dest = compute_destination(
-                &file.full_path,
-                &file.filename,
-                &options,
-                idx,
-                files_to_copy.len() > 1,
-            )?;
-            tasks.push((file.full_path.clone(), dest));
-        }
-    }
-
-    let total = tasks.len();
-    let mut success_count: usize = 0;
-    let mut error_count: usize = 0;
-    let mut skipped_count: usize = 0;
-    let mut errors: Vec<String> = Vec::new();
-
-    for (idx, (src, dest)) in tasks.iter().enumerate() {
-        if cancelled_flag.load(Ordering::SeqCst) {
-            return Ok(CopyResult {
-                success_count,
-                error_count,
-                skipped_count,
-                errors: vec!["Operation cancelled by user".to_string()],
-            });
-        }
-
-        // Create parent directories
-        if let Some(parent) = dest.parent() {
-            if let Err(e) = fs::create_dir_all(parent) {
-                errors.push(format!("Failed to create dir for {}: {}", dest.display(), e));
-                error_count += 1;
+        for matched in &matches {
+            if matched.status == MatchStatus::Missing || matched.status == MatchStatus::InputDuplicate {
                 continue;
             }
-        }
 
-        // Check if destination already exists
-        if dest.exists() {
-            skipped_count += 1;
-            continue;
-        }
-
-        // Perform the file operation
-        let result = match options.operation {
-            FileOperation::Copy => fs::copy(src, dest).map(|_| ()),
-            FileOperation::Move => fs::rename(src, dest).or_else(|_| {
-                // Cross-device move: copy then delete
-                fs::copy(src, dest).and_then(|_| fs::remove_file(src))
-            }),
-            FileOperation::HardLink => fs::hard_link(src, dest),
-            FileOperation::SymbolicLink => {
-                #[cfg(unix)]
-                {
-                    std::os::unix::fs::symlink(src, dest)
+            let files_to_copy = match options.duplicate_policy {
+                DuplicatePolicy::CopyFirst => {
+                    matched.photo.as_ref().map(|p| vec![p.clone()]).unwrap_or_default()
                 }
-                #[cfg(windows)]
-                {
-                    std::os::windows::fs::symlink_file(src, dest)
+                DuplicatePolicy::CopyAll => matched.all_matches.clone(),
+                DuplicatePolicy::RenameAutomatically => matched.all_matches.clone(),
+                DuplicatePolicy::Skip => {
+                    if matched.status == MatchStatus::Duplicate {
+                        continue;
+                    }
+                    matched.photo.as_ref().map(|p| vec![p.clone()]).unwrap_or_default()
                 }
-            }
-        };
+            };
 
-        match result {
-            Ok(()) => success_count += 1,
-            Err(e) => {
-                errors.push(format!("{} -> {}: {}", src, dest.display(), e));
-                error_count += 1;
+            for (idx, file) in files_to_copy.iter().enumerate() {
+                let dest = compute_destination(
+                    &file.full_path,
+                    &file.filename,
+                    &options,
+                    idx,
+                    files_to_copy.len() > 1,
+                )?;
+                if seen_dests.insert(dest.clone()) {
+                    tasks.push((file.full_path.clone(), dest));
+                }
             }
         }
 
-        // Emit progress (smooth 1% increments or per-file if small batch)
-        let emit_interval = std::cmp::max(1, total / 100);
-        if (idx + 1) % emit_interval == 0 || idx + 1 == total {
-            let elapsed = start.elapsed().as_secs_f64();
-            let speed = (idx + 1) as f64 / elapsed;
-            let remaining = (total - idx - 1) as f64 / speed;
-
+        let total = tasks.len();
+        if total == 0 {
             let _ = app.emit(
                 "copy-progress",
                 ProgressEvent {
-                    current: idx + 1,
-                    total,
-                    percentage: ((idx + 1) as f64 / total as f64) * 100.0,
-                    message: format!("Processing {}/{}", idx + 1, total),
-                    eta_seconds: Some(remaining),
-                    speed: Some(format!("{:.0} files/s", speed)),
+                    current: 0,
+                    total: 0,
+                    percentage: 100.0,
+                    message: "Hoàn tất: 0 file cần chép".to_string(),
+                    eta_seconds: Some(0.0),
+                    speed: None,
                 },
             );
+            return Ok(CopyResult {
+                success_count: 0,
+                error_count: 0,
+                skipped_count: 0,
+                errors: Vec::new(),
+            });
         }
-    }
 
-    let _ = app.emit(
-        "copy-progress",
-        ProgressEvent {
-            current: total,
-            total,
-            percentage: 100.0,
-            message: format!(
-                "Complete: {} success, {} errors, {} skipped",
-                success_count, error_count, skipped_count
-            ),
-            eta_seconds: Some(0.0),
-            speed: None,
-        },
-    );
+        // Emit immediate initial progress so UI popup never appears stuck at uninitialized 0%
+        let _ = app.emit(
+            "copy-progress",
+            ProgressEvent {
+                current: 0,
+                total,
+                percentage: 0.0,
+                message: format!("Đang chuẩn bị lọc {} file...", total),
+                eta_seconds: None,
+                speed: None,
+            },
+        );
 
-    Ok(CopyResult {
-        success_count,
-        error_count,
-        skipped_count,
-        errors,
+        // Pre-create all unique destination parent directories once to avoid redundant
+        // CloudStorage / filesystem syscalls on every file iteration.
+        let mut unique_parents: HashSet<PathBuf> = HashSet::new();
+        for (_, dest) in &tasks {
+            if let Some(parent) = dest.parent() {
+                unique_parents.insert(parent.to_path_buf());
+            }
+        }
+        for parent in &unique_parents {
+            if let Err(e) = fs::create_dir_all(parent) {
+                return Err(format!("Failed to create destination folder {}: {}", parent.display(), e));
+            }
+        }
+
+        let completed_count = AtomicUsize::new(0);
+        let success_count = AtomicUsize::new(0);
+        let error_count = AtomicUsize::new(0);
+        let skipped_count = AtomicUsize::new(0);
+        let errors: Mutex<Vec<String>> = Mutex::new(Vec::new());
+
+        let process_task = |(src, dest): &(String, PathBuf)| {
+            if cancelled_flag.load(Ordering::Relaxed) {
+                return;
+            }
+
+            if dest.exists() {
+                skipped_count.fetch_add(1, Ordering::Relaxed);
+            } else {
+                let result = match options.operation {
+                    FileOperation::Copy => fast_copy_file(src, dest),
+                    FileOperation::Move => fs::rename(src, dest).or_else(|_| {
+                        fast_copy_file(src, dest).and_then(|_| fs::remove_file(src))
+                    }),
+                    FileOperation::HardLink => fs::hard_link(src, dest),
+                    FileOperation::SymbolicLink => {
+                        #[cfg(unix)]
+                        {
+                            std::os::unix::fs::symlink(src, dest)
+                        }
+                        #[cfg(windows)]
+                        {
+                            std::os::windows::fs::symlink_file(src, dest)
+                        }
+                    }
+                };
+
+                match result {
+                    Ok(()) => {
+                        success_count.fetch_add(1, Ordering::Relaxed);
+                    }
+                    Err(e) => {
+                        error_count.fetch_add(1, Ordering::Relaxed);
+                        if let Ok(mut errs) = errors.lock() {
+                            errs.push(format!("{} -> {}: {}", src, dest.display(), e));
+                        }
+                    }
+                }
+            }
+
+            let done = completed_count.fetch_add(1, Ordering::SeqCst) + 1;
+            let emit_interval = std::cmp::max(1, total / 100);
+            if done % emit_interval == 0 || done == total {
+                let elapsed = start.elapsed().as_secs_f64().max(0.001);
+                let speed = done as f64 / elapsed;
+                let remaining = total.saturating_sub(done) as f64 / speed;
+
+                let _ = app.emit(
+                    "copy-progress",
+                    ProgressEvent {
+                        current: done,
+                        total,
+                        percentage: (done as f64 / total as f64) * 100.0,
+                        message: format!("Đang lọc {}/{} file", done, total),
+                        eta_seconds: Some(remaining),
+                        speed: Some(format!("{:.0} files/s", speed)),
+                    },
+                );
+            }
+        };
+
+        // Use a bounded 4-thread pool for parallel file copying: overlaps CloudStorage / disk latency
+        // (3-4x faster than sequential loop) without overwhelming virtual filesystem daemons.
+        if let Ok(pool) = rayon::ThreadPoolBuilder::new().num_threads(4).build() {
+            pool.install(|| {
+                tasks.par_iter().for_each(process_task);
+            });
+        } else {
+            tasks.iter().for_each(process_task);
+        }
+
+        let final_success = success_count.load(Ordering::SeqCst);
+        let final_error = error_count.load(Ordering::SeqCst);
+        let final_skipped = skipped_count.load(Ordering::SeqCst);
+        let mut final_errors = errors.into_inner().unwrap_or_default();
+
+        if cancelled_flag.load(Ordering::SeqCst) {
+            final_errors.push("Operation cancelled by user".to_string());
+            return Ok(CopyResult {
+                success_count: final_success,
+                error_count: final_error,
+                skipped_count: final_skipped,
+                errors: final_errors,
+            });
+        }
+
+        let _ = app.emit(
+            "copy-progress",
+            ProgressEvent {
+                current: total,
+                total,
+                percentage: 100.0,
+                message: format!(
+                    "Hoàn tất: {} thành công, {} lỗi, {} bỏ qua",
+                    final_success, final_error, final_skipped
+                ),
+                eta_seconds: Some(0.0),
+                speed: None,
+            },
+        );
+
+        Ok(CopyResult {
+            success_count: final_success,
+            error_count: final_error,
+            skipped_count: final_skipped,
+            errors: final_errors,
+        })
     })
+    .await
+    .map_err(|e| format!("Copy task failed: {}", e))?
 }
 
 /// Computes the destination path for a file based on copy options.

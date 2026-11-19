@@ -19,7 +19,7 @@ import {
   SkipForward,
   X,
 } from "lucide-react";
-import type { CustomerCode } from "@/core/types";
+import type { CustomerCode, MatchResult } from "@/core/types";
 import { useTranslation } from "@/core/lib/i18n";
 import { listen } from "@tauri-apps/api/event";
 import { SheetCodeExtractorModal } from "./SheetCodeExtractorModal";
@@ -27,6 +27,7 @@ import { CheckFilterStatusModal } from "./CheckFilterStatusModal";
 import { FilterSyntaxHelpModal } from "./FilterSyntaxHelpModal";
 import { AutoFindToggle } from "./AutoFindToggle";
 import { autoFindService } from "../services/autoFindService";
+import { buildScanSignature } from "../features/scanner/hooks/useScanAndMatch";
 
 export {
   isCommandToken,
@@ -111,7 +112,7 @@ export function CenterPanel() {
   const [isCheckStatusModalOpen, setIsCheckStatusModalOpen] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
 
-  // Debounced parsing
+  // Debounced parsing + automatic in-memory re-matching when folder is already scanned
   const lastParsedInputRef = useRef<string | null>(null);
   const parseInput = useCallback(
     async (input: string) => {
@@ -121,6 +122,13 @@ export function CenterPanel() {
       if (!input.trim()) {
         lastParsedInputRef.current = "";
         setParsedCodes([]);
+        const st = useAppStore.getState();
+        if (st.matchResult && st.phase !== "scanning" && st.phase !== "copying") {
+          st.setMatchResult(null);
+          if (st.scannedFiles.length > 0) {
+            st.setPhase("scanned");
+          }
+        }
         return;
       }
       setIsParsingDebounced(true);
@@ -128,8 +136,42 @@ export function CenterPanel() {
         const codes = await invoke<CustomerCode[]>("parse_customer_codes", {
           input,
         });
+        // Ignore if user already typed newer text while IPC was in flight
+        if (useAppStore.getState().rawCodeInput !== input) {
+          return;
+        }
         lastParsedInputRef.current = input;
         setParsedCodes(codes);
+
+        // If current folder has already been scanned with current options, re-match in RAM immediately (<1ms)
+        const st = useAppStore.getState();
+        const effectiveFolders =
+          st.selectedInputFolders.length > 0 ? st.selectedInputFolders : st.inputFolders;
+        const currentSig = buildScanSignature(effectiveFolders, st.scanOptions);
+
+        if (
+          st.scannedFiles.length > 0 &&
+          st.lastScanSignature === currentSig &&
+          st.phase !== "scanning" &&
+          st.phase !== "copying"
+        ) {
+          if (codes.length > 0) {
+            const result = await invoke<MatchResult>("match_photos", {
+              codes,
+              files: st.scannedFiles,
+              mode: st.matchMode,
+              regexPattern: st.matchMode === "Regex" ? st.regexPattern : null,
+              folderCount: effectiveFolders.length,
+            });
+            if (useAppStore.getState().rawCodeInput === input) {
+              st.setMatchResult(result);
+              st.setPhase("matched");
+            }
+          } else {
+            st.setMatchResult(null);
+            st.setPhase("scanned");
+          }
+        }
       } catch (error) {
         console.error("Parse error:", error);
       } finally {
@@ -142,9 +184,41 @@ export function CenterPanel() {
   useEffect(() => {
     const timer = setTimeout(() => {
       parseInput(rawCodeInput);
-    }, 300);
+    }, 120);
     return () => clearTimeout(timer);
   }, [rawCodeInput, parseInput]);
+
+  // Re-match in RAM immediately if user switches matchMode or regexPattern while folder is already scanned
+  useEffect(() => {
+    const st = useAppStore.getState();
+    const effectiveFolders =
+      st.selectedInputFolders.length > 0 ? st.selectedInputFolders : st.inputFolders;
+    const currentSig = buildScanSignature(effectiveFolders, st.scanOptions);
+
+    if (
+      st.scannedFiles.length > 0 &&
+      st.lastScanSignature === currentSig &&
+      st.parsedCodes.length > 0 &&
+      st.phase !== "scanning" &&
+      st.phase !== "copying"
+    ) {
+      invoke<MatchResult>("match_photos", {
+        codes: st.parsedCodes,
+        files: st.scannedFiles,
+        mode: matchMode,
+        regexPattern: matchMode === "Regex" ? regexPattern : null,
+        folderCount: effectiveFolders.length,
+      })
+        .then((result) => {
+          const cur = useAppStore.getState();
+          if (cur.matchMode === matchMode && cur.scannedFiles.length > 0) {
+            cur.setMatchResult(result);
+            cur.setPhase("matched");
+          }
+        })
+        .catch(() => {});
+    }
+  }, [matchMode, regexPattern]);
 
   // Handle paste event — auto-format codes and respect selection / replacement
   const handlePaste = useCallback(

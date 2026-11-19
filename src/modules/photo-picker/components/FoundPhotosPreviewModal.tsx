@@ -221,9 +221,11 @@ export function FoundPhotosPreviewModal({
                 >
                   {currentPhoto.extension}
                 </span>
-                <span className="text-[11px] text-muted-foreground/80 font-mono hidden md:inline shrink-0">
-                  {formatBytes(currentPhoto.size)}
-                </span>
+                {currentPhoto.size > 0 && (
+                  <span className="text-[11px] text-muted-foreground/80 font-mono hidden md:inline shrink-0">
+                    {formatBytes(currentPhoto.size)}
+                  </span>
+                )}
               </div>
             )}
           </div>

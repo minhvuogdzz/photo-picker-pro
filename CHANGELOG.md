@@ -2,6 +2,23 @@
 
 Tất cả các bản phát hành của **DH Studio Pro** (phát triển & thuộc sở hữu bản quyền của **Devhouse Software**) đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
 
+## [v3.4.1] - 2026-11-19
+
+**Bản vá tối ưu hiệu năng Lọc ảnh Pro — Xử lý triệt để lỗi treo khi quét và tăng tốc chép file**
+
+#### Lọc ảnh Pro — Sửa lỗi treo "Indexing..." & Khớp mã tức thì khi chỉnh sửa
+- Loại bỏ hoàn toàn bước gọi `stat()` / `metadata()` đa luồng lên từng file trong lúc quét thư mục, khắc phục triệt để lỗi đơ ở `0.0% (Found ... image files, indexing...)` trên thư mục Google Drive (`CloudStorage`) và ổ cứng ngoài.
+- Chuyển toàn bộ tiến trình quét thư mục và đối chiếu mã ảnh sang luồng thực thi nền độc lập (`spawn_blocking`), không còn làm khựng giao diện chính.
+- Lưu bộ nhớ đệm phiên quét thông minh theo thư mục và bộ lọc (`RAW/JPG/Subfolder`): khi sửa mã trực tiếp trong ô nhập, ứng dụng tự động khớp lại ngay trong RAM (< 1ms) hoặc phản hồi tức thì khi bấm **Quét file** mà không phải quét lại thư mục từ đầu.
+- Khắc phục lỗi độ trễ debounce làm sót mã vừa sửa khi người dùng sửa mã xong và bấm **Quét file** ngay lập tức.
+
+#### Tăng tốc Lọc & Chép file đa luồng (Fast Copy Engine)
+- Nâng cấp bộ chép file sang kiến trúc đa luồng giới hạn tài nguyên (4 luồng song song), kết hợp cơ chế nhân bản file tức thì `clonefile` (Copy-on-Write) trên macOS APFS và gom tạo thư mục đích 1 lần duy nhất, giúp tốc độ lọc nhanh hơn gấp 3–4 lần.
+- Khóa ngữ cảnh dòng khách hàng vừa lọc xong trước khi `Auto Find` chuyển sang khách kế tiếp, đảm bảo cập nhật trạng thái `"Đã lọc"` chính xác tuyệt đối trên Google Sheet.
+- Tắt tiến trình ngầm quét danh sách ổ đĩa mỗi 1.5 giây khi Tray Popover đang ẩn, loại bỏ hoàn toàn hiện tượng tranh chấp I/O làm tốc độ lọc lúc nhanh lúc chậm.
+
+---
+
 ## [v3.4.0] - 2026-11-12
 
 **Tái thiết giao diện Contact the Sheet & Bộ nhận diện Logo Camera Light mới**

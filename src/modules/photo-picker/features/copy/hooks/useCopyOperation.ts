@@ -25,12 +25,13 @@ export function useCopyOperation() {
       }
 
       const effectiveFolders = selectedInputFolders.length > 0 ? selectedInputFolders : inputFolders;
+      let unlistenCopy: (() => void) | null = null;
 
       try {
         setPhase("copying");
         setProgress(null);
         
-        const unlistenCopy = await listen<ProgressEvent>("copy-progress", (event) => {
+        unlistenCopy = await listen<ProgressEvent>("copy-progress", (event) => {
           setProgress(event.payload);
         });
         
@@ -51,10 +52,23 @@ export function useCopyOperation() {
         });
         
         unlistenCopy();
+        unlistenCopy = null;
         setCopyResult(result);
         setProgress(null);
 
         const store = useAppStore.getState();
+        // Snapshot the finished customer's Sheet context BEFORE Auto Find overwrites it for the next customer
+        const completedSheetCtx = store.sheetFilterContext;
+
+        if (completedSheetCtx && (result.success_count > 0 || result.skipped_count > 0)) {
+          autoFindService.updateCachedRowStatus(
+            completedSheetCtx.spreadsheetId,
+            completedSheetCtx.tabTitle,
+            completedSheetCtx.matchedRow,
+            completedSheetCtx.statusColumnLetter || "G",
+            completedSheetCtx.statusValue || "Đã lọc"
+          );
+        }
 
         if (store.pickerMode === "multi" && effectiveFolders.length > 0) {
           const finishedFolder = effectiveFolders[0];
@@ -119,20 +133,16 @@ export function useCopyOperation() {
 
         // Run Google Sheet status auto-update asynchronously in background (never blocks queue transition)
         sheetFilterAutomationService
-          .updateStatusOnFilterComplete(effectiveFolders, result)
+          .updateStatusOnFilterComplete(effectiveFolders, result, completedSheetCtx)
           .then((updateRes) => {
-            if (updateRes && updateRes.success) {
-              const currentStore = useAppStore.getState();
-              const sheetCtx = currentStore.sheetFilterContext;
-              if (sheetCtx) {
-                autoFindService.updateCachedRowStatus(
-                  sheetCtx.spreadsheetId,
-                  sheetCtx.tabTitle,
-                  sheetCtx.matchedRow,
-                  sheetCtx.statusColumnLetter || "G",
-                  sheetCtx.statusValue || "Đã lọc"
-                );
-              }
+            if (updateRes && updateRes.success && completedSheetCtx) {
+              autoFindService.updateCachedRowStatus(
+                completedSheetCtx.spreadsheetId,
+                completedSheetCtx.tabTitle,
+                completedSheetCtx.matchedRow,
+                completedSheetCtx.statusColumnLetter || "G",
+                completedSheetCtx.statusValue || "Đã lọc"
+              );
             }
           })
           .catch((err) => {
@@ -140,9 +150,11 @@ export function useCopyOperation() {
           });
       } catch (error) {
         console.error("Copy error:", error);
-        alert("Lỗi chép file: " + (typeof error === 'string' ? error : JSON.stringify(error)));
+        alert("Lỗi chép file: " + (typeof error === "string" ? error : JSON.stringify(error)));
         setPhase("matched");
         setProgress(null);
+      } finally {
+        if (unlistenCopy) unlistenCopy();
       }
     },
     [matchResult, outputFolder, outputMode, inputFolders, setCopyResult, setPhase, setProgress]

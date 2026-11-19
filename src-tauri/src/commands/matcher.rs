@@ -16,7 +16,7 @@ use super::types::{
 /// - **Contains**: The filename must contain the code somewhere within it
 /// - **Regex**: User-provided regex pattern is used for matching
 #[tauri::command]
-pub fn match_photos(
+pub async fn match_photos(
     app: AppHandle,
     codes: Vec<CustomerCode>,
     files: Vec<PhotoFile>,
@@ -24,9 +24,13 @@ pub fn match_photos(
     regex_pattern: Option<String>,
     folder_count: Option<usize>,
 ) -> Result<MatchResult, String> {
-    match_photos_impl(codes, files, mode, regex_pattern, folder_count, move |event| {
-        let _ = app.emit("match-progress", event);
+    tauri::async_runtime::spawn_blocking(move || {
+        match_photos_impl(codes, files, mode, regex_pattern, folder_count, move |event| {
+            let _ = app.emit("match-progress", event);
+        })
     })
+    .await
+    .map_err(|e| format!("Match task failed: {}", e))?
 }
 
 // Helper to normalize strings for separator-agnostic matching
