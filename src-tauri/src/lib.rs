@@ -1,8 +1,18 @@
+mod bridge;
 mod commands;
 mod tray;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let args: Vec<String> = std::env::args().collect();
+    let is_background = args.iter().any(|a| a == "--background");
+    let is_autostart = args.iter().any(|a| a == "--autostart");
+    let start_hidden = is_background || is_autostart;
+
+    let bridge_state = std::sync::Arc::new(bridge::BridgeState::new(is_background));
+    let bridge_state_for_setup = std::sync::Arc::clone(&bridge_state);
+    let bridge_state_for_exit = std::sync::Arc::clone(&bridge_state);
+
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_fs::init())
@@ -16,9 +26,17 @@ pub fn run() {
         ))
         .manage(std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)))
         .manage(commands::system_monitor::SystemMonitorState::new())
-        .setup(|app| {
-            commands::system_utils::update_system_theme_icon("system".to_string()).ok();
-            commands::system_utils::request_os_notification_permission().ok();
+        .manage(bridge_state)
+        .setup(move |app| {
+            #[cfg(target_os = "macos")]
+            if is_background {
+                let _ = app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+            }
+
+            if !is_background {
+                commands::system_utils::update_system_theme_icon("system".to_string()).ok();
+                commands::system_utils::request_os_notification_permission().ok();
+            }
             tray::create_tray(app.handle())?;
 
             let settings = commands::config::load_settings().unwrap_or_default();
@@ -27,13 +45,19 @@ pub fn run() {
                 let _ = app.autolaunch().enable();
             }
 
-            let args: Vec<String> = std::env::args().collect();
-            if args.contains(&"--autostart".to_string()) {
+            if start_hidden {
                 use tauri::Manager;
                 if let Some(win) = app.get_webview_window("main") {
                     let _ = win.hide();
                 }
+            } else {
+                tray::show_main_window(app.handle());
             }
+
+            bridge::start_bridge_server(
+                app.handle().clone(),
+                std::sync::Arc::clone(&bridge_state_for_setup),
+            );
 
             Ok(())
         })
@@ -105,11 +129,17 @@ pub fn run() {
             commands::preview::clear_thumbnail_cache,
             commands::preview::copy_photo_files,
             commands::system_monitor::get_system_performance_metrics,
+            bridge::bridge_mark_ready,
+            bridge::bridge_emit_progress,
+            bridge::bridge_reply,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
 
-    app.run(|app_handle, event| {
+    app.run(move |app_handle, event| {
+        if let tauri::RunEvent::Exit = event {
+            bridge_state_for_exit.cleanup_socket();
+        }
         #[cfg(target_os = "macos")]
         if let tauri::RunEvent::Reopen {
             has_visible_windows,

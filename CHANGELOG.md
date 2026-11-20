@@ -2,6 +2,18 @@
 
 Tất cả các bản phát hành của **DH Studio Pro** (phát triển & thuộc sở hữu bản quyền của **Devhouse Software**) đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
 
+## [v3.5.0] - 2026-11-20
+
+**Liên kết hệ sinh thái DH — Cổng cầu nối Contact the Sheet cho DHbox & chế độ chạy ngầm `--background`**
+
+#### Cầu nối hệ sinh thái (DH Ecosystem Bridge v1)
+- Bổ sung máy chủ Unix domain socket nội bộ (`src-tauri/src/bridge.rs`, quyền `0600`, xác thực cùng `uid` người dùng) tại `~/Library/Application Support/Devhouse/bridges/dh-studio-pro.sock`.
+- Bổ sung lớp điều phối `contactSheetBridge.ts` tái sử dụng toàn bộ cấu hình Sheet, Google OAuth, bản quyền và logic Thực thi Batch của Contact the Sheet để **DHbox** gọi trực tiếp từ menu chuột phải Finder mà không viết lại logic.
+- Hỗ trợ tham số `--background` khởi chạy ẩn hoàn toàn không nháy cửa sổ (`visible: false` + `ActivationPolicy::Accessory` trên macOS) và lệnh `bridge.shutdown` để thoát sạch sau khi người dùng xác nhận đóng từ DHbox.
+- Bổ sung tài liệu đặc tả `docs/DH_BRIDGE.md`, hướng dẫn `CLAUDE.md` và bộ test hợp đồng cho cả Rust và TypeScript.
+
+---
+
 ## [v3.4.2] - 2026-11-20
 
 **Bản vá Lọc ảnh Pro — Mặc định quét thư mục con & Đồng bộ Auto Find tức thì khi chuyển hoặc xoá khách**

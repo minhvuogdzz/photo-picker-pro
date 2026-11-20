@@ -95,6 +95,9 @@ pub fn toggle_tray_panel<R: Runtime>(app: &AppHandle<R>, rect: Option<tauri::Rec
 }
 
 pub fn show_main_window<R: Runtime>(app: &AppHandle<R>) {
+    #[cfg(target_os = "macos")]
+    let _ = app.set_activation_policy(tauri::ActivationPolicy::Regular);
+
     if let Some(window) = app
         .get_webview_window("main")
         .or_else(|| app.webview_windows().values().next().cloned())
@@ -114,6 +117,9 @@ pub fn toggle_main_window<R: Runtime>(app: &AppHandle<R>) {
         if is_visible {
             let _ = window.hide();
         } else {
+            #[cfg(target_os = "macos")]
+            let _ = app.set_activation_policy(tauri::ActivationPolicy::Regular);
+
             let _ = window.show();
             let _ = window.unminimize();
             let _ = window.set_focus();

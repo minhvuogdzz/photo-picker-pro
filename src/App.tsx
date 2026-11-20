@@ -12,6 +12,7 @@ import { logout, validateSubscription, getNextSubscriptionCheckDelay } from "@/c
 import { isOnline } from "@/core/services/apiClient";
 import { socketService } from "@/core/services/socketService";
 import { urgentCustomerScannerService } from "@/modules/photo-picker/services/urgentCustomerScannerService";
+import { initContactSheetBridge } from "@/modules/contact-the-sheet/services/contactSheetBridge";
 import { TrayControlPanel } from "@/modules/tray-panel/TrayControlPanel";
 import type { AppSettings } from "@/core/types";
 
@@ -173,6 +174,11 @@ function App() {
     return () => {
       if (unlisten) unlisten();
     };
+  }, []);
+
+  // Register DH Ecosystem Bridge listener (available even when running hidden via --background)
+  useEffect(() => {
+    return initContactSheetBridge();
   }, []);
 
   // Load settings on app start (globally) & sync system autostart

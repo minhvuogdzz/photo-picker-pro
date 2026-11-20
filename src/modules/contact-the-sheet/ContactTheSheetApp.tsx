@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Play,
   Sliders,
@@ -19,6 +19,34 @@ type ActiveTab = "batch" | "workspace" | "drive" | "audit";
 export default function ContactTheSheetApp() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("batch");
   const [isDriveModalOpen, setIsDriveModalOpen] = useState(false);
+
+  useEffect(() => {
+    const applyRequestedTab = (tab: string | null) => {
+      if (!tab) return;
+      if (tab === "drive") {
+        setIsDriveModalOpen(true);
+      } else if (tab === "batch" || tab === "workspace" || tab === "audit") {
+        setActiveTab(tab);
+      }
+    };
+
+    try {
+      const pending = sessionStorage.getItem("dh_contact_sheet_requested_tab");
+      if (pending) {
+        sessionStorage.removeItem("dh_contact_sheet_requested_tab");
+        applyRequestedTab(pending);
+      }
+    } catch {
+      // ignore
+    }
+
+    const onSetTab = (e: Event) => {
+      const tab = (e as CustomEvent<{ tab?: string }>).detail?.tab || null;
+      applyRequestedTab(tab);
+    };
+    window.addEventListener("dh-contact-sheet:set-tab", onSetTab);
+    return () => window.removeEventListener("dh-contact-sheet:set-tab", onSetTab);
+  }, []);
 
   const session = useAuthStore((s) => s.session);
 

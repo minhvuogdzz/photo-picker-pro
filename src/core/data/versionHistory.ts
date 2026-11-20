@@ -15,10 +15,26 @@ export interface VersionReleaseNote {
 
 export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
   {
+    version: "v3.5.0",
+    date: "2026-11-20",
+    title: "Liên kết hệ sinh thái DH — Cổng cầu nối Contact the Sheet cho DHbox & Chế độ chạy ngầm",
+    isCurrent: true,
+    sections: [
+      {
+        title: "Liên kết hệ sinh thái DH (DH Ecosystem Bridge v1)",
+        type: "feature",
+        items: [
+          "Bổ sung cổng cầu nối Unix domain socket cục bộ (quyền 0600, xác thực cùng tài khoản người dùng) để DHbox gọi trực tiếp Contact the Sheet từ menu chuột phải Finder.",
+          "Tái sử dụng trọn vẹn cấu hình Google Sheet, Google OAuth, bản quyền và logic Thực thi Batch sẵn có trong DH Studio Pro mà không phải thiết lập lại.",
+          "Hỗ trợ chế độ khởi chạy ngầm (--background) không hiện hay nháy cửa sổ desktop và lệnh thoát sạch sau khi người dùng xác nhận đóng từ DHbox.",
+        ],
+      },
+    ],
+  },
+  {
     version: "v3.4.2",
     date: "2026-11-20",
     title: "Bản vá Lọc ảnh Pro — Mặc định quét thư mục con & Đồng bộ Auto Find tức thì khi chuyển hoặc xoá khách",
-    isCurrent: true,
     sections: [
       {
         title: "Lọc ảnh Pro — Đồng bộ Auto Find toàn diện & Thiết lập mặc định thông minh",
