@@ -192,10 +192,8 @@ pub fn show_main_window_from_tray(app: tauri::AppHandle, target_module: Option<S
     if let Some(panel) = app.get_webview_window("tray-panel") {
         let _ = panel.hide();
     }
+    crate::tray::show_main_window(&app);
     if let Some(window) = app.get_webview_window("main") {
-        let _ = window.show();
-        let _ = window.unminimize();
-        let _ = window.set_focus();
         if let Some(module) = target_module {
             let _ = window.emit("navigate-to-module", serde_json::json!({ "module": module }));
         }

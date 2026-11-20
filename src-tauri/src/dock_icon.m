@@ -162,3 +162,100 @@ void macos_set_window_theme(int is_dark) {
         }
     });
 }
+
+static NSWindow *dh_find_main_window(void) {
+    for (NSWindow *window in [NSApp windows]) {
+        NSString *title = window.title ?: @"";
+        if ([title containsString:@"Control Hub"]) continue;
+        if ((window.styleMask & NSWindowStyleMaskTitled) != 0) {
+            return window;
+        }
+    }
+    return nil;
+}
+
+static id<NSObject> g_dh_bridge_activity = nil;
+static NSInteger g_dh_bridge_activity_count = 0;
+
+void macos_begin_bridge_activity(void) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        g_dh_bridge_activity_count += 1;
+        if (g_dh_bridge_activity == nil) {
+            NSActivityOptions options =
+                NSActivityUserInitiatedAllowingIdleSystemSleep | NSActivityLatencyCritical;
+            g_dh_bridge_activity = [[NSProcessInfo processInfo]
+                beginActivityWithOptions:options
+                                  reason:@"DH Ecosystem Bridge request"];
+        }
+    });
+}
+
+void macos_end_bridge_activity(void) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (g_dh_bridge_activity_count > 0) {
+            g_dh_bridge_activity_count -= 1;
+        }
+        if (g_dh_bridge_activity_count == 0 && g_dh_bridge_activity != nil) {
+            [[NSProcessInfo processInfo] endActivity:g_dh_bridge_activity];
+            g_dh_bridge_activity = nil;
+        }
+    });
+}
+
+// Keeps the hidden WKWebView non-occluded during a background bridge request so
+// macOS WebKit does not suspend JS/fetch after ~5s while staying invisible,
+// click-through, and non-activating to the user.
+void macos_wake_hidden_main_window(void) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        NSWindow *window = dh_find_main_window();
+        if (!window) return;
+        // If already visibly shown to the user, do not touch it.
+        if (window.isVisible && window.alphaValue > 0.05) return;
+
+        [window setAlphaValue:0.001];
+        [window setIgnoresMouseEvents:YES];
+        [window setHasShadow:NO];
+        [window setExcludedFromWindowsMenu:YES];
+        [window setCollectionBehavior:
+            NSWindowCollectionBehaviorCanJoinAllSpaces |
+            NSWindowCollectionBehaviorStationary |
+            NSWindowCollectionBehaviorIgnoresCycle |
+            NSWindowCollectionBehaviorTransient];
+        [window orderFrontRegardless];
+    });
+}
+
+void macos_sleep_hidden_main_window(void) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        NSWindow *window = dh_find_main_window();
+        if (!window) return;
+        // Never hide if the user made the window visible in the meantime.
+        if (window.isVisible && window.alphaValue > 0.05) return;
+
+        [window orderOut:nil];
+        [window setAlphaValue:1.0];
+        [window setIgnoresMouseEvents:NO];
+        [window setHasShadow:YES];
+        [window setExcludedFromWindowsMenu:NO];
+        [window setCollectionBehavior:NSWindowCollectionBehaviorDefault];
+    });
+}
+
+void macos_activate_main_window(void) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        NSWindow *window = dh_find_main_window();
+        if (window) {
+            [window setAlphaValue:1.0];
+            [window setIgnoresMouseEvents:NO];
+            [window setHasShadow:YES];
+            [window setExcludedFromWindowsMenu:NO];
+            [window setCollectionBehavior:NSWindowCollectionBehaviorDefault];
+            if (window.isMiniaturized) {
+                [window deminiaturize:nil];
+            }
+            [window makeKeyAndOrderFront:nil];
+        }
+        [NSApp unhide:nil];
+        [NSApp activateIgnoringOtherApps:YES];
+    });
+}

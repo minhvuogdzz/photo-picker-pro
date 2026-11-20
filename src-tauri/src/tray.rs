@@ -8,6 +8,7 @@ use tauri::{
 #[cfg(target_os = "macos")]
 extern "C" {
     fn macos_configure_tray_panel_window();
+    fn macos_activate_main_window();
 }
 
 pub fn create_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
@@ -95,34 +96,47 @@ pub fn toggle_tray_panel<R: Runtime>(app: &AppHandle<R>, rect: Option<tauri::Rec
 }
 
 pub fn show_main_window<R: Runtime>(app: &AppHandle<R>) {
+    if let Some(bridge_state) = app.try_state::<std::sync::Arc<crate::bridge::BridgeState>>() {
+        bridge_state.set_main_window_visible(true);
+    }
+
     #[cfg(target_os = "macos")]
     let _ = app.set_activation_policy(tauri::ActivationPolicy::Regular);
 
-    if let Some(window) = app
-        .get_webview_window("main")
-        .or_else(|| app.webview_windows().values().next().cloned())
-    {
+    if let Some(window) = app.get_webview_window("main") {
         let _ = window.show();
         let _ = window.unminimize();
         let _ = window.set_focus();
     }
+
+    #[cfg(target_os = "macos")]
+    unsafe {
+        macos_activate_main_window();
+    }
+}
+
+pub fn hide_main_window<R: Runtime>(app: &AppHandle<R>) {
+    if let Some(bridge_state) = app.try_state::<std::sync::Arc<crate::bridge::BridgeState>>() {
+        bridge_state.set_main_window_visible(false);
+    }
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.hide();
+    }
 }
 
 pub fn toggle_main_window<R: Runtime>(app: &AppHandle<R>) {
-    if let Some(window) = app
-        .get_webview_window("main")
-        .or_else(|| app.webview_windows().values().next().cloned())
-    {
-        let is_visible = window.is_visible().unwrap_or(false);
-        if is_visible {
-            let _ = window.hide();
-        } else {
-            #[cfg(target_os = "macos")]
-            let _ = app.set_activation_policy(tauri::ActivationPolicy::Regular);
+    let currently_visible = app
+        .try_state::<std::sync::Arc<crate::bridge::BridgeState>>()
+        .map(|s| s.is_main_window_visible())
+        .unwrap_or_else(|| {
+            app.get_webview_window("main")
+                .and_then(|w| w.is_visible().ok())
+                .unwrap_or(false)
+        });
 
-            let _ = window.show();
-            let _ = window.unminimize();
-            let _ = window.set_focus();
-        }
+    if currently_visible {
+        hide_main_window(app);
+    } else {
+        show_main_window(app);
     }
 }

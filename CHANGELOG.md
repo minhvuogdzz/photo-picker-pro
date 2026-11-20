@@ -2,6 +2,22 @@
 
 Tất cả các bản phát hành của **DH Studio Pro** (phát triển & thuộc sở hữu bản quyền của **Devhouse Software**) đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
 
+## [v3.5.1] - 2026-11-20
+
+**Bản vá chạy ngầm Contact the Sheet (hết treo/timeout) & sửa lỗi không mở lại được cửa sổ sau khi ấn `X` / `Cmd+W`**
+
+#### Liên kết DHbox — Chống treo WebKit khi quét ngầm trên macOS
+- Khắc phục triệt để lỗi macOS App Nap & WebKit Occlusion tạm dừng tiến trình WebView nền sau ~5 giây khi khởi chạy bằng `--background`, vốn gây treo ở mốc 68% và báo `Hết thời gian chờ phản hồi từ DH Studio Pro.` khi quét Contact the Sheet từ chuột phải Finder của DHbox.
+- Thêm `HiddenWakeGuard` (`src-tauri/src/bridge.rs` + `src-tauri/src/dock_icon.m`) bật `NSProcessInfo` activity và tạm đánh thức cửa sổ ẩn ở chế độ vô hình xuyên chuột đúng trong lúc xử lý yêu cầu cầu nối, giúp quét ngầm hoàn tất nhanh ngang khi mở cửa sổ (chỉ vài giây) mà không bao giờ hiện hay chiếm focus.
+- Chuyển `scan_folder_topology` sang chạy bất đồng bộ trên `spawn_blocking` và bỏ qua thư mục con ẩn (vẫn giữ gốc độ sâu 0 cho đường dẫn Google Drive `.shortcut-targets-by-id`).
+
+#### Vòng đời cửa sổ macOS — Sửa lỗi không mở lại được app sau `X` / `Cmd+W`
+- Khắc phục lỗi khi tắt tuỳ chọn **"Chạy ngầm trên Menu Bar khi đóng cửa sổ"** (`close_to_tray: false`) và nhấn `X` hoặc `Cmd+W`, cửa sổ `main` bị huỷ trong khi cửa sổ phụ `tray-panel` vẫn giữ tiến trình sống làm icon Menu Bar chạy nhưng không thể mở lại app.
+- Khi `close_to_tray` bật: ẩn cửa sổ `main` an toàn không huỷ WebView; bấm Dock (`Reopen`), Menu Bar **"Hiện DH Studio Pro"** hoặc Control Hub **"Mở cửa sổ chính"** luôn khôi phục `ActivationPolicy::Regular` và kích hoạt cửa sổ chính lên trước ngay lập tức.
+- Khi `close_to_tray` tắt: ấn `X` / `Cmd+W` dọn socket cầu nối và thoát sạch toàn bộ ứng dụng, loại bỏ hoàn toàn trạng thái icon Menu Bar "ma".
+
+---
+
 ## [v3.5.0] - 2026-11-20
 
 **Liên kết hệ sinh thái DH — Cổng cầu nối Contact the Sheet cho DHbox & chế độ chạy ngầm `--background`**

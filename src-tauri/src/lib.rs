@@ -1,3 +1,5 @@
+use tauri::Manager;
+
 mod bridge;
 mod commands;
 mod tray;
@@ -11,6 +13,7 @@ pub fn run() {
 
     let bridge_state = std::sync::Arc::new(bridge::BridgeState::new(is_background));
     let bridge_state_for_setup = std::sync::Arc::clone(&bridge_state);
+    let bridge_state_for_window = std::sync::Arc::clone(&bridge_state);
     let bridge_state_for_exit = std::sync::Arc::clone(&bridge_state);
 
     let app = tauri::Builder::default()
@@ -46,7 +49,7 @@ pub fn run() {
             }
 
             if start_hidden {
-                use tauri::Manager;
+                bridge_state_for_setup.set_main_window_visible(false);
                 if let Some(win) = app.get_webview_window("main") {
                     let _ = win.hide();
                 }
@@ -61,14 +64,34 @@ pub fn run() {
 
             Ok(())
         })
-        .on_window_event(|window, event| {
+        .on_window_event(move |window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                let should_hide = commands::config::load_settings()
-                    .map(|s| s.close_to_tray)
-                    .unwrap_or(true);
-                if should_hide {
+                let label = window.label();
+                if label == "tray-panel" {
                     let _ = window.hide();
                     api.prevent_close();
+                    return;
+                }
+
+                if label == "main" {
+                    let should_hide = commands::config::load_settings()
+                        .map(|s| s.close_to_tray)
+                        .unwrap_or(true);
+                    if should_hide {
+                        bridge_state_for_window.set_main_window_visible(false);
+                        api.prevent_close();
+                        if bridge_state_for_window.has_active_requests() {
+                            bridge::keep_hidden_window_awake_on_macos();
+                        } else {
+                            let _ = window.hide();
+                        }
+                    } else {
+                        // Never leave the hidden "tray-panel" keeping a headless zombie process alive
+                        // with a destroyed "main" window that can no longer be reopened.
+                        api.prevent_close();
+                        bridge_state_for_window.cleanup_socket();
+                        window.app_handle().exit(0);
+                    }
                 }
             }
         })
@@ -146,7 +169,7 @@ pub fn run() {
             ..
         } = event
         {
-            if !has_visible_windows {
+            if !has_visible_windows || !bridge_state_for_exit.is_main_window_visible() {
                 tray::show_main_window(app_handle);
             }
         }

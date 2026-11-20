@@ -1,12 +1,27 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{mpsc, Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tauri::{AppHandle, Emitter, Manager, State};
+
+#[cfg(target_os = "macos")]
+extern "C" {
+    fn macos_begin_bridge_activity();
+    fn macos_end_bridge_activity();
+    fn macos_wake_hidden_main_window();
+    fn macos_sleep_hidden_main_window();
+}
+
+pub fn keep_hidden_window_awake_on_macos() {
+    #[cfg(target_os = "macos")]
+    unsafe {
+        macos_wake_hidden_main_window();
+    }
+}
 
 pub const PROTOCOL_VERSION: u32 = 1;
 const MAX_LINE_BYTES: usize = 4 * 1024 * 1024; // 4 MiB
@@ -108,6 +123,8 @@ enum OutboundEvent {
 pub struct BridgeState {
     webview_ready: AtomicBool,
     launched_in_background: AtomicBool,
+    main_window_visible: AtomicBool,
+    active_requests: AtomicUsize,
     owns_socket: AtomicBool,
     dispatch_seq: AtomicU64,
     pending: Mutex<HashMap<String, mpsc::Sender<OutboundEvent>>>,
@@ -119,6 +136,8 @@ impl BridgeState {
         Self {
             webview_ready: AtomicBool::new(false),
             launched_in_background: AtomicBool::new(launched_in_background),
+            main_window_visible: AtomicBool::new(!launched_in_background),
+            active_requests: AtomicUsize::new(0),
             owns_socket: AtomicBool::new(false),
             dispatch_seq: AtomicU64::new(1),
             pending: Mutex::new(HashMap::new()),
@@ -136,6 +155,18 @@ impl BridgeState {
 
     pub fn launched_in_background(&self) -> bool {
         self.launched_in_background.load(Ordering::SeqCst)
+    }
+
+    pub fn is_main_window_visible(&self) -> bool {
+        self.main_window_visible.load(Ordering::SeqCst)
+    }
+
+    pub fn set_main_window_visible(&self, visible: bool) {
+        self.main_window_visible.store(visible, Ordering::SeqCst);
+    }
+
+    pub fn has_active_requests(&self) -> bool {
+        self.active_requests.load(Ordering::SeqCst) > 0
     }
 
     pub fn socket_path(&self) -> &PathBuf {
@@ -491,16 +522,15 @@ fn handle_client(
 
     match req.action.as_str() {
         "bridge.ping" => {
-            let main_visible = app
-                .get_webview_window("main")
-                .and_then(|w| w.is_visible().ok())
-                .unwrap_or(false);
+            let has_main = app.get_webview_window("main").is_some();
+            let main_visible = has_main && state.is_main_window_visible();
+            let webview_ready = has_main && state.is_webview_ready();
             let data = json!({
                 "app": "dh-studio-pro",
                 "appVersion": app.package_info().version.to_string(),
                 "protocolVersion": PROTOCOL_VERSION,
                 "pid": std::process::id(),
-                "webviewReady": state.is_webview_ready(),
+                "webviewReady": webview_ready,
                 "launchedInBackground": state.launched_in_background(),
                 "mainWindowVisible": main_visible,
             });
@@ -536,10 +566,8 @@ fn handle_client(
                 .get("onlyIfHidden")
                 .and_then(|v| v.as_bool())
                 .unwrap_or(false);
-            let main_visible = app
-                .get_webview_window("main")
-                .and_then(|w| w.is_visible().ok())
-                .unwrap_or(false);
+            let main_visible =
+                app.get_webview_window("main").is_some() && state.is_main_window_visible();
 
             if only_if_hidden && main_visible {
                 let _ = write_envelope(
@@ -584,6 +612,59 @@ fn handle_client(
     }
 }
 
+/// RAII guard preventing macOS App Nap & WebKit occlusion throttling while a
+/// hidden background bridge request is in flight.
+#[cfg(unix)]
+struct HiddenWakeGuard<'a> {
+    state: &'a BridgeState,
+}
+
+#[cfg(unix)]
+impl<'a> HiddenWakeGuard<'a> {
+    fn acquire(state: &'a BridgeState) -> Self {
+        let prev = state.active_requests.fetch_add(1, Ordering::SeqCst);
+        #[cfg(target_os = "macos")]
+        {
+            unsafe {
+                macos_begin_bridge_activity();
+            }
+            if !state.is_main_window_visible() {
+                unsafe {
+                    macos_wake_hidden_main_window();
+                }
+                if prev == 0 {
+                    // Let AppKit order the invisible window onto the screen and
+                    // notify WKWebView before dispatching JS work.
+                    std::thread::sleep(Duration::from_millis(80));
+                }
+            }
+        }
+        #[cfg(not(target_os = "macos"))]
+        let _ = prev;
+        Self { state }
+    }
+}
+
+#[cfg(unix)]
+impl Drop for HiddenWakeGuard<'_> {
+    fn drop(&mut self) {
+        let prev = self.state.active_requests.fetch_sub(1, Ordering::SeqCst);
+        #[cfg(target_os = "macos")]
+        {
+            if prev == 1 && !self.state.is_main_window_visible() {
+                unsafe {
+                    macos_sleep_hidden_main_window();
+                }
+            }
+            unsafe {
+                macos_end_bridge_activity();
+            }
+        }
+        #[cfg(not(target_os = "macos"))]
+        let _ = prev;
+    }
+}
+
 #[cfg(unix)]
 fn forward_to_webview(
     stream: &mut std::os::unix::net::UnixStream,
@@ -591,6 +672,20 @@ fn forward_to_webview(
     state: &Arc<BridgeState>,
     req: &BridgeRequest,
 ) {
+    if app.get_webview_window("main").is_none() {
+        let _ = write_envelope(
+            stream,
+            &BridgeResponseEnvelope::error(
+                &req.id,
+                "BRIDGE_NOT_READY",
+                "Cửa sổ nền của DH Studio Pro chưa sẵn sàng hoặc đã bị đóng. Vui lòng mở lại DH Studio Pro.",
+            ),
+        );
+        return;
+    }
+
+    let _wake_guard = HiddenWakeGuard::acquire(state);
+
     let wait_start = Instant::now();
     while !state.is_webview_ready() {
         if wait_start.elapsed() >= WEBVIEW_READY_WAIT {
@@ -743,5 +838,21 @@ mod tests {
             Some("dh-studio-pro.sock")
         );
         assert!(path.to_string_lossy().contains("Devhouse"));
+    }
+
+    #[test]
+    fn bridge_state_tracks_visibility_and_background_flag() {
+        let bg = BridgeState::new(true);
+        assert!(bg.launched_in_background());
+        assert!(!bg.is_main_window_visible());
+        assert!(!bg.has_active_requests());
+        bg.set_main_window_visible(true);
+        assert!(bg.is_main_window_visible());
+
+        let fg = BridgeState::new(false);
+        assert!(!fg.launched_in_background());
+        assert!(fg.is_main_window_visible());
+        fg.set_main_window_visible(false);
+        assert!(!fg.is_main_window_visible());
     }
 }

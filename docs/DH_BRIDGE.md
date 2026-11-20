@@ -35,13 +35,16 @@ Bản đặc tả này được giữ đồng bộ ở cả hai kho mã:
 - **Tùy chọn bật/tắt trong DHbox:** Mặc định tắt (`FeatureFlags.dhStudioBridgeEnabled = false`), người dùng tự bật trong `Cài đặt -> Hệ sinh thái DH` (kèm chú thích cần tải và cài đặt DH Studio Pro mới dùng được). Khi tắt, `FinderSyncExtension` ẩn mục `DH Studio Pro: Contact the Sheet` khỏi menu DHbox (qua `AgentRequest.finderBridgeEnabled` + thông báo `com.dh.DHbox.finderMenuChanged`), và `FinderServices` chặn không bật ngầm DH Studio Pro nếu gọi từ menu Dịch vụ.
 - **Khởi chạy ngầm từ DHbox:**
   1. DHbox gọi `bridge.ping` trước (timeout ngắn). Nếu đang chạy, nối thẳng.
-  2. Nếu chưa chạy, DHbox tìm ứng dụng theo bundle ID và chạy với tham số `--background` (`activates = false`, `hides = true`, `addsToRecentItems = false`).
+  2. Nếu chưa chạy, DHbox tìm ứng dụng theo bundle ID và chạy với tham số `--background` (`activates = false`, `addsToRecentItems = false`). **Không đặt `config.hides = true`** vì `[NSApp hide:]` làm macOS kích hoạt App Nap và tạm dừng tiến trình WebKit của cửa sổ nền ngay lập tức.
   3. Khi nhận `--background`, DH Studio Pro:
-     - Giữ cửa sổ `main` ở trạng thái ẩn (`visible: false` trong `tauri.conf.json`, không gọi `show()`).
+     - Giữ cửa sổ `main` ở trạng thái ẩn (`visible: false` trong `tauri.conf.json`, không gọi `show()`, `BridgeState::main_window_visible = false`).
      - Trên macOS chuyển `ActivationPolicy::Accessory` để không nhảy icon trên Dock.
      - Vẫn nạp WebView ngầm để khôi phục phiên đăng nhập, bản quyền, cấu hình Contact the Sheet và phiên Google OAuth, rồi báo `webviewReady = true`.
      - Mở socket cầu nối ngay trong `setup`.
-  4. Nếu người dùng mở trực tiếp DH Studio Pro hoặc DHbox gọi `bridge.show_window`, DH Studio Pro khôi phục `ActivationPolicy::Regular` và hiện cửa sổ chính bình thường.
+  4. **Chống treo WebKit khi chạy ngầm trên macOS (`HiddenWakeGuard`):** Khi nhận yêu cầu `contact_sheet.*` trong lúc cửa sổ `main` đang ẩn, `src-tauri/src/bridge.rs` (kết hợp `src-tauri/src/dock_icon.m`) bật `NSProcessInfo` activity (`NSActivityUserInitiatedAllowingIdleSystemSleep | NSActivityLatencyCritical`) và tạm đưa cửa sổ `main` sang trạng thái không bị che khuất nhưng vô hình, xuyên chuột, không chiếm focus (`alphaValue = 0.001`, `ignoresMouseEvents = YES`, `hasShadow = NO`, `excludedFromWindowsMenu = YES`, `Transient | IgnoresCycle`, `orderFrontRegardless`) trong đúng thời gian yêu cầu đang chạy, sau đó `orderOut` ngay khi `Drop`. Do đó `bridge.ping` và `bridge.shutdown` bắt buộc đọc cờ `BridgeState::main_window_visible` thay vì `window.is_visible()`.
+  5. **Vòng đời đóng/mở lại cửa sổ trên macOS (`lib.rs`, `tray.rs`):**
+     - Không bao giờ để `"main"` bị hủy trong khi `"tray-panel"` giữ tiến trình sống thành trạng thái ma (icon Menu Bar còn nhưng không mở lại được cửa sổ chính). Khi đóng `"main"` (`X` / `Cmd+W`): nếu `close_to_tray == true` thì ẩn `"main"` và `prevent_close()`; nếu `close_to_tray == false` thì dọn socket và gọi `app.exit(0)`. Cửa sổ `"tray-panel"` luôn chỉ ẩn (`prevent_close()`).
+     - Khi người dùng mở trực tiếp DH Studio Pro (Dock `RunEvent::Reopen`, Menu Bar, Control Hub) hoặc DHbox gọi `bridge.show_window`, `tray::show_main_window` luôn chỉ thao tác cửa sổ `"main"`, khôi phục `ActivationPolicy::Regular`, trả lại alpha/mouseEvents/shadow và gọi `[NSApp unhide:]` + `[NSApp activateIgnoringOtherApps:YES]`.
 - **Đóng sau khi hoàn tất:**
   - Khi DH Studio Pro được DHbox mở ngầm (hoặc cửa sổ chính vẫn đang ẩn), sau khi người dùng thực thi xong hoặc khi đóng cửa sổ Contact the Sheet bên DHbox, DHbox hiện hộp thoại xác nhận đóng DH Studio Pro.
   - Khi người dùng xác nhận đóng, DHbox gửi `bridge.shutdown` để DH Studio Pro dọn socket và thoát sạch (`app.exit(0)`), không ẩn xuống khay hệ thống.

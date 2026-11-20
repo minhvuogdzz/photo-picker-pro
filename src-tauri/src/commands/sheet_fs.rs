@@ -19,8 +19,14 @@ pub struct FolderMetadataSummary {
 /// Performs a lightweight directory scan collecting only folder topology and file counts.
 /// Does NOT read file contents or decode images.
 #[tauri::command]
-pub fn scan_folder_topology(root_path: String, max_depth: Option<usize>) -> Result<Vec<FolderMetadataSummary>, String> {
-    let root = Path::new(&root_path);
+pub async fn scan_folder_topology(root_path: String, max_depth: Option<usize>) -> Result<Vec<FolderMetadataSummary>, String> {
+    tauri::async_runtime::spawn_blocking(move || scan_folder_topology_sync(&root_path, max_depth))
+        .await
+        .map_err(|e| format!("Lỗi luồng quét thư mục: {}", e))?
+}
+
+fn scan_folder_topology_sync(root_path: &str, max_depth: Option<usize>) -> Result<Vec<FolderMetadataSummary>, String> {
+    let root = Path::new(root_path);
     if !root.exists() || !root.is_dir() {
         return Err(format!("Thư mục không tồn tại: {}", root_path));
     }
@@ -44,8 +50,14 @@ pub fn scan_folder_topology(root_path: String, max_depth: Option<usize>) -> Resu
 
         let path = entry.path();
         if entry.file_type().is_dir() {
-            let path_str = path.to_string_lossy().to_string();
             let folder_name = entry.file_name().to_string_lossy().to_string();
+            // Skip hidden subdirectories (e.g. .git, .Trash, .Spotlight-V100) while
+            // never skipping depth 0 root (which may live under .shortcut-targets-by-id).
+            if depth > 0 && folder_name.starts_with('.') {
+                walker.skip_current_dir();
+                continue;
+            }
+            let path_str = path.to_string_lossy().to_string();
 
             folders_map.entry(path_str.clone()).or_insert_with(|| FolderMetadataSummary {
                 folder_path: path_str,
@@ -92,4 +104,39 @@ pub fn scan_folder_topology(root_path: String, max_depth: Option<usize>) -> Resu
     result.sort_by(|a, b| a.depth.cmp(&b.depth).then_with(|| a.folder_path.cmp(&b.folder_path)));
 
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs::{create_dir_all, File};
+
+    #[test]
+    fn skips_hidden_subdirectories_but_allows_hidden_ancestor_root() {
+        let base = std::env::temp_dir().join(format!(
+            "dh_sheet_fs_test_{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let root = base.join(".shortcut-targets-by-id").join("CustomerA");
+        let visible_child = root.join("Edit");
+        let hidden_child = root.join(".hidden_cache");
+        create_dir_all(&visible_child).unwrap();
+        create_dir_all(&hidden_child).unwrap();
+        File::create(visible_child.join("001.jpg")).unwrap();
+        File::create(hidden_child.join("002.jpg")).unwrap();
+
+        let summaries = scan_folder_topology_sync(&root.to_string_lossy(), Some(5)).unwrap();
+        let names: Vec<&str> = summaries.iter().map(|s| s.folder_name.as_str()).collect();
+        assert!(names.contains(&"CustomerA"));
+        assert!(names.contains(&"Edit"));
+        assert!(!names.contains(&".hidden_cache"));
+
+        let edit = summaries.iter().find(|s| s.folder_name == "Edit").unwrap();
+        assert_eq!(edit.finished_image_count, 1);
+
+        let _ = std::fs::remove_dir_all(base);
+    }
 }

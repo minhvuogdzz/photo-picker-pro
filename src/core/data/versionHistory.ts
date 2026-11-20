@@ -15,10 +15,34 @@ export interface VersionReleaseNote {
 
 export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
   {
+    version: "v3.5.1",
+    date: "2026-11-20",
+    title: "Bản vá chạy ngầm Contact the Sheet (hết treo/timeout) & sửa lỗi không mở lại được cửa sổ sau khi ấn X / Cmd+W",
+    isCurrent: true,
+    sections: [
+      {
+        title: "Liên kết DHbox — Hết treo và hết timeout khi quét ngầm",
+        type: "fix",
+        items: [
+          "Khắc phục triệt để tình trạng macOS App Nap & WebKit Occlusion tạm dừng tiến trình nền sau ~5 giây khiến quét Contact the Sheet từ chuột phải Finder bị treo ở 68% và hết thời gian chờ.",
+          "Bổ sung cơ chế giữ tiến trình nền tỉnh táo an toàn (NSProcessInfo activity + đánh thức cửa sổ ẩn xuyên chuột) đúng trong thời gian xử lý yêu cầu từ DHbox, giữ cửa sổ hoàn toàn ẩn và rút ngắn thời gian quét xuống chỉ còn vài giây.",
+          "Chuyển quét cây thư mục (scan_folder_topology) sang luồng nền bất đồng bộ và bỏ qua thư mục con ẩn để tránh đơ khi gặp thư mục lớn.",
+        ],
+      },
+      {
+        title: "Quản lý cửa sổ macOS — Khắc phục lỗi ấn X / Cmd+W không mở lại được",
+        type: "fix",
+        items: [
+          "Sửa lỗi khi tắt tuỳ chọn \"Chạy ngầm trên Menu Bar khi đóng cửa sổ\" và ấn X hoặc Cmd+W khiến cửa sổ chính bị huỷ nhưng icon Menu Bar vẫn còn mà không thể mở lại ứng dụng.",
+          "Khi bật \"Chạy ngầm trên Menu Bar\", cửa sổ chính được ẩn an toàn và luôn mở lại ngay khi bấm Dock, icon Menu Bar hoặc nút Mở cửa sổ chính trong Control Hub; khi tắt, ấn X / Cmd+W thoát ứng dụng sạch hoàn toàn.",
+        ],
+      },
+    ],
+  },
+  {
     version: "v3.5.0",
     date: "2026-11-20",
     title: "Liên kết hệ sinh thái DH — Cổng cầu nối Contact the Sheet cho DHbox & Chế độ chạy ngầm",
-    isCurrent: true,
     sections: [
       {
         title: "Liên kết hệ sinh thái DH (DH Ecosystem Bridge v1)",
