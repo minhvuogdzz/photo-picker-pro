@@ -247,7 +247,7 @@ const initialState = {
   scanOptions: {
     filter_raw: true,
     filter_jpg: false,
-    recursive: false,
+    recursive: true,
   },
   sheetFilterContext: null as SheetFilterContext | null,
   sheetUpdateStatus: null as SheetUpdateStatus | null,
@@ -350,6 +350,11 @@ export const useAppStore = create<AppState>((set) => ({
         inputFolders: nextInputFolders,
         batchCustomerFolders: nextBatchFolders,
         selectedInputFolders: [folderPath],
+        scannedFiles: [],
+        lastScanSignature: null,
+        matchResult: null,
+        copyResult: null,
+        phase: "idle",
       };
     }),
 
@@ -465,7 +470,9 @@ export const useAppStore = create<AppState>((set) => ({
 
   removeInputFolder: (folder) =>
     set((state) => {
-      const wasSelected = state.selectedInputFolders.includes(folder);
+      const wasSelected =
+        state.selectedInputFolders.includes(folder) ||
+        (state.selectedInputFolders.length === 0 && state.inputFolders[0] === folder);
       const nextInputFolders = state.inputFolders.filter((f) => f !== folder);
       const nextBatchFolders = state.batchCustomerFolders.filter((f) => f.folder_path !== folder);
       let nextSelected = state.selectedInputFolders.filter((f) => f !== folder);
@@ -482,6 +489,10 @@ export const useAppStore = create<AppState>((set) => ({
               lastScanSignature: null,
               matchResult: null,
               copyResult: null,
+              rawCodeInput: "",
+              parsedCodes: [],
+              autoFindStatus: null,
+              sheetFilterContext: null,
               phase: "idle" as AppPhase,
             }
           : {}),
@@ -497,6 +508,10 @@ export const useAppStore = create<AppState>((set) => ({
       lastScanSignature: null,
       matchResult: null,
       copyResult: null,
+      rawCodeInput: "",
+      parsedCodes: [],
+      autoFindStatus: null,
+      sheetFilterContext: null,
       phase: "idle",
     }),
 

@@ -50,6 +50,7 @@ export function CenterPanel() {
   const scanOptions = useAppStore((s) => s.scanOptions);
   const setScanOptions = useAppStore((s) => s.setScanOptions);
   const pickerMode = useAppStore((s) => s.pickerMode);
+  const autoFindEnabled = useAppStore((s) => s.autoFindEnabled);
   const isAutoFinding = useAppStore((s) => s.isAutoFinding);
   const autoFindStatus = useAppStore((s) => s.autoFindStatus);
   const setAutoFindStatus = useAppStore((s) => s.setAutoFindStatus);
@@ -59,6 +60,30 @@ export function CenterPanel() {
   const { t } = useTranslation();
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const activeCustomerFolder = selectedInputFolders[0] || inputFolders[0] || "";
+
+  // Always keep Auto Find synchronized whenever the active customer changes in multi-customer mode
+  // (e.g. clicking another customer/checkbox, manually deleting the active customer so the queue jumps
+  // to the next customer, restoring a customer from trash, or filtering via Check TT).
+  useEffect(() => {
+    if (pickerMode !== "multi" || !autoFindEnabled) {
+      autoFindService.resetActiveTarget();
+      return;
+    }
+    if (!activeCustomerFolder) {
+      autoFindService.resetActiveTarget();
+      const st = useAppStore.getState();
+      st.setAutoFindStatus(null);
+      st.setRawCodeInput("");
+      st.setParsedCodes([]);
+      return;
+    }
+    if (autoFindService.getActiveTargetFolder() !== activeCustomerFolder) {
+      const folderName =
+        activeCustomerFolder.split(/[/\\]+/).filter(Boolean).pop() || activeCustomerFolder;
+      void autoFindService.fetchAndApplyCodesForCustomer(activeCustomerFolder, folderName);
+    }
+  }, [pickerMode, autoFindEnabled, activeCustomerFolder]);
 
   const handleRetryAutoFind = async () => {
     const activeFolder = selectedInputFolders[0] || inputFolders[0];

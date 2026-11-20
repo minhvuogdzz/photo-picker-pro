@@ -15,10 +15,26 @@ export interface VersionReleaseNote {
 
 export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
   {
+    version: "v3.4.2",
+    date: "2026-11-20",
+    title: "Bản vá Lọc ảnh Pro — Mặc định quét thư mục con & Đồng bộ Auto Find tức thì khi chuyển hoặc xoá khách",
+    isCurrent: true,
+    sections: [
+      {
+        title: "Lọc ảnh Pro — Đồng bộ Auto Find toàn diện & Thiết lập mặc định thông minh",
+        type: "improvement",
+        items: [
+          "Đặt mặc định tuỳ chọn \"Lọc tất cả thư mục con\" ngay khi khởi động ứng dụng để không bỏ sót ảnh trong các thư mục con của khách.",
+          "Đồng bộ hoá toàn diện Auto Find theo khách hàng đang chọn: khi click vào tên khách, tích vào ô checkbox, bấm xoá thủ công một khách khiến hàng đợi nhảy xuống khách kế tiếp, khôi phục từ thùng rác hoặc lọc qua Check TT, hệ thống đều tự động nạp mã chọn mới ngay lập tức.",
+          "Tự động làm sạch mã của khách cũ và chống xung đột dữ liệu khi click chuyển nhanh qua nhiều khách liên tiếp.",
+        ],
+      },
+    ],
+  },
+  {
     version: "v3.4.1",
     date: "2026-11-19",
     title: "Bản vá tối ưu hiệu năng Lọc ảnh Pro — Xử lý triệt để lỗi treo khi quét và tăng tốc chép file",
-    isCurrent: true,
     sections: [
       {
         title: "Lọc ảnh Pro — Sửa lỗi treo Indexing & Khớp mã tức thì khi chỉnh sửa",

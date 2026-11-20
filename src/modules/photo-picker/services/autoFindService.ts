@@ -85,6 +85,16 @@ class AutoFindService {
   private tabRowsCache = new Map<string, CachedTabEntry>();
   private sheetMetadataCache = new Map<string, { tabs: string[]; timestamp: number }>();
   private readonly CACHE_TTL_MS = 60 * 1000; // 60 seconds (fresh enough for active studio workflows)
+  private activeTargetFolder: string | null = null;
+  private currentRequestId = 0;
+
+  public getActiveTargetFolder(): string | null {
+    return this.activeTargetFolder;
+  }
+
+  public resetActiveTarget(): void {
+    this.activeTargetFolder = null;
+  }
 
   private cacheKey(spreadsheetId: string, tabTitle: string, startRow: number): string {
     return `${spreadsheetId}::${tabTitle}::${startRow}`;
@@ -225,6 +235,18 @@ class AutoFindService {
     providedFolderName?: string,
     options?: { forceFresh?: boolean }
   ): Promise<AutoFindResult> {
+    if (!folderPath) {
+      return {
+        success: false,
+        folderName: "",
+        folderPath: "",
+        reason: "Chưa chọn thư mục khách.",
+      };
+    }
+
+    this.activeTargetFolder = folderPath;
+    const requestId = ++this.currentRequestId;
+
     if (options?.forceFresh) {
       this.clearCache();
     }
@@ -232,6 +254,13 @@ class AutoFindService {
       providedFolderName ||
       getFolderName(folderPath) ||
       folderPath;
+
+    const initStore = useAppStore.getState();
+    initStore.setRawCodeInput("");
+    initStore.setParsedCodes([]);
+    initStore.setMatchResult(null);
+    initStore.setCopyResult(null);
+    initStore.setSheetFilterContext(null);
 
     const { sheetFilterContext } = useAppStore.getState();
     const { profiles, activeProfile } = useContactSheetStore.getState();
@@ -660,6 +689,15 @@ class AutoFindService {
 
       const formattedCodes = sheetExtractorService.formatExtractedCodes(activeCols);
 
+      if (requestId !== this.currentRequestId) {
+        return {
+          success: false,
+          folderName: rawName,
+          folderPath,
+          reason: "Đã chuyển sang khách hàng khác.",
+        };
+      }
+
       if (!formattedCodes.trim()) {
         const reason = `Đã tìm thấy dòng ${extraction.matchedRow} nhưng khách chưa có mã chọn trên Sheet.`;
         useAppStore.getState().setAutoFindStatus({
@@ -686,9 +724,20 @@ class AutoFindService {
         const parsed = await invoke<CustomerCode[]>("parse_customer_codes", {
           input: formattedCodes,
         });
-        store.setParsedCodes(parsed);
+        if (requestId === this.currentRequestId) {
+          store.setParsedCodes(parsed);
+        }
       } catch (parseErr) {
         console.warn("[AutoFindService] parse_customer_codes error:", parseErr);
+      }
+
+      if (requestId !== this.currentRequestId) {
+        return {
+          success: false,
+          folderName: rawName,
+          folderPath,
+          reason: "Đã chuyển sang khách hàng khác.",
+        };
       }
 
       // 10. Save Sheet filter context for auto-status update on copy complete
@@ -736,6 +785,13 @@ class AutoFindService {
         tabTitle: matchedTab,
       };
     } catch (err: any) {
+      if (requestId !== this.currentRequestId) {
+        return {
+          success: false,
+          folderName: rawName,
+          folderPath,
+        };
+      }
       console.error("[AutoFindService] Unexpected error:", err);
       const reason = err?.message || String(err);
       useAppStore.getState().setAutoFindStatus({
@@ -750,7 +806,9 @@ class AutoFindService {
         reason,
       };
     } finally {
-      useAppStore.getState().setIsAutoFinding(false);
+      if (requestId === this.currentRequestId) {
+        useAppStore.getState().setIsAutoFinding(false);
+      }
     }
   }
 }

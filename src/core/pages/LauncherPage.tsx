@@ -29,7 +29,7 @@ export function LauncherPage() {
   const setLastClickPos = useAppStore((s) => s.setLastClickPos);
   const session = useAuthStore((s) => s.session);
 
-  const [version, setVersion] = useState("3.4.1");
+  const [version, setVersion] = useState("3.4.2");
   const [companyUrl, setCompanyUrl] = useState("");
   const [showLicenseManager, setShowLicenseManager] = useState(false);
 

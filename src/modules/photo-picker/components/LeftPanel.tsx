@@ -80,11 +80,18 @@ export function LeftPanel() {
   };
 
   const handleSelectCustomer = (folder: string) => {
-    const currentActive = useAppStore.getState().selectedInputFolders[0];
+    const st = useAppStore.getState();
+    const currentActive = st.selectedInputFolders[0] || st.inputFolders[0];
     selectSingleInputFolder(folder);
-    if (currentActive !== folder && useAppStore.getState().autoFindEnabled) {
-      const folderName = getFolderName(folder);
-      void autoFindService.fetchAndApplyCodesForCustomer(folder, folderName);
+    if (st.autoFindEnabled) {
+      if (
+        currentActive !== folder ||
+        autoFindService.getActiveTargetFolder() !== folder ||
+        !st.rawCodeInput.trim()
+      ) {
+        const folderName = getFolderName(folder);
+        void autoFindService.fetchAndApplyCodesForCustomer(folder, folderName);
+      }
     }
   };
 

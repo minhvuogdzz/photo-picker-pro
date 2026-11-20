@@ -2,6 +2,17 @@
 
 Tất cả các bản phát hành của **DH Studio Pro** (phát triển & thuộc sở hữu bản quyền của **Devhouse Software**) đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
 
+## [v3.4.2] - 2026-11-20
+
+**Bản vá Lọc ảnh Pro — Mặc định quét thư mục con & Đồng bộ Auto Find tức thì khi chuyển hoặc xoá khách**
+
+#### Lọc ảnh Pro — Đồng bộ Auto Find toàn diện & Thiết lập mặc định thông minh
+- Đặt mặc định tuỳ chọn **"Lọc tất cả thư mục con"** ngay khi khởi động ứng dụng để không bỏ sót ảnh nằm trong các thư mục con của khách.
+- Đồng bộ hoá toàn diện **Auto Find** theo khách hàng đang chọn: bất kỳ khi nào khách active thay đổi (do người dùng click vào tên khách, tích vào ô checkbox, bấm xoá thủ công một khách khiến danh sách nhảy xuống khách kế tiếp, khôi phục khách từ thùng rác, hoặc sau khi chạy đối soát Check TT), hệ thống đều tự động nạp mã chọn mới từ Google Sheet ngay lập tức.
+- Tự động làm sạch mã của khách cũ và chống xung đột dữ liệu khi người dùng click chuyển nhanh qua nhiều khách liên tiếp.
+
+---
+
 ## [v3.4.1] - 2026-11-19
 
 **Bản vá tối ưu hiệu năng Lọc ảnh Pro — Xử lý triệt để lỗi treo khi quét và tăng tốc chép file**
