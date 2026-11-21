@@ -1,6 +1,7 @@
 import { HardDrive, Usb } from "lucide-react";
 import { DiskStorageItem } from "./types";
 import { formatGb } from "@/core/services/systemPerformanceService";
+import { useTranslation } from "@/core/lib/i18n";
 
 interface StorageDiskRingProps {
   disk: DiskStorageItem;
@@ -8,6 +9,7 @@ interface StorageDiskRingProps {
 }
 
 export function StorageDiskRing({ disk, isSingle = false }: StorageDiskRingProps) {
+  const { tr } = useTranslation();
   const radius = 22;
   const circumference = 2 * Math.PI * radius;
   const usedPct = Math.max(0, Math.min(100, disk.used_pct));
@@ -57,7 +59,7 @@ export function StorageDiskRing({ disk, isSingle = false }: StorageDiskRingProps
                 {formatGb(disk.available_bytes, 0)}
               </span>
               <span className="text-[7px] font-bold text-muted-foreground uppercase mt-0.5">
-                Trống
+                {tr("Trống", "Free")}
               </span>
             </div>
           </div>
@@ -81,7 +83,7 @@ export function StorageDiskRing({ disk, isSingle = false }: StorageDiskRingProps
                 {formatGb(disk.available_bytes)}
               </span>
               <span className="text-[10px] text-muted-foreground font-medium">
-                dung lượng khả dụng
+                {tr("dung lượng khả dụng", "available")}
               </span>
             </div>
           </div>
@@ -90,7 +92,7 @@ export function StorageDiskRing({ disk, isSingle = false }: StorageDiskRingProps
         {/* Right: Storage Capacity Horizontal Bar */}
         <div className="w-full sm:w-64 flex flex-col gap-1 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/40">
           <div className="flex items-center justify-between text-[10px] font-mono">
-            <span className="text-muted-foreground">Đã dùng: {formatGb(disk.used_bytes)}</span>
+            <span className="text-muted-foreground">{tr("Đã dùng:", "Used:")} {formatGb(disk.used_bytes)}</span>
             <span className="font-bold text-foreground">{usedPct.toFixed(0)}%</span>
           </div>
           <div className="w-full h-2 rounded-full bg-muted/60 overflow-hidden">
@@ -103,7 +105,7 @@ export function StorageDiskRing({ disk, isSingle = false }: StorageDiskRingProps
             />
           </div>
           <div className="flex items-center justify-between text-[9px] text-muted-foreground/75 font-mono">
-            <span>Tổng dung lượng</span>
+            <span>{tr("Tổng dung lượng", "Total capacity")}</span>
             <span>{formatGb(disk.total_bytes)}</span>
           </div>
         </div>
@@ -143,7 +145,7 @@ export function StorageDiskRing({ disk, isSingle = false }: StorageDiskRingProps
             {formatGb(disk.available_bytes, 0)}
           </span>
           <span className="text-[7px] font-bold text-muted-foreground uppercase mt-0.5">
-            Trống
+            {tr("Trống", "Free")}
           </span>
         </div>
       </div>
@@ -171,7 +173,7 @@ export function StorageDiskRing({ disk, isSingle = false }: StorageDiskRingProps
             {formatGb(disk.available_bytes)}
           </span>
           <span className="text-[9px] text-muted-foreground font-medium">
-            còn trống
+            {tr("còn trống", "free")}
           </span>
         </div>
 

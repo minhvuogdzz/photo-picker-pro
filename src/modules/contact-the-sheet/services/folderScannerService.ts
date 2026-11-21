@@ -9,6 +9,7 @@ import { folderParserService } from "./folderParserService.ts";
 import { driveResolverService } from "./driveResolverService.ts";
 import { jobMatchingService, type SheetRowRecord } from "./jobMatchingService.ts";
 import { useContactSheetStore } from "../stores/useContactSheetStore.ts";
+import { trText } from "../../../core/lib/i18n.ts";
 import folderTreesFixture from "../../../../tests/fixtures/contact-the-sheet/folder-trees.json" with { type: "json" };
 
 /** Max jobs whose Drive lookup runs at the same time (keeps clear of Drive API rate limits). */
@@ -47,7 +48,7 @@ export class FolderScannerService {
 
     // 1. In Mock Mode, use deterministic fixture
     if (isMock || profile.isMockSandbox) {
-      if (onProgress) onProgress("Đang nạp dữ liệu mẫu Sandbox...");
+      if (onProgress) onProgress(trText("Đang nạp dữ liệu mẫu Sandbox...", "Loading Sandbox sample data..."));
       const fixtureCases = folderTreesFixture as any[];
 
       for (let idx = 0; idx < fixtureCases.length; idx++) {
@@ -136,7 +137,7 @@ export class FolderScannerService {
 
     const expandedRootPaths = await this.resolveSmartInputFolders(rootPaths);
     for (const rootPath of expandedRootPaths) {
-      if (onProgress) onProgress(`Đang quét cấu trúc thư mục: ${rootPath}...`);
+      if (onProgress) onProgress(trText(`Đang quét cấu trúc thư mục: ${rootPath}...`, `Scanning folder structure: ${rootPath}...`));
 
       let topology: FolderTopologyEntry[] = [];
       try {
@@ -146,7 +147,7 @@ export class FolderScannerService {
         });
       } catch (err) {
         console.error("Native folder topology scan failed:", err);
-        throw new Error(`Lỗi quét thư mục: ${err}`);
+        throw new Error(`${trText("Lỗi quét thư mục:", "Folder scan error:")} ${err}`);
       }
 
       if (topology.length === 0) continue;
@@ -221,7 +222,7 @@ export class FolderScannerService {
         driveResult = {
           driveItemId: driveResult?.driveItemId || "",
           driveWebLink: "",
-          warnings: driveResult?.warnings || [`Chưa tìm thấy liên kết thư mục trên Google Drive`],
+          warnings: driveResult?.warnings || [trText("Chưa tìm thấy liên kết thư mục trên Google Drive", "Matching folder link not found on Google Drive")],
         };
       }
 
@@ -255,7 +256,14 @@ export class FolderScannerService {
       }
 
       doneCount++;
-      if (onProgress) onProgress(`Đang tra cứu Google Drive & so khớp (${doneCount}/${items.length})...`);
+      if (onProgress) {
+        onProgress(
+          trText(
+            `Đang tra cứu Google Drive & so khớp (${doneCount}/${items.length})...`,
+            `Resolving Google Drive & matching (${doneCount}/${items.length})...`
+          )
+        );
+      }
       return job;
     };
 

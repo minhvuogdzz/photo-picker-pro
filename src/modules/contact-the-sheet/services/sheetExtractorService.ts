@@ -5,6 +5,7 @@ import type {
 } from "../types/index.ts";
 import { folderParserService } from "./folderParserService.ts";
 import { jobMatchingService, type SheetRowRecord, type MatchScoreResult } from "./jobMatchingService.ts";
+import { trText } from "../../../core/lib/i18n.ts";
 
 export interface ExtractedCodeColumn {
   columnLetter: string;
@@ -66,7 +67,12 @@ export class SheetExtractorService {
         jobFolderName: rawName,
         customerName: metadata.customerName,
         status: "NO_MATCH",
-        reason: match.reason || `Không tìm thấy dòng tương ứng với "${rawName}" trên bảng tính.`,
+        reason:
+          match.reason ||
+          trText(
+            `Không tìm thấy dòng tương ứng với "${rawName}" trên bảng tính.`,
+            `No matching row found for "${rawName}" on the spreadsheet.`
+          ),
         candidateColumns: [],
         candidateRows: match.candidateRows,
       };
@@ -132,7 +138,7 @@ export class SheetExtractorService {
       const parsed = val ? this.parseTokenList(val) : [];
       results.push({
         columnLetter: primaryMapping.columnLetter,
-        columnHeader: primaryMapping.columnHeader || `Cột ${primaryMapping.columnLetter}`,
+        columnHeader: primaryMapping.columnHeader || trText(`Cột ${primaryMapping.columnLetter}`, `Col ${primaryMapping.columnLetter}`),
         value: val,
         codeCount: parsed.length,
         sampleCodes: parsed.slice(0, 5),
@@ -146,7 +152,7 @@ export class SheetExtractorService {
       const parsed = val ? this.parseTokenList(val) : [];
       results.push({
         columnLetter: secondaryMapping.columnLetter,
-        columnHeader: secondaryMapping.columnHeader || `Cột ${secondaryMapping.columnLetter}`,
+        columnHeader: secondaryMapping.columnHeader || trText(`Cột ${secondaryMapping.columnLetter}`, `Col ${secondaryMapping.columnLetter}`),
         value: val,
         codeCount: parsed.length,
         sampleCodes: parsed.slice(0, 5),
@@ -177,7 +183,7 @@ export class SheetExtractorService {
           if (parsed.length > 0) {
             fallbackResults.push({
               columnLetter: mapping.columnLetter,
-              columnHeader: mapping.columnHeader || `Cột ${mapping.columnLetter}`,
+              columnHeader: mapping.columnHeader || trText(`Cột ${mapping.columnLetter}`, `Col ${mapping.columnLetter}`),
               value: val,
               codeCount: parsed.length,
               sampleCodes: parsed.slice(0, 5),

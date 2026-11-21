@@ -2,8 +2,10 @@ import React, { useState } from "react";
 import { Zap, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { useAppStore } from "@/core/stores/useAppStore";
 import { autoFindService } from "../services/autoFindService";
+import { useTranslation } from "@/core/lib/i18n";
 
 export function AutoFindToggle() {
+  const { tr } = useTranslation();
   const pickerMode = useAppStore((s) => s.pickerMode);
   const autoFindEnabled = useAppStore((s) => s.autoFindEnabled);
   const setAutoFindEnabled = useAppStore((s) => s.setAutoFindEnabled);
@@ -32,7 +34,10 @@ export function AutoFindToggle() {
         if (res.success) {
           setNotification({
             type: "success",
-            message: `Đã nạp ${res.codeCount} mã cho ${res.customerName || res.folderName}`,
+            message: tr(
+              `Đã nạp ${res.codeCount} mã cho ${res.customerName || res.folderName}`,
+              `Loaded ${res.codeCount} code(s) for ${res.customerName || res.folderName}`
+            ),
           });
           setTimeout(() => setNotification(null), 3500);
         } else if (res.reason) {
@@ -59,7 +64,10 @@ export function AutoFindToggle() {
             ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/25 hover:border-emerald-500/60 shadow-[0_0_12px_rgba(16,185,129,0.15)]"
             : "bg-muted/40 border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/70"
         }`}
-        title="Bật/Tắt Auto Find: Tự động nạp mã khách từ Google Sheet và chuyển khách tiếp theo khi lọc xong"
+        title={tr(
+          "Bật/Tắt Auto Find: Tự động nạp mã khách từ Google Sheet và chuyển khách tiếp theo khi lọc xong",
+          "Toggle Auto Find: Automatically load customer codes from Google Sheet and advance after culling"
+        )}
       >
         {isAutoFinding ? (
           <Loader2 size={12} className="text-emerald-600 dark:text-emerald-400 animate-spin shrink-0" />

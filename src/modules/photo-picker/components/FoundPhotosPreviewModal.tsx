@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import type { MatchedPhoto } from "@/core/types";
 import { photoPreviewService } from "../services/photoPreviewService";
+import { useTranslation } from "@/core/lib/i18n";
 
 interface FoundPhotosPreviewModalProps {
   readonly isOpen: boolean;
@@ -43,6 +44,7 @@ export function FoundPhotosPreviewModal({
   initialIndex = 0,
   onClose,
 }: FoundPhotosPreviewModalProps) {
+  const { tr } = useTranslation();
   // Filter only items with a valid photo file
   const validPhotos = useMemo(() => {
     return photos.filter((p) => p.photo !== null && p.photo.full_path);
@@ -198,7 +200,7 @@ export function FoundPhotosPreviewModal({
           <div className="flex items-center gap-3 min-w-0">
             <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold tracking-wide shrink-0">
               <CheckCircle size={13} />
-              Đã tìm thấy
+              {tr("Đã tìm thấy", "Found")}
             </span>
 
             {currentMatch && (
@@ -234,7 +236,7 @@ export function FoundPhotosPreviewModal({
           <div className="hidden sm:flex items-center gap-1 text-xs font-mono font-semibold text-muted-foreground bg-white/5 border border-white/10 px-3 py-1 rounded-full">
             <span className="text-emerald-400 font-bold">{currentIndex + 1}</span>
             <span>/</span>
-            <span>{validPhotos.length} ảnh</span>
+            <span>{tr(`${validPhotos.length} ảnh`, `${validPhotos.length} photos`)}</span>
           </div>
 
           {/* Right actions */}
@@ -244,7 +246,7 @@ export function FoundPhotosPreviewModal({
               type="button"
               onClick={() => setIsZoomFit((prev) => !prev)}
               className="p-2 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 text-muted-foreground hover:text-white transition-colors cursor-pointer"
-              title={isZoomFit ? "Phóng to 100% (Phím Space)" : "Vừa màn hình (Phím Space)"}
+              title={isZoomFit ? tr("Phóng to 100% (Phím Space)", "Zoom 100% (Space)") : tr("Vừa màn hình (Phím Space)", "Fit to screen (Space)")}
             >
               {isZoomFit ? <Maximize2 size={16} /> : <Minimize2 size={16} />}
             </button>
@@ -254,10 +256,10 @@ export function FoundPhotosPreviewModal({
               type="button"
               onClick={handleCopyPath}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 text-xs font-medium text-muted-foreground hover:text-white transition-colors cursor-pointer"
-              title="Sao chép đường dẫn file ảnh"
+              title={tr("Sao chép đường dẫn file ảnh", "Copy image file path")}
             >
               {copiedPath ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
-              <span className="hidden md:inline">{copiedPath ? "Đã chép" : "Chép path"}</span>
+              <span className="hidden md:inline">{copiedPath ? tr("Đã chép", "Copied") : tr("Chép path", "Copy Path")}</span>
             </button>
 
             {/* Close Button */}
@@ -265,7 +267,7 @@ export function FoundPhotosPreviewModal({
               type="button"
               onClick={onClose}
               className="p-2 rounded-xl bg-white/10 hover:bg-red-500/20 hover:text-red-400 border border-white/10 text-muted-foreground hover:border-red-500/30 transition-all cursor-pointer"
-              title="Đóng (Phím ESC)" aria-label="Đóng (Phím ESC)"
+              title={tr("Đóng (Phím ESC)", "Close (ESC)")} aria-label={tr("Đóng (Phím ESC)", "Close (ESC)")}
             >
               <X size={18} />
             </button>
@@ -280,7 +282,7 @@ export function FoundPhotosPreviewModal({
               type="button"
               onClick={handlePrev}
               className="absolute left-3 sm:left-6 z-20 w-11 h-11 rounded-2xl bg-black/60 hover:bg-emerald-600/80 text-white/80 hover:text-white border border-white/15 hover:border-emerald-400/50 flex items-center justify-center backdrop-blur-md shadow-2xl transition-all cursor-pointer group active:scale-95"
-              title="Ảnh trước (Mũi tên Trái ←)" aria-label="Ảnh trước (Mũi tên Trái ←)"
+              title={tr("Ảnh trước (Mũi tên Trái ←)", "Previous (Left Arrow ←)")} aria-label={tr("Ảnh trước (Mũi tên Trái ←)", "Previous (Left Arrow ←)")}
             >
               <ChevronLeft size={22} className="group-hover:-translate-x-0.5 transition-transform" />
             </button>
@@ -292,7 +294,7 @@ export function FoundPhotosPreviewModal({
               type="button"
               onClick={handleNext}
               className="absolute right-3 sm:right-6 z-20 w-11 h-11 rounded-2xl bg-black/60 hover:bg-emerald-600/80 text-white/80 hover:text-white border border-white/15 hover:border-emerald-400/50 flex items-center justify-center backdrop-blur-md shadow-2xl transition-all cursor-pointer group active:scale-95"
-              title="Ảnh tiếp theo (Mũi tên Phải →)" aria-label="Ảnh tiếp theo (Mũi tên Phải →)"
+              title={tr("Ảnh tiếp theo (Mũi tên Phải →)", "Next (Right Arrow →)")} aria-label={tr("Ảnh tiếp theo (Mũi tên Phải →)", "Next (Right Arrow →)")}
             >
               <ChevronRight size={22} className="group-hover:translate-x-0.5 transition-transform" />
             </button>
@@ -303,7 +305,7 @@ export function FoundPhotosPreviewModal({
             {isLoadingThumb && !highResThumb && (
               <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground animate-fade-in">
                 <Loader2 size={36} className="text-emerald-400 animate-spin" />
-                <span className="text-xs font-medium">Đang trích xuất ảnh xem trước HD...</span>
+                <span className="text-xs font-medium">{tr("Đang trích xuất ảnh xem trước HD...", "Rendering HD preview...")}</span>
               </div>
             )}
 
@@ -321,7 +323,7 @@ export function FoundPhotosPreviewModal({
             ) : !isLoadingThumb && (
               <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground/80">
                 <ImageIcon size={48} />
-                <span className="text-xs">Không thể tạo ảnh xem trước</span>
+                <span className="text-xs">{tr("Không thể tạo ảnh xem trước", "Unable to generate preview")}</span>
               </div>
             )}
           </div>
@@ -337,7 +339,7 @@ export function FoundPhotosPreviewModal({
                 <span className="truncate font-mono">{currentPhoto.folder}</span>
               </span>
               <span className="shrink-0 font-mono text-[10px] bg-white/5 px-2 py-0.5 rounded border border-white/10 ml-3">
-                {currentPhoto.normalized_number ? `Mã số: ${currentPhoto.normalized_number}` : ""}
+                {currentPhoto.normalized_number ? `${tr("Mã số:", "Code:")} ${currentPhoto.normalized_number}` : ""}
               </span>
             </div>
           )}

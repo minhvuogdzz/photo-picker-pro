@@ -46,7 +46,7 @@ export function EcosystemSidebar() {
   const authLogout = useAuthStore((s) => s.logout);
   const theme = useSettingsStore((s) => s.settings.theme);
   const updateSetting = useSettingsStore((s) => s.updateSetting);
-  const { t } = useTranslation();
+  const { t, tr } = useTranslation();
   const unreadCount = useNotificationStore((s) => s.getUnreadCount());
 
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -96,18 +96,18 @@ export function EcosystemSidebar() {
 
   const navSections: { title: string; items: NavItem[] }[] = [
     {
-      title: "Tổng quan",
+      title: tr("Tổng quan", "Overview"),
       items: [
         {
           id: "launcher",
-          label: "Bảng điều khiển",
+          label: tr("Bảng điều khiển", "Dashboard"),
           icon: Home,
           isActive: activeModule === "launcher",
           onClick: () => handleNavigate("launcher"),
         },
         {
           id: "notifications",
-          label: "Trung tâm thông báo",
+          label: tr("Trung tâm thông báo", "Notifications"),
           icon: Bell,
           isActive: activeModule === "notifications",
           badge: unreadCount > 0 ? unreadCount : undefined,
@@ -115,7 +115,7 @@ export function EcosystemSidebar() {
         },
         {
           id: "photo-counter",
-          label: "Thống kê",
+          label: tr("Thống kê", "Photo Analytics"),
           icon: BarChart3,
           isActive: activeModule === "photo-counter",
           onClick: () => handleNavigate("photo-counter"),
@@ -123,11 +123,11 @@ export function EcosystemSidebar() {
       ],
     },
     {
-      title: "Ứng dụng",
+      title: tr("Ứng dụng", "Apps"),
       items: [
         {
           id: "photo-picker",
-          label: "Lọc ảnh Pro",
+          label: tr("Lọc ảnh Pro", "Photo Picker Pro"),
           icon: PhotoPickerIcon,
           isActive:
             activeModule === "photo-picker" &&
@@ -144,14 +144,14 @@ export function EcosystemSidebar() {
         },
         {
           id: "mvd-convert",
-          label: t("convert_file") || "Chuyển đổi file",
+          label: t("convert_file"),
           icon: FileImage,
           isActive: activeModule === "mvd-convert",
           onClick: () => handleNavigate("mvd-convert"),
         },
         {
           id: "resources",
-          label: "Kho Tài nguyên",
+          label: tr("Kho Tài nguyên", "Resources Hub"),
           icon: Layers,
           isActive: activeModule === "resources",
           onClick: () => handleNavigate("resources"),
@@ -159,11 +159,11 @@ export function EcosystemSidebar() {
       ],
     },
     {
-      title: "Hệ thống",
+      title: t("system"),
       items: [
         {
           id: "system",
-          label: "Cài đặt & Bản quyền",
+          label: tr("Cài đặt & Bản quyền", "Settings & License"),
           icon: Settings2,
           isActive:
             activeModule === "system" ||
@@ -175,9 +175,9 @@ export function EcosystemSidebar() {
   ];
 
   const themeOptions = [
-    { value: "light" as const, label: "Sáng", icon: Sun, title: "Giao diện Sáng (Light)" },
-    { value: "dark" as const, label: "Tối", icon: Moon, title: "Giao diện Tối (Dark)" },
-    { value: "system" as const, label: "Auto", icon: Monitor, title: "Tự động theo hệ điều hành (Auto)" },
+    { value: "light" as const, label: t("light"), icon: Sun, title: tr("Giao diện Sáng (Light)", "Light Theme") },
+    { value: "dark" as const, label: t("dark"), icon: Moon, title: tr("Giao diện Tối (Dark)", "Dark Theme") },
+    { value: "system" as const, label: "Auto", icon: Monitor, title: tr("Tự động theo hệ điều hành (Auto)", "Follow System Theme (Auto)") },
   ];
 
   const footerRowClass =
@@ -225,8 +225,8 @@ export function EcosystemSidebar() {
             className={`w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-foreground/[0.06] transition-colors cursor-pointer shrink-0 ${
               isCollapsed ? "hidden" : ""
             }`}
-            title="Thu gọn thanh bên"
-            aria-label="Thu gọn thanh bên"
+            title={tr("Thu gọn thanh bên", "Collapse sidebar")}
+            aria-label={tr("Thu gọn thanh bên", "Collapse sidebar")}
           >
             <PanelLeft size={16} strokeWidth={1.75} />
           </button>
@@ -238,8 +238,8 @@ export function EcosystemSidebar() {
               type="button"
               onClick={() => setIsCollapsed(false)}
               className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-foreground/[0.06] transition-colors cursor-pointer"
-              title="Mở rộng thanh bên"
-              aria-label="Mở rộng thanh bên"
+              title={tr("Mở rộng thanh bên", "Expand sidebar")}
+              aria-label={tr("Mở rộng thanh bên", "Expand sidebar")}
             >
               <ChevronRight size={15} strokeWidth={1.75} />
             </button>
@@ -326,10 +326,10 @@ export function EcosystemSidebar() {
                 type="button"
                 onClick={() => setShowLicenseManager(true)}
                 className={footerRowClass}
-                title="Xem quyền lợi và gói bản quyền"
+                title={tr("Xem quyền lợi và gói bản quyền", "View plan benefits & license")}
               >
                 <Key size={15} strokeWidth={1.75} className="shrink-0" />
-                <span className="truncate flex-1 text-left">Gói bản quyền & Key</span>
+                <span className="truncate flex-1 text-left">{tr("Gói bản quyền & Key", "Plan & License Key")}</span>
                 <ChevronRight size={13} strokeWidth={1.75} className="opacity-0 group-hover:opacity-60 transition-opacity shrink-0" />
               </button>
 
@@ -337,17 +337,17 @@ export function EcosystemSidebar() {
                 type="button"
                 onClick={() => setIsDonateModalOpen(true)}
                 className={footerRowClass}
-                title="Ủng hộ tác giả một ly cafe"
+                title={tr("Ủng hộ tác giả một ly cafe", "Buy the author a coffee")}
               >
                 <Coffee size={15} strokeWidth={1.75} className="shrink-0" />
-                <span className="truncate flex-1 text-left">Ủng hộ tác giả</span>
+                <span className="truncate flex-1 text-left">{tr("Ủng hộ tác giả", "Support Author")}</span>
                 <ChevronRight size={13} strokeWidth={1.75} className="opacity-0 group-hover:opacity-60 transition-opacity shrink-0" />
               </button>
 
               {/* Theme switcher */}
               <div
                 role="radiogroup"
-                aria-label="Giao diện"
+                aria-label={t("theme")}
                 className="mt-1 grid grid-cols-3 p-0.5 rounded-[11px] bg-foreground/[0.05] text-[11.5px] gap-0.5"
               >
                 {themeOptions.map((opt) => {
@@ -391,15 +391,15 @@ export function EcosystemSidebar() {
                   </div>
                   <span
                     className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-success ring-2 ring-background"
-                    title="Sẵn sàng làm việc"
+                    title={tr("Sẵn sàng làm việc", "Ready")}
                   />
                 </div>
                 <div className="flex flex-col min-w-0 flex-1">
                   <span className="text-[12.5px] font-medium text-foreground truncate leading-tight">
-                    {session?.name || "Người dùng"}
+                    {session?.name || t("user")}
                   </span>
                   <span className="text-[11px] text-muted-foreground truncate leading-tight mt-0.5">
-                    {session?.email || "Chưa đăng nhập"}
+                    {session?.email || tr("Chưa đăng nhập", "Not signed in")}
                   </span>
                 </div>
                 <ChevronsUpDown size={14} strokeWidth={1.75} className="text-muted-foreground shrink-0" />
@@ -412,8 +412,8 @@ export function EcosystemSidebar() {
                 type="button"
                 onClick={() => setShowLicenseManager(true)}
                 className={iconButtonClass}
-                title="Quyền Lợi & Gói"
-                aria-label="Quyền Lợi & Gói"
+                title={tr("Quyền Lợi & Gói", "Plan & Benefits")}
+                aria-label={tr("Quyền Lợi & Gói", "Plan & Benefits")}
               >
                 <Key size={16} strokeWidth={1.75} />
               </button>
@@ -422,8 +422,8 @@ export function EcosystemSidebar() {
                 type="button"
                 onClick={() => setIsDonateModalOpen(true)}
                 className={iconButtonClass}
-                title="Ủng hộ tác giả"
-                aria-label="Ủng hộ tác giả"
+                title={tr("Ủng hộ tác giả", "Support Author")}
+                aria-label={tr("Ủng hộ tác giả", "Support Author")}
               >
                 <Coffee size={16} strokeWidth={1.75} />
               </button>
@@ -435,8 +435,11 @@ export function EcosystemSidebar() {
                   updateSetting("theme", next);
                 }}
                 className={iconButtonClass}
-                title={`Giao diện: ${theme === "dark" ? "Tối" : theme === "light" ? "Sáng" : "Auto"} (Bấm để đổi)`}
-                aria-label="Đổi giao diện"
+                title={tr(
+                  `Giao diện: ${theme === "dark" ? "Tối" : theme === "light" ? "Sáng" : "Auto"} (Bấm để đổi)`,
+                  `Theme: ${theme === "dark" ? "Dark" : theme === "light" ? "Light" : "Auto"} (Click to switch)`
+                )}
+                aria-label={tr("Đổi giao diện", "Switch theme")}
               >
                 {theme === "light" ? (
                   <Sun size={16} strokeWidth={1.75} />
@@ -451,8 +454,8 @@ export function EcosystemSidebar() {
                 type="button"
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="relative mt-1 w-8 h-8 rounded-full bg-primary/10 overflow-visible flex items-center justify-center text-primary cursor-pointer"
-                title={session?.name || "Tài khoản"}
-                aria-label="Tài khoản"
+                title={session?.name || tr("Tài khoản", "Account")}
+                aria-label={tr("Tài khoản", "Account")}
               >
                 <span className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
                   {avatarUrl ? (
@@ -484,7 +487,7 @@ export function EcosystemSidebar() {
                   <div
                     className="relative group/avt cursor-pointer shrink-0"
                     onClick={() => avatarInputRef.current?.click()}
-                    title="Bấm để đổi ảnh đại diện"
+                    title={tr("Bấm để đổi ảnh đại diện", "Click to change avatar")}
                   >
                     <div className="w-9 h-9 rounded-full bg-primary/10 overflow-hidden flex items-center justify-center text-primary">
                       {avatarUrl ? (
@@ -500,7 +503,7 @@ export function EcosystemSidebar() {
 
                   <div className="min-w-0 flex-1">
                     <p className="text-[13px] font-medium truncate text-foreground leading-tight">
-                      {session?.name || "Người dùng"}
+                      {session?.name || t("user")}
                     </p>
                     <p className="text-[11px] text-muted-foreground truncate leading-tight mt-0.5">
                       @{session?.username || session?.email?.split("@")[0] || "guest"}
@@ -516,7 +519,7 @@ export function EcosystemSidebar() {
                   className="w-full flex items-center gap-2.5 px-2.5 h-8 text-[12.5px] text-foreground hover:bg-foreground/[0.06] rounded-[9px] transition-colors cursor-pointer"
                 >
                   <Camera size={14} strokeWidth={1.75} className="text-muted-foreground" />
-                  Đổi ảnh đại diện
+                  {tr("Đổi ảnh đại diện", "Change Avatar")}
                 </button>
 
                 {avatarUrl && (
@@ -526,7 +529,7 @@ export function EcosystemSidebar() {
                     className="w-full flex items-center gap-2.5 px-2.5 h-8 text-[12.5px] text-foreground hover:bg-foreground/[0.06] rounded-[9px] transition-colors cursor-pointer"
                   >
                     <Trash2 size={14} strokeWidth={1.75} className="text-muted-foreground" />
-                    Gỡ ảnh đại diện
+                    {tr("Gỡ ảnh đại diện", "Remove Avatar")}
                   </button>
                 )}
 
@@ -539,7 +542,7 @@ export function EcosystemSidebar() {
                   className="w-full flex items-center gap-2.5 px-2.5 h-8 text-[12.5px] text-foreground hover:bg-foreground/[0.06] rounded-[9px] transition-colors cursor-pointer"
                 >
                   <Shield size={14} strokeWidth={1.75} className="text-muted-foreground" />
-                  Tài khoản & Bảo mật
+                  {tr("Tài khoản & Bảo mật", "Account & Security")}
                 </button>
 
                 <button
@@ -551,7 +554,7 @@ export function EcosystemSidebar() {
                   className="w-full flex items-center gap-2.5 px-2.5 h-8 text-[12.5px] text-foreground hover:bg-foreground/[0.06] rounded-[9px] transition-colors cursor-pointer"
                 >
                   <Key size={14} strokeWidth={1.75} className="text-muted-foreground" />
-                  Đổi Quyền Lợi / Key
+                  {tr("Đổi Quyền Lợi / Key", "Manage Plan / License Key")}
                 </button>
 
                 <div className="my-1 mx-2 border-t border-border" />

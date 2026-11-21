@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { Bell, X, AlertTriangle } from "lucide-react";
 import { BrandLogo } from "@/core/components/BrandLogo";
+import { useTranslation } from "@/core/lib/i18n";
 
 interface NotificationPayload {
   title: string;
@@ -11,6 +12,7 @@ interface NotificationPayload {
 
 export function InAppNotificationBanner() {
   const [currentNotification, setCurrentNotification] = useState<NotificationPayload | null>(null);
+  const { tr } = useTranslation();
 
   useEffect(() => {
     let unlisten: (() => void) | null = null;
@@ -37,8 +39,7 @@ export function InAppNotificationBanner() {
   if (!currentNotification) return null;
 
   const isUrgent =
-    currentNotification.title.toLowerCase().includes("khẩn cấp") ||
-    currentNotification.title.toLowerCase().includes("urgent");
+    /khẩn cấp|urgent/i.test(currentNotification.title);
 
   return (
     <div className="fixed top-4 right-4 z-[999999] max-w-sm w-full animate-slide-down pointer-events-auto">
@@ -69,7 +70,7 @@ export function InAppNotificationBanner() {
             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               DH Studio Pro
             </span>
-            <span className="text-[10px] text-muted-foreground/60">• Vừa xong</span>
+            <span className="text-[10px] text-muted-foreground/60">• {tr("Vừa xong", "Just now")}</span>
           </div>
           <h4 className="text-xs font-bold text-foreground truncate mt-0.5">
             {currentNotification.title}

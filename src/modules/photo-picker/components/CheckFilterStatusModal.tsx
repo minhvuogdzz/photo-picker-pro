@@ -22,6 +22,7 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "@/core/stores/useAppStore";
 import { useSettingsStore } from "@/core/stores/useSettingsStore";
+import { useTranslation } from "@/core/lib/i18n";
 import { useContactSheetStore } from "@/modules/contact-the-sheet/stores/useContactSheetStore";
 import { urgentCustomerScannerService } from "@/modules/photo-picker/services/urgentCustomerScannerService";
 import { sheetDiscoveryService } from "@/modules/contact-the-sheet/services/sheetDiscoveryService";
@@ -51,6 +52,7 @@ const COMMON_STATUS_SUGGESTIONS = ["Chưa lọc", "Chờ lọc", "Pending", "Đa
 const DEFAULT_TABS = ["Edit 9/2026", "Edit 8/2026", "Edit 10/2026", "DS Khách"];
 
 export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusModalProps) {
+  const { tr } = useTranslation();
   const inputFolders = useAppStore((s) => s.inputFolders);
   const batchCustomerFolders = useAppStore((s) => s.batchCustomerFolders);
 
@@ -222,15 +224,21 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
       const res = await urgentCustomerScannerService.scanNow(true);
       if (res.urgentCount > 0) {
         setEntireSheetScanResult(
-          `Phát hiện ${res.urgentCount} khách hàng tới hạn cần lọc gấp hôm nay trên toàn bộ trang tính!`
+          tr(
+            `Phát hiện ${res.urgentCount} khách hàng tới hạn cần lọc gấp hôm nay trên toàn bộ trang tính!`,
+            `Found ${res.urgentCount} urgent customer(s) due for picking today across the entire spreadsheet!`
+          )
         );
       } else {
         setEntireSheetScanResult(
-          "Không có khách nào thỏa mãn đồng thời 3 điều kiện cần lọc gấp hôm nay."
+          tr(
+            "Không có khách nào thỏa mãn đồng thời 3 điều kiện cần lọc gấp hôm nay.",
+            "No customers currently meet all 3 urgent picking conditions today."
+          )
         );
       }
     } catch (err) {
-      setEntireSheetScanResult("Lỗi quét trang tính: " + String(err));
+      setEntireSheetScanResult(tr("Lỗi quét trang tính: ", "Spreadsheet scan error: ") + String(err));
     } finally {
       setIsScanningEntireSheet(false);
       setTimeout(() => setEntireSheetScanResult(null), 8000);
@@ -242,9 +250,9 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
     setTestNotifFeedback(null);
     try {
       await urgentCustomerScannerService.sendTestNotification();
-      setTestNotifFeedback("Đã gửi thông báo & chuông báo thành công!");
+      setTestNotifFeedback(tr("Đã gửi thông báo & chuông báo thành công!", "Test notification & chime sent!"));
     } catch (err) {
-      setTestNotifFeedback("Lỗi: " + String(err));
+      setTestNotifFeedback(tr("Lỗi: ", "Error: ") + String(err));
     } finally {
       setIsSendingTestNotif(false);
       setTimeout(() => setTestNotifFeedback(null), 4000);
@@ -282,24 +290,39 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
 
   const handleRunCheck = async () => {
     if (!targetProfile) {
-      setErrorMessage("Chưa có hồ sơ Google Sheet nào được cấu hình. Vui lòng vào Cấu hình Sheet.");
+      setErrorMessage(
+        tr(
+          "Chưa có hồ sơ Google Sheet nào được cấu hình. Vui lòng vào Cấu hình Sheet.",
+          "No Google Sheet profile configured yet. Please open Sheet Config first."
+        )
+      );
       return;
     }
 
     if (inputFolders.length === 0 && !queueRef.current) {
-      setErrorMessage("Danh sách thư mục đầu vào đang trống! Vui lòng thêm thư mục khách trước khi kiểm tra.");
+      setErrorMessage(
+        tr(
+          "Danh sách thư mục đầu vào đang trống! Vui lòng thêm thư mục khách trước khi kiểm tra.",
+          "Input folder queue is empty! Please add customer folders before checking."
+        )
+      );
       return;
     }
 
     if (activeSelectedTabs.length === 0) {
-      setErrorMessage("Vui lòng tích chọn ít nhất một Tab làm việc để đối soát.");
+      setErrorMessage(
+        tr(
+          "Vui lòng tích chọn ít nhất một Tab làm việc để đối soát.",
+          "Please select at least one sheet tab to cross-check."
+        )
+      );
       return;
     }
 
     setIsChecking(true);
     setErrorMessage(null);
     setCheckResults(null);
-    setCheckProgress("Đang kết nối tải dữ liệu trang tính...");
+    setCheckProgress(tr("Đang kết nối tải dữ liệu trang tính...", "Connecting and loading spreadsheet data..."));
 
     try {
       // Save settings preference
@@ -326,7 +349,12 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
           targetProfile.rowScope?.startRow ||
           4;
 
-        setCheckProgress(`Đang tải các dòng trên Tab "${tabTitle}" (${tabRows.length + failedTabs.length + 1}/${activeSelectedTabs.length})...`);
+        setCheckProgress(
+          tr(
+            `Đang tải các dòng trên Tab "${tabTitle}" (${tabRows.length + failedTabs.length + 1}/${activeSelectedTabs.length})...`,
+            `Loading rows from tab "${tabTitle}" (${tabRows.length + failedTabs.length + 1}/${activeSelectedTabs.length})...`
+          )
+        );
         try {
           const rows: SheetRowRecord[] = await sheetDiscoveryService.fetchSheetRowsForMatching(
             targetProfile.spreadsheetId,
@@ -343,10 +371,15 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
       }
 
       if (tabRows.length === 0) {
-        throw new Error(`Không tải được dữ liệu từ Tab: ${failedTabs.join(", ")}`);
+        throw new Error(tr(`Không tải được dữ liệu từ Tab: ${failedTabs.join(", ")}`, `Failed to load data from tab(s): ${failedTabs.join(", ")}`));
       }
 
-      setCheckProgress(`Đang đối soát ${inputFolders.length} thư mục khách với ${tabRows.length} Tab...`);
+      setCheckProgress(
+        tr(
+          `Đang đối soát ${inputFolders.length} thư mục khách với ${tabRows.length} Tab...`,
+          `Cross-checking ${inputFolders.length} customer folder(s) across ${tabRows.length} tab(s)...`
+        )
+      );
 
       const effectiveProfile = isMock ? { ...targetProfile, isMockSandbox: true } : targetProfile;
       const conditions: FilterCheckConditions = {
@@ -374,14 +407,22 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
         for (const r of results) {
           if (!r.isKept && !r.matchedRow) {
             r.isKept = true;
-            r.actualStatus = "Chưa kiểm tra được";
-            r.reason = `Không tải được Tab ${failedTabs.join(", ")} nên giữ lại để bạn kiểm tra thủ công`;
+            r.actualStatus = tr("Chưa kiểm tra được", "Unverified");
+            r.reason = tr(
+              `Không tải được Tab ${failedTabs.join(", ")} nên giữ lại để bạn kiểm tra thủ công`,
+              `Could not load tab(s) ${failedTabs.join(", ")}, kept in queue for manual review`
+            );
           }
         }
       }
 
       if (failedTabs.length > 0) {
-        setErrorMessage(`Bỏ qua Tab không tải được: ${failedTabs.join(", ")}. Kết quả chỉ tính trên các Tab còn lại.`);
+        setErrorMessage(
+          tr(
+            `Bỏ qua Tab không tải được: ${failedTabs.join(", ")}. Kết quả chỉ tính trên các Tab còn lại.`,
+            `Skipped failed tab(s): ${failedTabs.join(", ")}. Results reflect remaining tabs only.`
+          )
+        );
       }
 
       setCheckResults(results);
@@ -406,7 +447,11 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
     } catch (err: any) {
       console.error("[CheckFilterStatusModal] Error:", err);
       setErrorMessage(
-        err?.message || "Không thể kiểm tra trạng thái từ Google Sheet. Vui lòng kiểm tra kết nối mạng."
+        err?.message ||
+          tr(
+            "Không thể kiểm tra trạng thái từ Google Sheet. Vui lòng kiểm tra kết nối mạng.",
+            "Could not check status from Google Sheet. Please check your network connection."
+          )
       );
     } finally {
       setIsChecking(false);
@@ -449,13 +494,16 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-foreground">Check TT — Kiểm tra trạng thái Sheet</h3>
+                <h3 className="text-sm font-bold text-foreground">{tr("Check TT — Kiểm tra trạng thái Sheet", "Check Status — Sheet Verification")}</h3>
                 <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                  {inputFolders.length} khách trong hàng đợi
+                  {tr(`${inputFolders.length} khách trong hàng đợi`, `${inputFolders.length} customers queued`)}
                 </span>
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Tự động đối soát Google Sheet và giữ lại các khách hàng có trạng thái cần lọc
+                {tr(
+                  "Tự động đối soát Google Sheet và giữ lại các khách hàng có trạng thái cần lọc",
+                  "Automatically cross-check Google Sheets and keep customers needing picking"
+                )}
               </p>
             </div>
           </div>
@@ -476,7 +524,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
-                  Tab làm việc (Trang tính) · {activeSelectedTabs.length}/{availableTabs.length}
+                  {tr("Tab làm việc (Trang tính)", "Sheet Tabs")} · {activeSelectedTabs.length}/{availableTabs.length}
                 </label>
                 <button
                   type="button"
@@ -485,7 +533,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                   }
                   className="text-[10px] font-medium text-primary hover:underline cursor-pointer"
                 >
-                  {activeSelectedTabs.length === availableTabs.length ? "Bỏ chọn" : "Chọn tất cả"}
+                  {activeSelectedTabs.length === availableTabs.length ? tr("Bỏ chọn", "Deselect all") : tr("Chọn tất cả", "Select all")}
                 </button>
               </div>
               <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto custom-scrollbar">
@@ -515,14 +563,14 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
 
             <div>
               <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold block mb-1">
-                Bảng tính liên kết
+                {tr("Bảng tính liên kết", "Linked Spreadsheet")}
               </label>
               <div className="flex items-center justify-between py-1 px-1">
                 <span className="truncate max-w-[200px] text-[11px] font-medium text-foreground">
-                  {targetProfile?.displayName || targetProfile?.spreadsheetTitle || "Mặc định"}
+                  {targetProfile?.displayName || targetProfile?.spreadsheetTitle || tr("Mặc định", "Default")}
                 </span>
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono">
-                  {googleConnection?.accountEmail ? "Đã kết nối" : "Mặc định"}
+                  {googleConnection?.accountEmail ? tr("Đã kết nối", "Connected") : tr("Mặc định", "Default")}
                 </span>
               </div>
             </div>
@@ -533,10 +581,10 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
             <div className="flex items-center justify-between text-xs font-semibold text-foreground">
               <span className="flex items-center gap-1.5">
                 <Sliders size={13} className="text-primary" />
-                Cấu hình đối soát cột trạng thái
+                {tr("Cấu hình đối soát cột trạng thái", "Status Column Verification Config")}
               </span>
               <span className="text-[10px] text-muted-foreground">
-                Mặc định: Cột M ("Chưa lọc")
+                {tr("Mặc định: Cột M", "Default: Column M")} ("{"Chưa lọc"}")
               </span>
             </div>
 
@@ -544,7 +592,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
               {/* Select Column */}
               <div>
                 <label className="block text-[11px] text-muted-foreground font-medium mb-1">
-                  Cột trạng thái lọc trên Sheet
+                  {tr("Cột trạng thái lọc trên Sheet", "Filter status column on Sheet")}
                 </label>
                 <div className="relative">
                   <select
@@ -554,7 +602,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                   >
                     {STANDARD_LETTERS.map((col) => (
                       <option key={col} value={col}>
-                        Cột {col} {col === "M" ? "(Cột M - Trạng thái lọc)" : col === "G" ? "(Cột G - Trạng thái)" : ""}
+                        {tr("Cột", "Column")} {col} {col === "M" ? tr("(Cột M - Trạng thái lọc)", "(Col M - Pick Status)") : col === "G" ? tr("(Cột G - Trạng thái)", "(Col G - Status)") : ""}
                       </option>
                     ))}
                   </select>
@@ -568,13 +616,13 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
               {/* Input Value */}
               <div>
                 <label className="block text-[11px] text-muted-foreground font-medium mb-1">
-                  Giá trị trạng thái cần GIỮ LẠI
+                  {tr("Giá trị trạng thái cần GIỮ LẠI", "Status value to KEEP")}
                 </label>
                 <input
                   type="text"
                   value={targetStatusValue}
                   onChange={(e) => setTargetStatusValue(e.target.value)}
-                  placeholder="Ví dụ: Chưa lọc"
+                  placeholder={tr("Ví dụ: ", "e.g., ") + "Chưa lọc"}
                   className="w-full px-3 py-1.5 text-xs font-semibold rounded-lg bg-background border border-border text-foreground focus:outline-none focus:border-primary"
                 />
               </div>
@@ -582,7 +630,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
 
             {/* Quick Suggestions Chips */}
             <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-              <span className="text-[10px] text-muted-foreground mr-1">Gợi ý nhanh:</span>
+              <span className="text-[10px] text-muted-foreground mr-1">{tr("Gợi ý nhanh:", "Quick presets:")}</span>
               {COMMON_STATUS_SUGGESTIONS.map((sug) => (
                 <button
                   key={sug}
@@ -605,10 +653,10 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
             <div className="flex items-center justify-between text-xs font-semibold text-foreground">
               <span className="flex items-center gap-1.5">
                 <FileSpreadsheet size={13} className="text-amber-500" />
-                Kiểm tra cột mã ảnh chọn (Tùy chọn)
+                {tr("Kiểm tra cột mã ảnh chọn (Tùy chọn)", "Check Selected Photo Code Columns (Optional)")}
               </span>
               <span className="text-[10px] text-muted-foreground">
-                Nếu ô trống → tự động đá ra
+                {tr("Nếu ô trống → tự động đá ra", "If empty → auto-remove")}
               </span>
             </div>
 
@@ -616,7 +664,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
               {/* Photo Code 1 Column */}
               <div>
                 <label className="block text-[11px] text-muted-foreground font-medium mb-1">
-                  Cột mã ảnh chọn 1
+                  {tr("Cột mã ảnh chọn 1", "Selected photo code col 1")}
                 </label>
                 <div className="relative">
                   <select
@@ -626,10 +674,10 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                       photoCode1Column !== "OFF" ? "border-amber-500/40" : "border-border"
                     }`}
                   >
-                    <option value="OFF">TẮT — Không kiểm tra</option>
+                    <option value="OFF">{tr("TẮT — Không kiểm tra", "OFF — Skip check")}</option>
                     {STANDARD_LETTERS.map((col) => (
                       <option key={col} value={col}>
-                        Cột {col}
+                        {tr("Cột", "Column")} {col}
                       </option>
                     ))}
                   </select>
@@ -643,7 +691,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
               {/* Photo Code 2 Column */}
               <div>
                 <label className="block text-[11px] text-muted-foreground font-medium mb-1">
-                  Cột mã ảnh chọn 2
+                  {tr("Cột mã ảnh chọn 2", "Selected photo code col 2")}
                 </label>
                 <div className="relative">
                   <select
@@ -653,10 +701,10 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                       photoCode2Column !== "OFF" ? "border-amber-500/40" : "border-border"
                     }`}
                   >
-                    <option value="OFF">TẮT — Không kiểm tra</option>
+                    <option value="OFF">{tr("TẮT — Không kiểm tra", "OFF — Skip check")}</option>
                     {STANDARD_LETTERS.map((col) => (
                       <option key={col} value={col}>
-                        Cột {col}
+                        {tr("Cột", "Column")} {col}
                       </option>
                     ))}
                   </select>
@@ -670,7 +718,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
 
             {(photoCode1Column !== "OFF" || photoCode2Column !== "OFF") && (
               <div className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2.5 py-1.5 leading-relaxed">
-                <strong>Logic:</strong> Nếu ô mã ảnh chọn{photoCode1Column !== "OFF" && ` (Cột ${photoCode1Column})`}{photoCode2Column !== "OFF" && ` (Cột ${photoCode2Column})`} bị <strong>trống</strong>, khách đó sẽ bị <strong>tự động đá ra</strong> kể cả khi trạng thái là "{targetStatusValue}".
+                <strong>Logic:</strong> {tr("Nếu ô mã ảnh chọn", "If the photo code cell")}{photoCode1Column !== "OFF" && ` (${tr("Cột", "Col")} ${photoCode1Column})`}{photoCode2Column !== "OFF" && ` (${tr("Cột", "Col")} ${photoCode2Column})`} {tr("bị", "is")} <strong>{tr("trống", "empty")}</strong>, {tr("khách đó sẽ bị", "that customer will be")} <strong>{tr("tự động đá ra", "automatically removed")}</strong> {tr("kể cả khi trạng thái là", "even if status is")} "{targetStatusValue}".
               </div>
             )}
           </div>
@@ -690,10 +738,10 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                   className="w-3.5 h-3.5 accent-violet-600 cursor-pointer"
                 />
                 <CalendarClock size={13} className="text-violet-500" />
-                Quét file tới hạn (Nâng cao)
+                {tr("Quét file tới hạn (Nâng cao)", "Scan due-date files (Advanced)")}
               </span>
               <span className="text-[10px] text-muted-foreground font-normal">
-                Hôm nay (GMT+7): <strong className="font-mono text-foreground">{todayLabel}</strong>
+                {tr("Hôm nay (GMT+7):", "Today (GMT+7):")} <strong className="font-mono text-foreground">{todayLabel}</strong>
               </span>
             </label>
 
@@ -702,7 +750,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[11px] text-muted-foreground font-medium mb-1">
-                      Cột "Hẹn trả ảnh" trên Sheet (dd/mm hoặc dd/mm/yyyy)
+                      {tr('Cột "Hẹn trả ảnh" trên Sheet (dd/mm hoặc dd/mm/yyyy)', '"Due Date" column on Sheet (dd/mm or dd/mm/yyyy)')}
                     </label>
                     <div className="relative">
                       <select
@@ -712,7 +760,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                       >
                         {STANDARD_LETTERS.map((col) => (
                           <option key={col} value={col}>
-                            Cột {col} {col === "L" ? "(Cột L - Hẹn trả ảnh)" : ""}
+                            {tr("Cột", "Column")} {col} {col === "L" ? tr("(Cột L - Hẹn trả ảnh)", "(Col L - Photo Due Date)") : ""}
                           </option>
                         ))}
                       </select>
@@ -725,7 +773,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
 
                   <div>
                     <label className="block text-[11px] text-muted-foreground font-medium mb-1">
-                      Cột "Link edit / Bàn giao" (Kiểm tra ô rỗng)
+                      {tr('Cột "Link edit / Bàn giao" (Kiểm tra ô rỗng)', '"Edit / Delivery Link" column (Empty check)')}
                     </label>
                     <div className="relative">
                       <select
@@ -733,10 +781,10 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                         onChange={(e) => setLinkEditColumn(e.target.value)}
                         className="w-full appearance-none px-3 py-1.5 text-xs font-semibold rounded-lg bg-background border border-amber-500/40 text-foreground focus:outline-none focus:border-primary cursor-pointer pr-8"
                       >
-                        <option value="OFF">TẮT — Không kiểm tra link edit</option>
+                        <option value="OFF">{tr("TẮT — Không kiểm tra link edit", "OFF — Skip edit link check")}</option>
                         {STANDARD_LETTERS.map((col) => (
                           <option key={col} value={col}>
-                            Cột {col} {col === "O" ? "(Cột O - Mặc định Link edit)" : col === "N" ? "(Cột N)" : ""}
+                            {tr("Cột", "Column")} {col} {col === "O" ? tr("(Cột O - Mặc định Link edit)", "(Col O - Default Edit Link)") : col === "N" ? `(${tr("Cột", "Col")} N)` : ""}
                           </option>
                         ))}
                       </select>
@@ -750,8 +798,8 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
 
                 {dueDateEnabled && (
                   <div className="text-[10px] text-violet-600 dark:text-violet-400 bg-violet-500/10 border border-violet-500/20 rounded-lg px-2.5 py-1.5 leading-relaxed">
-                    <strong>Logic lọc file đầu vào:</strong> Chỉ giữ khách trong hàng đợi khi đồng thời <strong>(1)</strong> ngày hẹn trả ở Cột {dueDateColumn} là{" "}
-                    <strong>{todayLabel} hoặc trước đó</strong> và <strong>(2)</strong> Cột {statusColumn} là "{targetStatusValue}". Ô hẹn trả trống hoặc sai định dạng sẽ bị đá ra.
+                    <strong>{tr("Logic lọc file đầu vào:", "Input filter logic:")}</strong> {tr("Chỉ giữ khách trong hàng đợi khi đồng thời", "Keep customer in queue only when both")} <strong>(1)</strong> {tr("ngày hẹn trả ở Cột", "the due date in Col")} {dueDateColumn} {tr("là", "is")}{" "}
+                    <strong>{todayLabel} {tr("hoặc trước đó", "or earlier")}</strong> {tr("và", "and")} <strong>(2)</strong> {tr("Cột", "Col")} {statusColumn} {tr("là", "is")} "{targetStatusValue}". {tr("Ô hẹn trả trống hoặc sai định dạng sẽ bị đá ra.", "Empty or invalid due date cells will be removed.")}
                   </div>
                 )}
 
@@ -768,11 +816,11 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                         />
                         <Bell size={13} className="text-amber-500" />
                         <span className="text-xs font-bold text-foreground group-hover:text-amber-500 transition-colors">
-                          Gửi thông báo khẩn cấp hệ điều hành (Quét toàn bộ Sheet 5 phút/lần)
+                          {tr("Gửi thông báo khẩn cấp hệ điều hành (Quét toàn bộ Sheet 5 phút/lần)", "Send OS urgent alerts (Scan full Sheet every 5 min)")}
                         </span>
                       </div>
                       <p className="text-[10px] text-muted-foreground leading-relaxed pl-5">
-                        Quét <strong>toàn bộ trang tính Google Sheet</strong> định kỳ 5 phút/lần (<strong>kể cả khi không có thư mục đầu vào</strong>). Tự động bắn thông báo khẩn cấp lên macOS / Windows khi có khách tới hạn.
+                        {tr("Quét", "Scans")} <strong>{tr("toàn bộ trang tính Google Sheet", "the entire Google Sheet")}</strong> {tr("định kỳ 5 phút/lần", "every 5 minutes")} (<strong>{tr("kể cả khi không có thư mục đầu vào", "even with no input folders loaded")}</strong>). {tr("Tự động bắn thông báo khẩn cấp lên macOS / Windows khi có khách tới hạn.", "Automatically sends urgent notifications on macOS / Windows when customers are due.")}
                       </p>
                     </div>
                     <div
@@ -791,16 +839,16 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                   {settings.urgent_scanner_enabled !== false && (
                     <div className="pl-5 space-y-2">
                       <div className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/25 rounded-lg p-2 leading-relaxed space-y-1">
-                        <p className="font-bold">3 điều kiện đồng thời xảy ra trên toàn bộ Sheet:</p>
+                        <p className="font-bold">{tr("3 điều kiện đồng thời xảy ra trên toàn bộ Sheet:", "3 simultaneous conditions across the Sheet:")}</p>
                         <ul className="list-disc pl-3.5 space-y-0.5">
                           <li>
-                            Trạng thái (<strong>Cột {statusColumn}</strong>): Bằng "<strong>{targetStatusValue}</strong>".
+                            {tr("Trạng thái", "Status")} (<strong>{tr("Cột", "Col")} {statusColumn}</strong>): {tr("Bằng", "Equals")} "<strong>{targetStatusValue}</strong>".
                           </li>
                           <li>
-                            Hạn trả ảnh (<strong>Cột {dueDateColumn}</strong>): Tới ngày hạn (<strong>{todayLabel}</strong>) hoặc quá ngày hạn.
+                            {tr("Hạn trả ảnh", "Due date")} (<strong>{tr("Cột", "Col")} {dueDateColumn}</strong>): {tr("Tới ngày hạn", "Due today")} (<strong>{todayLabel}</strong>) {tr("hoặc quá ngày hạn.", "or overdue.")}
                           </li>
                           <li>
-                            Phần Link edit: Đang <strong>rỗng</strong> (chưa có dữ liệu).
+                            {tr("Phần Link edit: Đang", "Edit link: Currently")} <strong>{tr("rỗng", "empty")}</strong> {tr("(chưa có dữ liệu).", "(no data yet).")}
                           </li>
                         </ul>
                       </div>
@@ -817,7 +865,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                           ) : (
                             <RefreshCw size={11} className="text-amber-500" />
                           )}
-                          <span>Quét toàn bộ Sheet ngay</span>
+                          <span>{tr("Quét toàn bộ Sheet ngay", "Scan entire Sheet now")}</span>
                         </button>
 
                         {import.meta.env.DEV && (
@@ -832,7 +880,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                             ) : (
                               <Bell size={11} className="text-primary" />
                             )}
-                            <span>Gửi thông báo thử nghiệm</span>
+                            <span>{tr("Gửi thông báo thử nghiệm", "Send test notification")}</span>
                           </button>
                         )}
 
@@ -845,7 +893,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                           className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-[10px] font-semibold transition-all cursor-pointer shadow-xs active:scale-97"
                         >
                           <Bell size={11} />
-                          <span>Xem lịch sử thông báo</span>
+                          <span>{tr("Xem lịch sử thông báo", "View alert history")}</span>
                         </button>
 
                         {entireSheetScanResult && (
@@ -872,7 +920,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
             <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs flex items-start gap-2 animate-fade-in">
               <AlertCircle size={15} className="shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="font-semibold">Lỗi kiểm tra:</p>
+                <p className="font-semibold">{tr("Lỗi kiểm tra:", "Verification error:")}</p>
                 <p className="opacity-90 mt-0.5">{errorMessage}</p>
               </div>
             </div>
@@ -892,7 +940,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
               <div className="flex items-center justify-between text-xs">
                 <span className="font-semibold text-foreground flex items-center gap-1.5">
                   <Users size={13} className="text-primary" />
-                  Danh sách khách trong hàng đợi ({inputFolders.length})
+                  {tr(`Danh sách khách trong hàng đợi (${inputFolders.length})`, `Customers in queue (${inputFolders.length})`)}
                 </span>
                 {inputFolders.length > 5 && (
                   <div className="relative">
@@ -901,7 +949,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                       type="text"
                       value={searchPreview}
                       onChange={(e) => setSearchPreview(e.target.value)}
-                      placeholder="Tìm khách..."
+                      placeholder={tr("Tìm khách...", "Find customer...")}
                       className="pl-6 pr-2 py-0.5 text-[10px] rounded bg-background border border-border text-foreground focus:outline-none focus:border-primary w-28"
                     />
                   </div>
@@ -912,10 +960,13 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                 <div className="text-center py-8 px-4 rounded-xl border border-dashed border-border/70 bg-muted/10 space-y-2">
                   <Folder size={24} className="mx-auto text-muted-foreground/40" />
                   <p className="text-xs font-medium text-muted-foreground">
-                    Chưa có thư mục khách nào trong hàng đợi
+                    {tr("Chưa có thư mục khách nào trong hàng đợi", "No customer folders in the queue yet")}
                   </p>
                   <p className="text-[11px] text-muted-foreground/80 max-w-sm mx-auto">
-                    Vui lòng kéo thư mục Tháng, Ngày hoặc nhiều thư mục khách vào ứng dụng trước khi thực hiện Check TT.
+                    {tr(
+                      "Vui lòng kéo thư mục Tháng, Ngày hoặc nhiều thư mục khách vào ứng dụng trước khi thực hiện Check TT.",
+                      "Drag a Month, Date, or customer folders into the app before running Check Status."
+                    )}
                   </p>
                 </div>
               ) : (
@@ -948,8 +999,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
               <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/25 text-blue-600 dark:text-blue-400 text-xs flex items-start gap-2.5">
                 <Info size={15} className="shrink-0 mt-0.5" />
                 <div className="leading-relaxed">
-                  Bấm nút <strong>"Kiểm tra & Lọc danh sách"</strong> bên dưới. Hệ thống sẽ kết nối với Google Sheet:
-                  những khách có trạng thái là <strong>"{targetStatusValue}"</strong> trên Cột <strong>{statusColumn}</strong>{photoCode1Column !== "OFF" && <> và cột mã ảnh chọn 1 (<strong>{photoCode1Column}</strong>) có dữ liệu</>}{photoCode2Column !== "OFF" && <> và cột mã ảnh chọn 2 (<strong>{photoCode2Column}</strong>) có dữ liệu</>}{dueDateEnabled && <> và ngày hẹn trả ở Cột <strong>{dueDateColumn}</strong> từ <strong>{todayLabel}</strong> trở về trước</>} sẽ được <strong>GIỮ LẠI</strong>, các khách đã lọc, không khớp hoặc thiếu mã ảnh sẽ được <strong>TỰ ĐỘNG ĐÁ RA</strong> khỏi danh sách.
+                  {tr("Bấm nút", "Click")} <strong>"{tr("Kiểm tra & Lọc danh sách", "Check & Filter Queue")}"</strong> {tr("bên dưới. Hệ thống sẽ kết nối với Google Sheet: những khách có trạng thái là", "below. The app will query Google Sheets: customers with status")} <strong>"{targetStatusValue}"</strong> {tr("trên Cột", "in Column")} <strong>{statusColumn}</strong>{photoCode1Column !== "OFF" && <> {tr("và cột mã ảnh chọn 1", "and selected code col 1")} (<strong>{photoCode1Column}</strong>) {tr("có dữ liệu", "populated")}</>}{photoCode2Column !== "OFF" && <> {tr("và cột mã ảnh chọn 2", "and selected code col 2")} (<strong>{photoCode2Column}</strong>) {tr("có dữ liệu", "populated")}</>}{dueDateEnabled && <> {tr("và ngày hẹn trả ở Cột", "and due date in Col")} <strong>{dueDateColumn}</strong> {tr("từ", "on or before")} <strong>{todayLabel}</strong> {tr("trở về trước", "")}</>} {tr("sẽ được", "will be")} <strong>{tr("GIỮ LẠI", "KEPT")}</strong>{tr(", các khách đã lọc, không khớp hoặc thiếu mã ảnh sẽ được", "; already-picked, unmatched, or code-missing customers will be")} <strong>{tr("TỰ ĐỘNG ĐÁ RA", "REMOVED")}</strong> {tr("khỏi danh sách.", "from the queue.")}
                 </div>
               </div>
             </div>
@@ -961,13 +1011,13 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
               {/* Stat Cards */}
               <div className="grid grid-cols-3 gap-2.5">
                 <div className="p-2.5 rounded-xl bg-muted/40 border border-border text-center">
-                  <span className="text-[10px] text-muted-foreground block font-medium">Tổng kiểm tra</span>
+                  <span className="text-[10px] text-muted-foreground block font-medium">{tr("Tổng kiểm tra", "Total checked")}</span>
                   <span className="text-base font-extrabold text-foreground">{checkResults.length}</span>
                 </div>
 
                 <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center">
                   <span className="text-[10px] text-emerald-700 dark:text-emerald-400 block font-medium">
-                    Giữ lại ("{targetStatusValue}")
+                    {tr("Giữ lại", "Kept")} ("{targetStatusValue}")
                   </span>
                   <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400">
                     {keptCount}
@@ -976,7 +1026,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
 
                 <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-center">
                   <span className="text-[10px] text-rose-700 dark:text-rose-400 block font-medium">
-                    Đã đá ra (Đã lọc / Khác)
+                    {tr("Đã đá ra (Đã lọc / Khác)", "Removed (Picked / Other)")}
                   </span>
                   <span className="text-base font-extrabold text-rose-600 dark:text-rose-400">
                     {removedCount}
@@ -996,7 +1046,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    Giữ lại ({keptCount})
+                    {tr(`Giữ lại (${keptCount})`, `Kept (${keptCount})`)}
                   </button>
                   <button
                     type="button"
@@ -1007,7 +1057,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    Đã đá ra ({removedCount})
+                    {tr(`Đã đá ra (${removedCount})`, `Removed (${removedCount})`)}
                   </button>
                   <button
                     type="button"
@@ -1018,7 +1068,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    Tất cả ({checkResults.length})
+                    {tr(`Tất cả (${checkResults.length})`, `All (${checkResults.length})`)}
                   </button>
                 </div>
               </div>
@@ -1027,7 +1077,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
               <div className="space-y-1.5 max-h-52 overflow-y-auto custom-scrollbar pr-1">
                 {filteredResults.length === 0 ? (
                   <div className="text-center py-6 text-xs text-muted-foreground">
-                    Không có thư mục nào trong danh mục này.
+                    {tr("Không có thư mục nào trong danh mục này.", "No folders in this category.")}
                   </div>
                 ) : (
                   filteredResults.map((item, idx) => (
@@ -1077,9 +1127,9 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                                 ? "bg-blue-500/10 text-blue-700 dark:text-blue-300"
                                 : "bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold"
                             }`}
-                            title={`Cột ${photoCode1Column}: ${item.photoCode1Value || "(Trống)"}`}
+                            title={`${tr("Cột", "Column")} ${photoCode1Column}: ${item.photoCode1Value || tr("(Trống)", "(Empty)")}`}
                           >
-                            {item.photoCode1Value || "Mã1: ∅"}
+                            {item.photoCode1Value || tr("Mã1: ∅", "Code1: ∅")}
                           </span>
                         )}
                         {item.photoCode2Value !== undefined && (
@@ -1089,9 +1139,9 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                                 ? "bg-blue-500/10 text-blue-700 dark:text-blue-300"
                                 : "bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold"
                             }`}
-                            title={`Cột ${photoCode2Column}: ${item.photoCode2Value || "(Trống)"}`}
+                            title={`${tr("Cột", "Column")} ${photoCode2Column}: ${item.photoCode2Value || tr("(Trống)", "(Empty)")}`}
                           >
-                            {item.photoCode2Value || "Mã2: ∅"}
+                            {item.photoCode2Value || tr("Mã2: ∅", "Code2: ∅")}
                           </span>
                         )}
                         {item.dueDateValue !== undefined && (
@@ -1101,14 +1151,14 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
                                 ? "bg-violet-500/10 text-violet-700 dark:text-violet-300"
                                 : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
                             }`}
-                            title={`Cột ${dueDateColumn} (Hẹn trả ảnh): ${item.dueDateValue || "(Trống)"}`}
+                            title={`${tr("Cột", "Col")} ${dueDateColumn} (${tr("Hẹn trả ảnh", "Due date")}): ${item.dueDateValue || tr("(Trống)", "(Empty)")}`}
                           >
-                            {item.dueDateValue || "Hẹn: ∅"}
+                            {item.dueDateValue || tr("Hẹn: ∅", "Due: ∅")}
                           </span>
                         )}
                         {item.matchedRow && (
                           <span className="text-muted-foreground" title={item.reason}>
-                            {item.tabTitle && activeSelectedTabs.length > 1 ? `${item.tabTitle} · ` : ""}Dòng {item.matchedRow}
+                            {item.tabTitle && activeSelectedTabs.length > 1 ? `${item.tabTitle} · ` : ""}{tr("Dòng", "Row")} {item.matchedRow}
                           </span>
                         )}
                       </div>
@@ -1126,10 +1176,10 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
             {checkResults ? (
               <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1.5">
                 <Check size={13} />
-                Đã cập nhật hàng đợi còn {keptCount} khách
+                {tr(`Đã cập nhật hàng đợi còn ${keptCount} khách`, `Queue updated with ${keptCount} customer(s)`)}
               </span>
             ) : (
-              <span>{activeSelectedTabs.length} Tab • Cột {statusColumn} • Trạng thái giữ: "{targetStatusValue}"{photoCode1Column !== "OFF" && ` • Mã1: ${photoCode1Column}`}{photoCode2Column !== "OFF" && ` • Mã2: ${photoCode2Column}`}{dueDateEnabled && ` • Tới hạn: ${dueDateColumn} ≤ ${todayLabel}`}</span>
+              <span>{activeSelectedTabs.length} {tr("Tab", "Tabs")} • {tr("Cột", "Col")} {statusColumn} • {tr("Trạng thái giữ:", "Keep status:")} "{targetStatusValue}"{photoCode1Column !== "OFF" && ` • ${tr("Mã1:", "Code1:")} ${photoCode1Column}`}{photoCode2Column !== "OFF" && ` • ${tr("Mã2:", "Code2:")} ${photoCode2Column}`}{dueDateEnabled && ` • ${tr("Tới hạn:", "Due:")} ${dueDateColumn} ≤ ${todayLabel}`}</span>
             )}
           </div>
 
@@ -1139,7 +1189,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
               onClick={onClose}
               className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-card hover:bg-muted border border-border text-foreground transition-colors cursor-pointer"
             >
-              {checkResults ? "Đóng & Bắt đầu lọc" : "Hủy"}
+              {checkResults ? tr("Đóng & Bắt đầu lọc", "Close & Start Picking") : tr("Hủy", "Cancel")}
             </button>
 
             <button
@@ -1153,7 +1203,7 @@ export function CheckFilterStatusModal({ isOpen, onClose }: CheckFilterStatusMod
               ) : (
                 <Filter size={13} />
               )}
-              <span>{isChecking ? "Đang kiểm tra..." : "Kiểm tra & Lọc danh sách"}</span>
+              <span>{isChecking ? tr("Đang kiểm tra...", "Checking...") : tr("Kiểm tra & Lọc danh sách", "Check & Filter Queue")}</span>
             </button>
           </div>
         </div>

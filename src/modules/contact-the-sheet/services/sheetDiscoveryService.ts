@@ -10,6 +10,7 @@ import type {
   SemanticField,
 } from "../types/index.ts";
 import { googleCredentialManager } from "./googleCredentialBridge.ts";
+import { trText } from "../../../core/lib/i18n.ts";
 import realSheetFixture from "../../../../tests/fixtures/contact-the-sheet/real-sheet-structure.json" with { type: "json" };
 
 export interface SemanticAlias {
@@ -61,7 +62,12 @@ export class SheetDiscoveryService {
     if (/^[a-zA-Z0-9-_]{20,}$/.test(trimmed)) {
       return trimmed;
     }
-    throw new Error("INVALID_SHEET_URL: Không tìm thấy Spreadsheet ID hợp lệ trong liên kết");
+    throw new Error(
+      trText(
+        "INVALID_SHEET_URL: Không tìm thấy Spreadsheet ID hợp lệ trong liên kết",
+        "INVALID_SHEET_URL: Could not find a valid Spreadsheet ID in the URL"
+      )
+    );
   }
 
   /**
@@ -107,15 +113,35 @@ export class SheetDiscoveryService {
       const errBody = await res.json().catch(() => null);
       const googleErrMsg = errBody?.error?.message || "";
       if (res.status === 401) {
-        throw new Error(`GOOGLE_TOKEN_EXPIRED: Phiên xác thực Google đã hết hạn (${googleErrMsg || "401"}). Vui lòng bấm 'Ngắt kết nối' và 'Kết nối Google' lại.`);
+        throw new Error(
+          trText(
+            `GOOGLE_TOKEN_EXPIRED: Phiên xác thực Google đã hết hạn (${googleErrMsg || "401"}). Vui lòng bấm 'Ngắt kết nối' và 'Kết nối Google' lại.`,
+            `GOOGLE_TOKEN_EXPIRED: Google auth session expired (${googleErrMsg || "401"}). Please disconnect and click 'Connect Google' again.`
+          )
+        );
       }
       if (res.status === 403) {
-        throw new Error(`SHEET_ACCESS_DENIED: Không thể truy cập bảng tính. Chi tiết từ Google:\n"${googleErrMsg || "Quyền bị từ chối"}"\n\nVui lòng kiểm tra:\n1. Kích hoạt Google Sheets API trong dự án Google Cloud (devhouse-af4bf).\n2. Chia sẻ bảng tính Google Sheet cho tài khoản "${googleCredentialManager.getAccountEmail() || "Google"}" (quyền Người xem hoặc Người chỉnh sửa).`);
+        throw new Error(
+          trText(
+            `SHEET_ACCESS_DENIED: Không thể truy cập bảng tính. Chi tiết từ Google:\n"${googleErrMsg || "Quyền bị từ chối"}"\n\nVui lòng kiểm tra:\n1. Kích hoạt Google Sheets API trong dự án Google Cloud (devhouse-af4bf).\n2. Chia sẻ bảng tính Google Sheet cho tài khoản "${googleCredentialManager.getAccountEmail() || "Google"}" (quyền Người xem hoặc Người chỉnh sửa).`,
+            `SHEET_ACCESS_DENIED: Cannot access spreadsheet. Google details:\n"${googleErrMsg || "Permission denied"}"\n\nPlease check:\n1. Enable Google Sheets API in your Google Cloud project (devhouse-af4bf).\n2. Share the Google Sheet with "${googleCredentialManager.getAccountEmail() || "Google"}" (Viewer or Editor access).`
+          )
+        );
       }
       if (res.status === 404) {
-        throw new Error(`SHEET_NOT_FOUND: Bảng tính không tồn tại hoặc ID không đúng: ${spreadsheetId}`);
+        throw new Error(
+          trText(
+            `SHEET_NOT_FOUND: Bảng tính không tồn tại hoặc ID không đúng: ${spreadsheetId}`,
+            `SHEET_NOT_FOUND: Spreadsheet does not exist or ID is invalid: ${spreadsheetId}`
+          )
+        );
       }
-      throw new Error(`Google Sheets API lỗi (HTTP ${res.status}): ${googleErrMsg || res.statusText}`);
+      throw new Error(
+        trText(
+          `Google Sheets API lỗi (HTTP ${res.status}): ${googleErrMsg || res.statusText}`,
+          `Google Sheets API error (HTTP ${res.status}): ${googleErrMsg || res.statusText}`
+        )
+      );
     }
 
     const data = await res.json();
@@ -176,7 +202,12 @@ export class SheetDiscoveryService {
       if (!res.ok) {
         const errBody = await res.json().catch(() => null);
         const googleErrMsg = errBody?.error?.message || "";
-        throw new Error(`Khảo sát dòng bảng tính thất bại (HTTP ${res.status}): ${googleErrMsg || res.statusText}`);
+        throw new Error(
+          trText(
+            `Khảo sát dòng bảng tính thất bại (HTTP ${res.status}): ${googleErrMsg || res.statusText}`,
+            `Spreadsheet row survey failed (HTTP ${res.status}): ${googleErrMsg || res.statusText}`
+          )
+        );
       }
 
       const json = await res.json();
@@ -360,7 +391,7 @@ export class SheetDiscoveryService {
       profiles.push({
         index: c,
         letter: colLetter,
-        headerName: headerText || `Cột ${colLetter}`,
+        headerName: headerText || trText(`Cột ${colLetter}`, `Col ${colLetter}`),
         headerRow,
         detectedSourceType,
         hasFormulas: formulaCount > 0,

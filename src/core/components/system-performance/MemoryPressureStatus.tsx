@@ -1,5 +1,6 @@
 import { CheckCircle2, AlertTriangle } from "lucide-react";
 import { MemoryPressureMetrics } from "./types";
+import { localizeBackendMessage, useTranslation } from "@/core/lib/i18n";
 
 interface MemoryPressureStatusProps {
   pressure: MemoryPressureMetrics | null;
@@ -7,9 +8,14 @@ interface MemoryPressureStatusProps {
 }
 
 export function MemoryPressureStatus({ pressure, compact = false }: MemoryPressureStatusProps) {
+  const { tr, lang } = useTranslation();
   const isWarning = pressure?.status === "WARNING";
-  const statusLabel = isWarning ? "Áp Lực (Warning)" : "Bình Thường (Normal)";
-  const description = pressure?.description || (isWarning ? "Hệ thống đang chịu áp lực bộ nhớ" : "Bộ nhớ hoạt động bình thường");
+  const statusLabel = isWarning ? tr("Áp Lực (Warning)", "Pressure (Warning)") : tr("Bình Thường (Normal)", "Normal");
+  const description = pressure?.description
+    ? localizeBackendMessage(pressure.description, lang)
+    : isWarning
+      ? tr("Hệ thống đang chịu áp lực bộ nhớ", "System is experiencing memory pressure")
+      : tr("Bộ nhớ hoạt động bình thường", "Memory is operating normally");
 
   if (compact) {
     return (
@@ -26,7 +32,7 @@ export function MemoryPressureStatus({ pressure, compact = false }: MemoryPressu
             isWarning ? "bg-amber-500 animate-pulse" : "bg-emerald-500/80"
           }`}
         />
-        <span className="font-semibold tracking-tight">{isWarning ? "Bộ nhớ: Cảnh báo" : "Bộ nhớ: Tối ưu"}</span>
+        <span className="font-semibold tracking-tight">{isWarning ? tr("Bộ nhớ: Cảnh báo", "Memory: Warning") : tr("Bộ nhớ: Tối ưu", "Memory: Optimal")}</span>
       </div>
     );
   }
@@ -52,7 +58,7 @@ export function MemoryPressureStatus({ pressure, compact = false }: MemoryPressu
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-            Áp lực bộ nhớ
+            {tr("Áp lực bộ nhớ", "Memory Pressure")}
           </span>
           <span
             className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${

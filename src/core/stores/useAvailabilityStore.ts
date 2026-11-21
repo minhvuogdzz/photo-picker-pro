@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { trText } from "../lib/i18n.ts";
 
 export type AvailabilityState =
   | "CHECKING"
@@ -18,15 +19,21 @@ export interface MaintenanceInfo {
   readonly updatedAt?: string;
 }
 
-export const DEFAULT_MAINTENANCE_INFO: MaintenanceInfo = {
-  maintenance: true,
-  title: "Phần mềm đang được bảo trì",
-  message:
-    "Hệ thống đang được nâng cấp máy chủ để hoạt động ổn định và mượt mà hơn. Các tính năng trực tuyến sẽ sớm quay trở lại. Dữ liệu và tài khoản của bạn vẫn được bảo toàn.",
-  estimatedRecovery: null,
-  supportUrl: "https://mvd.vn",
-  updatedAt: new Date().toISOString(),
-};
+export function getDefaultMaintenanceInfo(): MaintenanceInfo {
+  return {
+    maintenance: true,
+    title: trText("Phần mềm đang được bảo trì", "Software Under Maintenance"),
+    message: trText(
+      "Hệ thống đang được nâng cấp máy chủ để hoạt động ổn định và mượt mà hơn. Các tính năng trực tuyến sẽ sớm quay trở lại. Dữ liệu và tài khoản của bạn vẫn được bảo toàn.",
+      "Our servers are undergoing maintenance to improve stability and performance. Online features will be back shortly. Your data and account remain safe."
+    ),
+    estimatedRecovery: null,
+    supportUrl: "https://mvd.vn",
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export const DEFAULT_MAINTENANCE_INFO: MaintenanceInfo = getDefaultMaintenanceInfo();
 
 interface AvailabilityStoreState {
   readonly state: AvailabilityState;
@@ -91,7 +98,7 @@ export const useAvailabilityStore = create<AvailabilityStoreState>((set) => ({
 
       return {
         state: nextState,
-        maintenanceInfo: info || s.maintenanceInfo || DEFAULT_MAINTENANCE_INFO,
+        maintenanceInfo: info || s.maintenanceInfo || getDefaultMaintenanceInfo(),
         consecutiveFailures: nextFailures,
         consecutiveSuccesses: 0,
         lastCheckedAt: Date.now(),

@@ -13,6 +13,7 @@ import {
   Tag
 } from 'lucide-react';
 import { RECENT_7_VERSIONS, VersionReleaseNote, VersionReleaseSection } from '@/core/data/versionHistory';
+import { useTranslation } from '@/core/lib/i18n';
 
 interface VersionHistoryModalProps {
   onClose: () => void;
@@ -23,6 +24,7 @@ export const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
   onClose,
   isLatestNotice = false 
 }) => {
+  const { tr, lang } = useTranslation();
   // By default, open the first 2 versions, others collapsed for clean overview
   const [expandedVersions, setExpandedVersions] = useState<Record<string, boolean>>({
     [RECENT_7_VERSIONS[0].version]: true,
@@ -74,14 +76,14 @@ export const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h3 id="dlg-version-history-title" className="text-base font-bold text-foreground">
-                  Lịch sử phiên bản
+                  {tr("Lịch sử phiên bản", "Release History")}
                 </h3>
                 <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-mono">
-                  7 bản gần nhất
+                  {tr(`${RECENT_7_VERSIONS.length} bản gần nhất`, `Latest ${RECENT_7_VERSIONS.length} releases`)}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Chi tiết cập nhật và ghi chú phát hành (Release Notes)
+                {tr("Chi tiết cập nhật và ghi chú phát hành (Release Notes)", "Detailed updates and release notes")}
               </p>
             </div>
           </div>
@@ -89,8 +91,8 @@ export const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            title="Đóng"
-            aria-label="Đóng"
+            title={tr("Đóng", "Close")}
+            aria-label={tr("Đóng", "Close")}
           >
             <X size={18} />
           </button>
@@ -101,9 +103,14 @@ export const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
           <div className="mx-6 mt-4 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center gap-3 shrink-0 text-xs text-emerald-600 dark:text-emerald-400">
             <CheckCircle2 size={18} className="shrink-0" />
             <div>
-              <span className="font-bold">Bạn đang sử dụng phiên bản mới nhất ({RECENT_7_VERSIONS[0].version})</span>
+              <span className="font-bold">
+                {tr(
+                  `Bạn đang sử dụng phiên bản mới nhất (${RECENT_7_VERSIONS[0].version})`,
+                  `You are running the latest version (${RECENT_7_VERSIONS[0].version})`
+                )}
+              </span>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                Không có bản cập nhật mới nào tại thời điểm hiện tại.
+                {tr("Không có bản cập nhật mới nào tại thời điểm hiện tại.", "No new updates are available at this time.")}
               </p>
             </div>
           </div>
@@ -137,7 +144,7 @@ export const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
                       </span>
                       {item.isCurrent && (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-                          <CheckCircle2 size={11} /> Phiên bản hiện tại
+                          <CheckCircle2 size={11} /> {tr("Phiên bản hiện tại", "Current version")}
                         </span>
                       )}
                       <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
@@ -146,7 +153,7 @@ export const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
                     </div>
 
                     <h4 className="text-sm font-bold text-foreground">
-                      {item.title}
+                      {lang === "en" ? item.titleEn || item.title : item.title}
                     </h4>
                   </div>
 
@@ -158,21 +165,25 @@ export const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
                 {/* Collapsible Release Notes Details */}
                 {isExpanded && (
                   <div className="px-4.5 pb-4.5 pt-1 border-t border-border/50 space-y-3.5 animate-slide-up">
-                    {item.sections.map((sec, secIdx) => (
-                      <div key={secIdx} className="space-y-1.5">
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-                          {getSectionIcon(sec.type)}
-                          <span>{sec.title}</span>
+                    {item.sections.map((sec, secIdx) => {
+                      const sectionTitle = lang === "en" ? sec.titleEn || sec.title : sec.title;
+                      const sectionItems = lang === "en" ? sec.itemsEn || sec.items : sec.items;
+                      return (
+                        <div key={secIdx} className="space-y-1.5">
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                            {getSectionIcon(sec.type)}
+                            <span>{sectionTitle}</span>
+                          </div>
+                          <ul className="space-y-1 pl-5 list-disc text-xs text-muted-foreground leading-relaxed">
+                            {sectionItems.map((bullet, bIdx) => (
+                              <li key={bIdx} className="pl-0.5">
+                                {bullet}
+                              </li>
+                            ))}
+                          </ul>
                         </div>
-                        <ul className="space-y-1 pl-5 list-disc text-xs text-muted-foreground leading-relaxed">
-                          {sec.items.map((bullet, bIdx) => (
-                            <li key={bIdx} className="pl-0.5">
-                              {bullet}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -182,12 +193,12 @@ export const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
 
         {/* Footer */}
         <div className="px-6 py-3.5 border-t border-border bg-muted/20 flex items-center justify-between shrink-0 text-xs text-muted-foreground">
-          <span>Tổng cộng 7 phiên bản gần nhất</span>
+          <span>{tr(`Tổng cộng ${RECENT_7_VERSIONS.length} phiên bản gần nhất`, `Total ${RECENT_7_VERSIONS.length} recent releases`)}</span>
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground transition-all cursor-pointer shadow-sm active:scale-97"
           >
-            Đóng
+            {tr("Đóng", "Close")}
           </button>
         </div>
 

@@ -27,6 +27,7 @@ import { useAuthStore } from "@/core/stores/useAuthStore";
 import { validateSubscription } from "@/core/services/authApi";
 import { socketService } from "@/core/services/socketService";
 import { getUserPlanInfo } from "@/core/services/appEntitlementPolicy";
+import { useTranslation } from "@/core/lib/i18n";
 import {
   getPricingPackages,
   createPaymentOrder,
@@ -50,6 +51,7 @@ export function LicenseManager({
   variant = "modal",
   defaultTargetApp = "ALL",
 }: LicenseManagerProps) {
+  const { tr } = useTranslation();
   const session = useAuthStore((s) => s.session);
   const setSession = useAuthStore((s) => s.setSession);
   const planInfo = getUserPlanInfo(session);
@@ -179,7 +181,10 @@ export function LicenseManager({
     if (!selectedPackage) return;
 
     if (!buyerName.trim() || !buyerEmail.trim() || !buyerPhone.trim()) {
-      setError("Vui lòng điền đầy đủ Họ tên, Email và Số điện thoại trước khi thanh toán.");
+      setError(tr(
+        "Vui lòng điền đầy đủ Họ tên, Email và Số điện thoại trước khi thanh toán.",
+        "Please enter your Full Name, Email, and Phone Number before checkout."
+      ));
       return;
     }
 
@@ -199,7 +204,7 @@ export function LicenseManager({
       setCountdownSeconds(900);
       setMode("qr_checkout");
     } catch (err: any) {
-      setError(err?.message || "Không thể tạo đơn hàng. Vui lòng thử lại!");
+      setError(err?.message || tr("Không thể tạo đơn hàng. Vui lòng thử lại!", "Unable to create order. Please try again!"));
     } finally {
       setIsCreatingOrder(false);
     }
@@ -220,10 +225,10 @@ export function LicenseManager({
         const updated = await validateSubscription(session);
         setSession(updated);
       }
-      setActivateSuccessMsg(res.message || "Kích hoạt mã bản quyền thành công!");
+      setActivateSuccessMsg(res.message || tr("Kích hoạt mã bản quyền thành công!", "License key activated successfully!"));
       setMode("activate_success");
     } catch (err: any) {
-      setError(err?.message || "Không thể kích hoạt mã key này.");
+      setError(err?.message || tr("Không thể kích hoạt mã key này.", "Unable to activate this license key."));
     } finally {
       setIsActivating(false);
     }
@@ -249,7 +254,7 @@ export function LicenseManager({
   };
 
   const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return "Không có";
+    if (!dateStr) return tr("Không có", "None");
     try {
       const d = new Date(dateStr);
       return `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()}`;
@@ -268,14 +273,14 @@ export function LicenseManager({
           </div>
           <div>
             <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-              Trung Tâm Bản Quyền & Gia Hạn
+              {tr("Trung Tâm Bản Quyền & Gia Hạn", "License & Renewal Center")}
             </h2>
             <p className="text-xs text-muted-foreground">
-              Mở khóa không giới hạn sức mạnh Studio Workflow & Super App
+              {tr("Mở khóa không giới hạn sức mạnh Studio Workflow & Super App", "Unlock unlimited Studio Workflow & Super App capabilities")}
             </p>
           </div>
         </div>
-        <button aria-label="Đóng"
+        <button aria-label={tr("Đóng", "Close")}
           onClick={onClose}
           className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
         >
@@ -297,7 +302,7 @@ export function LicenseManager({
           }`}
         >
           <ShieldCheck className="w-4 h-4" />
-          Gói Đang Dùng
+          {tr("Gói Đang Dùng", "Current Plan")}
         </button>
         <button
           onClick={() => {
@@ -311,7 +316,7 @@ export function LicenseManager({
           }`}
         >
           <QrCode className="w-4 h-4" />
-          Mua Gói & Gia Hạn Tự Động
+          {tr("Mua Gói & Gia Hạn Tự Động", "Plans & Auto Renewal")}
         </button>
         <button
           onClick={() => {
@@ -325,7 +330,7 @@ export function LicenseManager({
           }`}
         >
           <Key className="w-4 h-4" />
-          Kích Hoạt Mã Key
+          {tr("Kích Hoạt Mã Key", "Activate Key")}
         </button>
       </div>
 
@@ -397,14 +402,14 @@ export function LicenseManager({
                 {/* Days Count & Expiry Info */}
                 <div className="shrink-0 flex md:flex-col items-center md:items-end justify-between border-t md:border-t-0 pt-3 md:pt-0 border-border/60">
                   <div className="text-right">
-                    <span className="text-[11px] text-muted-foreground block">Thời gian hiệu lực</span>
+                    <span className="text-[11px] text-muted-foreground block">{tr("Thời gian hiệu lực", "Validity")}</span>
                     <span className="text-lg font-extrabold text-foreground">
-                      {planInfo.isLifetime ? "Vĩnh viễn" : `${planInfo.daysRemaining ?? 0} ngày`}
+                      {planInfo.isLifetime ? tr("Vĩnh viễn", "Lifetime") : tr(`${planInfo.daysRemaining ?? 0} ngày`, `${planInfo.daysRemaining ?? 0} days`)}
                     </span>
                   </div>
                   {planInfo.expiresAt && !planInfo.isLifetime && (
                     <span className="text-[10px] text-muted-foreground/80 mt-0.5">
-                      Hạn dùng: {formatDate(planInfo.expiresAt)}
+                      {tr("Hạn dùng:", "Expires:")} {formatDate(planInfo.expiresAt)}
                     </span>
                   )}
                 </div>
@@ -416,9 +421,12 @@ export function LicenseManager({
               <div className="p-3.5 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 flex items-start gap-3 text-xs">
                 <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-semibold text-amber-800 dark:text-amber-300">Chính sách sử dụng gói lẻ:</span>
+                  <span className="font-semibold text-amber-800 dark:text-amber-300">{tr("Chính sách sử dụng gói lẻ:", "Single-App Plan Policy:")}</span>
                   <p className="text-muted-foreground mt-0.5 leading-relaxed">
-                    Bạn đang đăng ký gói riêng cho <b>App Lọc Ảnh</b>. Các ứng dụng khác trong hệ sinh thái (Kho tài nguyên, Cấu hình Sheet, Đếm ảnh...) đang được mở theo <b>thời gian dùng thử (3 ngày)</b>. Khi hết số ngày dùng thử, các app khác sẽ tự động khoá. Bạn có thể gia hạn hoặc nâng cấp lên gói Full App bất kỳ lúc nào để mở toàn bộ.
+                    {tr(
+                      "Bạn đang đăng ký gói riêng cho App Lọc Ảnh. Các ứng dụng khác trong hệ sinh thái (Kho tài nguyên, Cấu hình Sheet, Đếm ảnh...) đang được mở theo thời gian dùng thử (3 ngày). Khi hết số ngày dùng thử, các app khác sẽ tự động khoá. Bạn có thể gia hạn hoặc nâng cấp lên gói Full App bất kỳ lúc nào để mở toàn bộ.",
+                      "You are subscribed to the standalone Photo Picker Pro plan. Other ecosystem tools (Creative Resources, Contact the Sheet, Photo Analytics...) are unlocked during the 3-day trial and will lock afterward. You can upgrade to the Full Super App plan anytime to unlock everything."
+                    )}
                   </p>
                 </div>
               </div>
@@ -428,9 +436,12 @@ export function LicenseManager({
               <div className="p-3.5 rounded-xl bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/30 flex items-start gap-3 text-xs">
                 <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-semibold text-blue-800 dark:text-blue-300">Trải nghiệm Dùng Thử Đầy Đủ:</span>
+                  <span className="font-semibold text-blue-800 dark:text-blue-300">{tr("Trải nghiệm Dùng Thử Đầy Đủ:", "Full Trial Experience:")}</span>
                   <p className="text-muted-foreground mt-0.5 leading-relaxed">
-                    Tài khoản của bạn đang trong thời gian dùng thử 100% tất cả ứng dụng trong Super App. Bạn có thể kích hoạt gói bản quyền bất kỳ lúc nào để làm việc không gián đoạn!
+                    {tr(
+                      "Tài khoản của bạn đang trong thời gian dùng thử 100% tất cả ứng dụng trong Super App. Bạn có thể kích hoạt gói bản quyền bất kỳ lúc nào để làm việc không gián đoạn!",
+                      "Your account currently has full trial access to all Super App modules. Activate a license anytime to continue without interruption!"
+                    )}
                   </p>
                 </div>
               </div>
@@ -440,9 +451,12 @@ export function LicenseManager({
               <div className="p-3.5 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/30 flex items-start gap-3 text-xs">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-semibold text-emerald-800 dark:text-emerald-300">Gói Toàn Bộ Super App Siêu Cấp:</span>
+                  <span className="font-semibold text-emerald-800 dark:text-emerald-300">{tr("Gói Toàn Bộ Super App Siêu Cấp:", "Full Super App Access:")}</span>
                   <p className="text-muted-foreground mt-0.5 leading-relaxed">
-                    Tài khoản của bạn được mở khoá đầy đủ tất cả các module và tính năng hiện tại cũng như các bản cập nhật mới trong tương lai.
+                    {tr(
+                      "Tài khoản của bạn được mở khoá đầy đủ tất cả các module và tính năng hiện tại cũng như các bản cập nhật mới trong tương lai.",
+                      "Your account has full access to all current modules and features as well as upcoming releases."
+                    )}
                   </p>
                 </div>
               </div>
@@ -452,10 +466,10 @@ export function LicenseManager({
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-bold text-foreground">
-                  Chi tiết quyền truy cập từng ứng dụng:
+                  {tr("Chi tiết quyền truy cập từng ứng dụng:", "Per-App Access Details:")}
                 </h4>
                 <span className="text-[11px] text-muted-foreground">
-                  Tài khoản: {session?.email}
+                  {tr("Tài khoản:", "Account:")} {session?.email}
                 </span>
               </div>
 
@@ -496,7 +510,7 @@ export function LicenseManager({
                         <span>{app.statusText}</span>
                         {app.expiresAt && (
                           <span className="font-mono text-[10px]">
-                            Hết hạn: {formatDate(app.expiresAt)}
+                            {tr("Hết hạn:", "Expires:")} {formatDate(app.expiresAt)}
                           </span>
                         )}
                       </div>
@@ -518,7 +532,9 @@ export function LicenseManager({
                   }}
                   className="px-4 py-2 rounded-xl bg-primary text-primary-foreground font-semibold text-xs shadow-md hover:bg-primary/90 transition-all flex items-center gap-1.5 cursor-pointer"
                 >
-                  {planInfo.isFullApp ? "Gia hạn thêm gói Full App" : "Nâng cấp lên Toàn Bộ App (Full Combo)"}
+                  {planInfo.isFullApp
+                    ? tr("Gia hạn thêm gói Full App", "Extend Full App Plan")
+                    : tr("Nâng cấp lên Toàn Bộ App (Full Combo)", "Upgrade to Full Super App")}
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
 
@@ -532,7 +548,7 @@ export function LicenseManager({
                     }}
                     className="px-3.5 py-2 rounded-xl bg-card border border-border hover:bg-muted text-foreground font-medium text-xs transition-all cursor-pointer"
                   >
-                    Gia hạn gói Lọc ảnh
+                    {tr("Gia hạn gói Lọc ảnh", "Renew Photo Picker Plan")}
                   </button>
                 )}
               </div>
@@ -546,7 +562,7 @@ export function LicenseManager({
                 className="px-3.5 py-2 rounded-xl bg-muted/60 border border-border/80 hover:bg-muted text-foreground font-medium text-xs transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <Key className="w-3.5 h-3.5 text-amber-500" />
-                Nhập mã Key kích hoạt
+                {tr("Nhập mã Key kích hoạt", "Enter Activation Key")}
               </button>
             </div>
           </div>
@@ -557,7 +573,7 @@ export function LicenseManager({
           <form onSubmit={handleProceedToQR} className="space-y-6">
             {/* App Scope Toggle */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-foreground">Phạm vi gia hạn:</label>
+              <label className="text-xs font-bold text-foreground">{tr("Phạm vi gia hạn:", "Plan Scope:")}</label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
@@ -570,8 +586,8 @@ export function LicenseManager({
                 >
                   <Layers className={`w-5 h-5 mt-0.5 ${selectedApp === "ALL" ? "text-blue-500" : "text-muted-foreground"}`} />
                   <div>
-                    <div className="text-xs font-bold text-foreground">Toàn Hệ Sinh Thái (Super App)</div>
-                    <div className="text-[11px] text-muted-foreground">Mở khóa mọi app con hiện tại & tương lai</div>
+                    <div className="text-xs font-bold text-foreground">{tr("Toàn Hệ Sinh Thái (Super App)", "Full Ecosystem (Super App)")}</div>
+                    <div className="text-[11px] text-muted-foreground">{tr("Mở khóa mọi app con hiện tại & tương lai", "Unlock all current & upcoming modules")}</div>
                   </div>
                 </button>
 
@@ -586,8 +602,8 @@ export function LicenseManager({
                 >
                   <FileImage className={`w-5 h-5 mt-0.5 ${selectedApp === "photo-picker" ? "text-emerald-500" : "text-muted-foreground"}`} />
                   <div>
-                    <div className="text-xs font-bold text-foreground">App Photo Picker Pro (Lọc ảnh)</div>
-                    <div className="text-[11px] text-muted-foreground">Sử dụng đầy đủ mọi tính năng lọc ảnh</div>
+                    <div className="text-xs font-bold text-foreground">{tr("App Photo Picker Pro (Lọc ảnh)", "Photo Picker Pro Only")}</div>
+                    <div className="text-[11px] text-muted-foreground">{tr("Sử dụng đầy đủ mọi tính năng lọc ảnh", "Full access to Photo Picker Pro features")}</div>
                   </div>
                 </button>
               </div>
@@ -595,7 +611,7 @@ export function LicenseManager({
 
             {/* Packages Grid */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-foreground">Chọn chu kỳ gia hạn:</label>
+              <label className="text-xs font-bold text-foreground">{tr("Chọn chu kỳ gia hạn:", "Select billing cycle:")}</label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 {filteredPackages.map((pkg) => {
                   const isSelected = selectedPackage?.id === pkg.id;
@@ -625,7 +641,7 @@ export function LicenseManager({
                         )}
                       </div>
                       <div className="mt-2 text-[10px] text-muted-foreground font-medium">
-                        +{pkg.durationDays} ngày
+                        {tr(`+${pkg.durationDays} ngày`, `+${pkg.durationDays} days`)}
                       </div>
                     </button>
                   );
@@ -637,17 +653,17 @@ export function LicenseManager({
             <div className="p-4 rounded-xl bg-muted/30 border border-border/60 space-y-3">
               <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                Thông tin người mua (Bảo lưu quyền lợi & Nhận mã Key dự phòng):
+                {tr("Thông tin người mua (Bảo lưu quyền lợi & Nhận mã Key dự phòng):", "Buyer Information (Receipt & Backup Key Delivery):")}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Họ và tên *</label>
+                  <label className="text-[11px] font-medium text-muted-foreground mb-1 block">{tr("Họ và tên *", "Full Name *")}</label>
                   <div className="relative">
                     <User className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
                     <input
                       type="text"
                       required
-                      placeholder="Nguyễn Văn A"
+                      placeholder={tr("Nguyễn Văn A", "John Doe")}
                       value={buyerName}
                       onChange={(e) => setBuyerName(e.target.value)}
                       className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
@@ -656,7 +672,7 @@ export function LicenseManager({
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Email nhận Key *</label>
+                  <label className="text-[11px] font-medium text-muted-foreground mb-1 block">{tr("Email nhận Key *", "Delivery Email *")}</label>
                   <div className="relative">
                     <Mail className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
                     <input
@@ -671,7 +687,7 @@ export function LicenseManager({
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Số điện thoại *</label>
+                  <label className="text-[11px] font-medium text-muted-foreground mb-1 block">{tr("Số điện thoại *", "Phone Number *")}</label>
                   <div className="relative">
                     <Phone className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
                     <input
@@ -690,9 +706,9 @@ export function LicenseManager({
             {/* Submit CTA */}
             <div className="pt-2 flex items-center justify-between">
               <div>
-                <span className="text-xs text-muted-foreground">Tổng thanh toán: </span>
+                <span className="text-xs text-muted-foreground">{tr("Tổng thanh toán:", "Total due:")} </span>
                 <span className="text-base font-extrabold text-foreground ml-1">
-                  {selectedPackage ? formatVND(selectedPackage.price) : "0 đ"}
+                  {selectedPackage ? formatVND(selectedPackage.price) : tr("0 đ", "0 VND")}
                 </span>
               </div>
               <button
@@ -703,11 +719,11 @@ export function LicenseManager({
                 {isCreatingOrder ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Đang tạo đơn...
+                    {tr("Đang tạo đơn...", "Creating order...")}
                   </>
                 ) : (
                   <>
-                    Tạo mã VietQR thanh toán
+                    {tr("Tạo mã VietQR thanh toán", "Generate VietQR Code")}
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -729,14 +745,14 @@ export function LicenseManager({
                 />
                 <div className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-neutral-800">
                   <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
-                  Hết hạn sau: <span className="font-mono text-red-600">{formatCountdown(countdownSeconds)}</span>
+                  {tr("Hết hạn sau:", "Expires in:")} <span className="font-mono text-red-600">{formatCountdown(countdownSeconds)}</span>
                 </div>
               </div>
 
               {/* Right: Bank Details & Copy */}
               <div className="space-y-3.5 text-xs">
                 <div className="p-3 rounded-xl bg-muted/40 border border-border/60">
-                  <div className="text-[11px] text-muted-foreground">Chủ tài khoản:</div>
+                  <div className="text-[11px] text-muted-foreground">{tr("Chủ tài khoản:", "Account Holder:")}</div>
                   <div className="font-bold text-foreground uppercase mt-0.5">
                     {orderData.bankInfo.bankAccountName}
                   </div>
@@ -744,7 +760,7 @@ export function LicenseManager({
 
                 <div className="p-3 rounded-xl bg-muted/40 border border-border/60 flex items-center justify-between">
                   <div>
-                    <div className="text-[11px] text-muted-foreground">Số tài khoản:</div>
+                    <div className="text-[11px] text-muted-foreground">{tr("Số tài khoản:", "Account Number:")}</div>
                     <div className="font-mono font-bold text-foreground text-sm mt-0.5">
                       {orderData.bankInfo.bankAccountNo}
                     </div>
@@ -755,13 +771,13 @@ export function LicenseManager({
                     className="p-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground hover:text-foreground flex items-center gap-1 text-[11px]"
                   >
                     {copiedField === "acc" ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                    {copiedField === "acc" ? "Đã chép" : "Sao chép"}
+                    {copiedField === "acc" ? tr("Đã chép", "Copied") : tr("Sao chép", "Copy")}
                   </button>
                 </div>
 
                 <div className="p-3 rounded-xl bg-muted/40 border border-border/60 flex items-center justify-between">
                   <div>
-                    <div className="text-[11px] text-muted-foreground">Số tiền:</div>
+                    <div className="text-[11px] text-muted-foreground">{tr("Số tiền:", "Amount:")}</div>
                     <div className="font-bold text-primary text-sm mt-0.5">
                       {formatVND(orderData.amount)}
                     </div>
@@ -772,13 +788,13 @@ export function LicenseManager({
                     className="p-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground hover:text-foreground flex items-center gap-1 text-[11px]"
                   >
                     {copiedField === "amt" ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                    {copiedField === "amt" ? "Đã chép" : "Sao chép"}
+                    {copiedField === "amt" ? tr("Đã chép", "Copied") : tr("Sao chép", "Copy")}
                   </button>
                 </div>
 
                 <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between">
                   <div>
-                    <div className="text-[11px] text-amber-700 dark:text-amber-300 font-semibold">Nội dung chuyển khoản (bắt buộc):</div>
+                    <div className="text-[11px] text-amber-700 dark:text-amber-300 font-semibold">{tr("Nội dung chuyển khoản (bắt buộc):", "Transfer Note (Required):")}</div>
                     <div className="font-mono font-extrabold text-amber-900 dark:text-amber-100 text-sm mt-0.5">
                       {orderData.orderCode}
                     </div>
@@ -789,7 +805,7 @@ export function LicenseManager({
                     className="p-1.5 rounded-lg bg-amber-500/20 text-amber-800 dark:text-amber-200 hover:bg-amber-500/30 flex items-center gap-1 text-[11px] font-bold"
                   >
                     {copiedField === "code" ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                    {copiedField === "code" ? "Đã chép" : "Sao chép"}
+                    {copiedField === "code" ? tr("Đã chép", "Copied") : tr("Sao chép", "Copy")}
                   </button>
                 </div>
               </div>
@@ -799,14 +815,14 @@ export function LicenseManager({
             <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
               <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
                 <Loader2 className="w-4 h-4 animate-spin text-blue-500 shrink-0" />
-                <span>Đang chờ chuyển khoản... Hệ thống sẽ tự động xuất mã key ngay khi nhận được tiền.</span>
+                <span>{tr("Đang chờ chuyển khoản... Hệ thống sẽ tự động xuất mã key ngay khi nhận được tiền.", "Waiting for transfer... Your license key will unlock automatically once payment is received.")}</span>
               </div>
               <button
                 type="button"
                 onClick={() => setMode("packages")}
                 className="text-xs text-muted-foreground hover:underline cursor-pointer shrink-0"
               >
-                Hủy / Đổi gói
+                {tr("Hủy / Đổi gói", "Cancel / Change Plan")}
               </button>
             </div>
           </div>
@@ -825,16 +841,19 @@ export function LicenseManager({
                 <CheckCircle2 className="w-10 h-10" />
               </div>
               <div className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-[11px] font-bold">
-                <span>GIAO DỊCH THÀNH CÔNG RỰC RỠ</span>
+                <span>{tr("GIAO DỊCH THÀNH CÔNG RỰC RỠ", "PAYMENT COMPLETED")}</span>
               </div>
             </div>
 
             <div>
               <h3 className="text-2xl font-black text-foreground tracking-tight flex items-center justify-center gap-2">
-                <span>Thanh Toán Thành Công!</span>
+                <span>{tr("Thanh Toán Thành Công!", "Payment Successful!")}</span>
               </h3>
               <p className="text-xs text-muted-foreground mt-1.5 max-w-md mx-auto leading-relaxed">
-                Cảm ơn bạn đã tin dùng <strong className="text-foreground">DH Studio Pro</strong>. Hệ thống đã xác thực giao dịch qua SePay và tự động kích hoạt quyền lợi gói dịch vụ vào tài khoản của bạn.
+                {tr(
+                  "Cảm ơn bạn đã tin dùng DH Studio Pro. Hệ thống đã xác thực giao dịch qua SePay và tự động kích hoạt quyền lợi gói dịch vụ vào tài khoản của bạn.",
+                  "Thank you for choosing DH Studio Pro. Your payment has been verified and your subscription benefits are now active on your account."
+                )}
               </p>
             </div>
 
@@ -842,7 +861,7 @@ export function LicenseManager({
             <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-primary/5 to-teal-500/10 dark:from-emerald-500/15 dark:via-primary/10 dark:to-teal-500/15 border-2 border-emerald-500/30 dark:border-emerald-500/40 shadow-xl shadow-emerald-500/5 space-y-3.5 relative overflow-hidden">
               <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center justify-center gap-1.5">
                 <KeyRound size={12} />
-                <span>MÃ BẢN QUYỀN (LICENSE KEY)</span>
+                <span>{tr("MÃ BẢN QUYỀN (LICENSE KEY)", "LICENSE KEY")}</span>
               </div>
 
               <div className="font-mono text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-300 tracking-widest select-all bg-background dark:bg-card/70 py-2.5 px-4 rounded-xl border border-emerald-500/25 shadow-inner">
@@ -851,11 +870,11 @@ export function LicenseManager({
 
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-semibold">
                 <CheckCircle2 size={13} />
-                <span>Đã tự động liên kết trực tiếp vào tài khoản này!</span>
+                <span>{tr("Đã tự động liên kết trực tiếp vào tài khoản này!", "Automatically linked to your account!")}</span>
               </div>
 
               <div className="text-[11px] text-muted-foreground">
-                Hóa đơn và mã dự phòng đã gửi tới: <span className="font-bold text-foreground">{orderData?.buyerEmail || session?.email}</span>
+                {tr("Hóa đơn và mã dự phòng đã gửi tới:", "Receipt & backup key sent to:")} <span className="font-bold text-foreground">{orderData?.buyerEmail || session?.email}</span>
               </div>
             </div>
 
@@ -867,7 +886,7 @@ export function LicenseManager({
                 className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-border hover:bg-muted font-semibold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
               >
                 {copiedField === "genKey" ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                {copiedField === "genKey" ? "Đã sao chép mã Key!" : "Sao chép mã Key dự phòng"}
+                {copiedField === "genKey" ? tr("Đã sao chép mã Key!", "License Key Copied!") : tr("Sao chép mã Key dự phòng", "Copy Backup Key")}
               </button>
 
               <button
@@ -876,7 +895,7 @@ export function LicenseManager({
                 className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 text-white font-bold text-xs shadow-lg hover:brightness-110 flex items-center justify-center gap-1.5 transition-all cursor-pointer hover:scale-105 active:scale-95"
               >
                 <ShieldCheck className="w-4 h-4" />
-                <span>Xem Gói Đang Dùng</span>
+                <span>{tr("Xem Gói Đang Dùng", "View Current Plan")}</span>
               </button>
             </div>
           </div>
@@ -887,12 +906,15 @@ export function LicenseManager({
           <form onSubmit={handleManualActivate} className="space-y-4 py-2">
             <div className="p-4 rounded-xl bg-muted/20 border border-border/60">
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Nhập mã bản quyền định dạng <code className="text-primary font-bold">MVD-XXXX-XXXX-XXXX</code> để cộng hạn sử dụng vào tài khoản của bạn.
+                {tr(
+                  "Nhập mã bản quyền định dạng MVD-XXXX-XXXX-XXXX để cộng hạn sử dụng vào tài khoản của bạn.",
+                  "Enter your license key (MVD-XXXX-XXXX-XXXX format) to extend validity on your account."
+                )}
               </p>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-foreground">Mã License Key:</label>
+              <label className="text-xs font-bold text-foreground">{tr("Mã License Key:", "License Key:")}</label>
               <div className="relative">
                 <Key className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
                 <input
@@ -913,7 +935,7 @@ export function LicenseManager({
                 className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-xs shadow-md hover:bg-primary/90 transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
               >
                 {isActivating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                Xác nhận kích hoạt
+                {tr("Xác nhận kích hoạt", "Confirm Activation")}
               </button>
             </div>
           </form>
@@ -930,7 +952,7 @@ export function LicenseManager({
             </div>
             <div>
               <h3 className="text-lg font-black text-foreground flex items-center justify-center gap-1.5">
-                <span>Kích Hoạt Thành Công!</span>
+                <span>{tr("Kích Hoạt Thành Công!", "Activation Successful!")}</span>
               </h3>
               <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">{activateSuccessMsg}</p>
             </div>
@@ -940,14 +962,14 @@ export function LicenseManager({
                 onClick={() => setMode("my_plan")}
                 className="px-5 py-2 rounded-xl bg-muted/60 border border-border hover:bg-muted text-foreground font-semibold text-xs transition-all cursor-pointer"
               >
-                Xem Gói Đang Dùng
+                {tr("Xem Gói Đang Dùng", "View Current Plan")}
               </button>
               <button
                 type="button"
                 onClick={onClose}
                 className="px-5 py-2 rounded-xl bg-primary text-primary-foreground font-semibold text-xs shadow-md cursor-pointer hover:bg-primary/90 transition-all"
               >
-                Tiếp tục làm việc
+                {tr("Tiếp tục làm việc", "Continue Working")}
               </button>
             </div>
           </div>

@@ -1,4 +1,5 @@
 import { apiRequest } from "./apiClient";
+import { trText } from "../lib/i18n.ts";
 
 export interface PricingPackage {
   readonly id: string;
@@ -71,14 +72,14 @@ export async function getPricingPackages(): Promise<PricingPackage[]> {
   } catch (err) {
     console.error("Failed to load packages from API, using fallback defaults:", err);
     return [
-      { id: "super_1m", targetApp: "ALL", name: "Gói Super App 1 Tháng", durationDays: 30, price: 99000, originalPrice: 129000 },
-      { id: "super_3m", targetApp: "ALL", name: "Gói Super App 3 Tháng", durationDays: 90, price: 149000, originalPrice: 249000, badge: "Phổ biến", isPopular: true },
-      { id: "super_6m", targetApp: "ALL", name: "Gói Super App 6 Tháng", durationDays: 180, price: 249000, originalPrice: 399000 },
-      { id: "super_12m", targetApp: "ALL", name: "Gói Super App 12 Tháng", durationDays: 365, price: 499000, originalPrice: 899000, badge: "Tiết kiệm nhất" },
-      { id: "picker_1m", targetApp: "photo-picker", name: "Gói Photo Picker Pro 1 Tháng", durationDays: 30, price: 49000, originalPrice: 79000 },
-      { id: "picker_3m", targetApp: "photo-picker", name: "Gói Photo Picker Pro 3 Tháng", durationDays: 90, price: 129000, originalPrice: 199000 },
-      { id: "picker_6m", targetApp: "photo-picker", name: "Gói Photo Picker Pro 6 Tháng", durationDays: 180, price: 229000, originalPrice: 329000 },
-      { id: "picker_12m", targetApp: "photo-picker", name: "Gói Photo Picker Pro 12 Tháng", durationDays: 365, price: 329000, originalPrice: 529000, badge: "Ưu đãi năm" },
+      { id: "super_1m", targetApp: "ALL", name: trText("Gói Super App 1 Tháng", "Super App 1 Month"), durationDays: 30, price: 99000, originalPrice: 129000 },
+      { id: "super_3m", targetApp: "ALL", name: trText("Gói Super App 3 Tháng", "Super App 3 Months"), durationDays: 90, price: 149000, originalPrice: 249000, badge: trText("Phổ biến", "Popular"), isPopular: true },
+      { id: "super_6m", targetApp: "ALL", name: trText("Gói Super App 6 Tháng", "Super App 6 Months"), durationDays: 180, price: 249000, originalPrice: 399000 },
+      { id: "super_12m", targetApp: "ALL", name: trText("Gói Super App 12 Tháng", "Super App 12 Months"), durationDays: 365, price: 499000, originalPrice: 899000, badge: trText("Tiết kiệm nhất", "Best Value") },
+      { id: "picker_1m", targetApp: "photo-picker", name: trText("Gói Photo Picker Pro 1 Tháng", "Photo Picker Pro 1 Month"), durationDays: 30, price: 49000, originalPrice: 79000 },
+      { id: "picker_3m", targetApp: "photo-picker", name: trText("Gói Photo Picker Pro 3 Tháng", "Photo Picker Pro 3 Months"), durationDays: 90, price: 129000, originalPrice: 199000 },
+      { id: "picker_6m", targetApp: "photo-picker", name: trText("Gói Photo Picker Pro 6 Tháng", "Photo Picker Pro 6 Months"), durationDays: 180, price: 229000, originalPrice: 329000 },
+      { id: "picker_12m", targetApp: "photo-picker", name: trText("Gói Photo Picker Pro 12 Tháng", "Photo Picker Pro 12 Months"), durationDays: 365, price: 329000, originalPrice: 529000, badge: trText("Ưu đãi năm", "Annual Deal") },
     ];
   }
 }

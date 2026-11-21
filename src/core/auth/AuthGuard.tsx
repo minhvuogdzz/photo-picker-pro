@@ -22,6 +22,7 @@ import { SessionExpiringWarningModal } from "./SessionExpiringWarningModal";
 import { AccountExpiringAlertModal } from "./AccountExpiringAlertModal";
 import { checkAccountExpiringNotice } from "@/core/services/accountExpirationService";
 import { LicenseManager } from "@/core/license/LicenseManager";
+import { useTranslation } from "@/core/lib/i18n";
 
 interface AuthGuardProps {
   readonly children: React.ReactNode;
@@ -217,6 +218,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
   }, []);
 
   const accountSuspended = useAuthStore((s) => s.accountSuspended);
+  const { tr } = useTranslation();
 
   // Loading state
   if (isLoading) {
@@ -224,7 +226,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
       <div className="h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4 animate-fade-in">
           <Loader2 size={32} className="text-primary animate-spin" />
-          <p className="text-sm text-muted-foreground">Đang tải...</p>
+          <p className="text-sm text-muted-foreground">{tr("Đang tải...", "Loading...")}</p>
         </div>
       </div>
     );
@@ -284,7 +286,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
               <AlertTriangle size={40} className="text-destructive" />
             </div>
             <div className="space-y-2">
-              <h2 id="dlg-AuthGuard-1" className="text-lg font-bold text-foreground">Cảnh báo bản quyền</h2>
+              <h2 id="dlg-AuthGuard-1" className="text-lg font-bold text-foreground">{tr("Cảnh báo bản quyền", "License Warning")}</h2>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 {copyrightWarningMessage}
               </p>
@@ -294,7 +296,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
                 onClick={() => window.open('https://mvd-photoshop.com/terms', '_blank')}
                 className="btn-outline flex-1 py-3 text-sm font-bold"
               >
-                Tìm hiểu thêm
+                {tr("Tìm hiểu thêm", "Learn More")}
               </button>
               <button
                 onClick={async () => {
@@ -306,7 +308,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
                 }}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl flex-1 py-3 text-sm font-bold transition-colors"
               >
-                Thoát (Quit)
+                {tr("Thoát (Quit)", "Quit")}
               </button>
             </div>
           </div>
@@ -321,7 +323,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
               <Info size={40} className="text-warning" />
             </div>
             <div className="space-y-2">
-              <h2 id="dlg-AuthGuard-2" className="text-lg font-bold text-foreground">Thông báo gia hạn</h2>
+              <h2 id="dlg-AuthGuard-2" className="text-lg font-bold text-foreground">{tr("Thông báo gia hạn", "Renewal Notice")}</h2>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 {expiringSoonMessage}
               </p>
@@ -331,7 +333,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
                 onClick={() => setExpiringSoonMessage(null)}
                 className="btn-outline flex-1 py-3 text-sm font-bold"
               >
-                Đóng
+                {tr("Đóng", "Close")}
               </button>
               <button
                 onClick={() => {
@@ -340,7 +342,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
                 }}
                 className="btn-primary flex-1 py-3 text-sm font-bold"
               >
-                Gia hạn ngay
+                {tr("Gia hạn ngay", "Renew Now")}
               </button>
             </div>
           </div>

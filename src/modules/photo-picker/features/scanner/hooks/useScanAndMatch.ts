@@ -3,6 +3,7 @@ import { useAppStore } from "@/core/stores/useAppStore";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { CustomerCode, ScanResult, MatchResult, ProgressEvent, PhotoFile } from "@/core/types";
+import { trText } from "../../../../../core/lib/i18n.ts";
 
 export function buildScanSignature(paths: string[], options: unknown): string {
   return JSON.stringify({ paths, options });
@@ -23,7 +24,7 @@ export function useScanAndMatch() {
       state.selectedInputFolders.length > 0 ? state.selectedInputFolders : state.inputFolders;
 
     if (effectiveFolders.length === 0) {
-      alert("Vui lòng chọn ít nhất 1 thư mục đầu vào!");
+      alert(trText("Vui lòng chọn ít nhất 1 thư mục đầu vào!", "Please select at least 1 input folder!"));
       return;
     }
 
@@ -144,7 +145,7 @@ export function useScanAndMatch() {
       setProgress(null);
     } catch (error) {
       console.error("Scan/Match error:", error);
-      alert("Lỗi trong quá trình quét/lọc: " + (typeof error === "string" ? error : JSON.stringify(error)));
+      alert(trText("Lỗi trong quá trình quét/lọc: ", "Error during scan/match: ") + (typeof error === "string" ? error : JSON.stringify(error)));
       setPhase("idle");
       setProgress(null);
     } finally {

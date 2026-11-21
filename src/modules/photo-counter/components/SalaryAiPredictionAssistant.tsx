@@ -32,9 +32,10 @@ import {
 } from "../services/aiSalaryPredictionService";
 import {
   aiSettingsService,
-  AVAILABLE_GEMINI_MODELS,
+  getAvailableGeminiModels,
   DEFAULT_GEMINI_API_KEY,
 } from "@/core/services/aiSettingsService";
+import { useTranslation, getLocaleCode } from "@/core/lib/i18n";
 
 interface SalaryAiPredictionAssistantProps {
   calc: SalaryCalculationResult;
@@ -185,6 +186,9 @@ export function SalaryAiPredictionAssistant({
   salaryConfig,
   monthName,
 }: SalaryAiPredictionAssistantProps) {
+  const { tr, lang } = useTranslation();
+  const locale = getLocaleCode(lang);
+
   // Target salary state (default: 18,000,000 or rounded up)
   const [targetSalary, setTargetSalary] = useState<number>(() => {
     return Math.max(18000000, Math.ceil((calc.totalSalary * 1.25) / 1000000) * 1000000);
@@ -199,14 +203,21 @@ export function SalaryAiPredictionAssistant({
   // Remaining days off to take before month ends
   const [remainingDaysOff, setRemainingDaysOff] = useState<number>(1);
 
+  const initialGreeting = tr(
+    `Xin chào! Tôi là **Cố Vấn Hiệu Suất Studio (AI Coach)**.\n\nTôi đã kết nối trực tiếp với bảng thống kê lương của bạn. Dù mục tiêu của bạn là **đạt chuẩn KPI** hay bứt phá thu nhập lên **${targetSalary.toLocaleString(
+      locale
+    )} đ**, hãy bấm nút **"AI Dự đoán"** hoặc chọn câu hỏi gợi ý bên dưới để chúng ta cùng lên kế hoạch tác chiến cụ thể cho từng ngày nhé!`,
+    `Hello! I'm your **Studio Performance Coach (AI Coach)**.\n\nI'm directly connected to your payroll summary. Whether your goal is **hitting the monthly KPI** or reaching **${targetSalary.toLocaleString(
+      locale
+    )} VND**, click **"AI Predict"** or pick a quick suggestion below to build your daily action plan!`
+  );
+
   // Chat message list
   const [messages, setMessages] = useState<ChatMessage[]>(() => [
     {
       id: "initial-coach-greeting",
       role: "assistant",
-      content: `Xin chào! Tôi là **Cố Vấn Hiệu Suất Studio (AI Coach)**.\n\nTôi đã kết nối trực tiếp với bảng thống kê lương của bạn. Dù mục tiêu của bạn là **đạt chuẩn KPI** hay bứt phá thu nhập lên **${targetSalary.toLocaleString(
-        "vi-VN"
-      )} đ**, hãy bấm nút **"AI Dự đoán"** hoặc chọn câu hỏi gợi ý bên dưới để chúng ta cùng lên kế hoạch tác chiến cụ thể cho từng ngày nhé!`,
+      content: "",
       timestamp: Date.now(),
     },
   ]);
@@ -233,7 +244,7 @@ export function SalaryAiPredictionAssistant({
   // Context builder
   const buildContext = (customQuestion?: string): PredictionContext => {
     return {
-      monthName: monthName || "Tháng này",
+      monthName: monthName || tr("Tháng này", "This Month"),
       totalMonthDays: salaryConfig.daysInMonth,
       currentDayOfMonth,
       totalDaysOff: salaryConfig.daysOff,
@@ -273,9 +284,14 @@ export function SalaryAiPredictionAssistant({
       role: "user",
       content: textToSend.trim()
         ? textToSend
-        : `Dự đoán & Lên kế hoạch để tôi đạt mục tiêu ${targetSalary.toLocaleString(
-            "vi-VN"
-          )} đ trong tháng này!`,
+        : tr(
+            `Dự đoán & Lên kế hoạch để tôi đạt mục tiêu ${targetSalary.toLocaleString(
+              locale
+            )} đ trong tháng này!`,
+            `Predict & build an action plan to reach my ${targetSalary.toLocaleString(
+              locale
+            )} VND income goal this month!`
+          ),
       timestamp: Date.now(),
     };
 
@@ -298,9 +314,14 @@ export function SalaryAiPredictionAssistant({
       const errorMsg: ChatMessage = {
         id: `assistant-err-${Date.now()}`,
         role: "assistant",
-        content: `**Không thể lấy phản hồi từ Gemini AI**: ${
-          err?.message || "Đã xảy ra lỗi không xác định."
-        }\n\n*Gợi ý:* Hãy bấm vào biểu tượng bánh răng **Cài đặt AI** ở góc trên để kiểm tra hoặc cập nhật lại API Key nhé.`,
+        content: tr(
+          `**Không thể lấy phản hồi từ Gemini AI**: ${
+            err?.message || "Đã xảy ra lỗi không xác định."
+          }\n\n*Gợi ý:* Hãy bấm vào biểu tượng bánh răng **Cài đặt AI** ở góc trên để kiểm tra hoặc cập nhật lại API Key nhé.`,
+          `**Could not get response from Gemini AI**: ${
+            err?.message || "An unknown error occurred."
+          }\n\n*Tip:* Click the **AI Settings** gear icon at the top to check or update your API Key.`
+        ),
         timestamp: Date.now(),
       };
       setMessages((prev) => [...prev, errorMsg]);
@@ -312,28 +333,60 @@ export function SalaryAiPredictionAssistant({
   // Quick chips
   const quickSuggestions = [
     {
-      label: `Cần bao nhiêu ảnh/ngày để đạt ${targetSalary.toLocaleString("vi-VN")} đ? (Kèm kịch bản VIP)`,
-      query: `Với mục tiêu thu nhập ${targetSalary.toLocaleString(
-        "vi-VN"
-      )} đ, trong ${predictionMetrics.remainingWorkingDays} ngày làm việc còn lại, hãy tư vấn chi tiết: Nếu cày thuần ảnh thường thì cần bao nhiêu file/ngày? Và nếu tôi nhận thêm được các bộ VIP (ví dụ 3, 5 hoặc 10 bộ VIP) thì số file mỗi ngày sẽ giảm bớt được bao nhiêu? Nhớ tính cả việc tăng mốc thưởng hiệu suất nhé!`,
+      label: tr(
+        `Cần bao nhiêu ảnh/ngày để đạt ${targetSalary.toLocaleString(locale)} đ? (Kèm kịch bản VIP)`,
+        `How many photos/day to hit ${targetSalary.toLocaleString(locale)} VND? (+ VIP scenarios)`
+      ),
+      query: tr(
+        `Với mục tiêu thu nhập ${targetSalary.toLocaleString(
+          locale
+        )} đ, trong ${predictionMetrics.remainingWorkingDays} ngày làm việc còn lại, hãy tư vấn chi tiết: Nếu cày thuần ảnh thường thì cần bao nhiêu file/ngày? Và nếu tôi nhận thêm được các bộ VIP (ví dụ 3, 5 hoặc 10 bộ VIP) thì số file mỗi ngày sẽ giảm bớt được bao nhiêu? Nhớ tính cả việc tăng mốc thưởng hiệu suất nhé!`,
+        `With an income target of ${targetSalary.toLocaleString(
+          locale
+        )} VND and ${predictionMetrics.remainingWorkingDays} working days left, please advise in detail: How many files/day do I need with standard photos alone? And if I add extra VIP sets (e.g., 3, 5, or 10 sets), how many fewer files/day will I need? Remember to factor in performance tier bonus jumps!`
+      ),
     },
     {
-      label: `Kế hoạch cán mốc KPI để nhận lương cứng`,
-      query: `Hiện tôi đã làm ${calc.actualPhotos.toLocaleString(
-        "vi-VN"
-      )} file, KPI tháng là ${calc.monthKpi.toLocaleString(
-        "vi-VN"
-      )} file. Do chưa đủ KPI nên lương đang tính theo đơn giá 1 file (${salaryConfig.unitPriceKpi.toLocaleString(
-        "vi-VN"
-      )} đ/file) và chưa được nhận lương cứng. Trong ${predictionMetrics.remainingWorkingDays} ngày làm việc còn lại, mỗi ngày tôi cần làm tối thiểu bao nhiêu file để kịp cán mốc KPI và lấy lại trọn vẹn lương cứng?`,
+      label: tr(
+        `Kế hoạch cán mốc KPI để nhận lương cứng`,
+        `Plan to reach Monthly KPI & unlock base salary`
+      ),
+      query: tr(
+        `Hiện tôi đã làm ${calc.actualPhotos.toLocaleString(
+          locale
+        )} file, KPI tháng là ${calc.monthKpi.toLocaleString(
+          locale
+        )} file. Do chưa đủ KPI nên lương đang tính theo đơn giá 1 file (${salaryConfig.unitPriceKpi.toLocaleString(
+          locale
+        )} đ/file) và chưa được nhận lương cứng. Trong ${predictionMetrics.remainingWorkingDays} ngày làm việc còn lại, mỗi ngày tôi cần làm tối thiểu bao nhiêu file để kịp cán mốc KPI và lấy lại trọn vẹn lương cứng?`,
+        `I've currently completed ${calc.actualPhotos.toLocaleString(
+          locale
+        )} files against a monthly KPI of ${calc.monthKpi.toLocaleString(
+          locale
+        )} files. Since KPI isn't met yet, my pay is calculated per-file (${salaryConfig.unitPriceKpi.toLocaleString(
+          locale
+        )} VND/file) with no base salary unlocked. With ${predictionMetrics.remainingWorkingDays} working days remaining, what is my minimum daily target to hit KPI and unlock full base salary?`
+      ),
     },
     {
-      label: `Chiến thuật cày ảnh Loại 1 vs Loại 2 & VIP`,
-      query: `Hãy tư vấn chiến thuật làm việc: nên ưu tiên đẩy ảnh Loại 1 hay Loại 2 và làm sao để nhận thêm thưởng bộ VIP để thu nhập nhanh chạm mốc nhất?`,
+      label: tr(
+        `Chiến thuật cày ảnh Loại 1 vs Loại 2 & VIP`,
+        `Type 1 vs Type 2 & VIP strategy`
+      ),
+      query: tr(
+        `Hãy tư vấn chiến thuật làm việc: nên ưu tiên đẩy ảnh Loại 1 hay Loại 2 và làm sao để nhận thêm thưởng bộ VIP để thu nhập nhanh chạm mốc nhất?`,
+        `Please advise on work strategy: should I prioritize Type 1 or Type 2 photos, and how should I balance VIP sets to reach my income goal fastest?`
+      ),
     },
     {
-      label: `Tiếp thêm động lực chiến đấu hôm nay!`,
-      query: `Tôi đang hơi mệt và nản. Hãy cho tôi một bài truyền lửa mạnh mẽ để tôi tập trung cao độ mở Photoshop cày cuốc ngay bây giờ!`,
+      label: tr(
+        `Tiếp thêm động lực chiến đấu hôm nay!`,
+        `Give me a motivation boost today!`
+      ),
+      query: tr(
+        `Tôi đang hơi mệt và nản. Hãy cho tôi một bài truyền lửa mạnh mẽ để tôi tập trung cao độ mở Photoshop cày cuốc ngay bây giờ!`,
+        `I'm feeling a bit tired and low on energy. Give me a strong pep talk so I can focus and crush today's editing goals!`
+      ),
     },
   ];
 
@@ -358,14 +411,25 @@ export function SalaryAiPredictionAssistant({
       aiSettingsService.setModel(selectedModel);
 
       const res = await aiSettingsService.generateContent(
-        "Xin chào! Trả lời ngắn gọn 1 câu để xác nhận kết nối API Gemini thành công.",
-        "Bạn là hệ thống kiểm tra kết nối API."
+        tr(
+          "Xin chào! Trả lời ngắn gọn 1 câu để xác nhận kết nối API Gemini thành công.",
+          "Hello! Reply in 1 short sentence to confirm the Gemini API connection is working."
+        ),
+        tr(
+          "Bạn là hệ thống kiểm tra kết nối API.",
+          "You are an API connection test responder."
+        )
       );
       setTestStatus("success");
-      setTestMessage(`Kết nối thành công với ${res.model}! Sẵn sàng hoạt động.`);
+      setTestMessage(
+        tr(
+          `Kết nối thành công với ${res.model}! Sẵn sàng hoạt động.`,
+          `Connected successfully to ${res.model}! Ready to use.`
+        )
+      );
     } catch (err: any) {
       setTestStatus("error");
-      setTestMessage(err?.message || "Lỗi kiểm tra API Key.");
+      setTestMessage(err?.message || tr("Lỗi kiểm tra API Key.", "API Key verification failed."));
     }
   };
 
@@ -387,14 +451,14 @@ export function SalaryAiPredictionAssistant({
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h3 className="text-xs font-bold text-foreground truncate">
-                AI Dự Đoán & Lên Kế Hoạch Lương
+                {tr("AI Dự Đoán & Lên Kế Hoạch Lương", "AI Salary Coach & Forecast")}
               </h3>
               <span className="text-[10px] px-1.5 py-0.2 rounded bg-primary/10 text-primary border border-primary/20 font-mono font-semibold shrink-0">
                 Gemini 3.6 Flash
               </span>
             </div>
             <p className="text-[10px] text-muted-foreground truncate">
-              Phân tích số liệu thực tế & tính chỉ tiêu hành động theo ngày
+              {tr("Phân tích số liệu thực tế & tính chỉ tiêu hành động theo ngày", "Analyze live metrics & compute daily actionable targets")}
             </p>
           </div>
         </div>
@@ -405,7 +469,8 @@ export function SalaryAiPredictionAssistant({
             type="button"
             onClick={() => setShowSettings(true)}
             className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors border border-transparent hover:border-border"
-            title="Cấu hình Gemini API Key & Model" aria-label="Cấu hình Gemini API Key & Model"
+            title={tr("Cấu hình Gemini API Key & Model", "Configure Gemini API Key & Model")}
+            aria-label={tr("Cấu hình Gemini API Key & Model", "Configure Gemini API Key & Model")}
           >
             <Settings size={14} />
           </button>
@@ -418,7 +483,7 @@ export function SalaryAiPredictionAssistant({
           {/* Target Salary Input */}
           <div>
             <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-              Mục tiêu lương mong muốn
+              {tr("Mục tiêu lương mong muốn", "Target Monthly Salary")}
             </label>
             <div className="relative">
               <input
@@ -426,10 +491,10 @@ export function SalaryAiPredictionAssistant({
                 step="500000"
                 value={targetSalary}
                 onChange={(e) => setTargetSalary(Math.max(0, Number(e.target.value) || 0))}
-                className="w-full px-2.5 py-1.5 text-xs font-mono font-bold rounded-lg bg-card border border-border text-foreground focus:outline-none focus:border-primary pr-8"
+                className="w-full px-2.5 py-1.5 text-xs font-mono font-bold rounded-lg bg-card border border-border text-foreground focus:outline-none focus:border-primary pr-10"
               />
               <span className="absolute right-2 top-2 text-[10px] text-muted-foreground font-semibold">
-                đ
+                {tr("đ", "VND")}
               </span>
             </div>
 
@@ -446,7 +511,7 @@ export function SalaryAiPredictionAssistant({
                       : "bg-muted hover:bg-accent text-muted-foreground"
                   }`}
                 >
-                  {(preset / 1000000).toFixed(0)}Tr
+                  {(preset / 1000000).toFixed(0)}{tr("Tr", "M")}
                 </button>
               ))}
             </div>
@@ -455,7 +520,7 @@ export function SalaryAiPredictionAssistant({
           {/* Current Date in Month */}
           <div>
             <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-              Hôm nay là ngày
+              {tr("Hôm nay là ngày", "Today is Day")}
             </label>
             <div className="flex items-center gap-1.5">
               <input
@@ -475,14 +540,17 @@ export function SalaryAiPredictionAssistant({
               </span>
             </div>
             <p className="text-[10px] text-muted-foreground mt-1">
-              Còn {predictionMetrics.remainingCalendarDays} ngày lịch đến hết tháng
+              {tr(
+                `Còn ${predictionMetrics.remainingCalendarDays} ngày lịch đến hết tháng`,
+                `${predictionMetrics.remainingCalendarDays} calendar days left this month`
+              )}
             </p>
           </div>
 
           {/* Remaining Days Off */}
           <div>
             <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-              Ngày nghỉ còn lại
+              {tr("Ngày nghỉ còn lại", "Remaining Days Off")}
             </label>
             <input
               type="number"
@@ -500,7 +568,10 @@ export function SalaryAiPredictionAssistant({
               className="w-full px-2.5 py-1.5 text-xs font-mono font-bold rounded-lg bg-card border border-border text-foreground focus:outline-none focus:border-primary"
             />
             <p className="text-[10px] text-primary font-semibold mt-1">
-              Thực chiến còn {predictionMetrics.remainingWorkingDays} ngày làm việc
+              {tr(
+                `Thực chiến còn ${predictionMetrics.remainingWorkingDays} ngày làm việc`,
+                `${predictionMetrics.remainingWorkingDays} active working days left`
+              )}
             </p>
           </div>
         </div>
@@ -510,47 +581,58 @@ export function SalaryAiPredictionAssistant({
           <div className="p-2 rounded-lg bg-card border border-border/70 space-y-0.5">
             <span className="text-[10px] text-muted-foreground block flex items-center gap-1">
               <Briefcase size={10} />
-              Công còn lại
+              {tr("Công còn lại", "Remaining Shifts")}
             </span>
             <div className="text-xs font-mono font-extrabold text-foreground">
-              {predictionMetrics.remainingWorkingDays} ngày
+              {predictionMetrics.remainingWorkingDays} {tr("ngày", "days")}
             </div>
             <span className="text-[10px] text-muted-foreground block">
-              (Trừ {remainingDaysOff} ngày nghỉ)
+              {tr(`(Trừ ${remainingDaysOff} ngày nghỉ)`, `(Minus ${remainingDaysOff} days off)`)}
             </span>
           </div>
 
           <div className="p-2 rounded-lg bg-card border border-border/70 space-y-0.5">
             <span className="text-[10px] text-muted-foreground block flex items-center gap-1">
               <Target size={10} />
-              {predictionMetrics.isCurrentKpiAchieved ? "Chuẩn KPI tháng" : "Để lấy Lương cứng"}
+              {predictionMetrics.isCurrentKpiAchieved
+                ? tr("Chuẩn KPI tháng", "Monthly KPI Target")
+                : tr("Để lấy Lương cứng", "To Unlock Base Salary")}
             </span>
             <div className="text-xs font-mono font-extrabold text-foreground">
               {predictionMetrics.isCurrentKpiAchieved
-                ? "Đã có Lương cứng"
-                : `${predictionMetrics.dailyPhotosForKpi} file/ngày`}
+                ? tr("Đã có Lương cứng", "Base Salary Unlocked")
+                : `${predictionMetrics.dailyPhotosForKpi} ${tr("file/ngày", "files/day")}`}
             </div>
             <span className="text-[10px] text-muted-foreground block truncate">
               {predictionMetrics.isCurrentKpiAchieved
-                ? `Vượt +${(calc.actualPhotos - calc.monthKpi).toLocaleString("vi-VN")} file`
-                : `Thiếu ${predictionMetrics.kpiShortfall.toLocaleString("vi-VN")} file (Hiện tính ${salaryConfig.unitPriceKpi.toLocaleString("vi-VN")}đ/file)`}
+                ? tr(
+                    `Vượt +${(calc.actualPhotos - calc.monthKpi).toLocaleString(locale)} file`,
+                    `Ahead +${(calc.actualPhotos - calc.monthKpi).toLocaleString(locale)} files`
+                  )
+                : tr(
+                    `Thiếu ${predictionMetrics.kpiShortfall.toLocaleString(locale)} file (Hiện tính ${salaryConfig.unitPriceKpi.toLocaleString(locale)}đ/file)`,
+                    `Short ${predictionMetrics.kpiShortfall.toLocaleString(locale)} files (Piece-rate ${salaryConfig.unitPriceKpi.toLocaleString(locale)}/file)`
+                  )}
             </span>
           </div>
 
           <div className="p-2 rounded-lg bg-primary/5 border border-primary/20 space-y-0.5">
             <span className="text-[10px] text-primary font-bold block flex items-center gap-1">
               <TrendingUp size={10} />
-              Để đạt {targetSalary.toLocaleString("vi-VN")} đ
+              {tr("Để đạt", "To reach")} {targetSalary.toLocaleString(locale)} {tr("đ", "VND")}
             </span>
             <div className="text-xs font-mono font-extrabold text-primary">
               {predictionMetrics.dailyPhotosForTarget > 0
-                ? `${predictionMetrics.dailyPhotosForTarget} file/ngày`
-                : "Đã vượt mục tiêu"}
+                ? `${predictionMetrics.dailyPhotosForTarget} ${tr("file/ngày", "files/day")}`
+                : tr("Đã vượt mục tiêu", "Target Exceeded")}
             </div>
             <span className="text-[10px] text-muted-foreground block truncate">
               {predictionMetrics.salaryGap > 0
-                ? `Tổng ${predictionMetrics.targetTotalPhotos.toLocaleString("vi-VN")} file (gồm +${predictionMetrics.effBonusIncrease.toLocaleString("vi-VN")}đ thưởng hiệu suất)`
-                : "Đã đạt mức lương mong muốn"}
+                ? tr(
+                    `Tổng ${predictionMetrics.targetTotalPhotos.toLocaleString(locale)} file (gồm +${predictionMetrics.effBonusIncrease.toLocaleString(locale)}đ thưởng hiệu suất)`,
+                    `Total ${predictionMetrics.targetTotalPhotos.toLocaleString(locale)} files (incl. +${predictionMetrics.effBonusIncrease.toLocaleString(locale)} performance bonus)`
+                  )
+                : tr("Đã đạt mức lương mong muốn", "Target salary reached")}
             </span>
           </div>
         </div>
@@ -560,14 +642,14 @@ export function SalaryAiPredictionAssistant({
           <div className="flex items-center gap-1.5 text-muted-foreground flex-wrap">
             <span className="font-semibold text-foreground flex items-center gap-1">
               <Crown size={12} className="text-amber-500" />
-              Nếu có thêm VIP:
+              {tr("Nếu có thêm VIP:", "With extra VIP sets:")}
             </span>
             {predictionMetrics.vipScenarios.map((s) => (
               <span
                 key={s.extraVipSets}
                 className="px-1.5 py-0.5 rounded bg-muted font-mono font-medium border border-border/60 text-foreground"
               >
-                +{s.extraVipSets} VIP: <strong>{s.dailyPhotos}</strong> file/ngày
+                +{s.extraVipSets} VIP: <strong>{s.dailyPhotos}</strong> {tr("file/ngày", "files/day")}
               </span>
             ))}
           </div>
@@ -575,8 +657,8 @@ export function SalaryAiPredictionAssistant({
           <div className="flex items-center gap-1 text-primary font-medium shrink-0">
             <TrendingUp size={11} className="text-primary" />
             <span>
-              Mốc {predictionMetrics.nextEffThreshold.toLocaleString("vi-VN")} file: còn{" "}
-              <strong>{predictionMetrics.photosToNextEffThreshold.toLocaleString("vi-VN")} file</strong> (+500k)
+              {tr("Mốc", "Tier")} {predictionMetrics.nextEffThreshold.toLocaleString(locale)} {tr("file: còn", "files:")}{" "}
+              <strong>{predictionMetrics.photosToNextEffThreshold.toLocaleString(locale)} {tr("file", "files")}</strong> (+500k)
             </span>
           </div>
         </div>
@@ -586,6 +668,7 @@ export function SalaryAiPredictionAssistant({
       <div className="h-64 sm:h-72 overflow-y-auto p-3.5 space-y-3 custom-scrollbar bg-background/50">
         {messages.map((msg) => {
           const isUser = msg.role === "user";
+          const displayContent = msg.id === "initial-coach-greeting" ? initialGreeting : msg.content;
           return (
             <div
               key={msg.id}
@@ -611,35 +694,35 @@ export function SalaryAiPredictionAssistant({
                 }`}
               >
                 {isUser ? (
-                  <p className="whitespace-pre-wrap font-medium">{msg.content}</p>
+                  <p className="whitespace-pre-wrap font-medium">{displayContent}</p>
                 ) : (
-                  <MarkdownView text={msg.content} />
+                  <MarkdownView text={displayContent} />
                 )}
 
                 {/* Copy button for assistant responses */}
                 {!isUser && (
                   <div className="mt-2 pt-1 border-t border-border/50 flex items-center justify-between text-[10px] text-muted-foreground">
                     <span className="opacity-70 font-mono">
-                      {new Date(msg.timestamp).toLocaleTimeString("vi-VN", {
+                      {new Date(msg.timestamp).toLocaleTimeString(locale, {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
                     </span>
                     <button
                       type="button"
-                      onClick={() => handleCopyMessage(msg.id, msg.content)}
+                      onClick={() => handleCopyMessage(msg.id, displayContent)}
                       className="hover:text-foreground flex items-center gap-1 transition-colors px-1 py-0.5 rounded hover:bg-muted"
-                      title="Sao chép câu trả lời"
+                      title={tr("Sao chép câu trả lời", "Copy response")}
                     >
                       {copiedMessageId === msg.id ? (
                         <>
                           <Check size={11} className="text-emerald-500" />
-                          <span className="text-emerald-500">Đã sao chép</span>
+                          <span className="text-emerald-500">{tr("Đã sao chép", "Copied")}</span>
                         </>
                       ) : (
                         <>
                           <Copy size={11} />
-                          <span>Sao chép</span>
+                          <span>{tr("Sao chép", "Copy")}</span>
                         </>
                       )}
                     </button>
@@ -662,11 +745,11 @@ export function SalaryAiPredictionAssistant({
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                 </span>
-                <span>AI đang phân tích dữ liệu và lên lộ trình tác chiến...</span>
+                <span>{tr("AI đang phân tích dữ liệu và lên lộ trình tác chiến...", "AI is analyzing your data and building your plan...")}</span>
               </div>
               <p className="text-[10px] text-muted-foreground">
-                Quét KPI: {calc.monthKpi} file • Thực tế: {calc.actualPhotos} file • Mục tiêu:{" "}
-                {targetSalary.toLocaleString("vi-VN")} đ
+                {tr("Quét KPI:", "KPI:")} {calc.monthKpi} {tr("file", "files")} • {tr("Thực tế:", "Actual:")} {calc.actualPhotos} {tr("file", "files")} • {tr("Mục tiêu:", "Target:")}{" "}
+                {targetSalary.toLocaleString(locale)} {tr("đ", "VND")}
               </p>
             </div>
           </div>
@@ -678,7 +761,7 @@ export function SalaryAiPredictionAssistant({
       {/* 4. QUICK SUGGESTION CHIPS */}
       <div className="px-3 py-2 bg-muted/10 border-t border-border/60 overflow-x-auto custom-scrollbar flex items-center gap-1.5">
         <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide shrink-0">
-          Gợi ý nhanh:
+          {tr("Gợi ý nhanh:", "Quick prompts:")}
         </span>
         {quickSuggestions.map((item, idx) => (
           <button
@@ -706,7 +789,7 @@ export function SalaryAiPredictionAssistant({
             }
           }}
           disabled={isLoading}
-          placeholder="Nhập câu hỏi hoặc yêu cầu AI dự đoán lương..."
+          placeholder={tr("Nhập câu hỏi hoặc yêu cầu AI dự đoán lương...", "Ask a question or request an AI salary forecast...")}
           className="flex-1 px-3 py-2 text-xs rounded-lg bg-muted/40 border border-border text-foreground placeholder:text-muted-foreground/85 focus:outline-none focus:border-primary"
         />
 
@@ -715,10 +798,10 @@ export function SalaryAiPredictionAssistant({
           onClick={() => handleAskAi()}
           disabled={isLoading}
           className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition-all disabled:opacity-50 cursor-pointer shrink-0"
-          title="Bấm để Gemini AI phân tích và dự đoán"
+          title={tr("Bấm để Gemini AI phân tích và dự đoán", "Click to run Gemini AI analysis & prediction")}
         >
           <Sparkles size={13} />
-          <span>AI Dự đoán</span>
+          <span>{tr("AI Dự đoán", "AI Predict")}</span>
         </button>
       </div>
 
@@ -731,14 +814,14 @@ export function SalaryAiPredictionAssistant({
               <div className="flex items-center gap-2">
                 <Settings size={16} className="text-primary" />
                 <h3 id="dlg-SalaryAiPredictionAssistant-1" className="text-sm font-bold text-foreground">
-                  Cấu Hình Gemini AI Toàn Hệ Thống
+                  {tr("Cấu Hình Gemini AI Toàn Hệ Thống", "System-Wide Gemini AI Configuration")}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowSettings(false)}
                 className="text-muted-foreground hover:text-foreground p-1 rounded hover:bg-muted"
-                aria-label="Đóng"
+                aria-label={tr("Đóng", "Close")}
               >
                 <X size={14} aria-hidden="true" />
               </button>
@@ -746,9 +829,13 @@ export function SalaryAiPredictionAssistant({
 
             {/* Note about persistence */}
             <div className="p-2.5 rounded-lg bg-primary/10 border border-primary/20 text-foreground text-[11px] leading-relaxed">
-              <strong>Lưu ý:</strong> API Key được lưu tập trung trong bộ nhớ máy (
-              <code>localStorage</code>) và sẽ được dùng chung cho tính năng Dự đoán lương cũng như
-              toàn bộ các dịch vụ AI tương lai của DH Studio Pro (Devhouse Software).
+              <strong>{tr("Lưu ý:", "Note:")}</strong>{" "}
+              {tr("API Key được lưu tập trung trong bộ nhớ máy", "Your API Key is stored centrally in local storage")}{" "}
+              (<code>localStorage</code>){" "}
+              {tr(
+                "và sẽ được dùng chung cho tính năng Dự đoán lương cũng như toàn bộ các dịch vụ AI tương lai của DH Studio Pro (Devhouse Software).",
+                "and shared across Salary Coach and all future AI features in DH Studio Pro (Devhouse Software).",
+              )}
             </div>
 
             {/* API Key Input */}
@@ -768,19 +855,19 @@ export function SalaryAiPredictionAssistant({
                   type="button"
                   onClick={() => setShowApiKey(!showApiKey)}
                   className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
-                  title={showApiKey ? "Ẩn Key" : "Hiện Key"}
+                  title={showApiKey ? tr("Ẩn Key", "Hide Key") : tr("Hiện Key", "Show Key")}
                 >
                   {showApiKey ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
               </div>
               <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-0.5">
-                <span>Key mặc định của hệ thống đã được nạp sẵn.</span>
+                <span>{tr("Key mặc định của hệ thống đã được nạp sẵn.", "System default key is preloaded.")}</span>
                 <button
                   type="button"
                   onClick={() => setApiKeyInput(DEFAULT_GEMINI_API_KEY)}
                   className="text-primary hover:underline font-semibold"
                 >
-                  Khôi phục Key gốc
+                  {tr("Khôi phục Key gốc", "Restore Default Key")}
                 </button>
               </div>
             </div>
@@ -788,14 +875,14 @@ export function SalaryAiPredictionAssistant({
             {/* Model Selector */}
             <div className="space-y-1.5">
               <label className="block text-[11px] font-bold text-foreground">
-                Mô hình AI (Model)
+                {tr("Mô hình AI (Model)", "AI Model")}
               </label>
               <select
                 value={selectedModel}
                 onChange={(e) => setSelectedModel(e.target.value)}
                 className="w-full px-2.5 py-2 text-xs rounded-lg bg-muted/50 border border-border text-foreground focus:outline-none focus:border-primary"
               >
-                {AVAILABLE_GEMINI_MODELS.map((m) => (
+                {getAvailableGeminiModels(lang).map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.name}
                   </option>
@@ -820,10 +907,10 @@ export function SalaryAiPredictionAssistant({
                 <div className="min-w-0">
                   <p className="font-semibold">
                     {testStatus === "testing"
-                      ? "Đang gửi truy vấn thử nghiệm đến Google Gemini..."
+                      ? tr("Đang gửi truy vấn thử nghiệm đến Google Gemini...", "Sending test request to Google Gemini...")
                       : testStatus === "success"
-                      ? "Kết nối thành công!"
-                      : "Lỗi kết nối!"}
+                      ? tr("Kết nối thành công!", "Connection successful!")
+                      : tr("Lỗi kết nối!", "Connection failed!")}
                   </p>
                   {testMessage && <p className="text-[11px] opacity-90">{testMessage}</p>}
                 </div>
@@ -839,7 +926,7 @@ export function SalaryAiPredictionAssistant({
                 className="px-3 py-1.5 rounded-lg bg-muted hover:bg-accent border border-border text-foreground font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer"
               >
                 <Plug size={12} />
-                <span>Kiểm tra kết nối</span>
+                <span>{tr("Kiểm tra kết nối", "Test Connection")}</span>
               </button>
 
               <div className="flex items-center gap-2">
@@ -848,14 +935,14 @@ export function SalaryAiPredictionAssistant({
                   onClick={() => setShowSettings(false)}
                   className="px-3 py-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground font-medium transition-colors cursor-pointer"
                 >
-                  Đóng
+                  {tr("Đóng", "Close")}
                 </button>
                 <button
                   type="button"
                   onClick={handleSaveSettings}
                   className="px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-colors shadow-xs cursor-pointer"
                 >
-                  Lưu cấu hình
+                  {tr("Lưu cấu hình", "Save Settings")}
                 </button>
               </div>
             </div>

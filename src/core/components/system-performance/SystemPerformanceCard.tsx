@@ -3,6 +3,7 @@ import { Laptop } from "lucide-react";
 import { SystemMetrics, MetricDataPoint } from "./types";
 import { PerformanceLineChart } from "./PerformanceLineChart";
 import { formatGb } from "@/core/services/systemPerformanceService";
+import { useTranslation } from "@/core/lib/i18n";
 
 interface SystemPerformanceCardProps {
   metrics: SystemMetrics | null;
@@ -10,6 +11,7 @@ interface SystemPerformanceCardProps {
 }
 
 export function SystemPerformanceCard({ metrics, history }: SystemPerformanceCardProps) {
+  const { tr } = useTranslation();
   const [activeTab, setActiveTab] = useState<"cpu" | "ram">("cpu");
 
   const systemCpuData = history.map((h) => h.systemCpu);
@@ -32,10 +34,10 @@ export function SystemPerformanceCard({ metrics, history }: SystemPerformanceCar
           </div>
           <div className="min-w-0">
             <h3 className="text-xs font-bold text-foreground tracking-tight leading-none truncate">
-              Toàn Hệ Thống
+              {tr("Toàn Hệ Thống", "System Overall")}
             </h3>
             <span className="text-[9px] text-muted-foreground leading-none">
-              Tài nguyên máy tính
+              {tr("Tài nguyên máy tính", "Hardware resources")}
             </span>
           </div>
         </div>
@@ -76,15 +78,17 @@ export function SystemPerformanceCard({ metrics, history }: SystemPerformanceCar
           <span className="text-[10px] text-muted-foreground font-medium">
             {activeTab === "cpu"
               ? cpuPct < 35
-                ? "Tải nhẹ"
+                ? tr("Tải nhẹ", "Light load")
                 : cpuPct < 70
-                ? "Bình thường"
-                : "Tải nặng"
-              : `Dùng ${formatGb(usedRam)}`}
+                  ? tr("Bình thường", "Normal")
+                  : tr("Tải nặng", "Heavy load")
+              : `${tr("Dùng", "Used")} ${formatGb(usedRam)}`}
           </span>
         </div>
         <span className="text-[9px] text-muted-foreground font-mono">
-          {activeTab === "cpu" ? `Đỉnh ${Math.max(...systemCpuData, cpuPct).toFixed(0)}%` : `Trống ${formatGb(availRam)}`}
+          {activeTab === "cpu"
+            ? `${tr("Đỉnh", "Peak")} ${Math.max(...systemCpuData, cpuPct).toFixed(0)}%`
+            : `${tr("Trống", "Free")} ${formatGb(availRam)}`}
         </span>
       </div>
 

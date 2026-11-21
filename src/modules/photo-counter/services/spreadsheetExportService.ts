@@ -11,6 +11,7 @@
 
 import type { MonthScanResult, SalaryConfig, SalaryCalculationResult } from "../types.ts";
 import { googleCredentialManager } from "../../contact-the-sheet/services/googleCredentialBridge.ts";
+import { trText } from "../../../core/lib/i18n.ts";
 
 function isTauri(): boolean {
   return typeof window !== "undefined" && typeof (window as any).__TAURI_INTERNALS__ !== "undefined";
@@ -71,23 +72,85 @@ export function buildSpreadsheetMatrix(data: SpreadsheetExportData): {
   const values: (string | number)[][] = [];
 
   // Row 1-3: Headers
-  values.push(["BẢNG TỔNG HỢP LƯƠNG VÀ SẢN LƯỢNG STUDIO", "", ""]);
-  values.push([`Tháng / Thư mục: ${data.monthName || "Tháng này"}`, `Đường dẫn: ${data.monthPath || ""}`, ""]);
+  values.push([
+    trText("BẢNG TỔNG HỢP LƯƠNG VÀ SẢN LƯỢNG STUDIO", "STUDIO SALARY & OUTPUT SUMMARY REPORT"),
+    "",
+    "",
+  ]);
+  values.push([
+    trText(
+      `Tháng / Thư mục: ${data.monthName || "Tháng này"}`,
+      `Month / Folder: ${data.monthName || "This Month"}`,
+    ),
+    trText(`Đường dẫn: ${data.monthPath || ""}`, `Path: ${data.monthPath || ""}`),
+    "",
+  ]);
   values.push([]);
 
   // Section 1: Tham số & Chỉ số đầu vào (Rows 4-15 -> 1-based index)
-  values.push(["I. THÔNG SỐ ĐẦU VÀO & ĐỊNH MỨC KPI", "", ""]);
-  values.push(["Số ngày trong tháng (ngày)", cfg.daysInMonth, "Tháng 30 hoặc 31 ngày"]); // Row 5
-  values.push(["Số ngày nghỉ (ngày)", cfg.daysOff, "Ngày nghỉ theo quy định"]); // Row 6
-  values.push(["Ngày công thực tế (A) (ngày)", "=B5-B6", "Biến A = Số ngày trong tháng - Ngày nghỉ"]); // Row 7
-  values.push(["KPI 1 ngày (file/ngày)", cfg.dailyKpi, "Định mức giao theo ngày"]); // Row 8
-  values.push(["KPI tháng chuẩn (file)", "=B7*B8", "Biến MonthKPI = A * KPI 1 ngày"]); // Row 9
-  values.push(["Lương cứng danh nghĩa (VNĐ)", cfg.baseSalary, "Mức lương cơ bản thỏa thuận"]); // Row 10
-  values.push(["Đơn giá 1 file vượt KPI (VNĐ)", cfg.unitPriceKpi, "Đơn giá thưởng mỗi file vượt"]); // Row 11
-  values.push(["Số bộ VIP (bộ)", cfg.vipSets, "Số lượng bộ ảnh VIP"]); // Row 12
-  values.push(["Đơn giá 1 bộ VIP (VNĐ)", cfg.vipPrice, "Đơn giá thưởng mỗi bộ VIP"]); // Row 13
-  values.push(["Trợ cấp (VNĐ)", cfg.allowance, "Trợ cấp cố định theo tháng"]); // Row 14
-  values.push(["Phụ thu / Khấu trừ khác (VNĐ)", cfg.deduction, "Giảm trừ vi phạm / phụ thu"]); // Row 15
+  values.push([
+    trText("I. THÔNG SỐ ĐẦU VÀO & ĐỊNH MỨC KPI", "I. INPUT PARAMETERS & KPI QUOTAS"),
+    "",
+    "",
+  ]);
+  values.push([
+    trText("Số ngày trong tháng (ngày)", "Days in month (days)"),
+    cfg.daysInMonth,
+    trText("Tháng 30 hoặc 31 ngày", "30 or 31 days"),
+  ]); // Row 5
+  values.push([
+    trText("Số ngày nghỉ (ngày)", "Days off (days)"),
+    cfg.daysOff,
+    trText("Ngày nghỉ theo quy định", "Scheduled days off"),
+  ]); // Row 6
+  values.push([
+    trText("Ngày công thực tế (A) (ngày)", "Actual working days (A) (days)"),
+    "=B5-B6",
+    trText(
+      "Biến A = Số ngày trong tháng - Ngày nghỉ",
+      "Variable A = Days in month - Days off",
+    ),
+  ]); // Row 7
+  values.push([
+    trText("KPI 1 ngày (file/ngày)", "Daily KPI (files/day)"),
+    cfg.dailyKpi,
+    trText("Định mức giao theo ngày", "Assigned daily quota"),
+  ]); // Row 8
+  values.push([
+    trText("KPI tháng chuẩn (file)", "Monthly KPI target (files)"),
+    "=B7*B8",
+    trText("Biến MonthKPI = A * KPI 1 ngày", "MonthKPI = A * Daily KPI"),
+  ]); // Row 9
+  values.push([
+    trText("Lương cứng danh nghĩa (VNĐ)", "Nominal base salary (VND)"),
+    cfg.baseSalary,
+    trText("Mức lương cơ bản thỏa thuận", "Agreed base salary"),
+  ]); // Row 10
+  values.push([
+    trText("Đơn giá 1 file vượt KPI (VNĐ)", "Rate per excess file (VND)"),
+    cfg.unitPriceKpi,
+    trText("Đơn giá thưởng mỗi file vượt", "Bonus rate per excess file"),
+  ]); // Row 11
+  values.push([
+    trText("Số bộ VIP (bộ)", "VIP sets (sets)"),
+    cfg.vipSets,
+    trText("Số lượng bộ ảnh VIP", "Number of VIP photo sets"),
+  ]); // Row 12
+  values.push([
+    trText("Đơn giá 1 bộ VIP (VNĐ)", "Rate per VIP set (VND)"),
+    cfg.vipPrice,
+    trText("Đơn giá thưởng mỗi bộ VIP", "Bonus rate per VIP set"),
+  ]); // Row 13
+  values.push([
+    trText("Trợ cấp (VNĐ)", "Allowance (VND)"),
+    cfg.allowance,
+    trText("Trợ cấp cố định theo tháng", "Fixed monthly allowance"),
+  ]); // Row 14
+  values.push([
+    trText("Phụ thu / Khấu trừ khác (VNĐ)", "Deductions / Other charges (VND)"),
+    cfg.deduction,
+    trText("Giảm trừ vi phạm / phụ thu", "Deductions / penalties / advances"),
+  ]); // Row 15
   values.push([]); // Row 16
 
   // Determine Daily Table rows layout
@@ -102,40 +165,56 @@ export function buildSpreadsheetMatrix(data: SpreadsheetExportData): {
 
   // Section 2: Financial statement (Rows 17 to 24)
   // All IF formulas use semicolon (;) between arguments for full compatibility with Google Sheets!
-  values.push(["II. BẢNG KÊ CHI TIẾT CÁC KHOẢN LƯƠNG & TỔNG THỰC LĨNH", "Căn cứ tính", "Số tiền (VNĐ)"]); // Row 17
   values.push([
-    "1. Lương cơ bản / Lương sản lượng",
-    `=IF(${totalPhotosCell}>=B9; "Hưởng trọn lương cứng (Đạt KPI)"; "Tính theo sản lượng (Chưa đạt KPI)")`,
+    trText(
+      "II. BẢNG KÊ CHI TIẾT CÁC KHOẢN LƯƠNG & TỔNG THỰC LĨNH",
+      "II. DETAILED EARNINGS & NET SALARY BREAKDOWN",
+    ),
+    trText("Căn cứ tính", "Calculation Basis"),
+    trText("Số tiền (VNĐ)", "Amount (VND)"),
+  ]); // Row 17
+  values.push([
+    trText("1. Lương cơ bản / Lương sản lượng", "1. Base Salary / Per-file Pay"),
+    trText(
+      `=IF(${totalPhotosCell}>=B9; "Hưởng trọn lương cứng (Đạt KPI)"; "Tính theo sản lượng (Chưa đạt KPI)")`,
+      `=IF(${totalPhotosCell}>=B9; "Full base salary (KPI met)"; "Per-file pay (KPI missed)")`,
+    ),
     `=IF(${totalPhotosCell}>=B9; B10; ${totalPhotosCell}*B11)`,
   ]); // Row 18
   values.push([
-    "2. Lương vượt KPI",
-    `=IF(${totalPhotosCell}>B9; (${totalPhotosCell}-B9)&" file vượt"; "0 file vượt")`,
+    trText("2. Lương vượt KPI", "2. Excess KPI Bonus"),
+    trText(
+      `=IF(${totalPhotosCell}>B9; (${totalPhotosCell}-B9)&" file vượt"; "0 file vượt")`,
+      `=IF(${totalPhotosCell}>B9; (${totalPhotosCell}-B9)&" excess files"; "0 excess files")`,
+    ),
     `=IF(${totalPhotosCell}>B9; (${totalPhotosCell}-B9)*B11; 0)`,
   ]); // Row 19
   values.push([
-    "3. Thưởng hiệu suất công việc",
-    "Mỗi 1.000 file thưởng +500.000đ",
+    trText("3. Thưởng hiệu suất công việc", "3. Performance Tier Bonus"),
+    trText("Mỗi 1.000 file thưởng +500.000đ", "+500,000 VND per 1,000 files"),
     `=INT(${totalPhotosCell}/1000)*500000`,
   ]); // Row 20
   values.push([
-    "4. Thưởng bộ VIP",
-    `=B12&" bộ VIP x "&B13`,
+    trText("4. Thưởng bộ VIP", "4. VIP Set Bonus"),
+    trText(`=B12&" bộ VIP x "&B13`, `=B12&" VIP sets x "&B13`),
     "=B12*B13",
   ]); // Row 21
   values.push([
-    "5. Trợ cấp",
-    "Trợ cấp cố định theo tháng",
+    trText("5. Trợ cấp", "5. Allowance"),
+    trText("Trợ cấp cố định theo tháng", "Fixed monthly allowance"),
     "=B14",
   ]); // Row 22
   values.push([
-    "6. Phụ thu / Khấu trừ khác",
-    "Giảm trừ vi phạm / phụ thu",
+    trText("6. Phụ thu / Khấu trừ khác", "6. Deductions / Other charges"),
+    trText("Giảm trừ vi phạm / phụ thu", "Deductions / penalties / advances"),
     "=B15",
   ]); // Row 23
   values.push([
-    "👉 TỔNG LƯƠNG THỰC LĨNH (VNĐ)",
-    `=IF(${totalPhotosCell}>=B9; "ĐẠT KPI CHUẨN"; "CHƯA ĐẠT KPI")`,
+    trText("👉 TỔNG LƯƠNG THỰC LĨNH (VNĐ)", "👉 TOTAL NET SALARY (VND)"),
+    trText(
+      `=IF(${totalPhotosCell}>=B9; "ĐẠT KPI CHUẨN"; "CHƯA ĐẠT KPI")`,
+      `=IF(${totalPhotosCell}>=B9; "KPI ACHIEVED"; "KPI NOT MET")`,
+    ),
     "=SUM(C18:C22)-C23", // Grand Total Formula!
   ]); // Row 24
   values.push([]); // Row 25
@@ -143,15 +222,21 @@ export function buildSpreadsheetMatrix(data: SpreadsheetExportData): {
 
   // Section 3: Bảng kê chi tiết sản lượng ảnh từng ngày trong tháng
   // Only 2 essential columns: Ngày & Số ảnh làm được
-  values.push(["III. BẢNG KÊ CHI TIẾT SẢN LƯỢNG ẢNH TỪNG NGÀY TRONG THÁNG", ""]); // Row 27
-  values.push(["Ngày", "Số ảnh làm được"]); // Row 28 (Headers)
+  values.push([
+    trText(
+      "III. BẢNG KÊ CHI TIẾT SẢN LƯỢNG ẢNH TỪNG NGÀY TRONG THÁNG",
+      "III. DAILY PHOTO OUTPUT BREAKDOWN",
+    ),
+    "",
+  ]); // Row 27
+  values.push([trText("Ngày", "Day"), trText("Số ảnh làm được", "Weighted Photo Count")]); // Row 28 (Headers)
 
   if (days.length === 0) {
-    values.push(["Không có dữ liệu", 0]);
+    values.push([trText("Không có dữ liệu", "No data"), 0]);
   } else {
     days.forEach((day) => {
       values.push([
-        `Ngày ${day.dayName}`,
+        trText(`Ngày ${day.dayName}`, `Day ${day.dayName}`),
         day.photoCount,
       ]);
     });
@@ -159,7 +244,7 @@ export function buildSpreadsheetMatrix(data: SpreadsheetExportData): {
 
   // Row SUM of whole month
   values.push([
-    "TỔNG CỘNG CẢ THÁNG",
+    trText("TỔNG CỘNG CẢ THÁNG", "MONTHLY TOTAL"),
     `=SUM(B${startDayRowIndex}:B${endDayRowIndex})`,
   ]);
 
@@ -230,8 +315,11 @@ export function downloadSpreadsheetFile(data: SpreadsheetExportData): string {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.setAttribute("href", url);
-  const cleanMonth = (data.monthName || "Thang").replace(/\s+/g, "_");
-  const fileName = `Trang_Tinh_Luong_Thong_Ke_${cleanMonth}.csv`;
+  const cleanMonth = (data.monthName || trText("Thang", "Month")).replace(/\s+/g, "_");
+  const fileName = trText(
+    `Trang_Tinh_Luong_Thong_Ke_${cleanMonth}.csv`,
+    `Salary_Output_Report_${cleanMonth}.csv`,
+  );
   link.setAttribute("download", fileName);
   document.body.appendChild(link);
   link.click();
@@ -257,15 +345,26 @@ export async function exportDirectlyToGoogleSheets(
   data: SpreadsheetExportData,
   onProgress?: (msg: string) => void
 ): Promise<{ spreadsheetId: string; spreadsheetUrl: string }> {
-  onProgress?.("Đang kiểm tra kết nối tài khoản Google...");
+  onProgress?.(trText("Đang kiểm tra kết nối tài khoản Google...", "Checking Google account connection..."));
   const token = await googleCredentialManager.getValidAccessToken();
   if (!token) {
-    throw new Error("Chưa kết nối tài khoản Google. Vui lòng kết nối Google trong ứng dụng hoặc chọn Tải tệp Trang tính.");
+    throw new Error(
+      trText(
+        "Chưa kết nối tài khoản Google. Vui lòng kết nối Google trong ứng dụng hoặc chọn Tải tệp Trang tính.",
+        "Google account is not connected. Please connect Google in the app or choose Download Spreadsheet CSV.",
+      ),
+    );
   }
 
-  onProgress?.("Đang tạo bảng tính mới trên Google Drive...");
-  const cleanMonth = data.monthName ? data.monthName.toUpperCase() : "THỐNG KÊ THÁNG";
-  const title = `BẢNG LƯƠNG & SẢN LƯỢNG - ${cleanMonth}`;
+  onProgress?.(trText("Đang tạo bảng tính mới trên Google Drive...", "Creating new spreadsheet on Google Drive..."));
+  const cleanMonth = data.monthName
+    ? data.monthName.toUpperCase()
+    : trText("THỐNG KÊ THÁNG", "MONTHLY REPORT");
+  const title = trText(
+    `BẢNG LƯƠNG & SẢN LƯỢNG - ${cleanMonth}`,
+    `SALARY & OUTPUT REPORT - ${cleanMonth}`,
+  );
+  const sheetTabTitle = trText("Bảng Lương & Sản Lượng", "Salary & Output");
 
   // 1. Create Spreadsheet with single sheet
   const createRes = await fetch("https://sheets.googleapis.com/v4/spreadsheets", {
@@ -281,7 +380,7 @@ export async function exportDirectlyToGoogleSheets(
       sheets: [
         {
           properties: {
-            title: "Bảng Lương & Sản Lượng",
+            title: sheetTabTitle,
             gridProperties: {
               frozenRowCount: 1,
             },
@@ -294,9 +393,14 @@ export async function exportDirectlyToGoogleSheets(
   if (!createRes.ok) {
     const err = await createRes.json().catch(() => null);
     throw new Error(
-      `Không thể tạo Google Sheet: HTTP ${createRes.status} - ${
-        err?.error?.message || createRes.statusText
-      }`
+      trText(
+        `Không thể tạo Google Sheet: HTTP ${createRes.status} - ${
+          err?.error?.message || createRes.statusText
+        }`,
+        `Could not create Google Sheet: HTTP ${createRes.status} - ${
+          err?.error?.message || createRes.statusText
+        }`,
+      ),
     );
   }
 
@@ -304,7 +408,7 @@ export async function exportDirectlyToGoogleSheets(
   const spreadsheetId = created.spreadsheetId;
   const spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
 
-  onProgress?.("Đang điền công thức và dữ liệu chi tiết...");
+  onProgress?.(trText("Đang điền công thức và dữ liệu chi tiết...", "Populating formulas and detailed data..."));
   const { values } = buildSpreadsheetMatrix(data);
 
   // 2. Batch update values with USER_ENTERED so formulas (=SUM, =IF) are evaluated dynamically!
@@ -320,7 +424,7 @@ export async function exportDirectlyToGoogleSheets(
         valueInputOption: "USER_ENTERED",
         data: [
           {
-            range: "'Bảng Lương & Sản Lượng'!A1",
+            range: `'${sheetTabTitle}'!A1`,
             values: values.map((r) => r.map((c) => (c === undefined || c === null ? "" : c))),
           },
         ],
@@ -331,13 +435,18 @@ export async function exportDirectlyToGoogleSheets(
   if (!updateRes.ok) {
     const err = await updateRes.json().catch(() => null);
     throw new Error(
-      `Không thể ghi dữ liệu bảng tính: HTTP ${updateRes.status} - ${
-        err?.error?.message || updateRes.statusText
-      }`
+      trText(
+        `Không thể ghi dữ liệu bảng tính: HTTP ${updateRes.status} - ${
+          err?.error?.message || updateRes.statusText
+        }`,
+        `Could not write spreadsheet data: HTTP ${updateRes.status} - ${
+          err?.error?.message || updateRes.statusText
+        }`,
+      ),
     );
   }
 
-  onProgress?.("Đang mở trang tính trên trình duyệt...");
+  onProgress?.(trText("Đang mở trang tính trên trình duyệt...", "Opening spreadsheet in browser..."));
   try {
     if (isTauri()) {
       const { openUrl } = await import("@tauri-apps/plugin-opener");

@@ -5,6 +5,7 @@ import { listen } from "@tauri-apps/api/event";
 import type { CopyResult, ProgressEvent, CopyOptions } from "@/core/types";
 import { sheetFilterAutomationService } from "@/modules/contact-the-sheet/services/sheetFilterAutomationService";
 import { autoFindService } from "@/modules/photo-picker/services/autoFindService";
+import { trText } from "../../../../../core/lib/i18n.ts";
 
 export function useCopyOperation() {
   const matchResult = useAppStore((s) => s.matchResult);
@@ -20,7 +21,7 @@ export function useCopyOperation() {
     async (operation: "Copy" | "Move") => {
       if (!matchResult) return;
       if (outputMode === "Folder" && !outputFolder) {
-        alert("Vui lòng chọn thư mục đầu ra.");
+        alert(trText("Vui lòng chọn thư mục đầu ra.", "Please select an output folder."));
         return;
       }
 
@@ -150,7 +151,7 @@ export function useCopyOperation() {
           });
       } catch (error) {
         console.error("Copy error:", error);
-        alert("Lỗi chép file: " + (typeof error === "string" ? error : JSON.stringify(error)));
+        alert(trText("Lỗi chép file: ", "File copy error: ") + (typeof error === "string" ? error : JSON.stringify(error)));
         setPhase("matched");
         setProgress(null);
       } finally {

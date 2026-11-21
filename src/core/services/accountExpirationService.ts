@@ -10,6 +10,7 @@
  */
 
 import type { AuthSession } from "@/core/types/auth.ts";
+import { trText } from "../lib/i18n.ts";
 
 export type ExpirationCategory =
   | "TRIAL"          // Standard free trial of the app
@@ -82,18 +83,23 @@ export function checkAccountExpiringNotice(
         category: "TRIAL",
         daysRemaining: days,
         expiresAt: sub.expiresAt,
-        badgeLabel: "Gói Dùng Thử Miễn Phí (Trial)",
-        title: "Tài Khoản Dùng Thử Sắp Hết Hạn",
-        headline: "Thời gian dùng thử sắp kết thúc",
-        message: `Tài khoản của bạn sắp hết thời gian dùng thử (còn ${
-          days === 0 ? "hôm nay" : `${days} ngày`
-        }). Vui lòng thanh toán hoặc kích hoạt gói sử dụng để tiếp tục làm việc.`,
+        badgeLabel: trText("Gói Dùng Thử Miễn Phí (Trial)", "Free Trial Plan"),
+        title: trText("Tài Khoản Dùng Thử Sắp Hết Hạn", "Trial Account Expiring Soon"),
+        headline: trText("Thời gian dùng thử sắp kết thúc", "Your trial period is ending soon"),
+        message: trText(
+          `Tài khoản của bạn sắp hết thời gian dùng thử (còn ${
+            days === 0 ? "hôm nay" : `${days} ngày`
+          }). Vui lòng thanh toán hoặc kích hoạt gói sử dụng để tiếp tục làm việc.`,
+          `Your free trial is expiring soon (${
+            days === 0 ? "today" : `${days} ${days === 1 ? "day" : "days"} left`
+          }). Please renew or activate a license key to keep working.`
+        ),
         isVip: false,
         suggestedMode: "request",
         affectedFeatures: [
-          "Toàn bộ tính năng lọc ảnh và xuất file",
-          "Xử lý danh sách khách hàng",
-          "Quyền truy cập toàn bộ hệ sinh thái ứng dụng",
+          trText("Toàn bộ tính năng lọc ảnh và xuất file", "All photo culling and export features"),
+          trText("Xử lý danh sách khách hàng", "Customer queue processing"),
+          trText("Quyền truy cập toàn bộ hệ sinh thái ứng dụng", "Access to all ecosystem apps"),
         ],
       };
     }
@@ -108,17 +114,22 @@ export function checkAccountExpiringNotice(
         category: "ACTIVE_BASIC",
         daysRemaining: days,
         expiresAt: sub.expiresAt,
-        badgeLabel: "Bản Quyền Đang Sử Dụng (Active)",
-        title: "Bản Quyền Sắp Hết Hạn",
-        headline: "Gói bản quyền sắp hết hạn sử dụng",
-        message: `Tài khoản của bạn sắp hết hạn sử dụng (còn ${
-          days === 0 ? "hôm nay" : `${days} ngày`
-        }). Vui lòng thanh toán hoặc gia hạn gói sử dụng để không làm gián đoạn trải nghiệm.`,
+        badgeLabel: trText("Bản Quyền Đang Sử Dụng (Active)", "Active Subscription"),
+        title: trText("Bản Quyền Sắp Hết Hạn", "License Expiring Soon"),
+        headline: trText("Gói bản quyền sắp hết hạn sử dụng", "Your license plan is expiring soon"),
+        message: trText(
+          `Tài khoản của bạn sắp hết hạn sử dụng (còn ${
+            days === 0 ? "hôm nay" : `${days} ngày`
+          }). Vui lòng thanh toán hoặc gia hạn gói sử dụng để không làm gián đoạn trải nghiệm.`,
+          `Your license is expiring soon (${
+            days === 0 ? "today" : `${days} ${days === 1 ? "day" : "days"} left`
+          }). Please renew or extend your plan to avoid interruptions.`
+        ),
         isVip: false,
         suggestedMode: "request",
         affectedFeatures: [
-          "Các tính năng thuộc gói đã đăng ký",
-          "Đồng bộ cấu hình và xử lý công việc studio",
+          trText("Các tính năng thuộc gói đã đăng ký", "Subscribed plan features"),
+          trText("Đồng bộ cấu hình và xử lý công việc studio", "Workspace configuration & studio automation"),
         ],
       };
     }

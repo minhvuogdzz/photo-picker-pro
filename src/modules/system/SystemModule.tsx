@@ -47,7 +47,7 @@ export function SystemModule() {
   const settings = useSettingsStore((s) => s.settings);
   const updateSetting = useSettingsStore((s) => s.updateSetting);
   const session = useAuthStore((s) => s.session);
-  const { t } = useTranslation();
+  const { t, tr } = useTranslation();
 
   const [activeTab, setActiveTab] = useState<Tab>("general");
   const isCheckingUpdate = useUpdaterStore((s) => s.isChecking);
@@ -216,7 +216,7 @@ export function SystemModule() {
               <div className="flex items-center justify-between pb-3.5 border-b border-border">
                 <div>
                   <h1 className="text-[13px] font-semibold tracking-tight text-foreground">{t("general_settings")}</h1>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">Tùy biến môi trường làm việc và cập nhật phần mềm</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{tr("Tùy biến môi trường làm việc và cập nhật phần mềm", "Customize workspace environment and software updates")}</p>
                 </div>
                 <button onClick={handleSave} className="py-1.5 px-3 bg-primary hover:bg-primary/90 active:scale-97 text-primary-foreground font-medium text-[11px] rounded-lg transition-all flex items-center gap-1.5 cursor-pointer">
                   <Save size={13} /> {t("save_changes")}
@@ -230,7 +230,7 @@ export function SystemModule() {
                   {[
                     { id: "dark", label: t("dark_mode"), icon: Moon },
                     { id: "light", label: t("light_mode"), icon: Sun },
-                    { id: "system", label: "Hệ điều hành", icon: Laptop },
+                    { id: "system", label: tr("Hệ điều hành", "System"), icon: Laptop },
                   ].map((item) => {
                     const Icon = item.icon;
                     const isSelected = settings.theme === item.id;
@@ -261,7 +261,7 @@ export function SystemModule() {
                     value={settings.language}
                     onChange={(e) => updateSetting("language", e.target.value)}
                   >
-                    <option value="vi" className="bg-card text-foreground">Tiếng Việt (Mặc định)</option>
+                    <option value="vi" className="bg-card text-foreground">{tr("Tiếng Việt (Mặc định)", "Vietnamese (Default)")}</option>
                     <option value="en" className="bg-card text-foreground">English (International)</option>
                   </select>
                   <Globe size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -272,7 +272,7 @@ export function SystemModule() {
               <div className="space-y-3 pt-3 border-t border-border">
                 <div className="flex items-center justify-between">
                   <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                    Thanh Menu & Khởi động cùng hệ thống
+                    {tr("Thanh Menu & Khởi động cùng hệ thống", "Menu Bar & Launch at Startup")}
                   </h3>
                 </div>
 
@@ -283,11 +283,14 @@ export function SystemModule() {
                       <div className="flex items-center gap-1.5">
                         <Power size={13} className="text-primary" />
                         <span className="block text-xs font-bold text-foreground group-hover:text-primary transition-colors">
-                          Tự động khởi động cùng hệ thống (Auto Launch on Boot)
+                          {tr("Tự động khởi động cùng hệ thống (Auto Launch on Boot)", "Launch at Startup (Auto Launch on Boot)")}
                         </span>
                       </div>
                       <span className="block text-[11px] text-muted-foreground leading-relaxed">
-                        Mặc định bật. Khi bật máy tính, ứng dụng sẽ tự khởi động và chạy ngầm trên thanh Menu Bar macOS / Windows Taskbar để sẵn sàng làm việc.
+                        {tr(
+                          "Mặc định bật. Khi bật máy tính, ứng dụng sẽ tự khởi động và chạy ngầm trên thanh Menu Bar macOS / Windows Taskbar để sẵn sàng làm việc.",
+                          "Enabled by default. When your computer starts, the app launches automatically and runs in the background on the macOS Menu Bar / Windows Taskbar ready for work."
+                        )}
                       </span>
                     </div>
                     <div
@@ -320,10 +323,13 @@ export function SystemModule() {
                   <label className="flex items-center justify-between cursor-pointer group">
                     <div className="space-y-0.5 pr-4">
                       <span className="block text-xs font-bold text-foreground group-hover:text-primary transition-colors">
-                        Chạy ngầm trên Menu Bar khi đóng cửa sổ
+                        {tr("Chạy ngầm trên Menu Bar khi đóng cửa sổ", "Run in Menu Bar when window is closed")}
                       </span>
                       <span className="block text-[11px] text-muted-foreground leading-relaxed">
-                        Khi nhấn nút đóng (X), ẩn cửa sổ xuống thanh Menu Bar thay vì thoát app hoàn toàn. Bấm vào icon máy ảnh DH trên Menu Bar để mở lại tức thì.
+                        {tr(
+                          "Khi nhấn nút đóng (X), ẩn cửa sổ xuống thanh Menu Bar thay vì thoát app hoàn toàn. Bấm vào icon máy ảnh DH trên Menu Bar để mở lại tức thì.",
+                          "When closing (X), hide the main window to the Menu Bar instead of quitting completely. Click the DH icon in the Menu Bar to reopen anytime."
+                        )}
                       </span>
                     </div>
                     <div
@@ -362,10 +368,10 @@ export function SystemModule() {
                         setShowVersionHistoryModal(true);
                       }}
                       className="border border-border hover:border-foreground/20 bg-card/60 hover:bg-muted text-muted-foreground hover:text-foreground text-[11px] font-semibold py-1.5 px-3 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
-                      title="Xem lịch sử 7 phiên bản gần nhất"
+                      title={tr("Xem lịch sử các phiên bản gần nhất", "View recent release history")}
                     >
                       <History size={12} />
-                      Lịch sử 7 bản gần nhất
+                      {tr("Lịch sử phiên bản", "Release history")}
                     </button>
                     <button
                       onClick={handleManualUpdateCheck}
@@ -448,14 +454,17 @@ export function SystemModule() {
                   DH Studio Pro
                 </h1>
                 <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">
-                  HỆ SINH THÁI STUDIO CHUYÊN NGHIỆP • DEVHOUSE SOFTWARE • PHIÊN BẢN V{version}
+                  {tr(
+                    `HỆ SINH THÁI STUDIO CHUYÊN NGHIỆP • DEVHOUSE SOFTWARE • PHIÊN BẢN V${version}`,
+                    `PROFESSIONAL STUDIO ECOSYSTEM • DEVHOUSE SOFTWARE • VERSION V${version}`
+                  )}
                 </p>
               </div>
               
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/15 text-emerald-500 text-[11px] font-bold rounded-full border border-emerald-500/30">
                   <ShieldCheck size={13} />
-                  <span>{isLifetime ? "Bản Quyền Vĩnh Viễn (Lifetime)" : "Bản Quyền Hợp Lệ"}</span>
+                  <span>{isLifetime ? tr("Bản Quyền Vĩnh Viễn (Lifetime)", "Lifetime License") : tr("Bản Quyền Hợp Lệ", "Valid License")}</span>
                 </div>
                 <button
                   type="button"
@@ -466,7 +475,7 @@ export function SystemModule() {
                   className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-bold rounded-full border border-primary/25 transition-all cursor-pointer shadow-sm active:scale-97"
                 >
                   <History size={12} />
-                  <span>Lịch sử 7 phiên bản</span>
+                  <span>{tr("Lịch sử phiên bản", "Release History")}</span>
                 </button>
               </div>
 
@@ -476,10 +485,17 @@ export function SystemModule() {
                 {/* Giới thiệu tổng quan */}
                 <div className="text-xs text-foreground/90 leading-relaxed space-y-2">
                   <p>
-                    <strong className="text-foreground font-extrabold">DH Studio Pro</strong> là hệ sinh thái phần mềm toàn diện thuộc bản quyền và sở hữu của <strong className="text-foreground font-extrabold">Devhouse Software</strong>, được xây dựng chuyên biệt dành cho các Nhiếp ảnh gia, Thợ ảnh sự kiện, Retoucher và Studio ảnh cưới chuyên nghiệp.
+                    <strong className="text-foreground font-extrabold">DH Studio Pro</strong>{" "}
+                    {tr(
+                      "là hệ sinh thái phần mềm toàn diện thuộc bản quyền và sở hữu của Devhouse Software, được xây dựng chuyên biệt dành cho các Nhiếp ảnh gia, Thợ ảnh sự kiện, Retoucher và Studio ảnh cưới chuyên nghiệp.",
+                      "is a comprehensive software ecosystem owned by Devhouse Software, purpose-built for photographers, event shooters, retouchers, and wedding studios."
+                    )}
                   </p>
                   <p className="text-muted-foreground text-[11px] leading-relaxed">
-                    Hệ sinh thái cung cấp giải pháp đồng bộ từ khâu chọn lọc ảnh thông minh bằng AI, chuyển đổi đa định dạng siêu tốc, tự động hóa Photoshop Actions, cho đến thư viện tài nguyên sáng tạo độc quyền.
+                    {tr(
+                      "Hệ sinh thái cung cấp giải pháp đồng bộ từ khâu chọn lọc ảnh thông minh bằng AI, chuyển đổi đa định dạng siêu tốc, tự động hóa Photoshop Actions, cho đến thư viện tài nguyên sáng tạo độc quyền.",
+                      "It unifies high-speed smart culling, batch image conversion, Google Sheets/Drive delivery automation, production counting, and exclusive creative assets."
+                    )}
                   </p>
                 </div>
 
@@ -493,7 +509,10 @@ export function SystemModule() {
                     <div>
                       <h4 className="text-xs font-bold text-foreground">Photo Picker Pro</h4>
                       <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">
-                        Lọc ảnh AI nhận diện mắt nhắm, nét mờ, cảm xúc với tốc độ hàng nghìn ảnh chỉ trong vài giây.
+                        {tr(
+                          "Lọc ảnh AI nhận diện mắt nhắm, nét mờ, cảm xúc với tốc độ hàng nghìn ảnh chỉ trong vài giây.",
+                          "High-speed batch image filtering & copying by customer selection codes and Google Sheets."
+                        )}
                       </p>
                     </div>
                   </div>
@@ -503,9 +522,12 @@ export function SystemModule() {
                       <FileImage size={14} />
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-foreground">Chuyển đổi file (Convert file)</h4>
+                      <h4 className="text-xs font-bold text-foreground">{tr("Chuyển đổi file (Convert file)", "MVD File Converter")}</h4>
                       <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">
-                        Bộ nén & chuyển đổi đa luồng RAW, JPG, PNG, WebP giữ trọn dải màu và độ sắc nét.
+                        {tr(
+                          "Bộ nén & chuyển đổi đa luồng RAW, JPG, PNG, WebP giữ trọn dải màu và độ sắc nét.",
+                          "Multi-threaded RAW, JPG, PNG, WebP compression & batch EXIF capture-date repair preserving full quality."
+                        )}
                       </p>
                     </div>
                   </div>
@@ -517,7 +539,10 @@ export function SystemModule() {
                     <div>
                       <h4 className="text-xs font-bold text-foreground">Contact the Sheet</h4>
                       <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">
-                        Tự động hóa đối soát Google Sheet & Drive, khớp thư mục khách hàng và cập nhật tiến độ siêu tốc.
+                        {tr(
+                          "Tự động hóa đối soát Google Sheet & Drive, khớp thư mục khách hàng và cập nhật tiến độ siêu tốc.",
+                          "Automate Google Sheets & Google Drive folder matching, Edit links, and studio status updates."
+                        )}
                       </p>
                     </div>
                   </div>
@@ -527,9 +552,12 @@ export function SystemModule() {
                       <Layers size={14} />
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-foreground">Kho Tài Nguyên Creative</h4>
+                      <h4 className="text-xs font-bold text-foreground">{tr("Kho Tài Nguyên Creative", "Creative Resources Hub")}</h4>
                       <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">
-                        Tuyển tập Actions D&B, Presets màu, Brushes vẽ tóc và giáo trình Retouch độc quyền.
+                        {tr(
+                          "Tuyển tập Actions D&B, Presets màu, Brushes vẽ tóc và giáo trình Retouch độc quyền.",
+                          "Curated Dodge & Burn Actions, color presets, hair brushes, and retouching guides."
+                        )}
                       </p>
                     </div>
                   </div>
@@ -540,7 +568,11 @@ export function SystemModule() {
                 <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 flex items-center gap-2.5 text-[11px] text-muted-foreground">
                   <Cpu size={16} className="text-primary shrink-0" />
                   <span>
-                    <strong className="text-foreground font-semibold">100% Offline Engine:</strong> Toàn bộ dữ liệu và hình ảnh được phân tích hoàn toàn cục bộ trên máy tính của bạn, đảm bảo an toàn và bảo mật tuyệt đối.
+                    <strong className="text-foreground font-semibold">100% Offline Engine:</strong>{" "}
+                    {tr(
+                      "Toàn bộ dữ liệu và hình ảnh được phân tích hoàn toàn cục bộ trên máy tính của bạn, đảm bảo an toàn và bảo mật tuyệt đối.",
+                      "All media and image processing runs locally on your machine to guarantee maximum privacy and security."
+                    )}
                   </span>
                 </div>
 
@@ -611,7 +643,7 @@ export function SystemModule() {
           <div className="bg-card rounded-3xl w-full max-w-md border border-border shadow-2xl flex flex-col overflow-hidden animate-scale-in text-foreground">
             <div className="flex justify-between items-center px-5 py-4 border-b border-border bg-muted/30">
               <h3 id="dlg-SystemModule-1" className="text-xs font-bold text-foreground">{t("feedback_title")}</h3>
-              <button aria-label="Đóng" 
+              <button aria-label={tr("Đóng", "Close")} 
                 onClick={() => setShowFeedbackModal(false)}
                 className="w-7 h-7 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               >
@@ -627,7 +659,7 @@ export function SystemModule() {
                     type="text" 
                     value={feedbackName} 
                     onChange={e => setFeedbackName(e.target.value)} 
-                    placeholder="VD: Nguyễn Văn A"
+                    placeholder={tr("VD: Nguyễn Văn A", "e.g. John Doe")}
                     className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs outline-none focus:border-primary/50 transition-colors"
                   />
                 </div>
@@ -663,7 +695,7 @@ export function SystemModule() {
                       onClick={() => setFeedbackImage(null)}
                       className="text-[10px] text-destructive hover:underline cursor-pointer"
                     >
-                      Xóa ảnh
+                      {tr("Xóa ảnh", "Remove image")}
                     </button>
                   </div>
                   <div className="relative rounded-xl overflow-hidden border border-border max-h-36 bg-black/20 flex items-center justify-center">
@@ -682,7 +714,7 @@ export function SystemModule() {
                 onClick={() => setShowFeedbackModal(false)}
                 className="px-4 py-2 rounded-xl border border-border hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               >
-                Hủy
+                {tr("Hủy", "Cancel")}
               </button>
               <button 
                 onClick={handleSubmitFeedback}

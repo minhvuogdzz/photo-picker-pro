@@ -1,4 +1,5 @@
 import { useState, useId, useMemo } from "react";
+import { useTranslation } from "@/core/lib/i18n";
 
 interface PerformanceLineChartProps {
   data: number[];
@@ -25,6 +26,7 @@ export function PerformanceLineChart({
   label,
   compact = true,
 }: PerformanceLineChartProps) {
+  const { tr } = useTranslation();
   const chartId = useId();
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
@@ -105,7 +107,7 @@ export function PerformanceLineChart({
 
       {data.length === 0 ? (
         <div className="w-full h-full flex items-center justify-center text-[9px] text-muted-foreground/60 italic">
-          Đang kết nối giám sát...
+          {tr("Đang kết nối giám sát...", "Connecting to monitor...")}
         </div>
       ) : (
         <svg
@@ -210,7 +212,7 @@ export function PerformanceLineChart({
             <span className="text-muted-foreground/70 text-[8px]">
               {(() => {
                 const diff = Math.max(0, Math.floor(Date.now() / 1000 - timestamps[activeHoverPoint.idx]));
-                return diff === 0 ? "vừa xong" : `${diff}s trước`;
+                return diff === 0 ? tr("vừa xong", "just now") : `${diff}s ${tr("trước", "ago")}`;
               })()}
             </span>
           )}
@@ -220,8 +222,8 @@ export function PerformanceLineChart({
       {/* Time Axis Labels */}
       {!compact && (
         <div className="w-full flex items-center justify-between text-[8px] text-muted-foreground/60 px-0.5 leading-none">
-          <span>60s trước</span>
-          <span>Hiện tại</span>
+          <span>60s {tr("trước", "ago")}</span>
+          <span>{tr("Hiện tại", "Now")}</span>
         </div>
       )}
     </div>

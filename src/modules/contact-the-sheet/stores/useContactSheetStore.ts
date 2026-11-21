@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { trText } from "../../../core/lib/i18n.ts";
 import type {
   WorkspaceProfile,
   TabConfiguration,
@@ -666,14 +667,14 @@ export const useContactSheetStore = create<ContactSheetState>()(
         if (persistedState.profiles && Array.isArray(persistedState.profiles)) {
           persistedState.profiles = persistedState.profiles.map((p: any) => {
             if (p.spreadsheetId === purgeId) {
-              return { ...p, spreadsheetId: "", spreadsheetTitle: "Chưa liên kết" };
+              return { ...p, spreadsheetId: "", spreadsheetTitle: trText("Chưa liên kết", "Unlinked") };
             }
             return p;
           });
         }
         if (persistedState.activeProfile?.spreadsheetId === purgeId) {
           persistedState.activeProfile.spreadsheetId = "";
-          persistedState.activeProfile.spreadsheetTitle = "Chưa liên kết";
+          persistedState.activeProfile.spreadsheetTitle = trText("Chưa liên kết", "Unlinked");
         }
         if (persistedState.lastSheetUrl?.includes(purgeId)) {
           persistedState.lastSheetUrl = "";

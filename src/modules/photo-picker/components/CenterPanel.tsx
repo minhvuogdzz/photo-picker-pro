@@ -57,7 +57,7 @@ export function CenterPanel() {
   const selectedInputFolders = useAppStore((s) => s.selectedInputFolders);
   const inputFolders = useAppStore((s) => s.inputFolders);
   const [isParsingDebounced, setIsParsingDebounced] = useState(false);
-  const { t } = useTranslation();
+  const { t, tr } = useTranslation();
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const activeCustomerFolder = selectedInputFolders[0] || inputFolders[0] || "";
@@ -325,13 +325,13 @@ export function CenterPanel() {
                 setIsSheetModalOpen(true);
               }}
               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all group shadow-2xs select-none bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:border-emerald-500/50 cursor-pointer"
-              title="Truy xuất mã chọn của khách từ Google Sheet"
+              title={tr("Truy xuất mã chọn của khách từ Google Sheet", "Extract customer selection codes from Google Sheet")}
             >
               <FileSpreadsheet
                 size={12}
                 className="text-emerald-500 group-hover:scale-110 transition-transform"
               />
-              <span>Truy xuất trang tính</span>
+              <span>{tr("Truy xuất trang tính", "Sheet Extract")}</span>
             </button>
 
             {/* Check TT Button: Only shown in multi-folder mode as requested */}
@@ -342,13 +342,13 @@ export function CenterPanel() {
                   setIsCheckStatusModalOpen(true);
                 }}
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-all group shadow-2xs animate-fade-in select-none bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border-amber-500/35 hover:border-amber-500/60 cursor-pointer"
-                title="Kiểm tra đối soát trạng thái Chưa lọc trên Google Sheet để giữ lại khách cần lọc"
+                title={tr("Kiểm tra đối soát trạng thái Chưa lọc trên Google Sheet để giữ lại khách cần lọc", "Check Google Sheet filter status to keep customers pending culling")}
               >
                 <Filter
                   size={12}
                   className="text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform"
                 />
-                <span>Check TT</span>
+                <span>{tr("Check TT", "Status Check")}</span>
               </button>
             )}
 
@@ -359,19 +359,19 @@ export function CenterPanel() {
                 setIsSheetModalOpen(true);
               }}
               className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium border transition-all group shadow-2xs select-none bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground border-border/60 hover:border-border cursor-pointer"
-              title="Cấu hình cột và Tab Google Sheet cho ứng dụng Lọc ảnh"
+              title={tr("Cấu hình cột và Tab Google Sheet cho ứng dụng Lọc ảnh", "Configure Google Sheet tabs and columns for Photo Picker")}
             >
               <Settings2
                 size={12}
                 className="text-muted-foreground group-hover:rotate-45 transition-transform"
               />
-              <span>Cấu hình Sheet</span>
+              <span>{tr("Cấu hình Sheet", "Sheet Config")}</span>
             </button>
           </div>
           <div className="flex items-center gap-1.5">
             {isParsingDebounced && (
               <span className="text-[10px] text-muted-foreground animate-pulse">
-                Parsing...
+                {tr("Đang tách mã...", "Parsing...")}
               </span>
             )}
             <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-muted/60 text-muted-foreground border border-border/50 tabular-nums">
@@ -381,7 +381,7 @@ export function CenterPanel() {
               type="button"
               onClick={() => setIsHelpModalOpen(true)}
               className="inline-flex items-center justify-center w-6 h-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all border border-border/60 hover:border-primary/50 cursor-pointer shadow-2xs group"
-              title="Hướng dẫn cú pháp & xử lý trùng tiền tố" aria-label="Hướng dẫn cú pháp & xử lý trùng tiền tố"
+              title={tr("Hướng dẫn cú pháp & xử lý trùng tiền tố", "Syntax guide & prefix conflict resolution")} aria-label={tr("Hướng dẫn cú pháp & xử lý trùng tiền tố", "Syntax guide & prefix conflict resolution")}
             >
               <HelpCircle size={13} className="text-muted-foreground group-hover:text-primary transition-colors" />
             </button>
@@ -440,7 +440,10 @@ export function CenterPanel() {
               <AlertTriangle size={15} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-foreground">
-                  Auto Find: Chưa thể nạp mã cho {autoFindStatus.targetCustomerName || "khách này"}
+                  {tr(
+                    `Auto Find: Chưa thể nạp mã cho ${autoFindStatus.targetCustomerName || "khách này"}`,
+                    `Auto Find: Unable to load codes for ${autoFindStatus.targetCustomerName || "this customer"}`
+                  )}
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
                   {autoFindStatus.message}
@@ -448,7 +451,7 @@ export function CenterPanel() {
               </div>
               <button
                 type="button"
-                aria-label="Đóng thông báo"
+                aria-label={tr("Đóng thông báo", "Dismiss")}
                 onClick={() => setAutoFindStatus(null)}
                 className="text-muted-foreground hover:text-foreground p-0.5 rounded cursor-pointer"
               >
@@ -461,10 +464,10 @@ export function CenterPanel() {
                   type="button"
                   onClick={handleSkipAutoFind}
                   className="px-2.5 py-1 rounded-md bg-muted hover:bg-muted/80 text-foreground font-medium text-[11px] flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
-                  title="Bỏ qua khách này và chuyển ngay sang khách tiếp theo"
+                  title={tr("Bỏ qua khách này và chuyển ngay sang khách tiếp theo", "Skip this customer and advance to the next one")}
                 >
                   <SkipForward size={11} />
-                  <span>Bỏ qua sang khách tiếp</span>
+                  <span>{tr("Bỏ qua sang khách tiếp", "Skip to next customer")}</span>
                 </button>
               )}
               <button
@@ -473,7 +476,7 @@ export function CenterPanel() {
                 className="px-2.5 py-1 rounded-md bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 font-semibold text-[11px] flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
               >
                 <RotateCcw size={11} />
-                <span>Thử lại</span>
+                <span>{tr("Thử lại", "Retry")}</span>
               </button>
               <button
                 type="button"
@@ -484,7 +487,7 @@ export function CenterPanel() {
                 className="px-2.5 py-1 rounded-md bg-card hover:bg-muted border border-border text-foreground font-medium text-[11px] flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
               >
                 <FileSpreadsheet size={11} />
-                <span>Mở Truy xuất trang tính</span>
+                <span>{tr("Mở Truy xuất trang tính", "Open Sheet Extractor")}</span>
               </button>
             </div>
           </div>
@@ -495,12 +498,13 @@ export function CenterPanel() {
             <div className="flex items-center gap-1.5 min-w-0">
               <CheckCircle2 size={13} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
               <span className="truncate">
-                Đã nạp <strong>{autoFindStatus.codeCount} mã</strong> cho <strong>{autoFindStatus.targetCustomerName}</strong>. Hãy bấm <strong>Quét file</strong>!
+                {tr("Đã nạp", "Loaded")} <strong>{tr(`${autoFindStatus.codeCount} mã`, `${autoFindStatus.codeCount} code(s)`)}</strong>{" "}
+                {tr("cho", "for")} <strong>{autoFindStatus.targetCustomerName}</strong>. {tr("Hãy bấm", "Click")} <strong>{t("scan_match")}</strong>!
               </span>
             </div>
             <button
               type="button"
-              aria-label="Đóng"
+              aria-label={tr("Đóng", "Close")}
               onClick={() => setAutoFindStatus(null)}
               className="text-muted-foreground hover:text-foreground p-0.5 rounded cursor-pointer shrink-0 ml-2"
             >
@@ -536,17 +540,17 @@ export function CenterPanel() {
 
               <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
                 <Loader2 size={15} className="animate-spin text-emerald-500" />
-                <span>Đang tự động nạp mã từ Google Sheet...</span>
+                <span>{tr("Đang tự động nạp mã từ Google Sheet...", "Auto-loading customer codes from Google Sheet...")}</span>
               </h4>
 
               <p className="text-xs text-muted-foreground mt-1 max-w-sm font-mono">
                 {autoFindStatus?.targetCustomerName
-                  ? `Khách: ${autoFindStatus.targetCustomerName}`
-                  : "Đang đối chiếu dữ liệu bảng tính..."}
+                  ? tr(`Khách: ${autoFindStatus.targetCustomerName}`, `Customer: ${autoFindStatus.targetCustomerName}`)
+                  : tr("Đang đối chiếu dữ liệu bảng tính...", "Matching spreadsheet rows...")}
               </p>
 
               <span className="text-[10px] text-muted-foreground/80 mt-2 px-2.5 py-0.5 rounded-full bg-muted/60 border border-border/50">
-                Chờ nạp xong để bấm Quét file
+                {tr("Chờ nạp xong để bấm Quét file", "Wait for codes to load, then click Scan & Match")}
               </span>
             </div>
           )}
@@ -562,7 +566,7 @@ export function CenterPanel() {
               disabled={phase === "scanning" || phase === "copying"}
               className="rounded border-border accent-primary cursor-pointer disabled:opacity-50 w-3.5 h-3.5"
             />
-            <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>Lọc Raw</span>
+            <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>{tr("Lọc Raw", "Filter RAW")}</span>
           </label>
           
           <label className="flex items-center gap-1.5 cursor-pointer">
@@ -573,7 +577,7 @@ export function CenterPanel() {
               disabled={phase === "scanning" || phase === "copying"}
               className="rounded border-border accent-primary cursor-pointer disabled:opacity-50 w-3.5 h-3.5"
             />
-            <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>Lọc JPG</span>
+            <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>{tr("Lọc JPG", "Filter JPG")}</span>
           </label>
 
           <label className="flex items-center gap-1.5 cursor-pointer">
@@ -584,7 +588,7 @@ export function CenterPanel() {
               disabled={phase === "scanning" || phase === "copying"}
               className="rounded border-border accent-primary cursor-pointer disabled:opacity-50 w-3.5 h-3.5"
             />
-            <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>Chỉ thư mục chọn</span>
+            <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>{tr("Chỉ thư mục chọn", "Selected folder only")}</span>
           </label>
 
           <label className="flex items-center gap-1.5 cursor-pointer">
@@ -595,7 +599,7 @@ export function CenterPanel() {
               disabled={phase === "scanning" || phase === "copying"}
               className="rounded border-border accent-primary cursor-pointer disabled:opacity-50 w-3.5 h-3.5"
             />
-            <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>Lọc tất cả thư mục con</span>
+            <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>{tr("Lọc tất cả thư mục con", "All subfolders")}</span>
           </label>
         </div>
 

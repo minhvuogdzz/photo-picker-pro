@@ -3,6 +3,7 @@ import { clearSessionStart } from "@/core/services/sessionTimeoutPolicy";
 import { useAuthStore } from "@/core/stores/useAuthStore";
 import { logout } from "@/core/services/authApi";
 import { AlertTriangle, Clock, LogIn, X } from "lucide-react";
+import { useTranslation } from "@/core/lib/i18n";
 
 /**
  * Modal shown when 30 seconds or less remain in the active working session.
@@ -13,6 +14,7 @@ export function SessionExpiringWarningModal() {
   const session = useAuthStore((s) => s.session);
   const authLogout = useAuthStore((s) => s.logout);
   const setSessionTimeoutExpired = useAuthStore((s) => s.setSessionTimeoutExpired);
+  const { tr } = useTranslation();
 
   if (!isWarning30s || hasDismissed30sWarning || !session) {
     return null;
@@ -34,7 +36,7 @@ export function SessionExpiringWarningModal() {
         <button
           onClick={dismiss30sWarning}
           className="absolute top-4 right-4 text-muted-foreground hover:text-foreground p-1.5 rounded-lg hover:bg-muted transition-colors cursor-pointer"
-          title="Đóng thông báo" aria-label="Đóng thông báo"
+          title={tr("Đóng thông báo", "Dismiss notice")} aria-label={tr("Đóng thông báo", "Dismiss notice")}
         >
           <X size={18} />
         </button>
@@ -50,19 +52,22 @@ export function SessionExpiringWarningModal() {
         <div className="space-y-2">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs font-bold uppercase tracking-wider">
             <Clock size={12} />
-            Cảnh báo phiên làm việc
+            {tr("Cảnh báo phiên làm việc", "Session Warning")}
           </div>
           <h2 id="dlg-SessionExpiringWarningModal-1" className="text-xl font-extrabold text-foreground">
-            Phiên sắp hết hạn trong
+            {tr("Phiên sắp hết hạn trong", "Session expires in")}
           </h2>
           <div className="text-4xl font-mono font-black text-amber-600 dark:text-amber-400 drop-shadow-sm tracking-tight pt-1">
-            {remainingSeconds.toString().padStart(2, "0")}<span className="text-lg font-sans font-medium text-amber-700/80 dark:text-amber-400/80 ml-1">giây</span>
+            {remainingSeconds.toString().padStart(2, "0")}<span className="text-lg font-sans font-medium text-amber-700/80 dark:text-amber-400/80 ml-1">{tr("giây", "sec")}</span>
           </div>
         </div>
 
         {/* Message */}
         <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed px-2">
-          Phiên làm việc của bạn sắp chạm giới hạn thời gian. Hệ thống sẽ tự động đăng xuất khi hết giờ để làm mới phiên. Vui lòng lưu các thao tác dang dở!
+          {tr(
+            "Phiên làm việc của bạn sắp chạm giới hạn thời gian. Hệ thống sẽ tự động đăng xuất khi hết giờ để làm mới phiên. Vui lòng lưu các thao tác dang dở!",
+            "Your working session is about to reach its time limit. The app will automatically sign out to refresh the session. Please save any unsaved work!"
+          )}
         </p>
 
         {/* Buttons */}
@@ -71,14 +76,14 @@ export function SessionExpiringWarningModal() {
             onClick={dismiss30sWarning}
             className="btn-outline flex-1 py-3 text-xs sm:text-sm font-bold rounded-xl border-border hover:bg-muted transition-colors cursor-pointer"
           >
-            Đã hiểu ({remainingSeconds}s)
+            {tr(`Đã hiểu (${remainingSeconds}s)`, `Got it (${remainingSeconds}s)`)}
           </button>
           <button
             onClick={handleLogoutAndRenew}
             className="flex-1 py-3 text-xs sm:text-sm font-bold rounded-xl bg-gradient-to-r from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 text-white shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <LogIn size={15} />
-            Làm mới phiên ngay
+            {tr("Làm mới phiên ngay", "Refresh Session Now")}
           </button>
         </div>
       </div>

@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Crown, X, ShieldAlert, KeyRound } from "lucide-react";
 import { LicenseManager } from "@/core/license/LicenseManager";
-import { PREMIUM_FEATURE_LABELS, type PremiumFeatureKey } from "@/core/services/premiumFeaturePolicy";
+import { getPremiumFeatureLabel, type PremiumFeatureKey } from "@/core/services/premiumFeaturePolicy";
+import { useTranslation } from "@/core/lib/i18n";
 
 interface PremiumGateModalProps {
   featureKey: PremiumFeatureKey;
@@ -15,9 +16,10 @@ export function PremiumGateModal({
   onClose,
   reason = "TRIAL_EXPIRED",
 }: PremiumGateModalProps) {
+  const { tr, lang } = useTranslation();
   const [showLicenseManager, setShowLicenseManager] = useState(false);
 
-  const featureTitle = PREMIUM_FEATURE_LABELS[featureKey] || "Tính năng VIP";
+  const featureTitle = getPremiumFeatureLabel(featureKey, lang);
 
   // Close on Escape key
   useEffect(() => {
@@ -52,7 +54,8 @@ export function PremiumGateModal({
         <button
           onClick={onClose}
           className="absolute right-4 top-4 w-7 h-7 rounded-full bg-muted hover:bg-muted/80 active:scale-95 text-muted-foreground hover:text-foreground flex items-center justify-center transition-all cursor-pointer"
-          title="Đóng" aria-label="Đóng"
+          title={tr("Đóng", "Close")}
+          aria-label={tr("Đóng", "Close")}
         >
           <X size={14} />
         </button>
@@ -64,29 +67,38 @@ export function PremiumGateModal({
           </div>
 
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[10px] font-extrabold uppercase tracking-wider mb-2">
-            <span>ĐẶC QUYỀN VIP PREMIUM</span>
+            <span>{tr("ĐẶC QUYỀN VIP PREMIUM", "VIP PREMIUM PRIVILEGE")}</span>
           </div>
 
           <h3 id="dlg-PremiumGateModal-1" className="text-base font-bold text-foreground tracking-tight mb-2">
-            Nâng Cấp VIP Premium Để Mở Khóa
+            {tr("Nâng Cấp VIP Premium Để Mở Khóa", "Upgrade to VIP Premium to Unlock")}
           </h3>
 
           <div className="w-full p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 mb-3.5 text-left flex items-start gap-2.5">
             <ShieldAlert size={16} className="text-amber-500 shrink-0 mt-0.5" />
             <div className="text-xs text-foreground/90 space-y-0.5">
               <p className="font-semibold text-amber-600 dark:text-amber-400">
-                Tính năng: {featureTitle}
+                {tr("Tính năng:", "Feature:")} {featureTitle}
               </p>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
                 {reason === "TRIAL_EXPIRED"
-                  ? "Thời hạn dùng thử miễn phí 7 ngày cho tính năng này đã kết thúc. Vui lòng nâng cấp tài khoản lên VIP Premium để tiếp tục sử dụng."
-                  : "Chức năng này được bảo vệ bản quyền và chỉ dành riêng cho tài khoản được cấp quyền VIP Premium."}
+                  ? tr(
+                      "Thời hạn dùng thử miễn phí 7 ngày cho tính năng này đã kết thúc. Vui lòng nâng cấp tài khoản lên VIP Premium để tiếp tục sử dụng.",
+                      "The 7-day free trial for this feature has expired. Please upgrade your account to VIP Premium to continue."
+                    )
+                  : tr(
+                      "Chức năng này được bảo vệ bản quyền và chỉ dành riêng cho tài khoản được cấp quyền VIP Premium.",
+                      "This feature is license-protected and exclusively available to accounts with VIP Premium access."
+                    )}
               </p>
             </div>
           </div>
 
           <p className="text-xs text-muted-foreground mb-5 leading-relaxed">
-            Để lại thông tin liên hệ ngay bên dưới để chúng tôi hỗ trợ cấp mã License VIP Premium hoặc mở khóa nâng cấp tài khoản cho bạn nhanh nhất.
+            {tr(
+              "Để lại thông tin liên hệ ngay bên dưới để chúng tôi hỗ trợ cấp mã License VIP Premium hoặc mở khóa nâng cấp tài khoản cho bạn nhanh nhất.",
+              "Select a plan or activate a VIP Premium license key below to unlock full access."
+            )}
           </p>
 
           {/* Action buttons */}
@@ -96,7 +108,7 @@ export function PremiumGateModal({
               onClick={onClose}
               className="flex-1 h-10 rounded-xl bg-muted hover:bg-muted/80 active:scale-[0.98] text-xs font-semibold text-muted-foreground hover:text-foreground border border-border transition-all cursor-pointer"
             >
-              Để sau
+              {tr("Để sau", "Later")}
             </button>
 
             <button
@@ -105,7 +117,7 @@ export function PremiumGateModal({
               className="flex-[1.5] h-10 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-orange-500 hover:brightness-110 active:scale-[0.98] text-black font-extrabold text-xs shadow-lg shadow-amber-500/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <KeyRound size={13} />
-              <span>Xem gói & Gia hạn</span>
+              <span>{tr("Xem gói & Gia hạn", "Plans & Renew")}</span>
             </button>
           </div>
         </div>

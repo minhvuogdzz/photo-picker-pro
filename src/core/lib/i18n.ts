@@ -1,6 +1,6 @@
-import { useSettingsStore } from "@/core/stores/useSettingsStore";
+import { useSettingsStore } from "../stores/useSettingsStore.ts";
 
-const translations = {
+export const translations = {
   en: {
     app_title: "DH STUDIO PRO",
     input_folders: "Input Folders",
@@ -68,11 +68,11 @@ const translations = {
     same_as_original_hint: "Photos will be saved to a Selects subfolder inside their original location.",
     remove: "Remove",
     convert_file: "Convert file",
-    footer_text: "Minh Vuong Dev All right server - Nếu thấy hay hãy ủng hộ tác giả nhé.",
+    footer_text: "Minh Vuong Dev — If you find this useful, please support the author.",
     // Auth
     login: "Login",
     login_subtitle: "Sign in to continue",
-    login_footer: "Dùng thử 7 ngày miễn phí · Offline First",
+    login_footer: "7-day free trial · Offline First",
     logging_in: "Signing in...",
     logout: "Logout",
     password: "Password",
@@ -200,7 +200,7 @@ const translations = {
     same_as_original_hint: "Ảnh sẽ được lưu vào thư mục con Selects nằm ngay trong thư mục chứa ảnh gốc.",
     remove: "Xoá",
     convert_file: "Chuyển đổi file",
-    footer_text: "Minh Vuong Dev All right server - Nếu thấy hay hãy ủng hộ tác giả nhé.",
+    footer_text: "Minh Vương Dev — Nếu thấy hay hãy ủng hộ tác giả nhé.",
     // Auth
     login: "Đăng nhập",
     login_subtitle: "Đăng nhập để tiếp tục",
@@ -264,18 +264,135 @@ const translations = {
     feedback_content_required: "Vui lòng điền Nội dung phản hồi.",
     feedback_success: "Cảm ơn bạn đã gửi phản hồi!",
     feedback_error: "Lỗi gửi phản hồi: ",
-  }
-};
+  },
+} as const;
 
-type Language = keyof typeof translations;
-type TranslationKey = keyof typeof translations.en;
+export type Language = keyof typeof translations;
+export type TranslationKey = keyof typeof translations.en;
+export type TranslationParams = Record<string, string | number>;
+
+// Compile-time guard: ensure `vi` and `en` always maintain identical translation keys
+type MissingInVi = Exclude<keyof typeof translations.en, keyof typeof translations.vi>;
+type MissingInEn = Exclude<keyof typeof translations.vi, keyof typeof translations.en>;
+const _assertNoMissingInVi: MissingInVi extends never ? true : never = true;
+const _assertNoMissingInEn: MissingInEn extends never ? true : never = true;
+void _assertNoMissingInVi;
+void _assertNoMissingInEn;
+
+function formatTemplate(template: string, params?: TranslationParams): string {
+  if (!params) return template;
+  return template.replace(/\{(\w+)\}/g, (_, k) =>
+    params[k] !== undefined ? String(params[k]) : `{${k}}`
+  );
+}
+
+export function getCurrentLanguage(): Language {
+  try {
+    const raw = useSettingsStore.getState().settings.language;
+    return raw === "en" ? "en" : "vi";
+  } catch {
+    return "vi";
+  }
+}
+
+export function getLocaleCode(lang?: Language): string {
+  const effective = lang ?? getCurrentLanguage();
+  return effective === "en" ? "en-US" : "vi-VN";
+}
+
+export function translate(key: TranslationKey, params?: TranslationParams, lang?: Language): string {
+  const effective = lang ?? getCurrentLanguage();
+  const dict = translations[effective] || translations.vi;
+  const raw = dict[key] || translations.en[key] || key;
+  return formatTemplate(raw, params);
+}
+
+/**
+ * Bilingual inline helper for imperative code (services, stores, utilities).
+ * Always provide both Vietnamese (`vi`) and English (`en`) strings.
+ */
+export function trText(vi: string, en: string, lang?: Language): string {
+  const effective = lang ?? getCurrentLanguage();
+  return effective === "en" ? en : vi;
+}
+
+/**
+ * Translates progress, memory pressure, and log messages emitted in Vietnamese by the Rust backend
+ * when the UI language is switched to English.
+ */
+export function localizeBackendMessage(message: string, lang?: Language): string {
+  const effective = lang ?? getCurrentLanguage();
+  if (!message || effective !== "en") return message;
+
+  const exactMap: Record<string, string> = {
+    "Đang đọc danh sách file ảnh...": "Reading image file list...",
+    "Chuẩn bị lọc ảnh...": "Preparing to match photos...",
+    "Hoàn tất lọc ảnh!": "Photo matching complete!",
+    "Hoàn tất: 0 file cần chép": "Complete: 0 files to copy",
+    "Hoàn tất": "Complete",
+    "Hệ thống đang chịu áp lực nén trang bộ nhớ (macOS VM Pressure)":
+      "System is experiencing memory page compression pressure (macOS VM Pressure)",
+    "Bộ nhớ hoạt động tối ưu, không có áp lực nén trang":
+      "Memory is operating optimally with no compression pressure",
+    "Bộ nhớ hoạt động bình thường": "Memory is operating normally",
+    "Bộ nhớ hoạt động ổn định, đủ dung lượng khả dụng":
+      "Memory is stable with sufficient available capacity",
+    "Dung lượng bộ nhớ khả dụng ở mức thấp": "Available memory capacity is low",
+  };
+
+  if (exactMap[message]) {
+    return exactMap[message];
+  }
+
+  let m = message.match(/^Đã quét (\d+) file ảnh\.\.\.$/);
+  if (m) return `Scanned ${m[1]} image files...`;
+
+  m = message.match(/^Hoàn tất quét: (\d+) file trong (\d+)ms$/);
+  if (m) return `Scan complete: ${m[1]} files in ${m[2]}ms`;
+
+  m = message.match(/^Đang lọc mã (.+)\.\.\.$/);
+  if (m) return `Matching code ${m[1]}...`;
+
+  m = message.match(/^Đang chuẩn bị lọc (\d+) file\.\.\.$/);
+  if (m) return `Preparing to process ${m[1]} files...`;
+
+  m = message.match(/^Đang lọc (\d+)\/(\d+) file$/);
+  if (m) return `Processing ${m[1]}/${m[2]} files`;
+
+  m = message.match(/^Hoàn tất: (\d+) thành công, (\d+) lỗi, (\d+) bỏ qua$/);
+  if (m) return `Complete: ${m[1]} succeeded, ${m[2]} errors, ${m[3]} skipped`;
+
+  m = message.match(/^Hệ thống đang chịu áp lực bộ nhớ \(Commit: (\d+)%, RAM khả dụng: (\d+)%\)$/);
+  if (m) return `System is under memory pressure (Commit: ${m[1]}%, Available RAM: ${m[2]}%)`;
+
+  m = message.match(/^Định dạng (.+) chỉ chuyển đổi được trên macOS$/);
+  if (m) return `Format ${m[1]} can only be converted on macOS`;
+
+  m = message.match(/^Bỏ qua (.+): (.+)$/);
+  if (m) return `Skipped ${m[1]}: ${localizeBackendMessage(m[2], effective)}`;
+
+  m = message.match(
+    /^Hoàn tất trong (\d+)ms \(([\d.]+) files\/s\) — Convert thành công: (\d+)\/(\d+) \| Đã sửa EXIF: (\d+) \| Giữ nguyên EXIF: (\d+) \| Không hỗ trợ EXIF: (\d+) \| Lỗi: (\d+)$/
+  );
+  if (m) {
+    return `Completed in ${m[1]}ms (${m[2]} files/s) — Converted: ${m[3]}/${m[4]} | EXIF Fixed: ${m[5]} | EXIF Kept: ${m[6]} | Unsupported EXIF: ${m[7]} | Errors: ${m[8]}`;
+  }
+
+  m = message.match(/^Đã hoàn tất quá trình chuyển đổi ảnh \((\d+)\/(\d+) thành công trong (\d+)ms\)\.$/);
+  if (m) return `Image conversion complete (${m[1]}/${m[2]} succeeded in ${m[3]}ms).`;
+
+  return message;
+}
 
 export function useTranslation() {
-  const language = useSettingsStore((s) => s.settings.language) as Language;
-  const currentLang = translations[language] || translations.en;
+  const rawLang = useSettingsStore((s) => s.settings.language);
+  const lang: Language = rawLang === "en" ? "en" : "vi";
+  const currentLang = translations[lang] || translations.vi;
 
   return {
-    t: (key: TranslationKey) => currentLang[key] || translations.en[key] || key,
-    lang: language,
+    t: (key: TranslationKey, params?: TranslationParams) =>
+      formatTemplate(currentLang[key] || translations.en[key] || key, params),
+    tr: (vi: string, en: string) => (lang === "en" ? en : vi),
+    lang,
   };
 }

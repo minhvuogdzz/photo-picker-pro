@@ -29,10 +29,10 @@ import {
   StopCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { useTranslation } from "@/core/lib/i18n";
+import { useTranslation, localizeBackendMessage } from "@/core/lib/i18n";
 
 export default function MvdConvertApp() {
-  const { t } = useTranslation();
+  const { t, tr, lang } = useTranslation();
   const store = useConvertStore();
   const [isHovering, setIsHovering] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -130,7 +130,7 @@ export default function MvdConvertApp() {
     const selected = await open({
       directory: true,
       multiple: true,
-      title: "Chọn thư mục đầu vào",
+      title: tr("Chọn thư mục đầu vào", "Select input folder(s)"),
     });
     if (selected) {
       const paths = Array.isArray(selected) ? selected : [selected];
@@ -142,7 +142,7 @@ export default function MvdConvertApp() {
     const selected = await open({
       directory: true,
       multiple: false,
-      title: "Chọn thư mục xuất ảnh",
+      title: tr("Chọn thư mục xuất ảnh", "Select output folder"),
     });
     if (selected && typeof selected === "string") {
       store.setOutputFolder(selected);
@@ -153,7 +153,7 @@ export default function MvdConvertApp() {
     const selected = await open({
       directory: false,
       multiple: false,
-      title: "Chọn ảnh tham chiếu để lấy ngày chụp EXIF",
+      title: tr("Chọn ảnh tham chiếu để lấy ngày chụp EXIF", "Select reference photo for EXIF capture date"),
       filters: [
         {
           name: "Images",
@@ -185,7 +185,7 @@ export default function MvdConvertApp() {
         });
         store.setReferencePhoto(selected, info);
       } catch (e) {
-        alert("Không đọc được ngày chụp EXIF từ ảnh tham chiếu: " + e);
+        alert(tr("Không đọc được ngày chụp EXIF từ ảnh tham chiếu: ", "Could not read EXIF date from reference photo: ") + e);
       }
     }
   };
@@ -193,7 +193,7 @@ export default function MvdConvertApp() {
   const handleCancelConvert = async () => {
     try {
       await invoke("cancel_convert_batch");
-      store.addLog("Đã gửi yêu cầu dừng tiến trình xử lý...");
+      store.addLog(tr("Đã gửi yêu cầu dừng tiến trình xử lý...", "Requested stop for batch conversion..."));
     } catch (err) {
       console.warn("Cancel error:", err);
     }
@@ -201,20 +201,20 @@ export default function MvdConvertApp() {
 
   const handleStartConvert = async () => {
     if (store.inputFolders.length === 0) {
-      alert("Vui lòng thêm ảnh hoặc thư mục vào trước!");
+      alert(tr("Vui lòng thêm ảnh hoặc thư mục vào trước!", "Please add photos or folders first!"));
       return;
     }
     if (!store.outputFolder) {
-      alert("Vui lòng chọn thư mục xuất ảnh!");
+      alert(tr("Vui lòng chọn thư mục xuất ảnh!", "Please select an output folder!"));
       return;
     }
     if (store.fixExifDate) {
       if (store.exifDateSource === "custom" && !store.customDateTime.trim()) {
-        alert("Vui lòng nhập ngày giờ tùy chỉnh (ví dụ: 2026-11-11 14:30:00)!");
+        alert(tr("Vui lòng nhập ngày giờ tùy chỉnh (ví dụ: 2026-11-11 14:30:00)!", "Please enter custom date/time (e.g., 2026-11-11 14:30:00)!"));
         return;
       }
       if (store.exifDateSource === "reference_photo" && !store.referencePhotoPath) {
-        alert("Vui lòng chọn ảnh tham chiếu để lấy ngày chụp!");
+        alert(tr("Vui lòng chọn ảnh tham chiếu để lấy ngày chụp!", "Please select a reference photo for capture date!"));
         return;
       }
     }
@@ -246,7 +246,7 @@ export default function MvdConvertApp() {
         store.setLastBatchReport(report);
       }
     } catch (e) {
-      alert("Có lỗi xảy ra: " + e);
+      alert(tr("Có lỗi xảy ra: ", "An error occurred: ") + e);
     } finally {
       store.setIsConverting(false);
     }
@@ -265,10 +265,10 @@ export default function MvdConvertApp() {
           </div>
           <div>
             <h2 className="text-sm font-semibold tracking-tight text-foreground">
-              {t("convert_file") || "Chuyển đổi file"}
+              {t("convert_file") || tr("Chuyển đổi file", "File Converter")}
             </h2>
             <p className="text-[11px] text-muted-foreground">
-              Chuyển đổi đa luồng hàng loạt · Giữ nguyên Color Profile & EXIF Metadata
+              {tr("Chuyển đổi đa luồng hàng loạt · Giữ nguyên Color Profile & EXIF Metadata", "Multi-threaded batch conversion · Preserves Color Profile & EXIF Metadata")}
             </p>
           </div>
         </div>
@@ -281,7 +281,7 @@ export default function MvdConvertApp() {
           <div className="px-4 py-2.5 border-b border-border bg-muted/20 flex items-center gap-2">
             <FolderOpen size={13} className="text-primary" />
             <h3 className="text-[11px] font-semibold uppercase tracking-wider text-foreground">
-              Nguồn đầu vào
+              {tr("Nguồn đầu vào", "Input Source")}
             </h3>
           </div>
 
@@ -297,23 +297,23 @@ export default function MvdConvertApp() {
                 <UploadCloud size={20} />
               </div>
               <p className="text-xs font-semibold text-foreground mb-0.5">
-                Kéo thả ảnh hoặc thư mục vào đây
+                {tr("Kéo thả ảnh hoặc thư mục vào đây", "Drag & drop photos or folders here")}
               </p>
               <p className="text-[10px] text-muted-foreground mb-3">
-                Hỗ trợ CR2, CR3, ARW, NEF, HEIC, JPG, PNG...
+                {tr("Hỗ trợ CR2, CR3, ARW, NEF, HEIC, JPG, PNG...", "Supports CR2, CR3, ARW, NEF, HEIC, JPG, PNG...")}
               </p>
               <button
                 onClick={handleSelectInput}
                 className="px-3 py-1.5 bg-muted hover:bg-muted/80 text-foreground text-xs font-medium rounded-lg transition-colors border border-border cursor-pointer shadow-sm"
               >
-                Chọn từ máy tính
+                {tr("Chọn từ máy tính", "Choose from Computer")}
               </button>
             </div>
 
             <div className="flex flex-col flex-1 overflow-hidden rounded-xl border border-border bg-muted/10">
               <div className="px-3 py-2 border-b border-border flex justify-between items-center bg-muted/20">
                 <span className="text-[10px] font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-                  <Layers size={12} className="text-primary" /> Danh sách chờ (
+                  <Layers size={12} className="text-primary" /> {tr("Danh sách chờ (", "Queue (")}
                   {store.inputFolders.length})
                 </span>
                 {store.inputFolders.length > 0 && (
@@ -321,7 +321,7 @@ export default function MvdConvertApp() {
                     onClick={() => store.clearInputFolders()}
                     className="text-[10px] text-destructive hover:underline font-medium transition-colors cursor-pointer"
                   >
-                    Xóa tất cả
+                    {tr("Xóa tất cả", "Clear All")}
                   </button>
                 )}
               </div>
@@ -330,7 +330,7 @@ export default function MvdConvertApp() {
                 {store.inputFolders.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-muted-foreground/80 gap-1.5 py-8">
                     <FileImage size={24} className="opacity-40" />
-                    <span className="text-[11px]">Chưa có thư mục nào được chọn</span>
+                    <span className="text-[11px]">{tr("Chưa có thư mục nào được chọn", "No folders selected yet")}</span>
                   </div>
                 ) : (
                   store.inputFolders.map((f) => (
@@ -347,8 +347,8 @@ export default function MvdConvertApp() {
                       <button
                         className="w-5 h-5 rounded flex items-center justify-center hover:bg-destructive hover:text-destructive-foreground transition-colors shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground cursor-pointer"
                         onClick={() => store.removeInputFolder(f)}
-                        title="Xóa"
-                        aria-label="Xóa"
+                        title={tr("Xóa", "Remove")}
+                        aria-label={tr("Xóa", "Remove")}
                       >
                         <X size={11} />
                       </button>
@@ -365,7 +365,7 @@ export default function MvdConvertApp() {
           <div className="px-4 py-2.5 border-b border-border bg-muted/20 flex items-center gap-2">
             <Settings2 size={13} className="text-primary" />
             <h3 className="text-[11px] font-semibold uppercase tracking-wider text-foreground">
-              Cấu hình xuất
+              {tr("Cấu hình xuất", "Export Settings")}
             </h3>
           </div>
 
@@ -373,7 +373,7 @@ export default function MvdConvertApp() {
             {/* Format Setting */}
             <div className="flex flex-col gap-2 p-3.5 rounded-xl border border-border bg-card/60 shrink-0">
               <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                <FileDown size={12} className="text-primary" /> Định dạng đích
+                <FileDown size={12} className="text-primary" /> {tr("Định dạng đích", "Target Format")}
               </label>
               <div className="relative">
                 <button
@@ -420,16 +420,16 @@ export default function MvdConvertApp() {
             <div className="flex flex-col gap-2.5 p-3.5 rounded-xl border border-border bg-card/60 shrink-0">
               <div className="flex justify-between items-center">
                 <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                  <Settings2 size={12} className="text-primary" /> Chất lượng xuất
+                  <Settings2 size={12} className="text-primary" /> {tr("Chất lượng xuất", "Export Quality")}
                 </label>
                 <span className="text-[11px] font-semibold text-primary font-mono">
                   {store.quality === 4
                     ? "MAX (100%)"
                     : store.quality === 3
-                    ? "Cao (80%)"
+                    ? tr("Cao (80%)", "High (80%)")
                     : store.quality === 2
-                    ? "TB (60%)"
-                    : "Thấp (40%)"}
+                    ? tr("TB (60%)", "Med (60%)")
+                    : tr("Thấp (40%)", "Low (40%)")}
                 </span>
               </div>
               <input
@@ -462,10 +462,10 @@ export default function MvdConvertApp() {
               </label>
               <div className="flex flex-col gap-0.5">
                 <span className="text-xs font-medium text-foreground">
-                  Xuất JPG 2048 (Chỉ RAW)
+                  {tr("Xuất JPG 2048 (Chỉ RAW)", "Export JPG 2048 (RAW Only)")}
                 </span>
                 <span className="text-[10px] text-muted-foreground leading-relaxed">
-                  Tự động chuyển file RAW sang JPG cạnh dài 2048px (nhẹ để gửi xem trước).
+                  {tr("Tự động chuyển file RAW sang JPG cạnh dài 2048px (nhẹ để gửi xem trước).", "Auto-converts RAW files to 2048px long-edge JPG (lightweight preview).")}
                 </span>
               </div>
             </div>
@@ -486,7 +486,7 @@ export default function MvdConvertApp() {
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-medium text-foreground flex items-center gap-1.5">
                       <CalendarClock size={13} className="text-primary shrink-0" />
-                      Sửa ngày chụp
+                      {tr("Sửa ngày chụp", "Fix Capture Date")}
                     </span>
                     {store.fixExifDate && store.inputFolders.length > 0 && (
                       <button
@@ -494,18 +494,18 @@ export default function MvdConvertApp() {
                         onClick={triggerExifScan}
                         disabled={store.isScanningExif}
                         className="text-[10px] text-primary hover:underline flex items-center gap-1 cursor-pointer"
-                        title="Quét lại metadata ngày chụp"
+                        title={tr("Quét lại metadata ngày chụp", "Rescan EXIF date metadata")}
                       >
                         <RefreshCw
                           size={10}
                           className={store.isScanningExif ? "animate-spin" : ""}
                         />
-                        {store.isScanningExif ? "Đang quét..." : "Quét lại"}
+                        {store.isScanningExif ? tr("Đang quét...", "Scanning...") : tr("Quét lại", "Rescan")}
                       </button>
                     )}
                   </div>
                   <span className="text-[10px] text-muted-foreground leading-relaxed">
-                    Phát hiện và sửa metadata ngày giờ chụp ảnh bất thường.
+                    {tr("Phát hiện và sửa metadata ngày giờ chụp ảnh bất thường.", "Detect and fix abnormal EXIF capture timestamps.")}
                   </span>
                 </div>
               </div>
@@ -517,33 +517,33 @@ export default function MvdConvertApp() {
                     <div className="p-2.5 rounded-lg bg-muted/30 border border-border/70 flex flex-col gap-1.5">
                       <div className="flex items-center justify-between text-[10px]">
                         <span className="font-semibold text-foreground">
-                          Phân loại EXIF ({scan.totalFiles} ảnh · {scan.scanDurationMs}ms)
+                          {tr("Phân loại EXIF (", "EXIF Breakdown (")}{scan.totalFiles} {tr("ảnh ·", "photos ·")} {scan.scanDurationMs}ms)
                         </span>
                         <span className="font-semibold text-primary">
-                          Sẽ sửa: {scan.fixableCount}
+                          {tr("Sẽ sửa:", "Will fix:")} {scan.fixableCount}
                         </span>
                       </div>
                       <div className="grid grid-cols-2 gap-1.5 text-[10px]">
                         <div className="px-2 py-1 rounded bg-background/60 border border-border/60 flex justify-between">
-                          <span className="text-muted-foreground">Hợp lệ:</span>
+                          <span className="text-muted-foreground">{tr("Hợp lệ:", "Valid:")}</span>
                           <span className="font-mono font-semibold text-foreground">
                             {scan.validCount}
                           </span>
                         </div>
                         <div className="px-2 py-1 rounded bg-background/60 border border-border/60 flex justify-between">
-                          <span className="text-muted-foreground">Bất thường:</span>
+                          <span className="text-muted-foreground">{tr("Bất thường:", "Abnormal:")}</span>
                           <span className="font-mono font-semibold text-amber-500">
                             {scan.abnormalCount}
                           </span>
                         </div>
                         <div className="px-2 py-1 rounded bg-background/60 border border-border/60 flex justify-between">
-                          <span className="text-muted-foreground">Thiếu EXIF:</span>
+                          <span className="text-muted-foreground">{tr("Thiếu EXIF:", "Missing EXIF:")}</span>
                           <span className="font-mono font-semibold text-foreground">
                             {scan.missingCount}
                           </span>
                         </div>
                         <div className="px-2 py-1 rounded bg-background/60 border border-border/60 flex justify-between">
-                          <span className="text-muted-foreground">Không hỗ trợ:</span>
+                          <span className="text-muted-foreground">{tr("Không hỗ trợ:", "Unsupported:")}</span>
                           <span className="font-mono font-semibold text-muted-foreground">
                             {scan.unsupportedCount}
                           </span>
@@ -557,8 +557,8 @@ export default function MvdConvertApp() {
                             className="text-[10px] text-primary hover:underline cursor-pointer"
                           >
                             {showSampleAnomalies
-                              ? "Ẩn chi tiết ảnh bất thường"
-                              : `Xem ${scan.sampleItems.length} mẫu phát hiện bất thường / thiếu EXIF`}
+                              ? tr("Ẩn chi tiết ảnh bất thường", "Hide anomalous photo details")
+                              : tr(`Xem ${scan.sampleItems.length} mẫu phát hiện bất thường / thiếu EXIF`, `Show ${scan.sampleItems.length} abnormal / missing EXIF sample(s)`)}
                           </button>
                           {showSampleAnomalies && (
                             <div className="mt-1.5 max-h-28 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
@@ -570,11 +570,11 @@ export default function MvdConvertApp() {
                                   <div className="flex justify-between gap-2 font-medium text-foreground">
                                     <span className="truncate">{item.fileName}</span>
                                     <span className="font-mono text-muted-foreground shrink-0">
-                                      {item.detectedDate || "Trống"}
+                                      {item.detectedDate || tr("Trống", "Empty")}
                                     </span>
                                   </div>
                                   <span className="text-[9px] text-muted-foreground">
-                                    {item.reasonText}
+                                    {localizeBackendMessage(item.reasonText, lang)}
                                   </span>
                                 </div>
                               ))}
@@ -587,14 +587,17 @@ export default function MvdConvertApp() {
 
                   {store.targetFormat === "BMP" && (
                     <div className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[10px] text-amber-500 leading-relaxed">
-                      Định dạng đích BMP không hỗ trợ chuẩn EXIF (Unsupported Metadata). Ảnh vẫn được chuyển đổi bình thường nhưng không ghi metadata.
+                      {tr(
+                        "Định dạng đích BMP không hỗ trợ chuẩn EXIF (Unsupported Metadata). Ảnh vẫn được chuyển đổi bình thường nhưng không ghi metadata.",
+                        "BMP output format does not support EXIF metadata. Images still convert normally without EXIF embedded."
+                      )}
                     </div>
                   )}
 
                   {/* Replacement Date Source */}
                   <div className="flex flex-col gap-1">
                     <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                      Nguồn ngày giờ thay thế
+                      {tr("Nguồn ngày giờ thay thế", "Replacement Date Source")}
                     </label>
                     <select
                       value={store.exifDateSource}
@@ -603,10 +606,10 @@ export default function MvdConvertApp() {
                       }
                       className="w-full px-2.5 py-1.5 bg-muted/40 hover:bg-muted/70 border border-border rounded-lg text-xs font-medium text-foreground outline-none cursor-pointer"
                     >
-                      <option value="current">1. Ngày hiện tại (Giờ hệ thống)</option>
-                      <option value="file_created">2. Ngày tạo file (Filesystem)</option>
-                      <option value="custom">3. Ngày tùy chỉnh</option>
-                      <option value="reference_photo">4. Ngày từ ảnh tham chiếu</option>
+                      <option value="current">{tr("1. Ngày hiện tại (Giờ hệ thống)", "1. Current date (System time)")}</option>
+                      <option value="file_created">{tr("2. Ngày tạo file (Filesystem)", "2. File timestamp (Filesystem)")}</option>
+                      <option value="custom">{tr("3. Ngày tùy chỉnh", "3. Custom date")}</option>
+                      <option value="reference_photo">{tr("4. Ngày từ ảnh tham chiếu", "4. From reference photo")}</option>
                     </select>
                   </div>
 
@@ -614,7 +617,7 @@ export default function MvdConvertApp() {
                   {store.exifDateSource === "file_created" && (
                     <div className="flex flex-col gap-1">
                       <label className="text-[10px] text-muted-foreground">
-                        Trường thời gian từ hệ thống file:
+                        {tr("Trường thời gian từ hệ thống file:", "Filesystem timestamp field:")}
                       </label>
                       <select
                         value={store.fileTimestampKind}
@@ -624,10 +627,10 @@ export default function MvdConvertApp() {
                         className="w-full px-2.5 py-1.5 bg-muted/40 border border-border rounded-lg text-[11px] text-foreground outline-none cursor-pointer"
                       >
                         <option value="created">
-                          File Creation Time (Ngày tạo file gốc)
+                          {tr("File Creation Time (Ngày tạo file gốc)", "File Creation Time")}
                         </option>
                         <option value="modified">
-                          File Modification Time (Ngày sửa đổi file)
+                          {tr("File Modification Time (Ngày sửa đổi file)", "File Modification Time")}
                         </option>
                       </select>
                     </div>
@@ -638,7 +641,7 @@ export default function MvdConvertApp() {
                     <div className="flex flex-col gap-1.5">
                       <div className="flex items-center justify-between">
                         <label className="text-[10px] text-muted-foreground">
-                          Nhập ngày giờ (YYYY-MM-DD HH:mm:ss):
+                          {tr("Nhập ngày giờ (YYYY-MM-DD HH:mm:ss):", "Enter date & time (YYYY-MM-DD HH:mm:ss):")}
                         </label>
                         <button
                           type="button"
@@ -655,7 +658,7 @@ export default function MvdConvertApp() {
                           }}
                           className="text-[10px] text-primary hover:underline cursor-pointer"
                         >
-                          Giờ hiện tại
+                          {tr("Giờ hiện tại", "Current time")}
                         </button>
                       </div>
                       <input
@@ -674,7 +677,7 @@ export default function MvdConvertApp() {
                           }
                           className="rounded border-border accent-primary cursor-pointer"
                         />
-                        <span>Giữ nguyên giờ:phút:giây gốc của ảnh (chỉ đổi ngày)</span>
+                        <span>{tr("Giữ nguyên giờ:phút:giây gốc của ảnh (chỉ đổi ngày)", "Keep photo's original time of day (change date only)")}</span>
                       </label>
                     </div>
                   )}
@@ -684,14 +687,14 @@ export default function MvdConvertApp() {
                     <div className="flex flex-col gap-1.5">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] text-muted-foreground">
-                          Ảnh mẫu tham chiếu:
+                          {tr("Ảnh mẫu tham chiếu:", "Reference sample photo:")}
                         </span>
                         <button
                           type="button"
                           onClick={handleSelectReferencePhoto}
                           className="px-2 py-1 bg-muted hover:bg-muted/80 border border-border rounded text-[10px] font-medium text-foreground cursor-pointer"
                         >
-                          Chọn ảnh mẫu
+                          {tr("Chọn ảnh mẫu", "Choose sample photo")}
                         </button>
                       </div>
                       {store.referencePhotoInfo ? (
@@ -706,7 +709,7 @@ export default function MvdConvertApp() {
                         </div>
                       ) : (
                         <span className="text-[10px] text-amber-500">
-                          Chưa chọn ảnh tham chiếu
+                          {tr("Chưa chọn ảnh tham chiếu", "No reference photo selected")}
                         </span>
                       )}
                     </div>
@@ -715,7 +718,7 @@ export default function MvdConvertApp() {
                   {/* Scope Selector */}
                   <div className="flex flex-col gap-1">
                     <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                      Phạm vi áp dụng
+                      {tr("Phạm vi áp dụng", "Correction Scope")}
                     </label>
                     <select
                       value={store.exifScope}
@@ -725,10 +728,10 @@ export default function MvdConvertApp() {
                       className="w-full px-2.5 py-1.5 bg-muted/40 hover:bg-muted/70 border border-border rounded-lg text-xs font-medium text-foreground outline-none cursor-pointer"
                     >
                       <option value="abnormal_only">
-                        Chỉ sửa ảnh bất thường (Giữ nguyên ảnh hợp lệ)
+                        {tr("Chỉ sửa ảnh bất thường (Giữ nguyên ảnh hợp lệ)", "Fix abnormal photos only (keep valid photos)")}
                       </option>
                       <option value="all_files">
-                        Đồng bộ toàn bộ ảnh trong danh sách
+                        {tr("Đồng bộ toàn bộ ảnh trong danh sách", "Sync all photos in the list")}
                       </option>
                     </select>
                   </div>
@@ -742,7 +745,7 @@ export default function MvdConvertApp() {
                         onChange={(e) => store.setIncludeMissingExif(e.target.checked)}
                         className="rounded border-border accent-primary cursor-pointer"
                       />
-                      <span>Sửa cả ảnh không có metadata ngày chụp</span>
+                      <span>{tr("Sửa cả ảnh không có metadata ngày chụp", "Also fix photos missing capture date metadata")}</span>
                     </label>
                   )}
                 </div>
@@ -756,7 +759,7 @@ export default function MvdConvertApp() {
           <div className="px-4 py-2.5 border-b border-border bg-muted/20 flex items-center gap-2">
             <FolderDown size={13} className="text-primary" />
             <h3 className="text-[11px] font-semibold uppercase tracking-wider text-foreground">
-              Xử lý & Xuất file
+              {tr("Xử lý & Xuất file", "Process & Export")}
             </h3>
           </div>
 
@@ -765,13 +768,13 @@ export default function MvdConvertApp() {
             <div className="flex flex-col gap-2 p-3 rounded-xl border border-border bg-card/60 shrink-0">
               <div className="flex items-center justify-between">
                 <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Thư mục lưu trữ
+                  {tr("Thư mục lưu trữ", "Output Directory")}
                 </label>
                 <button
                   onClick={handleSelectOutput}
                   className="flex items-center gap-1 px-2.5 py-1 bg-muted hover:bg-muted/80 text-foreground text-[10px] font-medium rounded-md transition-colors border border-border cursor-pointer"
                 >
-                  <FolderOpen size={11} /> Chọn folder
+                  <FolderOpen size={11} /> {tr("Chọn folder", "Choose folder")}
                 </button>
               </div>
 
@@ -785,7 +788,7 @@ export default function MvdConvertApp() {
                 </div>
               ) : (
                 <div className="text-[11px] text-amber-500 bg-amber-500/10 px-3 py-2 rounded-lg border border-amber-500/20 flex items-center gap-2 font-medium">
-                  <AlertCircle size={13} /> Chưa thiết lập thư mục xuất
+                  <AlertCircle size={13} /> {tr("Chưa thiết lập thư mục xuất", "Output folder not set")}
                 </div>
               )}
             </div>
@@ -798,7 +801,7 @@ export default function MvdConvertApp() {
                     {store.progress ? store.progress.percentage : 0}%
                   </span>
                   <span className="text-[10px] text-muted-foreground uppercase">
-                    Đã xử lý: {store.progress ? store.progress.current : 0} /{" "}
+                    {tr("Đã xử lý:", "Processed:")} {store.progress ? store.progress.current : 0} /{" "}
                     {store.progress ? store.progress.total : 0}
                   </span>
                 </div>
@@ -809,7 +812,7 @@ export default function MvdConvertApp() {
                       onClick={handleCancelConvert}
                       className="px-2 py-0.5 rounded bg-destructive/15 hover:bg-destructive/25 text-destructive text-[10px] font-medium flex items-center gap-1 cursor-pointer"
                     >
-                      <StopCircle size={11} /> Dừng
+                      <StopCircle size={11} /> {tr("Dừng", "Stop")}
                     </button>
                     <div className="animate-spin text-primary">
                       <Play size={14} />
@@ -829,8 +832,8 @@ export default function MvdConvertApp() {
 
               <div className="text-[10px] text-muted-foreground truncate h-3.5">
                 {store.progress?.currentFile
-                  ? `Đang convert: ${store.progress.currentFile.split(/[\\/]/).pop()}`
-                  : "Sẵn sàng hoạt động"}
+                  ? `${tr("Đang convert:", "Converting:")} ${store.progress.currentFile.split(/[\\/]/).pop()}`
+                  : tr("Sẵn sàng hoạt động", "Ready")}
               </div>
             </div>
 
@@ -838,7 +841,7 @@ export default function MvdConvertApp() {
             {report && (
               <div className="p-2.5 rounded-xl border border-border bg-card/60 flex flex-col gap-1.5 shrink-0 text-[10px]">
                 <div className="flex items-center justify-between font-semibold text-foreground">
-                  <span>Báo cáo kết quả ({report.totalDurationMs}ms)</span>
+                  <span>{tr("Báo cáo kết quả", "Result Summary")} ({report.totalDurationMs}ms)</span>
                   <span className="font-mono text-primary">
                     {report.throughputFilesPerSec} files/s
                   </span>
@@ -851,13 +854,13 @@ export default function MvdConvertApp() {
                     </span>
                   </div>
                   <div className="px-2 py-1 rounded bg-muted/30 border border-border/60 flex justify-between">
-                    <span className="text-muted-foreground">Đã sửa EXIF:</span>
+                    <span className="text-muted-foreground">{tr("Đã sửa EXIF:", "EXIF Fixed:")}</span>
                     <span className="font-mono font-semibold text-primary">
                       {report.metadataFixed}
                     </span>
                   </div>
                   <div className="px-2 py-1 rounded bg-muted/30 border border-border/60 flex justify-between">
-                    <span className="text-muted-foreground">Giữ nguyên:</span>
+                    <span className="text-muted-foreground">{tr("Giữ nguyên:", "Unchanged:")}</span>
                     <span className="font-mono font-semibold text-foreground">
                       {report.metadataKept}
                     </span>
@@ -865,13 +868,13 @@ export default function MvdConvertApp() {
                 </div>
                 {(report.metadataUnsupported > 0 || report.failedCount > 0) && (
                   <div className="flex items-center justify-between text-[10px] pt-0.5 text-muted-foreground">
-                    <span>Không hỗ trợ EXIF: {report.metadataUnsupported}</span>
+                    <span>{tr("Không hỗ trợ EXIF:", "EXIF Unsupported:")} {report.metadataUnsupported}</span>
                     <span
                       className={
                         report.failedCount > 0 ? "text-destructive font-semibold" : ""
                       }
                     >
-                      Thất bại: {report.failedCount}
+                      {tr("Thất bại:", "Failed:")} {report.failedCount}
                     </span>
                   </div>
                 )}
@@ -889,13 +892,13 @@ export default function MvdConvertApp() {
                     <span className="text-primary/70 mr-1.5 select-none">
                       [{new Date().toLocaleTimeString()}]
                     </span>
-                    {log}
+                    {localizeBackendMessage(log, lang)}
                   </div>
                 ))}
                 {store.logs.length === 0 && (
                   <div className="h-full flex flex-col items-center justify-center text-muted-foreground/70 gap-1">
                     <ScrollText size={18} className="opacity-30" />
-                    <span className="text-[10px]">Nhật ký xử lý sẽ hiển thị tại đây</span>
+                    <span className="text-[10px]">{tr("Nhật ký xử lý sẽ hiển thị tại đây", "Processing logs will appear here")}</span>
                   </div>
                 )}
               </div>
@@ -915,10 +918,10 @@ export default function MvdConvertApp() {
                 }`}
               >
                 {store.isConverting ? (
-                  <>Đang xử lý dữ liệu...</>
+                  <>{tr("Đang xử lý dữ liệu...", "Processing...")}</>
                 ) : (
                   <>
-                    <FileDown size={14} /> Bắt đầu chuyển đổi
+                    <FileDown size={14} /> {tr("Bắt đầu chuyển đổi", "Start Conversion")}
                   </>
                 )}
               </button>

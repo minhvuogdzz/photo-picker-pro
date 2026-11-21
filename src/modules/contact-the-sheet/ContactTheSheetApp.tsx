@@ -8,6 +8,7 @@ import {
 import { useAuthStore } from "@/core/stores/useAuthStore";
 import { checkAppAccess } from "@/core/services/appEntitlementPolicy";
 import { AppLockGateScreen } from "@/core/components/AppLockGateScreen";
+import { useTranslation } from "@/core/lib/i18n";
 import { useContactSheetStore } from "./stores/useContactSheetStore";
 import { BatchRunnerView } from "./components/BatchRunnerView";
 import { WorkspaceWizard } from "./components/WorkspaceWizard";
@@ -17,6 +18,7 @@ import { AuditHistoryView } from "./components/AuditHistoryView";
 type ActiveTab = "batch" | "workspace" | "drive" | "audit";
 
 export default function ContactTheSheetApp() {
+  const { tr } = useTranslation();
   const [activeTab, setActiveTab] = useState<ActiveTab>("batch");
   const [isDriveModalOpen, setIsDriveModalOpen] = useState(false);
 
@@ -72,7 +74,7 @@ export default function ContactTheSheetApp() {
         {/* Left: Segmented View Navigation */}
         <div
           role="tablist"
-          aria-label="Điều hướng Contact Sheet"
+          aria-label={tr("Điều hướng Contact Sheet", "Contact Sheet Navigation")}
           className="flex items-center gap-0.5 p-1 bg-foreground/[0.04] border border-border rounded-[12px] overflow-x-auto max-w-full custom-scrollbar shrink-0"
         >
           <button
@@ -87,7 +89,7 @@ export default function ContactTheSheetApp() {
             }`}
           >
             <Play size={13} strokeWidth={1.75} className={activeTab === "batch" ? "text-primary" : ""} />
-            <span>Thực thi Batch</span>
+            <span>{tr("Thực thi Batch", "Batch Runner")}</span>
           </button>
 
           <button
@@ -102,7 +104,7 @@ export default function ContactTheSheetApp() {
             }`}
           >
             <Sliders size={13} strokeWidth={1.75} className={activeTab === "workspace" ? "text-primary" : ""} />
-            <span>Cấu hình Sheet</span>
+            <span>{tr("Cấu hình Sheet", "Sheet Config")}</span>
           </button>
 
           <button
@@ -126,7 +128,7 @@ export default function ContactTheSheetApp() {
             }`}
           >
             <History size={13} strokeWidth={1.75} className={activeTab === "audit" ? "text-primary" : ""} />
-            <span>Nhật ký</span>
+            <span>{tr("Nhật ký", "History")}</span>
           </button>
         </div>
 
@@ -134,13 +136,13 @@ export default function ContactTheSheetApp() {
         <div className="flex items-center gap-2.5 min-w-0">
           {activeProfile && (
             <div className="hidden lg:flex items-center gap-1.5 text-[11.5px] text-muted-foreground truncate">
-              <span>Tab chính:</span>
+              <span>{tr("Tab chính:", "Primary Tab:")}</span>
               <span className="font-medium text-foreground">
                 {activeProfile.selectedTabTitle || "Edit 9/2026"}
               </span>
               {configuredTabCount > 1 && (
                 <span className="text-muted-foreground/70">
-                  ({configuredTabCount} tab đã áp dụng)
+                  {tr(`(${configuredTabCount} tab đã áp dụng)`, `(${configuredTabCount} tabs applied)`)}
                 </span>
               )}
             </div>
@@ -176,10 +178,10 @@ export default function ContactTheSheetApp() {
             />
             <span className="truncate max-w-[160px] text-foreground/85">
               {googleConnection.status === "CONNECTED"
-                ? googleConnection.accountEmail || "Đã kết nối Google"
+                ? googleConnection.accountEmail || tr("Đã kết nối Google", "Google Connected")
                 : googleConnection.status === "CONNECTING"
-                ? "Đang kết nối..."
-                : "Chưa kết nối Google"}
+                ? tr("Đang kết nối...", "Connecting...")
+                : tr("Chưa kết nối Google", "Google Not Connected")}
             </span>
           </div>
         </div>

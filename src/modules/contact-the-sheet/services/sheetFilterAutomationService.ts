@@ -6,6 +6,7 @@ import { sheetDiscoveryService } from "./sheetDiscoveryService.ts";
 import { sheetExtractorService } from "./sheetExtractorService.ts";
 import { sheetUpdateService } from "./sheetUpdateService.ts";
 import { hasGoogleFeatureAccess } from "../../../core/services/appEntitlementPolicy.ts";
+import { trText, getLocaleCode } from "../../../core/lib/i18n.ts";
 import type { CopyResult } from "../../../core/types/index.ts";
 
 export class SheetFilterAutomationService {
@@ -21,7 +22,7 @@ export class SheetFilterAutomationService {
     // If copyResult is provided and no files were copied or processed, skip update
     if (copyResult && copyResult.success_count === 0 && copyResult.skipped_count === 0) {
       console.log("[SheetFilterAutomation] No photos were copied or processed. Skipping sheet status update.");
-      return { success: false, message: "Không có file nào được chép thành công." };
+      return { success: false, message: trText("Không có file nào được chép thành công.", "No files were copied successfully.") };
     }
 
     const { sheetFilterContext: currentContext, setSheetUpdateStatus } = useAppStore.getState();
@@ -37,7 +38,7 @@ export class SheetFilterAutomationService {
 
     if (!targetProfile) {
       console.log("[SheetFilterAutomation] No Google Sheet profile found.");
-      return { success: false, message: "Chưa cấu hình hồ sơ Google Sheet." };
+      return { success: false, message: trText("Chưa cấu hình hồ sơ Google Sheet.", "Google Sheet profile not configured.") };
     }
 
     const isMock = Boolean(targetProfile.isMockSandbox || targetProfile.spreadsheetId?.startsWith("mock"));
@@ -47,7 +48,10 @@ export class SheetFilterAutomationService {
     const hasSheetAccess = hasGoogleFeatureAccess(session);
     if (!hasSheetAccess && !isMock) {
       googleCredentialManager.clearActiveSession();
-      const msg = "Gói sử dụng tính năng Google Sheet đã hết hạn. Vui lòng kích hoạt gói để tiếp tục.";
+      const msg = trText(
+        "Gói sử dụng tính năng Google Sheet đã hết hạn. Vui lòng kích hoạt gói để tiếp tục.",
+        "Your Google Sheet feature plan has expired. Please activate a plan to continue."
+      );
       setSheetUpdateStatus({
         state: "error",
         message: msg,
@@ -59,7 +63,10 @@ export class SheetFilterAutomationService {
     const isConnected = googleCredentialManager.isConnected();
     if (!isConnected && !isMock) {
       console.log("[SheetFilterAutomation] Google account not connected, skipping status update.");
-      const msg = "Tài khoản Google chưa được kết nối để cập nhật trang tính.";
+      const msg = trText(
+        "Tài khoản Google chưa được kết nối để cập nhật trang tính.",
+        "Google account is not connected to update the spreadsheet."
+      );
       setSheetUpdateStatus({
         state: "error",
         message: msg,
@@ -69,7 +76,7 @@ export class SheetFilterAutomationService {
 
     setSheetUpdateStatus({
       state: "updating",
-      message: "Đang liên hệ Google Sheets để cập nhật trạng thái...",
+      message: trText("Đang liên hệ Google Sheets để cập nhật trạng thái...", "Contacting Google Sheets to update status..."),
     });
 
     try {
@@ -113,7 +120,10 @@ export class SheetFilterAutomationService {
       }
 
       if (!targetRow) {
-        const msg = "Không tìm thấy dòng tương ứng của thư mục này trên Google Sheet để đổi trạng thái.";
+        const msg = trText(
+          "Không tìm thấy dòng tương ứng của thư mục này trên Google Sheet để đổi trạng thái.",
+          "Could not find a matching row for this folder on Google Sheet to update status."
+        );
         console.warn("[SheetFilterAutomation]", msg);
         setSheetUpdateStatus({
           state: "idle",
@@ -161,16 +171,22 @@ export class SheetFilterAutomationService {
       );
 
       if (updateRes.success) {
-        const successMsg = `Đã tự động đổi trạng thái thành "${targetVal}" trên Google Sheet (Tab ${targetTab}, Cột ${targetCol}, Dòng ${targetRow})`;
+        const successMsg = trText(
+          `Đã tự động đổi trạng thái thành "${targetVal}" trên Google Sheet (Tab ${targetTab}, Cột ${targetCol}, Dòng ${targetRow})`,
+          `Auto-updated status to "${targetVal}" on Google Sheet (Tab ${targetTab}, Col ${targetCol}, Row ${targetRow})`
+        );
         setSheetUpdateStatus({
           state: "success",
           message: successMsg,
-          updatedAt: new Date().toLocaleTimeString(),
+          updatedAt: new Date().toLocaleTimeString(getLocaleCode()),
         });
         console.log("[SheetFilterAutomation] SUCCESS:", successMsg);
         return { success: true, message: successMsg };
       } else {
-        const failMsg = `Cập nhật trạng thái Sheet thất bại: ${updateRes.error || "Lỗi không xác định"}`;
+        const failMsg = trText(
+          `Cập nhật trạng thái Sheet thất bại: ${updateRes.error || "Lỗi không xác định"}`,
+          `Failed to update Sheet status: ${updateRes.error || "Unknown error"}`
+        );
         setSheetUpdateStatus({
           state: "error",
           message: failMsg,
@@ -180,7 +196,7 @@ export class SheetFilterAutomationService {
       }
     } catch (err: any) {
       const errDetail = err?.message || String(err);
-      const errMsg = `Lỗi kết nối Google Sheet: ${errDetail}`;
+      const errMsg = trText(`Lỗi kết nối Google Sheet: ${errDetail}`, `Google Sheet connection error: ${errDetail}`);
       console.error("[SheetFilterAutomation] EXCEPTION:", err);
       setSheetUpdateStatus({
         state: "error",

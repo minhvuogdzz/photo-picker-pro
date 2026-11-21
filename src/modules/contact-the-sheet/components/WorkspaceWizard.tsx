@@ -29,6 +29,7 @@ import { sheetDiscoveryService } from "../services/sheetDiscoveryService";
 import { schemaMappingService } from "../services/schemaMappingService";
 import { AnalysisReportCard } from "./AnalysisReportCard";
 import { SheetTabManager } from "./SheetTabManager";
+import { useTranslation } from "@/core/lib/i18n";
 import type {
   TabAnalysisResult,
   FieldMapping,
@@ -41,6 +42,7 @@ import type {
 } from "../types";
 
 export function WorkspaceWizard() {
+  const { tr } = useTranslation();
   const activeProfile = useContactSheetStore((s) => s.activeProfile);
   const saveProfile = useContactSheetStore((s) => s.saveProfile);
   const googleConnection = useContactSheetStore((s) => s.googleConnection);
@@ -105,7 +107,7 @@ export function WorkspaceWizard() {
     const letter = newColLetter.trim().toUpperCase();
     const header = newColHeader.trim();
     if (!letter || !header) {
-      alert("Vui lòng nhập chữ cái cột (ví dụ: T) và tiêu đề cột");
+      alert(tr("Vui lòng nhập chữ cái cột (ví dụ: T) và tiêu đề cột", "Please enter column letter (e.g., T) and column header"));
       return;
     }
     let colIdx = 0;
@@ -137,7 +139,7 @@ export function WorkspaceWizard() {
   };
 
   const handleResetToStandard19 = () => {
-    if (confirm("Khôi phục đầy đủ 19 cột chuẩn Studio (A - S)?")) {
+    if (confirm(tr("Khôi phục đầy đủ 19 cột chuẩn Studio (A - S)?", "Reset to standard 19 Studio columns (A - S)?"))) {
       setFieldMappings(STANDARD_19_STUDIO_MAPPINGS);
     }
   };
@@ -151,7 +153,7 @@ export function WorkspaceWizard() {
       }
     } catch (err) {
       console.error("Connect Google error:", err);
-      alert(`Lỗi kết nối Google: ${err}`);
+      alert(`${tr("Lỗi kết nối Google:", "Google connection error:")} ${err}`);
     } finally {
       setIsConnectingGoogle(false);
     }
@@ -208,7 +210,7 @@ export function WorkspaceWizard() {
       console.error("Survey tab error:", err);
       const msg = err?.message || String(err);
       if (msg.includes("GOOGLE_REFRESH_TOKEN_NOT_FOUND") || msg.includes("GOOGLE_NOT_CONNECTED")) {
-        alert("Phiên làm việc Google đã hết hạn hoặc chưa kết nối. Vui lòng bấm 'Kết nối Google' để đăng nhập lại.");
+        alert(tr("Phiên làm việc Google đã hết hạn hoặc chưa kết nối. Vui lòng bấm 'Kết nối Google' để đăng nhập lại.", "Google session expired or not connected. Click 'Connect Google' to sign in again."));
       } else {
         alert(msg);
       }
@@ -219,7 +221,7 @@ export function WorkspaceWizard() {
 
   const handleAnalyzeSheet = async () => {
     if (googleConnection.status !== "CONNECTED" && !googleCredentialManager.isConnected()) {
-      alert("Vui lòng bấm 'Kết nối Google' trước khi khảo sát bảng tính.");
+      alert(tr("Vui lòng bấm 'Kết nối Google' trước khi khảo sát bảng tính.", "Please click 'Connect Google' before inspecting the spreadsheet."));
       return;
     }
 
@@ -240,7 +242,7 @@ export function WorkspaceWizard() {
       console.error("Analyze sheet error:", err);
       const msg = err?.message || String(err);
       if (msg.includes("GOOGLE_REFRESH_TOKEN_NOT_FOUND") || msg.includes("GOOGLE_NOT_CONNECTED")) {
-        alert("Phiên làm việc Google đã hết hạn hoặc chưa kết nối. Vui lòng bấm 'Kết nối Google' để đăng nhập lại.");
+        alert(tr("Phiên làm việc Google đã hết hạn hoặc chưa kết nối. Vui lòng bấm 'Kết nối Google' để đăng nhập lại.", "Google session expired or not connected. Click 'Connect Google' to sign in again."));
       } else {
         alert(msg);
       }
@@ -256,7 +258,10 @@ export function WorkspaceWizard() {
   const handleCopyCurrentConfigToAllTabs = () => {
     if (availableTabs.length <= 1) return;
     const confirmCopy = window.confirm(
-      `Áp dụng cấu hình cột và phạm vi hàng từ tab "${selectedTab?.title || "hiện tại"}" cho toàn bộ ${availableTabs.length} tab trong bảng tính?\n(Bạn có thể bấm "Hoàn tác" bất cứ lúc nào nếu muốn hủy)`
+      tr(
+        `Áp dụng cấu hình cột và phạm vi hàng từ tab "${selectedTab?.title || "hiện tại"}" cho toàn bộ ${availableTabs.length} tab trong bảng tính?\n(Bạn có thể bấm "Hoàn tác" bất cứ lúc nào nếu muốn hủy)`,
+        `Apply column config & row range from "${selectedTab?.title || "current"}" to all ${availableTabs.length} tabs?\n(You can click "Undo" anytime to revert)`
+      )
     );
     if (!confirmCopy) return;
 
@@ -298,7 +303,7 @@ export function WorkspaceWizard() {
 
     if (isCurrentlyConfigured) {
       if (Object.keys(nextConfigs).length <= 1) {
-        alert("Cần giữ lại ít nhất 1 tab được áp dụng cấu hình.");
+        alert(tr("Cần giữ lại ít nhất 1 tab được áp dụng cấu hình.", "At least 1 configured tab must remain enabled."));
         return;
       }
       delete nextConfigs[tab.title];
@@ -399,7 +404,12 @@ export function WorkspaceWizard() {
 
     setTabConfigs(updatedTabConfigs);
     saveProfile(newProfile);
-    alert(`Đã lưu cấu hình cho tab "${targetTabTitle}" (${Object.keys(updatedTabConfigs).length} tab hiển thị ở Thực thi Batch).`);
+    alert(
+      tr(
+        `Đã lưu cấu hình cho tab "${targetTabTitle}" (${Object.keys(updatedTabConfigs).length} tab hiển thị ở Thực thi Batch).`,
+        `Saved config for "${targetTabTitle}" (${Object.keys(updatedTabConfigs).length} tab(s) shown in Batch Runner).`
+      )
+    );
   };
 
   const configuredTabCount = Object.keys(tabConfigs).length;
@@ -410,10 +420,10 @@ export function WorkspaceWizard() {
       <div className="flex flex-wrap items-center justify-between p-2.5 bg-card border border-border rounded-2xl shrink-0 w-full min-w-0 gap-2 shadow-xs">
         <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar">
           {[
-            { step: 1, label: "Kết nối & Bảng tính" },
-            { step: 2, label: "Khảo sát Tiêu đề & Tab" },
-            { step: 3, label: "Phân quyền & Ánh xạ cột" },
-            { step: 4, label: "Giá trị tự động & Lưu" },
+            { step: 1, label: tr("Kết nối & Bảng tính", "Connect & Spreadsheet") },
+            { step: 2, label: tr("Khảo sát Tiêu đề & Tab", "Inspect Header & Tabs") },
+            { step: 3, label: tr("Phân quyền & Ánh xạ cột", "Permissions & Columns") },
+            { step: 4, label: tr("Giá trị tự động & Lưu", "Auto Values & Save") },
           ].map((s) => {
             const active = wizardStep === s.step;
             return (
@@ -449,10 +459,10 @@ export function WorkspaceWizard() {
               type="button"
               onClick={handleUndoCopyAllTabs}
               className="h-8 px-3 rounded-xl bg-foreground/[0.04] hover:bg-foreground/[0.08] border border-border text-foreground text-[11.5px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="Hoàn tác việc áp dụng cho tất cả các tab — chỉ giữ lại tab đang làm việc"
+              title={tr("Hoàn tác việc áp dụng cho tất cả các tab — chỉ giữ lại tab đang làm việc", "Undo apply-all — keep current working tab only")}
             >
               <RotateCcw size={12.5} strokeWidth={1.75} />
-              <span>Hoàn tác áp dụng tất cả ({configuredTabCount} tab)</span>
+              <span>{tr(`Hoàn tác áp dụng tất cả (${configuredTabCount} tab)`, `Undo Apply All (${configuredTabCount} tabs)`)}</span>
             </button>
           )}
           <button
@@ -461,7 +471,7 @@ export function WorkspaceWizard() {
             className="btn-base btn-primary h-8 px-3.5 rounded-xl text-[11.5px]"
           >
             <Save size={13} strokeWidth={1.75} />
-            <span>Lưu cấu hình</span>
+            <span>{tr("Lưu cấu hình", "Save Config")}</span>
           </button>
         </div>
       </div>
@@ -478,12 +488,12 @@ export function WorkspaceWizard() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-[13.5px] text-foreground">
-                    1. Tài khoản Google Studio
+                    {tr("1. Tài khoản Google Studio", "1. Studio Google Account")}
                   </h3>
                   <p className="text-[11.5px] text-muted-foreground">
                     {googleConnection.status === "CONNECTED"
-                      ? `Đã kết nối: ${googleConnection.accountEmail || "Tài khoản Google"}`
-                      : "Kết nối tài khoản Google để đối soát Sheet và lấy link Drive."}
+                      ? `${tr("Đã kết nối:", "Connected:")} ${googleConnection.accountEmail || tr("Tài khoản Google", "Google Account")}`
+                      : tr("Kết nối tài khoản Google để đối soát Sheet và lấy link Drive.", "Connect your Google account to sync Sheets and resolve Drive links.")}
                   </p>
                 </div>
               </div>
@@ -492,7 +502,7 @@ export function WorkspaceWizard() {
                 <div className="flex items-center gap-2">
                   <span className="h-7 px-2.5 rounded-full bg-foreground/[0.04] border border-border text-[11.5px] text-foreground flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-success" />
-                    <span>Đang kết nối</span>
+                    <span>{tr("Đang kết nối", "Connected")}</span>
                   </span>
                   <button
                     type="button"
@@ -500,7 +510,7 @@ export function WorkspaceWizard() {
                     className="h-7 px-2.5 bg-foreground/[0.04] hover:bg-destructive/10 text-muted-foreground hover:text-destructive border border-border rounded-lg text-[11.5px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <LogOut size={12.5} strokeWidth={1.75} />
-                    <span>Đổi tài khoản</span>
+                    <span>{tr("Đổi tài khoản", "Switch Account")}</span>
                   </button>
                 </div>
               ) : (
@@ -511,7 +521,7 @@ export function WorkspaceWizard() {
                   className="btn-base btn-primary h-8 px-4 rounded-xl text-[12px]"
                 >
                   <Cloud size={14} strokeWidth={1.75} />
-                  <span>{isConnectingGoogle ? "Đang mở trình duyệt..." : "Kết nối Google"}</span>
+                  <span>{isConnectingGoogle ? tr("Đang mở trình duyệt...", "Opening browser...") : tr("Kết nối Google", "Connect Google")}</span>
                 </button>
               )}
             </div>
@@ -521,10 +531,10 @@ export function WorkspaceWizard() {
           <div className="p-5 rounded-2xl bg-card border border-border flex flex-col gap-3 shadow-xs">
             <div>
               <h3 className="font-semibold text-[13.5px] text-foreground">
-                2. Liên kết Google Sheet Studio
+                {tr("2. Liên kết Google Sheet Studio", "2. Link Studio Google Sheet")}
               </h3>
               <p className="text-[11.5px] text-muted-foreground mt-0.5">
-                Dán đường link bảng tính Google Sheets cần đối soát:
+                {tr("Dán đường link bảng tính Google Sheets cần đối soát:", "Paste the Google Sheets URL to sync:")}
               </p>
             </div>
 
@@ -542,7 +552,7 @@ export function WorkspaceWizard() {
 
             <div className="flex items-center justify-between mt-1">
               <span className="text-[11px] text-muted-foreground">
-                Tự động lưu đường dẫn bảng tính cho lần mở tiếp theo.
+                {tr("Tự động lưu đường dẫn bảng tính cho lần mở tiếp theo.", "Spreadsheet link is saved automatically for future launches.")}
               </span>
               <button
                 type="button"
@@ -551,7 +561,7 @@ export function WorkspaceWizard() {
                 className="btn-base btn-primary h-8 px-4 rounded-xl text-[12px]"
               >
                 <Search size={13.5} strokeWidth={1.75} />
-                <span>{isAnalyzing ? "Đang khảo sát..." : "Khảo sát bảng tính"}</span>
+                <span>{isAnalyzing ? tr("Đang khảo sát...", "Inspecting...") : tr("Khảo sát bảng tính", "Inspect Spreadsheet")}</span>
               </button>
             </div>
 
@@ -560,10 +570,10 @@ export function WorkspaceWizard() {
               <div className="mt-2 pt-3 border-t border-border flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-[12px] text-foreground">
-                    Các trang tính trong bảng ({availableTabs.length} tab):
+                    {tr(`Các trang tính trong bảng (${availableTabs.length} tab):`, `Tabs in spreadsheet (${availableTabs.length}):`)}
                   </span>
                   <span className="text-[11px] text-muted-foreground">
-                    Đã áp dụng Batch: {configuredTabCount || 1} tab
+                    {tr("Đã áp dụng Batch:", "Applied to Batch:")} {configuredTabCount || 1} tab
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto custom-scrollbar pr-1">
@@ -588,10 +598,10 @@ export function WorkspaceWizard() {
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
                           {isConfigured && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-primary" title="Đã áp dụng vào Thực thi Batch" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary" title={tr("Đã áp dụng vào Thực thi Batch", "Applied to Batch Runner")} />
                           )}
                           <span className="text-[10.5px] text-muted-foreground tabular-nums">
-                            {t.columnCount} cột
+                            {t.columnCount} {tr("cột", "cols")}
                           </span>
                         </div>
                       </button>
@@ -608,7 +618,7 @@ export function WorkspaceWizard() {
               onClick={() => setWizardStep(2)}
               className="btn-base btn-secondary h-8 px-4 rounded-xl text-[12px]"
             >
-              <span>Tiếp tục: Khảo sát Tiêu đề & Tab</span>
+              <span>{tr("Tiếp tục: Khảo sát Tiêu đề & Tab", "Next: Inspect Header & Tabs")}</span>
               <ArrowRight size={13.5} />
             </button>
           </div>
@@ -629,7 +639,7 @@ export function WorkspaceWizard() {
               onUndoCopyAllTabs={handleUndoCopyAllTabs}
               onToggleTabConfig={handleToggleTabConfig}
               canUndoCopyAll={Boolean(previousTabConfigurationsSnapshot) || configuredTabCount > 1}
-              subtitle="Chọn tab cần áp dụng cấu hình. Chỉ những tab được áp dụng tại đây mới hiển thị ở phần Thực thi Batch."
+              subtitle={tr("Chọn tab cần áp dụng cấu hình. Chỉ những tab được áp dụng tại đây mới hiển thị ở phần Thực thi Batch.", "Pick tabs to configure. Only tabs enabled here will appear in Batch Runner.")}
             />
           )}
 
@@ -638,10 +648,10 @@ export function WorkspaceWizard() {
             <div className="p-4 rounded-2xl bg-card border border-border flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-col gap-0.5">
                 <span className="text-[12.5px] font-semibold text-foreground">
-                  Đang áp dụng cấu hình cho {configuredTabCount} tab trong Thực thi Batch
+                  {tr(`Đang áp dụng cấu hình cho ${configuredTabCount} tab trong Thực thi Batch`, `Applying config to ${configuredTabCount} tabs in Batch Runner`)}
                 </span>
                 <span className="text-[11.5px] text-muted-foreground">
-                  Nếu bạn lỡ tay ấn "Áp dụng cho tất cả Tab", bấm nút bên cạnh để hoàn tác và chỉ giữ lại tab chính ({activeProfile?.selectedTabTitle}).
+                  {tr('Nếu bạn lỡ tay ấn "Áp dụng cho tất cả Tab", bấm nút bên cạnh để hoàn tác và chỉ giữ lại tab chính', 'If you accidentally clicked "Apply to All Tabs", click Undo to keep only the primary tab')} ({activeProfile?.selectedTabTitle}).
                 </span>
               </div>
               <button
@@ -650,7 +660,7 @@ export function WorkspaceWizard() {
                 className="h-8 px-3 rounded-xl bg-primary/10 hover:bg-primary/15 border border-primary/25 text-primary text-[11.5px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <RotateCcw size={13} strokeWidth={1.75} />
-                <span>Hoàn tác ({configuredTabCount} → 1 tab)</span>
+                <span>{tr(`Hoàn tác (${configuredTabCount} → 1 tab)`, `Undo (${configuredTabCount} → 1 tab)`)}</span>
               </button>
             </div>
           )}
@@ -666,10 +676,10 @@ export function WorkspaceWizard() {
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <h3 className="font-semibold text-[13.5px] text-foreground">
-                    Cấu hình Dòng Tiêu đề (Header Row)
+                    {tr("Cấu hình Dòng Tiêu đề (Header Row)", "Header Row Configuration")}
                   </h3>
                   <p className="text-[11.5px] text-muted-foreground mt-0.5">
-                    Tab đang chọn: <span className="text-foreground font-medium">{activeProfile?.selectedTabTitle || "Edit 9/2026"}</span>
+                    {tr("Tab đang chọn:", "Selected tab:")} <span className="text-foreground font-medium">{activeProfile?.selectedTabTitle || "Edit 9/2026"}</span>
                   </p>
                 </div>
                 <button
@@ -679,12 +689,12 @@ export function WorkspaceWizard() {
                   className="h-8 px-3 bg-foreground/[0.04] hover:bg-foreground/[0.08] text-foreground border border-border text-[11.5px] font-medium rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <RotateCw size={12.5} className={isAnalyzing ? "animate-spin" : ""} />
-                  <span>{isAnalyzing ? "Đang đồng bộ..." : "Khảo sát các tab từ Sheet"}</span>
+                  <span>{isAnalyzing ? tr("Đang đồng bộ...", "Syncing...") : tr("Khảo sát các tab từ Sheet", "Inspect Sheet Tabs")}</span>
                 </button>
               </div>
 
               <div className="flex items-center gap-3 p-3 bg-background/50 border border-border rounded-xl">
-                <span className="text-[12px] font-medium text-foreground">Dòng tiêu đề hiện tại:</span>
+                <span className="text-[12px] font-medium text-foreground">{tr("Dòng tiêu đề hiện tại:", "Current header row:")}</span>
                 <input
                   type="number"
                   min={1}
@@ -698,13 +708,13 @@ export function WorkspaceWizard() {
                   className="w-20 h-8 px-2.5 bg-card border border-border rounded-lg text-foreground font-medium text-[12px] focus:outline-none focus:border-primary"
                 />
                 <span className="text-[11.5px] text-muted-foreground">
-                  (Dòng chứa tên cột: Ngày, Giờ, Tên khách, Tên file, Tên Edit, Link Edit...)
+                  {tr("(Dòng chứa tên cột: Ngày, Giờ, Tên khách, Tên file, Tên Edit, Link Edit...)", "(Row containing column titles: Date, Time, Customer, File Name, Editor, Edit Link...)")}
                 </span>
               </div>
 
               <div className="flex flex-col gap-2">
                 <span className="text-[11.5px] font-medium text-muted-foreground">
-                  Các cột đã ánh xạ ({fieldMappings.length} cột):
+                  {tr(`Các cột đã ánh xạ (${fieldMappings.length} cột):`, `Mapped columns (${fieldMappings.length} cols):`)}
                 </span>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                   {fieldMappings.map((m) => (
@@ -727,7 +737,7 @@ export function WorkspaceWizard() {
                             : "bg-foreground/[0.04] text-muted-foreground"
                         }`}
                       >
-                        {m.permission === "READ_WRITE" ? "Ghi" : "Đọc"}
+                        {m.permission === "READ_WRITE" ? tr("Ghi", "Write") : tr("Đọc", "Read")}
                       </span>
                     </div>
                   ))}
@@ -743,14 +753,14 @@ export function WorkspaceWizard() {
               className="h-8 px-3.5 rounded-xl border border-border text-muted-foreground hover:text-foreground text-[12px] font-medium flex items-center gap-1.5 cursor-pointer"
             >
               <ArrowLeft size={13.5} />
-              <span>Quay lại</span>
+              <span>{tr("Quay lại", "Back")}</span>
             </button>
             <button
               type="button"
               onClick={() => setWizardStep(3)}
               className="btn-base btn-secondary h-8 px-4 rounded-xl text-[12px]"
             >
-              <span>Tiếp tục: Phân quyền & Ánh xạ cột</span>
+              <span>{tr("Tiếp tục: Phân quyền & Ánh xạ cột", "Next: Permissions & Column Mapping")}</span>
               <ArrowRight size={13.5} />
             </button>
           </div>
@@ -771,7 +781,7 @@ export function WorkspaceWizard() {
               onUndoCopyAllTabs={handleUndoCopyAllTabs}
               onToggleTabConfig={handleToggleTabConfig}
               canUndoCopyAll={Boolean(previousTabConfigurationsSnapshot) || configuredTabCount > 1}
-              subtitle="Cấu hình ánh xạ cột riêng cho từng trang tính hoặc chọn các tab cần áp dụng."
+              subtitle={tr("Cấu hình ánh xạ cột riêng cho từng trang tính hoặc chọn các tab cần áp dụng.", "Customize column mappings per worksheet or select tabs to apply.")}
             />
           )}
 
@@ -779,13 +789,13 @@ export function WorkspaceWizard() {
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="min-w-0">
               <h3 className="font-semibold text-[13.5px] text-foreground flex items-center gap-2">
-                <span>Phân quyền & Khớp trường dữ liệu</span>
+                <span>{tr("Phân quyền & Khớp trường dữ liệu", "Permissions & Field Mapping")}</span>
                 <span className="px-2 py-0.5 rounded-md bg-foreground/[0.05] text-muted-foreground text-[11px] font-medium">
-                  {fieldMappings.length} cột
+                  {fieldMappings.length} {tr("cột", "cols")}
                 </span>
               </h3>
               <p className="text-[11.5px] text-muted-foreground mt-0.5">
-                Chỉ định ý nghĩa từng cột. Các cột công thức được khóa chỉ đọc tự động để bảo vệ bảng tính.
+                {tr("Chỉ định ý nghĩa từng cột. Các cột công thức được khóa chỉ đọc tự động để bảo vệ bảng tính.", "Assign semantic role for each column. Formula columns are auto-locked READ_ONLY for safety.")}
               </p>
             </div>
 
@@ -796,7 +806,7 @@ export function WorkspaceWizard() {
                 className="h-8 px-3 bg-foreground/[0.04] hover:bg-foreground/[0.08] text-foreground border border-border rounded-xl text-[11.5px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Plus size={13} />
-                <span>Thêm cột</span>
+                <span>{tr("Thêm cột", "Add Column")}</span>
               </button>
 
               <button
@@ -805,7 +815,7 @@ export function WorkspaceWizard() {
                 className="h-8 px-3 bg-foreground/[0.04] hover:bg-foreground/[0.08] text-foreground border border-border rounded-xl text-[11.5px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <RefreshCw size={12} />
-                <span>Chuẩn 19 cột Studio</span>
+                <span>{tr("Chuẩn 19 cột Studio", "Reset 19 Studio Columns")}</span>
               </button>
             </div>
           </div>
@@ -814,11 +824,11 @@ export function WorkspaceWizard() {
             <div className="p-4 bg-card border border-border rounded-2xl flex flex-col gap-3 shadow-xs">
               <div className="flex items-center justify-between">
                 <h4 className="text-[12.5px] font-semibold text-foreground">
-                  Thêm cột tùy chỉnh
+                  {tr("Thêm cột tùy chỉnh", "Add Custom Column")}
                 </h4>
                 <button
                   type="button"
-                  aria-label="Đóng"
+                  aria-label={tr("Đóng", "Close")}
                   onClick={() => setIsAddingColumn(false)}
                   className="text-muted-foreground hover:text-foreground p-1 rounded-lg cursor-pointer"
                 >
@@ -828,7 +838,7 @@ export function WorkspaceWizard() {
 
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-[12px]">
                 <div className="flex flex-col gap-1">
-                  <label className="font-medium text-foreground">Chữ cái cột:</label>
+                  <label className="font-medium text-foreground">{tr("Chữ cái cột:", "Column letter:")}</label>
                   <input
                     type="text"
                     placeholder="T"
@@ -839,10 +849,10 @@ export function WorkspaceWizard() {
                 </div>
 
                 <div className="flex flex-col gap-1 sm:col-span-2">
-                  <label className="font-medium text-foreground">Tiêu đề cột trên Sheet:</label>
+                  <label className="font-medium text-foreground">{tr("Tiêu đề cột trên Sheet:", "Sheet column header:")}</label>
                   <input
                     type="text"
-                    placeholder="Ghi chú thêm..."
+                    placeholder={tr("Ghi chú thêm...", "Extra notes...")}
                     value={newColHeader}
                     onChange={(e) => setNewColHeader(e.target.value)}
                     className="h-8 px-3 bg-background border border-border rounded-lg text-[12px] text-foreground focus:outline-none focus:border-primary"
@@ -850,21 +860,21 @@ export function WorkspaceWizard() {
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="font-medium text-foreground">Trường ngữ nghĩa:</label>
+                  <label className="font-medium text-foreground">{tr("Trường ngữ nghĩa:", "Semantic field:")}</label>
                   <select
                     value={newColSemantic}
                     onChange={(e) => setNewColSemantic(e.target.value as SemanticField)}
                     className="h-8 px-2.5 bg-background border border-border rounded-lg text-[12px] text-foreground focus:outline-none focus:border-primary"
                   >
-                    <option value="NOTES">-- Bỏ qua / Ghi chú --</option>
-                    <option value="CUSTOMER_NAME">Tên khách hàng</option>
-                    <option value="JOB_FOLDER_NAME">Tên file / Job Folder</option>
-                    <option value="SHOOT_DATE">Ngày chụp</option>
-                    <option value="SHOOT_TIME">Giờ chụp</option>
-                    <option value="EDITOR">Tên Editor</option>
-                    <option value="DELIVERY_LINK">Link Drive Trả ảnh</option>
-                    <option value="PHOTO_PICK_STATUS">Trạng thái lọc ảnh</option>
-                    <option value="EDIT_COMPLETED_AT">Thời gian hoàn thành</option>
+                    <option value="NOTES">{tr("-- Bỏ qua / Ghi chú --", "-- Ignore / Notes --")}</option>
+                    <option value="CUSTOMER_NAME">{tr("Tên khách hàng", "Customer Name")}</option>
+                    <option value="JOB_FOLDER_NAME">{tr("Tên file / Job Folder", "File / Job Folder Name")}</option>
+                    <option value="SHOOT_DATE">{tr("Ngày chụp", "Shoot Date")}</option>
+                    <option value="SHOOT_TIME">{tr("Giờ chụp", "Shoot Time")}</option>
+                    <option value="EDITOR">{tr("Tên Editor", "Editor Name")}</option>
+                    <option value="DELIVERY_LINK">{tr("Link Drive Trả ảnh", "Delivery Drive Link")}</option>
+                    <option value="PHOTO_PICK_STATUS">{tr("Trạng thái lọc ảnh", "Photo Pick Status")}</option>
+                    <option value="EDIT_COMPLETED_AT">{tr("Thời gian hoàn thành", "Completion Time")}</option>
                   </select>
                 </div>
               </div>
@@ -875,14 +885,14 @@ export function WorkspaceWizard() {
                   onClick={() => setIsAddingColumn(false)}
                   className="h-7 px-3 text-[11.5px] text-muted-foreground hover:text-foreground rounded-lg cursor-pointer"
                 >
-                  Hủy
+                  {tr("Hủy", "Cancel")}
                 </button>
                 <button
                   type="button"
                   onClick={handleAddColumn}
                   className="btn-base btn-primary h-7 px-3.5 rounded-lg text-[11.5px]"
                 >
-                  Thêm cột
+                  {tr("Thêm cột", "Add Column")}
                 </button>
               </div>
             </div>
@@ -893,13 +903,13 @@ export function WorkspaceWizard() {
             <table className="w-full min-w-[720px] text-left text-[12px] border-collapse">
               <thead>
                 <tr className="border-b border-border bg-foreground/[0.03] text-muted-foreground font-medium">
-                  <th className="py-2.5 px-4 w-12 text-center font-medium">Cột</th>
-                  <th className="py-2.5 px-4 font-medium">Tiêu đề trên Sheet</th>
-                  <th className="py-2.5 px-4 font-medium">Loại ô</th>
-                  <th className="py-2.5 px-4 font-medium">Trường dữ liệu</th>
-                  <th className="py-2.5 px-4 font-medium">Quyền hạn</th>
-                  <th className="py-2.5 px-4 font-medium">Chính sách ghi</th>
-                  <th className="py-2.5 px-3 w-12 text-center font-medium">Xóa</th>
+                  <th className="py-2.5 px-4 w-12 text-center font-medium">{tr("Cột", "Col")}</th>
+                  <th className="py-2.5 px-4 font-medium">{tr("Tiêu đề trên Sheet", "Sheet Header")}</th>
+                  <th className="py-2.5 px-4 font-medium">{tr("Loại ô", "Cell Type")}</th>
+                  <th className="py-2.5 px-4 font-medium">{tr("Trường dữ liệu", "Data Field")}</th>
+                  <th className="py-2.5 px-4 font-medium">{tr("Quyền hạn", "Permission")}</th>
+                  <th className="py-2.5 px-4 font-medium">{tr("Chính sách ghi", "Write Policy")}</th>
+                  <th className="py-2.5 px-3 w-12 text-center font-medium">{tr("Xóa", "Del")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -921,11 +931,11 @@ export function WorkspaceWizard() {
                       <td className="py-2 px-4">
                         {m.isFormulaDerived ? (
                           <span className="px-2 py-0.5 rounded-md bg-foreground/[0.05] text-muted-foreground text-[11px]">
-                            Công thức
+                            {tr("Công thức", "Formula")}
                           </span>
                         ) : (
                           <span className="text-muted-foreground text-[11px]">
-                            Thường
+                            {tr("Thường", "Standard")}
                           </span>
                         )}
                       </td>
@@ -940,15 +950,15 @@ export function WorkspaceWizard() {
                           }}
                           className="h-7 bg-background border border-border rounded-lg px-2 text-[11.5px] focus:outline-none focus:border-primary text-foreground"
                         >
-                          <option value="NOTES">-- Bỏ qua / Ghi chú --</option>
-                          <option value="CUSTOMER_NAME">Tên khách hàng</option>
-                          <option value="JOB_FOLDER_NAME">Tên file / Job Folder</option>
-                          <option value="SHOOT_DATE">Ngày chụp</option>
-                          <option value="SHOOT_TIME">Giờ chụp</option>
-                          <option value="EDITOR">Tên Editor</option>
-                          <option value="DELIVERY_LINK">Link Drive Trả ảnh</option>
-                          <option value="PHOTO_PICK_STATUS">Trạng thái lọc ảnh</option>
-                          <option value="EDIT_COMPLETED_AT">Thời gian hoàn thành</option>
+                          <option value="NOTES">{tr("-- Bỏ qua / Ghi chú --", "-- Ignore / Notes --")}</option>
+                          <option value="CUSTOMER_NAME">{tr("Tên khách hàng", "Customer Name")}</option>
+                          <option value="JOB_FOLDER_NAME">{tr("Tên file / Job Folder", "File / Job Folder Name")}</option>
+                          <option value="SHOOT_DATE">{tr("Ngày chụp", "Shoot Date")}</option>
+                          <option value="SHOOT_TIME">{tr("Giờ chụp", "Shoot Time")}</option>
+                          <option value="EDITOR">{tr("Tên Editor", "Editor Name")}</option>
+                          <option value="DELIVERY_LINK">{tr("Link Drive Trả ảnh", "Delivery Drive Link")}</option>
+                          <option value="PHOTO_PICK_STATUS">{tr("Trạng thái lọc ảnh", "Photo Pick Status")}</option>
+                          <option value="EDIT_COMPLETED_AT">{tr("Thời gian hoàn thành", "Completion Time")}</option>
                         </select>
                       </td>
                       <td className="py-2 px-4">
@@ -967,9 +977,9 @@ export function WorkspaceWizard() {
                               : "bg-background text-muted-foreground border-border"
                           }`}
                         >
-                          <option value="READ_ONLY">Chỉ đọc</option>
-                          <option value="READ_WRITE">Cho phép ghi</option>
-                          <option value="IGNORE">Bỏ qua</option>
+                          <option value="READ_ONLY">{tr("Chỉ đọc", "Read-only")}</option>
+                          <option value="READ_WRITE">{tr("Cho phép ghi", "Read & Write")}</option>
+                          <option value="IGNORE">{tr("Bỏ qua", "Ignore")}</option>
                         </select>
                       </td>
                       <td className="py-2 px-4">
@@ -984,10 +994,10 @@ export function WorkspaceWizard() {
                             }}
                             className="h-7 bg-background border border-border rounded-lg px-2 text-[11.5px] focus:outline-none focus:border-primary text-foreground"
                           >
-                            <option value="SET_IF_EMPTY">Chỉ ghi nếu ô trống</option>
-                            <option value="ASK_BEFORE_OVERWRITE">Hỏi trước khi ghi đè</option>
-                            <option value="ALWAYS_REPLACE">Luôn ghi đè</option>
-                            <option value="APPEND">Nối tiếp dòng mới</option>
+                            <option value="SET_IF_EMPTY">{tr("Chỉ ghi nếu ô trống", "Write if empty")}</option>
+                            <option value="ASK_BEFORE_OVERWRITE">{tr("Hỏi trước khi ghi đè", "Ask before overwrite")}</option>
+                            <option value="ALWAYS_REPLACE">{tr("Luôn ghi đè", "Always overwrite")}</option>
+                            <option value="APPEND">{tr("Nối tiếp dòng mới", "Append on new line")}</option>
                           </select>
                         ) : (
                           <span className="text-muted-foreground text-[11px]">—</span>
@@ -998,8 +1008,8 @@ export function WorkspaceWizard() {
                           <button
                             type="button"
                             onClick={() => handleRemoveColumn(m.columnIndex)}
-                            title="Xóa cột này"
-                            aria-label="Xóa cột này"
+                            title={tr("Xóa cột này", "Remove column")}
+                            aria-label={tr("Xóa cột này", "Remove column")}
                             className="w-7 h-7 inline-flex items-center justify-center hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors cursor-pointer"
                           >
                             <Trash2 size={13} />
@@ -1020,14 +1030,14 @@ export function WorkspaceWizard() {
               className="h-8 px-3.5 rounded-xl border border-border text-muted-foreground hover:text-foreground text-[12px] font-medium flex items-center gap-1.5 cursor-pointer"
             >
               <ArrowLeft size={13.5} />
-              <span>Quay lại</span>
+              <span>{tr("Quay lại", "Back")}</span>
             </button>
             <button
               type="button"
               onClick={() => setWizardStep(4)}
               className="btn-base btn-secondary h-8 px-4 rounded-xl text-[12px]"
             >
-              <span>Tiếp tục: Giá trị tự động & Lưu</span>
+              <span>{tr("Tiếp tục: Giá trị tự động & Lưu", "Next: Auto Values & Save")}</span>
               <ArrowRight size={13.5} />
             </button>
           </div>
@@ -1040,10 +1050,10 @@ export function WorkspaceWizard() {
           <div className="p-5 rounded-2xl bg-card border border-border flex flex-col gap-4 shadow-xs">
             <div>
               <h3 className="font-semibold text-[13.5px] text-foreground">
-                Giá trị điền tự động & Phạm vi dữ liệu
+                {tr("Giá trị điền tự động & Phạm vi dữ liệu", "Auto-Fill Values & Row Scope")}
               </h3>
               <p className="text-[11.5px] text-muted-foreground mt-0.5">
-                Thiết lập giá trị mặc định khi cập nhật hàng loạt lên Google Sheets.
+                {tr("Thiết lập giá trị mặc định khi cập nhật hàng loạt lên Google Sheets.", "Configure default values written during Google Sheets batch updates.")}
               </p>
             </div>
 
@@ -1051,7 +1061,7 @@ export function WorkspaceWizard() {
               <div className="flex flex-col gap-1.5 p-3.5 rounded-xl bg-background/50 border border-border">
                 <label className="font-medium text-foreground flex items-center gap-1.5">
                   <User size={13} className="text-muted-foreground" />
-                  <span>Tên Editor</span>
+                  <span>{tr("Tên Editor", "Editor Name")}</span>
                 </label>
                 <input
                   type="text"
@@ -1061,14 +1071,14 @@ export function WorkspaceWizard() {
                   className="h-8 px-3 bg-card border border-border rounded-lg text-foreground font-medium text-[12px] focus:outline-none focus:border-primary"
                 />
                 <span className="text-[11px] text-muted-foreground">
-                  Điền vào cột Tên Edit (N)
+                  {tr("Điền vào cột Tên Edit (N)", "Writes to Editor Name column (N)")}
                 </span>
               </div>
 
               <div className="flex flex-col gap-1.5 p-3.5 rounded-xl bg-background/50 border border-border">
                 <label className="font-medium text-foreground flex items-center gap-1.5">
                   <CheckCircle2 size={13} className="text-muted-foreground" />
-                  <span>Trạng thái lọc</span>
+                  <span>{tr("Trạng thái lọc", "Pick Status")}</span>
                 </label>
                 <input
                   type="text"
@@ -1078,14 +1088,14 @@ export function WorkspaceWizard() {
                   className="h-8 px-3 bg-card border border-border rounded-lg text-foreground font-medium text-[12px] focus:outline-none focus:border-primary"
                 />
                 <span className="text-[11px] text-muted-foreground">
-                  Điền vào cột Trạng Thái Lọc (M)
+                  {tr("Điền vào cột Trạng Thái Lọc (M)", "Writes to Filter Status column (M)")}
                 </span>
               </div>
 
               <div className="flex flex-col gap-1.5 p-3.5 rounded-xl bg-background/50 border border-border">
                 <label className="font-medium text-foreground flex items-center gap-1.5">
                   <Layers size={13} className="text-muted-foreground" />
-                  <span>Dòng dữ liệu bắt đầu</span>
+                  <span>{tr("Dòng dữ liệu bắt đầu", "Data Start Row")}</span>
                 </label>
                 <input
                   type="number"
@@ -1096,31 +1106,31 @@ export function WorkspaceWizard() {
                   className="h-8 px-3 bg-card border border-border rounded-lg text-foreground font-medium text-[12px] focus:outline-none focus:border-primary"
                 />
                 <span className="text-[11px] text-muted-foreground">
-                  Chỉ đọc & ghi từ dòng này trở xuống
+                  {tr("Chỉ đọc & ghi từ dòng này trở xuống", "Only read & write from this row downward")}
                 </span>
               </div>
             </div>
 
             <div className="p-3.5 bg-foreground/[0.03] border border-border rounded-xl flex flex-col gap-2 text-[12px]">
-              <span className="font-medium text-foreground">Tóm tắt cấu hình hiện tại:</span>
+              <span className="font-medium text-foreground">{tr("Tóm tắt cấu hình hiện tại:", "Current Configuration Summary:")}</span>
               <div className="grid grid-cols-2 gap-2 text-[11.5px]">
                 <div>
-                  <span className="text-muted-foreground">Tab chính: </span>
+                  <span className="text-muted-foreground">{tr("Tab chính:", "Primary tab:")} </span>
                   <span className="font-medium text-foreground">
                     {selectedTab?.title || activeProfile?.selectedTabTitle || "Edit 9/2026"}
                   </span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Số tab hiển thị ở Batch: </span>
-                  <span className="font-medium text-foreground">{configuredTabCount || 1} tab</span>
+                  <span className="text-muted-foreground">{tr("Số tab hiển thị ở Batch:", "Tabs shown in Batch:")} </span>
+                  <span className="font-medium text-foreground">{configuredTabCount || 1} {tr("tab", "tab(s)")}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Dòng tiêu đề: </span>
-                  <span className="font-medium text-foreground">Dòng {selectedHeaderRow}</span>
+                  <span className="text-muted-foreground">{tr("Dòng tiêu đề:", "Header row:")} </span>
+                  <span className="font-medium text-foreground">{tr("Dòng", "Row")} {selectedHeaderRow}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Dòng bắt đầu dữ liệu: </span>
-                  <span className="font-medium text-foreground">Dòng {startRow}</span>
+                  <span className="text-muted-foreground">{tr("Dòng bắt đầu dữ liệu:", "Data start row:")} </span>
+                  <span className="font-medium text-foreground">{tr("Dòng", "Row")} {startRow}</span>
                 </div>
               </div>
             </div>
@@ -1133,7 +1143,7 @@ export function WorkspaceWizard() {
               className="h-8 px-3.5 rounded-xl border border-border text-muted-foreground hover:text-foreground text-[12px] font-medium flex items-center gap-1.5 cursor-pointer"
             >
               <ArrowLeft size={13.5} />
-              <span>Quay lại</span>
+              <span>{tr("Quay lại", "Back")}</span>
             </button>
             <button
               type="button"
@@ -1141,7 +1151,7 @@ export function WorkspaceWizard() {
               className="btn-base btn-primary h-9 px-5 rounded-xl text-[12px]"
             >
               <Save size={14} strokeWidth={1.75} />
-              <span>Lưu cấu hình Workspace</span>
+              <span>{tr("Lưu cấu hình Workspace", "Save Workspace Config")}</span>
             </button>
           </div>
         </div>

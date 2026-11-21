@@ -15,6 +15,7 @@ import {
 import type { ExpiringNoticeInfo } from "../services/accountExpirationService";
 import { getPricingPackages, PricingPackage } from "../services/paymentApi";
 import { useSupportZalo } from "@/core/services/supportContact";
+import { useTranslation, getLocaleCode } from "@/core/lib/i18n";
 
 interface AccountExpiringAlertModalProps {
   readonly info: ExpiringNoticeInfo;
@@ -30,6 +31,7 @@ export function AccountExpiringAlertModal({
   onOpenLicenseManager,
 }: AccountExpiringAlertModalProps) {
   const supportZalo = useSupportZalo();
+  const { tr, lang } = useTranslation();
   const [isDismissing, setIsDismissing] = useState(false);
   const [packages, setPackages] = useState<PricingPackage[]>([]);
 
@@ -64,7 +66,7 @@ export function AccountExpiringAlertModal({
     try {
       const d = new Date(isoStr);
       if (isNaN(d.getTime())) return null;
-      return d.toLocaleDateString("vi-VN", {
+      return d.toLocaleDateString(getLocaleCode(lang), {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
@@ -103,7 +105,7 @@ export function AccountExpiringAlertModal({
           type="button"
           onClick={handleDismiss}
           className="absolute top-4 right-4 text-muted-foreground hover:text-foreground p-1.5 rounded-xl hover:bg-muted transition-colors cursor-pointer"
-          title="Đóng thông báo" aria-label="Đóng thông báo"
+          title={tr("Đóng thông báo", "Dismiss notice")} aria-label={tr("Đóng thông báo", "Dismiss notice")}
         >
           <X size={18} />
         </button>
@@ -124,13 +126,16 @@ export function AccountExpiringAlertModal({
         <div className="space-y-1.5">
           <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-[11px] font-extrabold uppercase tracking-wider">
             <Clock size={12} />
-            CẢNH BÁO SẮP HẾT HẠN (≤ 3 NGÀY)
+            {tr("CẢNH BÁO SẮP HẾT HẠN (≤ 3 NGÀY)", "EXPIRING SOON WARNING (≤ 3 DAYS)")}
           </div>
           <h2 id="dlg-AccountExpiringAlertModal-1" className="text-lg sm:text-xl font-black text-foreground tracking-tight">
-            Gói Sử Dụng Của Bạn Sắp Hết Hạn
+            {tr("Gói Sử Dụng Của Bạn Sắp Hết Hạn", "Your Subscription Is Expiring Soon")}
           </h2>
           <p className="text-xs text-muted-foreground leading-relaxed px-1">
-            Vui lòng lựa chọn gói gia hạn phù hợp dưới đây để không làm gián đoạn tiến độ công việc studio của bạn.
+            {tr(
+              "Vui lòng lựa chọn gói gia hạn phù hợp dưới đây để không làm gián đoạn tiến độ công việc studio của bạn.",
+              "Please choose a renewal package below to avoid interrupting your studio workflow."
+            )}
           </p>
         </div>
 
@@ -138,19 +143,21 @@ export function AccountExpiringAlertModal({
         <div className="grid grid-cols-2 gap-2.5 text-left">
           <div className="p-3 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/25">
             <span className="text-[10px] uppercase font-bold text-amber-700 dark:text-amber-400 tracking-wider block">
-              Thời gian còn lại
+              {tr("Thời gian còn lại", "Time Remaining")}
             </span>
             <span className="text-base font-mono font-black text-amber-800 dark:text-amber-300 mt-0.5 block">
-              {info.daysRemaining === 0 ? "Hết hạn hôm nay" : `Còn ${info.daysRemaining} ngày`}
+              {info.daysRemaining === 0
+                ? tr("Hết hạn hôm nay", "Expires today")
+                : tr(`Còn ${info.daysRemaining} ngày`, `${info.daysRemaining} days left`)}
             </span>
           </div>
 
           <div className="p-3 rounded-2xl bg-muted/40 border border-border">
             <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block flex items-center gap-1">
-              <Calendar size={11} /> Mốc kết thúc
+              <Calendar size={11} /> {tr("Mốc kết thúc", "Expiration Date")}
             </span>
             <span className="text-xs font-mono font-bold text-foreground mt-0.5 block truncate">
-              {formattedDate || "Sắp hết hạn"}
+              {formattedDate || tr("Sắp hết hạn", "Expiring soon")}
             </span>
           </div>
         </div>
@@ -160,14 +167,14 @@ export function AccountExpiringAlertModal({
           <div className="text-[11px] font-bold text-foreground flex items-center justify-between">
             <span className="flex items-center gap-1.5">
               <Tag className="w-3.5 h-3.5 text-primary" />
-              Các gói gia hạn đề xuất (Cấu hình bởi Admin):
+              {tr("Các gói gia hạn đề xuất (Cấu hình bởi Admin):", "Recommended Renewal Plans:")}
             </span>
             <button
               type="button"
               onClick={() => handleRenewPackage("ALL")}
               className="text-[10px] text-primary hover:underline flex items-center gap-1"
             >
-              Xem tất cả gói <ArrowRight size={10} />
+              {tr("Xem tất cả gói", "View all plans")} <ArrowRight size={10} />
             </button>
           </div>
 
@@ -195,7 +202,7 @@ export function AccountExpiringAlertModal({
                   </div>
                 </div>
                 <div className="text-[10px] text-muted-foreground mt-2 font-medium flex items-center gap-1">
-                  <span>+{pkg.durationDays} ngày</span>
+                  <span>{tr(`+${pkg.durationDays} ngày`, `+${pkg.durationDays} days`)}</span>
                   <ArrowRight size={10} className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
               </button>
@@ -213,7 +220,7 @@ export function AccountExpiringAlertModal({
               className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-primary via-blue-600 to-indigo-600 hover:from-primary/90 hover:to-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all"
             >
               <QrCode size={15} />
-              Gia Hạn Ngay Qua VietQR
+              {tr("Gia Hạn Ngay Qua VietQR", "Renew Now via VietQR")}
             </button>
 
             {/* Button 2: Manual Key */}
@@ -223,7 +230,7 @@ export function AccountExpiringAlertModal({
               className="py-2.5 px-4 rounded-xl bg-muted hover:bg-muted/80 border border-border text-foreground font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all"
             >
               <Key size={15} />
-              Đã Có Mã Key
+              {tr("Đã Có Mã Key", "I Have a License Key")}
             </button>
           </div>
 
@@ -236,7 +243,7 @@ export function AccountExpiringAlertModal({
                 rel="noreferrer"
                 className="hover:text-amber-400 flex items-center gap-1 transition-colors"
               >
-                <span>Hỗ trợ Zalo: {supportZalo.display}</span>
+                <span>{tr(`Hỗ trợ Zalo: ${supportZalo.display}`, `Zalo Support: ${supportZalo.display}`)}</span>
                 <ExternalLink size={10} />
               </a>
             ) : (
@@ -248,7 +255,7 @@ export function AccountExpiringAlertModal({
               onClick={handleDismiss}
               className="hover:text-foreground underline underline-offset-2 transition-colors cursor-pointer"
             >
-              Để sau (Tiếp tục dùng)
+              {tr("Để sau (Tiếp tục dùng)", "Later (Continue Using)")}
             </button>
           </div>
         </div>

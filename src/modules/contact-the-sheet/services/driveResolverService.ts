@@ -1,5 +1,6 @@
 import { googleCredentialManager } from "./googleCredentialBridge.ts";
 import { useContactSheetStore } from "../stores/useContactSheetStore.ts";
+import { trText } from "../../../core/lib/i18n.ts";
 
 export interface DriveFolderItem {
   id: string;
@@ -231,7 +232,10 @@ export class DriveResolverService {
         relativePath: targetFolderName,
         isAccessible: false,
         warnings: [
-          "Chưa kết nối tài khoản Google Drive hoặc phiên đăng nhập đã hết hạn. Vui lòng bấm 'Kết nối Google' để tự động quét link Drive.",
+          trText(
+            "Chưa kết nối tài khoản Google Drive hoặc phiên đăng nhập đã hết hạn. Vui lòng bấm 'Kết nối Google' để tự động quét link Drive.",
+            "Google Drive account not connected or session expired. Click 'Connect Google' to resolve Drive links."
+          ),
         ],
       };
     }
@@ -339,7 +343,7 @@ export class DriveResolverService {
 
     // 7. Not Found
     const rootName = effectiveLocalRoot ? effectiveLocalRoot.split(/[/\\]+/).filter(Boolean).pop() : "";
-    const scopeNotice = rootName ? ` trong thư mục cấu hình "${rootName}"` : "";
+    const scopeNotice = rootName ? trText(` trong thư mục cấu hình "${rootName}"`, ` inside configured folder "${rootName}"`) : "";
 
     return {
       driveItemId: "",
@@ -347,7 +351,10 @@ export class DriveResolverService {
       relativePath: targetFolderName,
       isAccessible: false,
       warnings: [
-        `Không tìm thấy thư mục thành phẩm "${targetFolderName}"${scopeNotice} trên Google Drive. Vui lòng kiểm tra lại đồng bộ Google Drive Desktop hoặc quyền sở hữu tài khoản.`,
+        trText(
+          `Không tìm thấy thư mục thành phẩm "${targetFolderName}"${scopeNotice} trên Google Drive. Vui lòng kiểm tra lại đồng bộ Google Drive Desktop hoặc quyền sở hữu tài khoản.`,
+          `Finished folder "${targetFolderName}"${scopeNotice} was not found on Google Drive. Verify Google Drive Desktop sync or folder ownership.`
+        ),
       ],
     };
   }
@@ -1036,7 +1043,10 @@ export class DriveResolverService {
       if (!token) {
         return {
           success: false,
-          message: "Chưa kết nối tài khoản Google. Vui lòng bấm 'Kết nối Google' trên thanh công cụ.",
+          message: trText(
+            "Chưa kết nối tài khoản Google. Vui lòng bấm 'Kết nối Google' trên thanh công cụ.",
+            "Google account not connected. Click 'Connect Google' on the toolbar."
+          ),
         };
       }
 
@@ -1049,7 +1059,10 @@ export class DriveResolverService {
       if (!folderId) {
         return {
           success: false,
-          message: "Không tìm thấy thư mục tương ứng trên Google Drive.",
+          message: trText(
+            "Không tìm thấy thư mục tương ứng trên Google Drive.",
+            "No matching folder found on Google Drive."
+          ),
         };
       }
 
@@ -1067,7 +1080,7 @@ export class DriveResolverService {
     } catch (err: any) {
       return {
         success: false,
-        message: `Lỗi kết nối Drive: ${err?.message || String(err)}`,
+        message: `${trText("Lỗi kết nối Drive:", "Drive connection error:")} ${err?.message || String(err)}`,
       };
     }
   }

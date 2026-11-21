@@ -7,6 +7,7 @@
 
 import { useAuthStore } from "@/core/stores/useAuthStore";
 import { mergeSession, persistSession } from "./sessionPersistence";
+import { trText } from "../lib/i18n.ts";
 
 /** Set to true to use local mock API (no backend required) */
 const USE_MOCK = false;
@@ -140,7 +141,7 @@ export async function apiRequest<T>(
     });
   } catch (netErr: any) {
     if (netErr.name === "AbortError") {
-      throw new Error("Kết nối tới máy chủ quá thời gian (15s). Vui lòng thử lại!");
+      throw new Error(trText("Kết nối tới máy chủ quá thời gian (15s). Vui lòng thử lại!", "Server request timed out (15s). Please try again!"));
     }
     // Network failure (server unreachable, DNS error, Vercel pause)
     availabilityReporter?.(0);
@@ -186,7 +187,10 @@ export async function apiRequest<T>(
   
   if (result && typeof result === 'object' && 'success' in result) {
     if (!result.success) {
-      throw new ApiErrorResponse(result.message || `HTTP ${response.status}: Lỗi không xác định`, response.status);
+      throw new ApiErrorResponse(
+        result.message || trText(`HTTP ${response.status}: Lỗi không xác định`, `HTTP ${response.status}: Unknown error`),
+        response.status
+      );
     }
     return result.data as T;
   }

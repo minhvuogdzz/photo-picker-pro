@@ -21,9 +21,12 @@ import {
   type UrgentScanResult,
 } from "@/modules/photo-picker/services/urgentCustomerScannerService";
 import { useNotificationStore } from "@/core/stores/useNotificationStore";
+import { useSettingsStore } from "@/core/stores/useSettingsStore";
+import { useTranslation, localizeBackendMessage } from "@/core/lib/i18n";
 import type { AppSettings } from "@/core/types";
 
 export function TrayControlPanel() {
+  const { tr, lang } = useTranslation();
   const [metrics, setMetrics] = useState<SystemPerformanceReport | null>(null);
   const [scanResult, setScanResult] = useState<UrgentScanResult | null>(
     urgentCustomerScannerService.getLastResult()
@@ -100,11 +103,52 @@ export function TrayControlPanel() {
     return isSystemDark;
   }, []);
 
-  // Khởi tạo theme & thông báo ngay khi render
+  // 1b. Đồng bộ ngôn ngữ từ localStorage & backend settings để tray-panel luôn khớp app chính
+  const syncLanguage = useCallback(async () => {
+    try {
+      const savedLang = localStorage.getItem("mvd_app_language");
+      if (savedLang === "en" || savedLang === "vi") {
+        useSettingsStore.getState().setLanguageLocal(savedLang);
+        return savedLang;
+      }
+    } catch {}
+
+    try {
+      const s = await invoke<AppSettings>("load_settings");
+      if (s?.language === "en" || s?.language === "vi") {
+        useSettingsStore.getState().setLanguageLocal(s.language);
+        return s.language;
+      }
+    } catch {}
+
+    return "vi";
+  }, []);
+
+  // Khởi tạo theme, ngôn ngữ & thông báo ngay khi render
   useEffect(() => {
     syncTheme();
+    syncLanguage();
     useNotificationStore.getState().reloadFromStorage();
-  }, [syncTheme]);
+  }, [syncTheme, syncLanguage]);
+
+  // Lắng nghe sự kiện đổi ngôn ngữ từ App chính
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    listen<{ language?: string }>("app-language-changed", (event) => {
+      const next = event.payload?.language;
+      if (next === "en" || next === "vi") {
+        useSettingsStore.getState().setLanguageLocal(next);
+      } else {
+        syncLanguage();
+      }
+    }).then((fn) => {
+      unlisten = fn;
+    });
+
+    return () => {
+      if (unlisten) unlisten();
+    };
+  }, [syncLanguage]);
 
   // Áp dụng class .dark lên document.documentElement của cửa sổ tray-panel
   useEffect(() => {
@@ -140,6 +184,7 @@ export function TrayControlPanel() {
     let unlisten: (() => void) | undefined;
     listen("tray-panel-shown", () => {
       syncTheme();
+      syncLanguage();
       useNotificationStore.getState().reloadFromStorage();
       setScanResult(urgentCustomerScannerService.getLastResult());
       setIsOpen(true);
@@ -150,7 +195,7 @@ export function TrayControlPanel() {
     return () => {
       if (unlisten) unlisten();
     };
-  }, [syncTheme]);
+  }, [syncTheme, syncLanguage]);
 
   // Đảm bảo nền gốc cửa sổ và thẻ HTML trong suốt 100% để bo góc 4 góc hiển thị mượt mà không có viền đen
   useEffect(() => {
@@ -212,7 +257,7 @@ export function TrayControlPanel() {
   // Chỉ số tài nguyên CỦA RIÊNG APP DH STUDIO PRO (theo yêu cầu người dùng)
   const appCpu = metrics?.app ? metrics.app.cpu_usage.toFixed(1) : "0.5";
   const appMemory = metrics?.app ? metrics.app.memory_formatted : "138.4 MB";
-  const memoryPressureDesc = metrics?.memory_pressure.description || "Bình thường";
+  const memoryPressureDesc = metrics?.memory_pressure.description || tr("Bình thường", "Normal");
   const urgentCount = scanResult ? scanResult.urgentCount : 0;
 
   return (
@@ -256,7 +301,7 @@ export function TrayControlPanel() {
             }`}
           >
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[10px] font-semibold">Chạy ngầm</span>
+            <span className="text-[10px] font-semibold">{tr("Chạy ngầm", "Background")}</span>
           </div>
         </div>
 
@@ -271,17 +316,17 @@ export function TrayControlPanel() {
                     isDark ? "text-amber-400" : "text-amber-600"
                   }`}
                 >
-                  Thông báo khẩn cấp
+                  {tr("Thông báo khẩn cấp", "Urgent Alerts")}
                 </span>
                 <button
                   type="button"
                   onClick={handleManualScan}
                   disabled={isScanning}
                   className="flex items-center gap-1 text-[10px] font-semibold text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition-colors disabled:opacity-50 cursor-pointer"
-                  title="Quét lại Sheet"
+                  title={tr("Quét lại Sheet", "Rescan Sheet")}
                 >
                   <RefreshCw size={10} className={isScanning ? "animate-spin" : ""} />
-                  <span>{isScanning ? "Đang quét..." : "Quét lại"}</span>
+                  <span>{isScanning ? tr("Đang quét...", "Scanning...") : tr("Quét lại", "Rescan")}</span>
                 </button>
               </div>
 
@@ -304,7 +349,7 @@ export function TrayControlPanel() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <h4 className="text-xs font-bold leading-tight">
-                        Khẩn cấp: Có {urgentCount} khách cần lọc gấp!
+                        {tr(`Khẩn cấp: Có ${urgentCount} khách cần lọc gấp!`, `Urgent: ${urgentCount} customer(s) due!`)}
                       </h4>
                       <ChevronRight size={12} className="opacity-60" />
                     </div>
@@ -313,7 +358,7 @@ export function TrayControlPanel() {
                         isDark ? "text-amber-200/80" : "text-amber-700"
                       }`}
                     >
-                      Hạn trả hôm nay & đã quá hạn, link edit rỗng.
+                      {tr("Hạn trả hôm nay & đã quá hạn, link edit rỗng.", "Due today or overdue with empty edit link.")}
                     </p>
                   </div>
                 </div>
@@ -329,10 +374,10 @@ export function TrayControlPanel() {
                   isDark ? "text-zinc-400" : "text-zinc-500"
                 }`}
               >
-                Tài nguyên DH Studio Pro
+                {tr("Tài nguyên DH Studio Pro", "DH Studio Pro Resources")}
               </span>
               <span className={`text-[9px] ${isDark ? "text-zinc-500" : "text-zinc-400"}`}>
-                Hoạt động
+                {tr("Hoạt động", "Active")}
               </span>
             </div>
 
@@ -348,7 +393,7 @@ export function TrayControlPanel() {
                 <div className="flex justify-between items-center text-[11px]">
                   <span className="font-medium flex items-center gap-1.5">
                     <Cpu size={12} className="text-blue-500" />
-                    <span>CPU ứng dụng</span>
+                    <span>{tr("CPU ứng dụng", "App CPU")}</span>
                   </span>
                   <span className="font-bold text-blue-500 font-mono">{appCpu}%</span>
                 </div>
@@ -371,7 +416,7 @@ export function TrayControlPanel() {
                 <div className="flex justify-between items-center text-[11px]">
                   <span className="font-medium flex items-center gap-1.5">
                     <Activity size={12} className="text-cyan-500" />
-                    <span>RAM ứng dụng</span>
+                    <span>{tr("RAM ứng dụng", "App RAM")}</span>
                   </span>
                   <span className="font-bold text-cyan-500 font-mono">{appMemory}</span>
                 </div>
@@ -404,12 +449,12 @@ export function TrayControlPanel() {
                 }`}
               >
                 <span>
-                  Áp lực hệ thống:{" "}
+                  {tr("Áp lực hệ thống:", "Memory pressure:")}{" "}
                   <strong className={isDark ? "text-zinc-200" : "text-zinc-700"}>
-                    {memoryPressureDesc}
+                    {localizeBackendMessage(memoryPressureDesc, lang)}
                   </strong>
                 </span>
-                <span className="text-emerald-500 font-medium">Tối ưu & ổn định</span>
+                <span className="text-emerald-500 font-medium">{tr("Tối ưu & ổn định", "Optimal")}</span>
               </div>
             </div>
           </div>
@@ -421,7 +466,7 @@ export function TrayControlPanel() {
                 isDark ? "text-zinc-400" : "text-zinc-500"
               }`}
             >
-              Truy cập nhanh
+              {tr("Truy cập nhanh", "Quick Access")}
             </span>
 
             <div className="space-y-0.5">
@@ -437,7 +482,7 @@ export function TrayControlPanel() {
                   <div className="w-5 h-5 flex items-center justify-center shrink-0">
                     <PhotoPickerIcon size={14} className="text-blue-500 dark:text-blue-400" />
                   </div>
-                  <span>Lọc ảnh Pro</span>
+                  <span>{tr("Lọc ảnh Pro", "Photo Picker Pro")}</span>
                 </div>
                 <ChevronRight
                   size={12}
@@ -481,7 +526,7 @@ export function TrayControlPanel() {
                   <div className="w-5 h-5 flex items-center justify-center shrink-0">
                     <FileImage size={14} className="text-pink-500" />
                   </div>
-                  <span>Chuyển đổi file</span>
+                  <span>{tr("Chuyển đổi file", "MVD File Converter")}</span>
                 </div>
                 <ChevronRight
                   size={12}
@@ -503,7 +548,7 @@ export function TrayControlPanel() {
                   <div className="w-5 h-5 flex items-center justify-center shrink-0">
                     <Bell size={14} className="text-amber-500" />
                   </div>
-                  <span>Trung tâm thông báo</span>
+                  <span>{tr("Trung tâm thông báo", "Notification Center")}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   {unreadCount > 0 && (
@@ -541,7 +586,7 @@ export function TrayControlPanel() {
             }`}
           >
             <Settings size={13} />
-            <span className="truncate">Cài đặt DH Studio Pro</span>
+            <span className="truncate">{tr("Cài đặt DH Studio Pro", "Settings")}</span>
           </button>
 
           <button
@@ -554,7 +599,7 @@ export function TrayControlPanel() {
             }`}
           >
             <Power size={13} />
-            <span>Thoát</span>
+            <span>{tr("Thoát", "Quit")}</span>
           </button>
         </div>
       </div>

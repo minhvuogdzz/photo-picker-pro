@@ -6,8 +6,10 @@ import { AppPerformanceCard } from "./AppPerformanceCard";
 import { SystemPerformanceCard } from "./SystemPerformanceCard";
 import { MemoryPressureCard } from "./MemoryPressureCard";
 import { StorageDiskRing } from "./StorageDiskRing";
+import { useTranslation } from "@/core/lib/i18n";
 
 export function SystemPerformanceDashboard() {
+  const { tr } = useTranslation();
   const [report, setReport] = useState<SystemPerformanceReport | null>(null);
   const [history, setHistory] = useState<MetricDataPoint[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -41,11 +43,11 @@ export function SystemPerformanceDashboard() {
           <Activity size={14} strokeWidth={1.75} className="text-muted-foreground shrink-0" />
           <div className="flex items-center gap-2.5">
             <span className="text-[13px] font-semibold text-foreground">
-              Hiệu suất hệ thống
+              {tr("Hiệu suất hệ thống", "System Performance")}
             </span>
             <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
               <span className="w-1.5 h-1.5 rounded-full bg-success" />
-              Trực tiếp
+              {tr("Trực tiếp", "Live")}
             </span>
           </div>
         </div>
@@ -56,8 +58,8 @@ export function SystemPerformanceDashboard() {
           onClick={handleManualRefresh}
           disabled={isRefreshing}
           className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-foreground/[0.06] transition-colors cursor-pointer disabled:opacity-50"
-          title="Làm mới thông số ngay"
-          aria-label="Làm mới"
+          title={tr("Làm mới thông số ngay", "Refresh metrics now")}
+          aria-label={tr("Làm mới", "Refresh")}
         >
           <RefreshCw size={13} strokeWidth={1.75} className={isRefreshing ? "animate-spin text-primary" : ""} />
         </button>
@@ -85,17 +87,17 @@ export function SystemPerformanceDashboard() {
         <div className="flex items-center justify-between px-0.5">
           <div className="flex items-center gap-1.5 text-[11px] font-bold text-foreground tracking-tight">
             <HardDrive size={12} className="text-muted-foreground" />
-            <span>Dung Lượng Ổ Đĩa (Storage)</span>
+            <span>{tr("Dung Lượng Ổ Đĩa", "Storage Capacity")}</span>
           </div>
           <span className="text-[9px] text-muted-foreground font-mono">
-            {disks.length} ổ đĩa nhận diện
+            {tr(`${disks.length} ổ đĩa nhận diện`, `${disks.length} ${disks.length === 1 ? "drive" : "drives"} detected`)}
           </span>
         </div>
 
         {disks.length === 0 ? (
           <div className="w-full py-4 rounded-xl border border-dashed border-border/60 text-center text-xs text-muted-foreground flex flex-col items-center justify-center gap-1">
             <HardDrive size={16} className="text-muted-foreground/40" />
-            <span>Đang đọc danh sách ổ đĩa từ hệ điều hành...</span>
+            <span>{tr("Đang đọc danh sách ổ đĩa từ hệ điều hành...", "Reading storage drives from OS...")}</span>
           </div>
         ) : disks.length === 1 ? (
           <StorageDiskRing disk={disks[0]} isSingle={true} />

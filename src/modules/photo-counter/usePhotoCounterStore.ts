@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { useAuthStore } from "@/core/stores/useAuthStore";
 import { checkAppAccess } from "@/core/services/appEntitlementPolicy";
+import { trText } from "../../core/lib/i18n.ts";
 import type {
   MonthScanResult,
   DayScanResult,
@@ -212,7 +213,10 @@ export const usePhotoCounterStore = create<PhotoCounterState>((set, get) => ({
     if (!access.hasAccess) {
       set({
         isScanning: false,
-        error: "Bạn cần kích hoạt gói sử dụng ứng dụng Thống kê & Tính lương.",
+        error: trText(
+          "Bạn cần kích hoạt gói sử dụng ứng dụng Thống kê & Tính lương.",
+          "You need an active plan to use Photo Counter & Payroll.",
+        ),
       });
       return;
     }

@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import type { SheetTabInfo, TabConfiguration } from "../types";
+import { useTranslation } from "@/core/lib/i18n";
 
 interface Props {
   availableTabs: SheetTabInfo[];
@@ -38,6 +39,7 @@ export function SheetTabManager({
   canUndoCopyAll,
   subtitle,
 }: Props) {
+  const { tr } = useTranslation();
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -56,19 +58,19 @@ export function SheetTabManager({
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[12.5px] font-semibold text-foreground">
-                Trang tính đang làm việc:
+                {tr("Trang tính đang làm việc:", "Active Worksheet:")}
               </span>
               {selectedTab && (
                 <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary font-medium text-[11.5px] border border-primary/20 truncate max-w-[200px]">
-                  {selectedTab.title} ({selectedTab.columnCount} cột)
+                  {selectedTab.title} ({selectedTab.columnCount} {tr("cột", "cols")})
                 </span>
               )}
               <span className="text-[11px] text-muted-foreground">
-                · Đã áp dụng Batch: <span className="font-medium text-foreground">{configuredCount || 1}</span>/{availableTabs.length} tab
+                · {tr("Đã áp dụng Batch:", "Applied to Batch:")} <span className="font-medium text-foreground">{configuredCount || 1}</span>/{availableTabs.length} {tr("tab", "tabs")}
               </span>
             </div>
             <p className="text-[11.5px] text-muted-foreground truncate mt-0.5">
-              {subtitle || "Chỉ những tab được áp dụng cấu hình tại đây mới hiển thị ở phần Thực thi Batch."}
+              {subtitle || tr("Chỉ những tab được áp dụng cấu hình tại đây mới hiển thị ở phần Thực thi Batch.", "Only tabs with saved configuration here will appear in Batch Runner.")}
             </p>
           </div>
         </div>
@@ -76,7 +78,7 @@ export function SheetTabManager({
         {/* Quick Dropdown & Actions */}
         <div className="flex items-center gap-1.5 flex-wrap shrink-0">
           <div className="flex items-center gap-1.5">
-            <span className="text-[11.5px] text-muted-foreground hidden sm:inline">Chuyển tab:</span>
+            <span className="text-[11.5px] text-muted-foreground hidden sm:inline">{tr("Chuyển tab:", "Switch tab:")}</span>
             <select
               value={selectedTab?.title || ""}
               onChange={(e) => {
@@ -90,7 +92,7 @@ export function SheetTabManager({
                 const isConfigured = !!tabConfigs[t.title];
                 return (
                   <option key={t.sheetId} value={t.title}>
-                    {t.title} ({t.columnCount} cột){isConfigured ? " · Đã áp dụng" : ""}
+                    {t.title} ({t.columnCount} {tr("cột", "cols")}){isConfigured ? tr(" · Đã áp dụng", " · Applied") : ""}
                   </option>
                 );
               })}
@@ -105,8 +107,8 @@ export function SheetTabManager({
                 setViewMode("table");
                 setIsExpanded(true);
               }}
-              title="Xem dạng Bảng"
-              aria-label="Xem dạng Bảng"
+              title={tr("Xem dạng Bảng", "Table view")}
+              aria-label={tr("Xem dạng Bảng", "Table view")}
               className={`px-2 h-full rounded-md text-[11.5px] transition-colors cursor-pointer flex items-center ${
                 viewMode === "table" && isExpanded
                   ? "glass-pill text-foreground font-medium"
@@ -121,8 +123,8 @@ export function SheetTabManager({
                 setViewMode("grid");
                 setIsExpanded(true);
               }}
-              title="Xem dạng Lưới"
-              aria-label="Xem dạng Lưới"
+              title={tr("Xem dạng Lưới", "Grid view")}
+              aria-label={tr("Xem dạng Lưới", "Grid view")}
               className={`px-2 h-full rounded-md text-[11.5px] transition-colors cursor-pointer flex items-center ${
                 viewMode === "grid" && isExpanded
                   ? "glass-pill text-foreground font-medium"
@@ -138,11 +140,11 @@ export function SheetTabManager({
             <button
               type="button"
               onClick={onCopyConfigToAllTabs}
-              title="Sao chép cấu hình từ tab hiện tại sang tất cả các tab khác"
+              title={tr("Sao chép cấu hình từ tab hiện tại sang tất cả các tab khác", "Copy configuration from current tab to all other tabs")}
               className="h-8 px-2.5 rounded-lg border border-border bg-foreground/[0.04] hover:bg-foreground/[0.08] text-foreground text-[11.5px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Copy size={12.5} strokeWidth={1.75} />
-              <span className="hidden sm:inline">Áp dụng tất cả</span>
+              <span className="hidden sm:inline">{tr("Áp dụng tất cả", "Apply to All")}</span>
             </button>
           )}
 
@@ -151,11 +153,11 @@ export function SheetTabManager({
             <button
               type="button"
               onClick={onUndoCopyAllTabs}
-              title="Hoàn tác áp dụng tất cả — chỉ giữ lại cấu hình cho tab đang chọn"
+              title={tr("Hoàn tác áp dụng tất cả — chỉ giữ lại cấu hình cho tab đang chọn", "Undo apply-all — keep configuration for current tab only")}
               className="h-8 px-2.5 rounded-lg border border-primary/25 bg-primary/10 hover:bg-primary/15 text-primary text-[11.5px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <RotateCcw size={12.5} strokeWidth={1.75} />
-              <span>Hoàn tác ({configuredCount} → 1 tab)</span>
+              <span>{tr(`Hoàn tác (${configuredCount} → 1 tab)`, `Undo (${configuredCount} → 1 tab)`)}</span>
             </button>
           )}
 
@@ -165,7 +167,7 @@ export function SheetTabManager({
             onClick={() => setIsExpanded(!isExpanded)}
             className="h-8 px-2.5 rounded-lg border border-border bg-foreground/[0.04] hover:bg-foreground/[0.08] text-[11.5px] font-medium text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors cursor-pointer"
           >
-            <span>{isExpanded ? "Thu gọn" : `Chọn tab (${availableTabs.length})`}</span>
+            <span>{isExpanded ? tr("Thu gọn", "Collapse") : tr(`Chọn tab (${availableTabs.length})`, `Select tabs (${availableTabs.length})`)}</span>
             {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
           </button>
         </div>
@@ -181,10 +183,10 @@ export function SheetTabManager({
                   <thead>
                     <tr className="border-b border-border bg-foreground/[0.03] text-muted-foreground font-medium sticky top-0 backdrop-blur-md z-10">
                       <th className="py-2 px-3 w-10 text-center font-medium">#</th>
-                      <th className="py-2 px-3 font-medium">Tên Trang tính (Sheet Tab)</th>
-                      <th className="py-2 px-3 font-medium">Kích thước</th>
-                      <th className="py-2 px-3 font-medium">Hiển thị ở Thực thi Batch</th>
-                      <th className="py-2 px-3 text-right font-medium">Thao tác</th>
+                      <th className="py-2 px-3 font-medium">{tr("Tên Trang tính (Sheet Tab)", "Sheet Tab Name")}</th>
+                      <th className="py-2 px-3 font-medium">{tr("Kích thước", "Size")}</th>
+                      <th className="py-2 px-3 font-medium">{tr("Hiển thị ở Thực thi Batch", "Show in Batch Runner")}</th>
+                      <th className="py-2 px-3 text-right font-medium">{tr("Thao tác", "Actions")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -219,7 +221,7 @@ export function SheetTabManager({
                             </div>
                           </td>
                           <td className="py-2 px-3 text-muted-foreground text-[11px] tabular-nums">
-                            {t.columnCount} cột × {t.rowCount.toLocaleString()} hàng
+                            {t.columnCount} {tr("cột", "cols")} × {t.rowCount.toLocaleString()} {tr("hàng", "rows")}
                           </td>
                           <td className="py-2 px-3">
                             {onToggleTabConfig ? (
@@ -233,37 +235,37 @@ export function SheetTabManager({
                                 }`}
                                 title={
                                   isConfigured
-                                    ? "Đang hiển thị ở phần Thực thi Batch — bấm để gỡ"
-                                    : "Bấm để áp dụng cấu hình hiện tại cho tab này và hiển thị ở Thực thi Batch"
+                                    ? tr("Đang hiển thị ở phần Thực thi Batch — bấm để gỡ", "Shown in Batch Runner — click to remove")
+                                    : tr("Bấm để áp dụng cấu hình hiện tại cho tab này và hiển thị ở Thực thi Batch", "Click to apply current config and show in Batch Runner")
                                 }
                               >
                                 {isConfigured ? (
                                   <>
                                     <Check size={11} />
-                                    <span>Đã áp dụng (Bấm để gỡ)</span>
+                                    <span>{tr("Đã áp dụng (Bấm để gỡ)", "Applied (Click to remove)")}</span>
                                   </>
                                 ) : (
                                   <>
                                     <Plus size={11} />
-                                    <span>Áp dụng cho tab này</span>
+                                    <span>{tr("Áp dụng cho tab này", "Apply to this tab")}</span>
                                   </>
                                 )}
                               </button>
                             ) : isConfigured ? (
                               <span className="text-[11px] text-foreground font-medium inline-flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 rounded-full bg-success" />
-                                Đã áp dụng
+                                {tr("Đã áp dụng", "Applied")}
                               </span>
                             ) : (
                               <span className="text-muted-foreground text-[11px]">
-                                Chưa áp dụng
+                                {tr("Chưa áp dụng", "Not applied")}
                               </span>
                             )}
                           </td>
                           <td className="py-2 px-3 text-right">
                             {isSelected ? (
                               <span className="h-6 px-2.5 rounded-md bg-foreground/[0.06] text-foreground text-[11px] font-medium inline-flex items-center gap-1">
-                                <Check size={11} className="text-primary" /> Đang làm việc
+                                <Check size={11} className="text-primary" /> {tr("Đang làm việc", "Active")}
                               </span>
                             ) : (
                               <button
@@ -272,7 +274,7 @@ export function SheetTabManager({
                                 disabled={isAnalyzing}
                                 className="h-6 px-2.5 rounded-md bg-foreground/[0.04] hover:bg-foreground/[0.08] text-foreground text-[11px] font-medium border border-border transition-colors cursor-pointer disabled:opacity-50"
                               >
-                                Khảo sát tab này
+                                {tr("Khảo sát tab này", "Inspect Tab")}
                               </button>
                             )}
                           </td>
@@ -317,7 +319,7 @@ export function SheetTabManager({
                             e.stopPropagation();
                             onToggleTabConfig(t);
                           }}
-                          title={isConfigured ? "Gỡ khỏi Thực thi Batch" : "Áp dụng vào Thực thi Batch"}
+                          title={isConfigured ? tr("Gỡ khỏi Thực thi Batch", "Remove from Batch Runner") : tr("Áp dụng vào Thực thi Batch", "Apply to Batch Runner")}
                           className={`w-5 h-5 rounded-md flex items-center justify-center border transition-colors shrink-0 ${
                             isConfigured
                               ? "bg-primary border-primary text-primary-foreground"
@@ -329,8 +331,8 @@ export function SheetTabManager({
                       )}
                     </div>
                     <div className="flex items-center justify-between text-[10.5px] text-muted-foreground tabular-nums">
-                      <span>{t.columnCount} cột</span>
-                      <span>{isConfigured ? "Đã áp dụng" : `${t.rowCount.toLocaleString()} hàng`}</span>
+                      <span>{t.columnCount} {tr("cột", "cols")}</span>
+                      <span>{isConfigured ? tr("Đã áp dụng", "Applied") : `${t.rowCount.toLocaleString()} ${tr("hàng", "rows")}`}</span>
                     </div>
                   </div>
                 );

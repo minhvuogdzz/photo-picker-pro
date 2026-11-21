@@ -20,7 +20,7 @@ import {
   Gauge,
 } from "lucide-react";
 import { formatDuration, getFolderName } from "@/core/lib/utils";
-import { useTranslation } from "@/core/lib/i18n";
+import { localizeBackendMessage, useTranslation } from "@/core/lib/i18n";
 import { useScanAndMatch } from "@/modules/photo-picker/features/scanner/hooks/useScanAndMatch";
 import { useCopyOperation } from "@/modules/photo-picker/features/copy/hooks/useCopyOperation";
 import { useExport } from "@/modules/photo-picker/features/export/hooks/useExport";
@@ -42,7 +42,7 @@ export function RightPanel() {
   const isAutoFinding = useAppStore((s) => s.isAutoFinding);
   const autoFindStatus = useAppStore((s) => s.autoFindStatus);
   const sheetUpdateStatus = useAppStore((s) => s.sheetUpdateStatus);
-  const { t } = useTranslation();
+  const { t, tr, lang } = useTranslation();
   
   const settings = useSettingsStore((s) => s.settings);
   const updateSetting = useSettingsStore((s) => s.updateSetting);
@@ -112,11 +112,11 @@ export function RightPanel() {
     }
 
     if (includeMissing && missingCodes.length > 0) {
-      parts.push(`sai mã: ${missingCodes.join(", ")}`);
+      parts.push(`${tr("sai mã:", "missing:")} ${missingCodes.join(", ")}`);
     }
 
     if (includeDuplicates && duplicateCodes.length > 0) {
-      parts.push(`trùng mã: ${duplicateCodes.join(", ")}`);
+      parts.push(`${tr("trùng mã:", "duplicate:")} ${duplicateCodes.join(", ")}`);
     }
 
     return parts.join(" ");
@@ -225,14 +225,14 @@ export function RightPanel() {
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-medium text-primary flex items-center gap-1">
                 <Copy size={11} />
-                Gộp tất cả lỗi ({missingCodes.length + duplicateCodes.length})
+                {tr(`Gộp tất cả lỗi (${missingCodes.length + duplicateCodes.length})`, `All errors (${missingCodes.length + duplicateCodes.length})`)}
               </span>
               <button
                 onClick={handleCopyAllErrors}
                 className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer font-medium"
               >
                 {copiedAll ? <ClipboardCheck size={10} /> : <Clipboard size={10} />}
-                {copiedAll ? "Đã sao chép" : "Sao chép tất cả"}
+                {copiedAll ? tr("Đã sao chép", "Copied") : tr("Sao chép tất cả", "Copy all")}
               </button>
             </div>
             <div className="max-h-20 overflow-y-auto" style={{ scrollbarWidth: "thin" }}>
@@ -249,14 +249,14 @@ export function RightPanel() {
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1">
                 <Copy size={11} />
-                Mã trùng ({duplicateCodes.length})
+                {tr(`Mã trùng (${duplicateCodes.length})`, `Duplicates (${duplicateCodes.length})`)}
               </span>
               <button
                 onClick={handleCopyDuplicates}
                 className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 transition-colors cursor-pointer"
               >
                 {copiedDuplicates ? <ClipboardCheck size={10} /> : <Clipboard size={10} />}
-                {copiedDuplicates ? "Đã sao chép" : "Sao chép"}
+                {copiedDuplicates ? tr("Đã sao chép", "Copied") : tr("Sao chép", "Copy")}
               </button>
             </div>
             <div className="max-h-20 overflow-y-auto" style={{ scrollbarWidth: "thin" }}>
@@ -273,14 +273,14 @@ export function RightPanel() {
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-medium text-red-600 dark:text-red-400 flex items-center gap-1">
                 <XCircle size={11} />
-                Sai mã ({missingCodes.length})
+                {tr(`Sai mã (${missingCodes.length})`, `Missing (${missingCodes.length})`)}
               </span>
               <button
                 onClick={handleCopyMissing}
                 className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 transition-colors cursor-pointer"
               >
                 {copiedMissing ? <ClipboardCheck size={10} /> : <Clipboard size={10} />}
-                {copiedMissing ? "Đã sao chép" : "Sao chép"}
+                {copiedMissing ? tr("Đã sao chép", "Copied") : tr("Sao chép", "Copy")}
               </button>
             </div>
             <div className="max-h-20 overflow-y-auto" style={{ scrollbarWidth: "thin" }}>
@@ -332,7 +332,7 @@ export function RightPanel() {
             </div>
 
             <p className="text-[10px] text-muted-foreground truncate">
-              {progress.message}
+              {progress.message ? localizeBackendMessage(progress.message, lang) : ""}
             </p>
           </div>
         )}
@@ -395,17 +395,17 @@ export function RightPanel() {
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-semibold flex items-center gap-1.5">
                 <FileSpreadsheet size={13} />
-                <span>Google Sheets Trạng Thái</span>
+                <span>{tr("Google Sheets Trạng Thái", "Google Sheets Status")}</span>
               </span>
               {sheetUpdateStatus.state === "updating" && (
                 <span className="flex items-center gap-1 text-[10px] text-muted-foreground animate-pulse">
                   <Loader2 size={10} className="animate-spin" />
-                  Đang đồng bộ...
+                  {tr("Đang đồng bộ...", "Syncing...")}
                 </span>
               )}
               {sheetUpdateStatus.state === "success" && (
                 <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/15 border border-emerald-500/30 font-mono">
-                  Đã đổi trạng thái
+                  {tr("Đã đổi trạng thái", "Status updated")}
                 </span>
               )}
             </div>
@@ -422,7 +422,7 @@ export function RightPanel() {
                 }}
                 className="mt-1 text-[10px] px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 font-medium transition-colors cursor-pointer"
               >
-                Thử lại cập nhật Google Sheet
+                {tr("Thử lại cập nhật Google Sheet", "Retry Google Sheet update")}
               </button>
             )}
           </div>
@@ -498,7 +498,10 @@ export function RightPanel() {
           <div className="flex items-start gap-2 p-2 bg-amber-500/5 border border-amber-500/20 rounded-lg">
             <AlertTriangle size={12} className="text-amber-500 shrink-0 mt-0.5" />
             <p className="text-[10px] text-amber-600/80 dark:text-amber-400/80 leading-relaxed">
-              {matchResult.missing_count} mã không tìm thấy trong thư mục đã quét. Có thể export báo cáo.
+              {tr(
+                `${matchResult.missing_count} mã không tìm thấy trong thư mục đã quét. Có thể export báo cáo.`,
+                `${matchResult.missing_count} code(s) were not found in the scanned folders. You can export a report.`
+              )}
             </p>
           </div>
         )}
@@ -530,7 +533,7 @@ export function RightPanel() {
                 {isAutoFinding ? (
                   <>
                     <Loader2 size={14} className="animate-spin" />
-                    <span>Đang nạp mã...</span>
+                    <span>{tr("Đang nạp mã...", "Loading codes...")}</span>
                   </>
                 ) : (
                   <>

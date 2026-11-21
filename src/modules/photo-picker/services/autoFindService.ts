@@ -15,6 +15,7 @@ import {
 } from "./sheetTabExtractionService";
 import { getFolderName } from "@/core/lib/utils";
 import { invoke } from "@tauri-apps/api/core";
+import { trText, getLocaleCode } from "../../../core/lib/i18n.ts";
 import type { CustomerCode } from "@/core/types";
 
 export interface AutoFindResult {
@@ -156,7 +157,7 @@ class AutoFindService {
       const meta = await withTimeout(
         sheetDiscoveryService.fetchSpreadsheetMetadata(spreadsheetId, isMock),
         7000,
-        "Quá thời gian tải danh sách Tab trang tính (7s)"
+        trText("Quá thời gian tải danh sách Tab trang tính (7s)", "Timed out loading spreadsheet tab list (7s)")
       );
 
       if (meta && meta.tabs && meta.tabs.length > 0) {
@@ -203,7 +204,7 @@ class AutoFindService {
             isMock
           ),
           8000,
-          `Quá thời gian tải dữ liệu Tab "${tabTitle}" (8s)`
+          trText(`Quá thời gian tải dữ liệu Tab "${tabTitle}" (8s)`, `Timed out loading tab "${tabTitle}" (8s)`)
         );
 
         this.tabRowsCache.set(key, { rows, timestamp: now });
@@ -223,7 +224,7 @@ class AutoFindService {
       return existing.rows;
     }
 
-    throw lastError || new Error(`Không tải được dữ liệu cho Tab "${tabTitle}"`);
+    throw lastError || new Error(trText(`Không tải được dữ liệu cho Tab "${tabTitle}"`, `Failed to load data for tab "${tabTitle}"`));
   }
 
   /**
@@ -240,7 +241,7 @@ class AutoFindService {
         success: false,
         folderName: "",
         folderPath: "",
-        reason: "Chưa chọn thư mục khách.",
+        reason: trText("Chưa chọn thư mục khách.", "No customer folder selected."),
       };
     }
 
@@ -272,7 +273,7 @@ class AutoFindService {
       profiles[0];
 
     if (!profile || !profile.spreadsheetId) {
-      const reason = "Chưa cấu hình hồ sơ Google Sheet.";
+      const reason = trText("Chưa cấu hình hồ sơ Google Sheet.", "Google Sheet profile not configured.");
       useAppStore.getState().setAutoFindStatus({
         state: "error",
         targetCustomerName: rawName,
@@ -291,7 +292,7 @@ class AutoFindService {
     );
 
     if (!isMock && !googleCredentialManager.isConnected()) {
-      const reason = "Tài khoản Google chưa được kết nối.";
+      const reason = trText("Tài khoản Google chưa được kết nối.", "Google account is not connected.");
       useAppStore.getState().setAutoFindStatus({
         state: "error",
         targetCustomerName: rawName,
@@ -310,7 +311,7 @@ class AutoFindService {
     useAppStore.getState().setAutoFindStatus({
       state: "loading",
       targetCustomerName: rawName,
-      message: `Đang truy xuất mã của "${rawName}" từ Google Sheet...`,
+      message: trText(`Đang truy xuất mã của "${rawName}" từ Google Sheet...`, `Fetching codes for "${rawName}" from Google Sheet...`),
     });
 
     try {
@@ -357,7 +358,7 @@ class AutoFindService {
       }
 
       if (checkedTabs.length === 0) {
-        const reason = "Chưa chọn tab làm việc nào trên Google Sheet.";
+        const reason = trText("Chưa chọn tab làm việc nào trên Google Sheet.", "No working sheet tabs selected.");
         useAppStore.getState().setAutoFindStatus({
           state: "error",
           targetCustomerName: rawName,
@@ -464,7 +465,10 @@ class AutoFindService {
         }
 
         if (tabRows.length === 0) {
-          const reason = `Không thể kết nối tải dữ liệu trang tính (Lỗi tại Tab: ${failedTabs.join(", ")}).`;
+          const reason = trText(
+            `Không thể kết nối tải dữ liệu trang tính (Lỗi tại Tab: ${failedTabs.join(", ")}).`,
+            `Failed to load spreadsheet data (Failed tab(s): ${failedTabs.join(", ")}).`
+          );
           useAppStore.getState().setAutoFindStatus({
             state: "error",
             targetCustomerName: rawName,
@@ -568,7 +572,10 @@ class AutoFindService {
             matchedRow: bestCandidate.row,
             matchedTabTitle: candidateTab,
             status: "READY",
-            reason: `Tự động khớp theo hàng điểm cao nhất (${bestCandidate.matchedFields.join(", ")})`,
+            reason: trText(
+              `Tự động khớp theo hàng điểm cao nhất (${bestCandidate.matchedFields.join(", ")})`,
+              `Auto-matched top scoring row (${bestCandidate.matchedFields.join(", ")})`
+            ),
             targetSnapshot: bestCandidate.values,
             candidateColumns: cols,
           };
@@ -577,7 +584,10 @@ class AutoFindService {
       }
 
       if (!extraction || extraction.status === "NO_MATCH" || !extraction.matchedRow) {
-        const reason = `Không tìm thấy dòng tương ứng với "${rawName}" trên Google Sheet.`;
+        const reason = trText(
+          `Không tìm thấy dòng tương ứng với "${rawName}" trên Google Sheet.`,
+          `No matching row found for "${rawName}" on Google Sheet.`
+        );
         useAppStore.getState().setAutoFindStatus({
           state: "error",
           targetCustomerName: rawName,
@@ -632,7 +642,10 @@ class AutoFindService {
               matchedRow: cand.row,
               matchedTabTitle: candTab,
               status: "READY",
-              reason: `Khớp theo hàng có mã ảnh (${cand.matchedFields.join(", ")})`,
+              reason: trText(
+                `Khớp theo hàng có mã ảnh (${cand.matchedFields.join(", ")})`,
+                `Matched row with photo codes (${cand.matchedFields.join(", ")})`,
+              ),
               targetSnapshot: cand.values,
               candidateColumns: cols,
             };
@@ -694,12 +707,15 @@ class AutoFindService {
           success: false,
           folderName: rawName,
           folderPath,
-          reason: "Đã chuyển sang khách hàng khác.",
+          reason: trText("Đã chuyển sang khách hàng khác.", "Switched to another customer."),
         };
       }
 
       if (!formattedCodes.trim()) {
-        const reason = `Đã tìm thấy dòng ${extraction.matchedRow} nhưng khách chưa có mã chọn trên Sheet.`;
+        const reason = trText(
+          `Đã tìm thấy dòng ${extraction.matchedRow} nhưng khách chưa có mã chọn trên Sheet.`,
+          `Found row ${extraction.matchedRow}, but no photo codes are filled yet.`
+        );
         useAppStore.getState().setAutoFindStatus({
           state: "error",
           targetCustomerName: rawName,
@@ -736,7 +752,7 @@ class AutoFindService {
           success: false,
           folderName: rawName,
           folderPath,
-          reason: "Đã chuyển sang khách hàng khác.",
+          reason: trText("Đã chuyển sang khách hàng khác.", "Switched to another customer."),
         };
       }
 
@@ -771,8 +787,8 @@ class AutoFindService {
         state: "success",
         targetCustomerName: rawName,
         codeCount,
-        message: `Đã nạp ${codeCount} mã cho ${rawName}`,
-        updatedAt: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+        message: trText(`Đã nạp ${codeCount} mã cho ${rawName}`, `Loaded ${codeCount} codes for ${rawName}`),
+        updatedAt: new Date().toLocaleTimeString(getLocaleCode(), { hour: "2-digit", minute: "2-digit" }),
       });
 
       return {

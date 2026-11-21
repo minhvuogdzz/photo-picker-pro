@@ -33,6 +33,7 @@ import {
 import { useContactSheetStore } from "@/modules/contact-the-sheet/stores/useContactSheetStore";
 import { useSettingsStore } from "@/core/stores/useSettingsStore";
 import { sheetDiscoveryService } from "@/modules/contact-the-sheet/services/sheetDiscoveryService";
+import { getLocaleCode, useTranslation } from "@/core/lib/i18n";
 import {
   getVietnamTodayKey,
   formatDateKey,
@@ -42,6 +43,7 @@ const STANDARD_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const COMMON_STATUS_SUGGESTIONS = ["Chưa lọc", "Chờ lọc", "Đang xử lý", "Chưa sửa"];
 
 export function NotificationCenterModule() {
+  const { tr, lang } = useTranslation();
   const config = useNotificationConfigStore();
   const activeTab = config.activeTab;
   const setActiveTab = config.setActiveTab;
@@ -173,13 +175,21 @@ export function NotificationCenterModule() {
       setLiveScanResult(res);
       if (res.urgentCount > 0) {
         setScanMessage(
-          `Đã quét xong: Phát hiện ${res.urgentCount} khách hàng tới hạn cần lọc gấp!`
+          tr(
+            `Đã quét xong: Phát hiện ${res.urgentCount} khách hàng tới hạn cần lọc gấp!`,
+            `Scan complete: Found ${res.urgentCount} urgent customer(s) due for culling!`
+          )
         );
       } else {
-        setScanMessage("Không có khách nào thỏa mãn đồng thời 3 điều kiện cần lọc gấp hôm nay.");
+        setScanMessage(
+          tr(
+            "Không có khách nào thỏa mãn đồng thời 3 điều kiện cần lọc gấp hôm nay.",
+            "No customers match all 3 urgent filtering conditions today."
+          )
+        );
       }
     } catch (err) {
-      setScanMessage("Lỗi khi quét Google Sheet: " + String(err));
+      setScanMessage(tr("Lỗi khi quét Google Sheet: ", "Google Sheet scan error: ") + String(err));
     } finally {
       setIsScanning(false);
       setTimeout(() => setScanMessage(null), 8000);
@@ -201,18 +211,24 @@ export function NotificationCenterModule() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-sm font-bold text-foreground tracking-tight">
-                Trung tâm thông báo
+                {tr("Trung tâm thông báo", "Notification Center")}
               </h1>
               {unreadCount > 0 && (
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-black shadow-xs animate-pulse">
-                  {unreadCount} mới
+                  {tr(`${unreadCount} mới`, `${unreadCount} new`)}
                 </span>
               )}
             </div>
             <p className="text-[11px] text-muted-foreground hidden sm:block">
               {activeTab === "history"
-                ? "Lịch sử cảnh báo khách hàng tới hạn gấp và thông báo hệ điều hành"
-                : "Cấu hình thông báo tự động và quét dữ liệu Google Sheet"}
+                ? tr(
+                    "Lịch sử cảnh báo khách hàng tới hạn gấp và thông báo hệ điều hành",
+                    "History of urgent customer alerts and OS notifications"
+                  )
+                : tr(
+                    "Cấu hình thông báo tự động và quét dữ liệu Google Sheet",
+                    "Configure automated reminders and Google Sheet scanning"
+                  )}
             </p>
           </div>
         </div>
@@ -228,10 +244,10 @@ export function NotificationCenterModule() {
                 ? "bg-background text-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
             }`}
-            title="Lịch sử thông báo"
+            title={tr("Lịch sử thông báo", "Notification History")}
           >
             <Bell size={13} className={unreadCount > 0 ? "text-amber-500" : ""} />
-            <span className="hidden sm:inline">Lịch sử thông báo</span>
+            <span className="hidden sm:inline">{tr("Lịch sử thông báo", "History")}</span>
             {unreadCount > 0 && (
               <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-amber-500 text-black">
                 {unreadCount}
@@ -249,10 +265,10 @@ export function NotificationCenterModule() {
                 ? "text-emerald-600 dark:text-emerald-400 hover:bg-background/80"
                 : "text-muted-foreground/40 cursor-not-allowed"
             }`}
-            title="Đánh dấu tất cả thông báo đã đọc"
+            title={tr("Đánh dấu tất cả thông báo đã đọc", "Mark all notifications as read")}
           >
             <CheckCheck size={14} className={unreadCount > 0 ? "text-emerald-500" : "text-muted-foreground/40"} />
-            <span className="hidden md:inline">Đọc tất cả</span>
+            <span className="hidden md:inline">{tr("Đọc tất cả", "Mark all read")}</span>
           </button>
 
           {/* 3. Cấu hình thông báo */}
@@ -264,10 +280,10 @@ export function NotificationCenterModule() {
                 ? "bg-background text-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
             }`}
-            title="Cấu hình thông báo"
+            title={tr("Cấu hình thông báo", "Notification Settings")}
           >
             <Sliders size={13} className="text-primary" />
-            <span className="hidden sm:inline">Cấu hình thông báo</span>
+            <span className="hidden sm:inline">{tr("Cấu hình thông báo", "Settings")}</span>
           </button>
         </div>
       </div>
@@ -277,14 +293,19 @@ export function NotificationCenterModule() {
         <div className="px-6 py-2.5 bg-emerald-500/15 border-b border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center justify-between animate-fade-in shadow-xs">
           <div className="flex items-center gap-2">
             <CheckCircle2 size={16} className="text-emerald-500" />
-            <span>Đã lưu toàn bộ cấu hình thông báo thành công! Mọi thay đổi đã được ghi nhận vào hệ thống.</span>
+            <span>
+              {tr(
+                "Đã lưu toàn bộ cấu hình thông báo thành công! Mọi thay đổi đã được ghi nhận vào hệ thống.",
+                "All notification settings saved! Changes have been persisted."
+              )}
+            </span>
           </div>
           <button
             type="button"
             onClick={() => setSaveSuccess(false)}
             className="text-[10px] underline hover:opacity-80 cursor-pointer"
           >
-            Đóng
+            {tr("Đóng", "Close")}
           </button>
         </div>
       )}
@@ -298,7 +319,7 @@ export function NotificationCenterModule() {
             onClick={() => setScanMessage(null)}
             className="text-[10px] underline hover:opacity-80"
           >
-            Đóng
+            {tr("Đóng", "Close")}
           </button>
         </div>
       )}
@@ -312,10 +333,12 @@ export function NotificationCenterModule() {
                 <CheckCircle2 size={28} className="text-emerald-500" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-foreground">Không có thông báo nào</h3>
+                <h3 className="text-sm font-bold text-foreground">{tr("Không có thông báo nào", "No notifications yet")}</h3>
                 <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-                  Chưa có cảnh báo khẩn cấp nào được ghi nhận. App sẽ tự động quét Google Sheet mỗi
-                  5 phút và bắn thông báo khi có khách tới hạn cần lọc gấp.
+                  {tr(
+                    "Chưa có cảnh báo khẩn cấp nào được ghi nhận. App sẽ tự động quét Google Sheet mỗi 5 phút và bắn thông báo khi có khách tới hạn cần lọc gấp.",
+                    "No urgent alerts recorded yet. The app scans your Google Sheet every 5 minutes and alerts when urgent customers are due."
+                  )}
                 </p>
               </div>
               <button
@@ -325,27 +348,27 @@ export function NotificationCenterModule() {
                 className="mt-2 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold flex items-center gap-2 cursor-pointer shadow-xs active:scale-97"
               >
                 <RefreshCw size={13} className={isScanning ? "animate-spin" : ""} />
-                <span>Quét kiểm tra ngay</span>
+                <span>{tr("Quét kiểm tra ngay", "Scan Now")}</span>
               </button>
             </div>
           ) : (
             <div className="max-w-4xl mx-auto space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-border/60 px-1">
                 <span className="text-xs font-semibold text-muted-foreground">
-                  Danh sách thông báo ({notifications.length})
+                  {tr(`Danh sách thông báo (${notifications.length})`, `Notifications (${notifications.length})`)}
                 </span>
                 <button
                   type="button"
                   onClick={() => {
-                    if (confirm("Bạn có chắc muốn xóa toàn bộ lịch sử thông báo?")) {
+                    if (confirm(tr("Bạn có chắc muốn xóa toàn bộ lịch sử thông báo?", "Are you sure you want to clear all notification history?"))) {
                       clearAllNotifications();
                     }
                   }}
                   className="h-7 px-2.5 rounded-lg border border-destructive/30 hover:border-destructive bg-destructive/10 hover:bg-destructive/20 text-destructive text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-97"
-                  title="Xóa toàn bộ lịch sử thông báo"
+                  title={tr("Xóa toàn bộ lịch sử thông báo", "Clear all notification history")}
                 >
                   <Trash2 size={12} />
-                  <span>Xóa lịch sử</span>
+                  <span>{tr("Xóa lịch sử", "Clear history")}</span>
                 </button>
               </div>
 
@@ -391,7 +414,7 @@ export function NotificationCenterModule() {
                           <div className="flex items-center gap-3">
                             <span className="text-[10px] text-muted-foreground flex items-center gap-1 font-mono">
                               <Clock size={11} />
-                              {new Date(notif.timestamp).toLocaleString("vi-VN", {
+                              {new Date(notif.timestamp).toLocaleString(getLocaleCode(lang), {
                                 hour: "2-digit",
                                 minute: "2-digit",
                                 day: "2-digit",
@@ -406,7 +429,7 @@ export function NotificationCenterModule() {
                                 removeNotification(notif.id);
                               }}
                               className="text-muted-foreground hover:text-destructive p-1 rounded-md transition-colors cursor-pointer"
-                              title="Xóa thông báo này"
+                              title={tr("Xóa thông báo này", "Delete this notification")}
                             >
                               <Trash2 size={13} />
                             </button>
@@ -419,9 +442,9 @@ export function NotificationCenterModule() {
                         {notif.customers && notif.customers.length > 0 && (
                           <div className="mt-2.5 pt-2.5 border-t border-border/60 flex items-center justify-between">
                             <span className="text-[11px] text-muted-foreground">
-                              Bao gồm{" "}
+                              {tr("Bao gồm", "Includes")}{" "}
                               <strong className="text-foreground">{notif.customers.length}</strong>{" "}
-                              khách hàng trong danh sách
+                              {tr("khách hàng trong danh sách", "customer(s) in list")}
                             </span>
                             <button
                               type="button"
@@ -431,7 +454,7 @@ export function NotificationCenterModule() {
                               }}
                               className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-1 cursor-pointer"
                             >
-                              <span>{isExpanded ? "Thu gọn" : "Xem chi tiết khách hàng"}</span>
+                              <span>{isExpanded ? tr("Thu gọn", "Collapse") : tr("Xem chi tiết khách hàng", "View customer details")}</span>
                               {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                             </button>
                           </div>
@@ -456,14 +479,14 @@ export function NotificationCenterModule() {
                                   {c.customerName}
                                 </span>
                                 <span className="text-[10px] px-1.5 py-0.2 rounded bg-muted text-muted-foreground">
-                                  Tab: {c.tabTitle} (Dòng {c.row})
+                                  {tr(`Tab: ${c.tabTitle} (Dòng ${c.row})`, `Tab: ${c.tabTitle} (Row ${c.row})`)}
                                 </span>
                               </div>
                               <div className="flex items-center gap-3 shrink-0">
                                 {c.dueDate && (
                                   <span className="text-[10px] text-amber-600 dark:text-amber-400 font-mono font-medium flex items-center gap-1">
                                     <Calendar size={10} />
-                                    Hạn: {c.dueDate}
+                                    {tr("Hạn:", "Due:")} {c.dueDate}
                                   </span>
                                 )}
                                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
@@ -500,7 +523,7 @@ export function NotificationCenterModule() {
                 }`}
               >
                 <FileSpreadsheet size={13} className="text-emerald-500" />
-                <span>Quét Google Sheet tới hạn</span>
+                <span>{tr("Quét Google Sheet tới hạn", "Urgent Sheet Scan")}</span>
               </button>
 
               <button
@@ -513,7 +536,7 @@ export function NotificationCenterModule() {
                 }`}
               >
                 <Bell size={13} className="text-primary" />
-                <span>Thông báo hệ điều hành</span>
+                <span>{tr("Thông báo hệ điều hành", "OS Notifications")}</span>
               </button>
             </div>
 
@@ -524,13 +547,13 @@ export function NotificationCenterModule() {
                 onClick={handleScanNow}
                 disabled={isScanning}
                 className="h-8 px-3 rounded-lg border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-97"
-                title="Quét kiểm tra toàn bộ Sheet ngay"
+                title={tr("Quét kiểm tra toàn bộ Sheet ngay", "Scan all configured tabs now")}
               >
                 <RefreshCw
                   size={12}
                   className={isScanning ? "animate-spin text-amber-500" : "text-amber-500"}
                 />
-                <span className="hidden sm:inline">{isScanning ? "Đang quét..." : "Quét Sheet ngay"}</span>
+                <span className="hidden sm:inline">{isScanning ? tr("Đang quét...", "Scanning...") : tr("Quét Sheet ngay", "Scan Sheet Now")}</span>
               </button>
 
               {import.meta.env.DEV && (
@@ -538,10 +561,10 @@ export function NotificationCenterModule() {
                   type="button"
                   onClick={handleTestNotification}
                   className="h-8 px-3 rounded-lg border border-border hover:border-foreground/20 bg-card hover:bg-muted text-foreground text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-97"
-                  title="Gửi thông báo thử nghiệm hệ điều hành (Chỉ hiển thị khi Test / DEV, Release không có)"
+                  title={tr("Gửi thông báo thử nghiệm hệ điều hành (Chỉ hiển thị khi Test / DEV, Release không có)", "Send test OS notification (DEV mode only)")}
                 >
                   <Bell size={12} className="text-primary" />
-                  <span className="hidden md:inline">Bắn thông báo thử</span>
+                  <span className="hidden md:inline">{tr("Bắn thông báo thử", "Test Notification")}</span>
                 </button>
               )}
 
@@ -551,7 +574,7 @@ export function NotificationCenterModule() {
                 className="h-8 px-3.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-97"
               >
                 {saveSuccess ? <Check size={13} /> : <Save size={13} />}
-                <span>{saveSuccess ? "Đã lưu!" : "Lưu cấu hình"}</span>
+                <span>{saveSuccess ? tr("Đã lưu!", "Saved!") : tr("Lưu cấu hình", "Save Config")}</span>
               </button>
             </div>
           </div>
@@ -565,18 +588,18 @@ export function NotificationCenterModule() {
                 <div className="flex items-center gap-2">
                   <FileSpreadsheet size={16} className="text-primary" />
                   <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
-                    1. Hồ sơ Bảng tính Studio
+                    {tr("1. Hồ sơ Bảng tính Studio", "1. Studio Spreadsheet Profile")}
                   </h3>
                 </div>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">
-                  {googleConnection?.accountEmail ? "Google Account: Đã liên kết" : "Chế độ bảng tính"}
+                  {googleConnection?.accountEmail ? tr("Google Account: Đã liên kết", "Google Account: Linked") : tr("Chế độ bảng tính", "Spreadsheet Mode")}
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] text-muted-foreground font-medium mb-1">
-                    Chọn Hồ sơ Studio quét thông báo
+                    {tr("Chọn Hồ sơ Studio quét thông báo", "Select Studio profile to monitor")}
                   </label>
                   <div className="relative">
                     <select
@@ -606,7 +629,7 @@ export function NotificationCenterModule() {
                   <input
                     type="text"
                     disabled
-                    value={targetProfile?.spreadsheetId || "Chưa cấu hình"}
+                    value={targetProfile?.spreadsheetId || tr("Chưa cấu hình", "Not configured")}
                     className="w-full px-3 py-1.5 text-xs font-mono rounded-lg bg-muted/50 border border-border text-muted-foreground"
                   />
                 </div>
@@ -616,7 +639,7 @@ export function NotificationCenterModule() {
               <div className="pt-2 border-t border-border/70 space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-[11px] text-muted-foreground font-medium">
-                    Các Tab quét kiểm tra trên Sheet (Chọn một hoặc nhiều tab):
+                    {tr("Các Tab quét kiểm tra trên Sheet (Chọn một hoặc nhiều tab):", "Sheet Tabs to scan (select one or more):")}
                   </label>
                   <div className="flex items-center gap-2">
                     <button
@@ -624,7 +647,7 @@ export function NotificationCenterModule() {
                       onClick={handleSelectAllTabs}
                       className="text-[10px] text-primary hover:underline font-semibold cursor-pointer"
                     >
-                      Chọn tất cả
+                      {tr("Chọn tất cả", "Select all")}
                     </button>
                     <span className="text-muted-foreground text-xs">·</span>
                     <button
@@ -632,7 +655,7 @@ export function NotificationCenterModule() {
                       onClick={handleDeselectAllTabs}
                       className="text-[10px] text-muted-foreground hover:text-foreground cursor-pointer"
                     >
-                      Bỏ chọn tất cả
+                      {tr("Bỏ chọn tất cả", "Deselect all")}
                     </button>
                   </div>
                 </div>
@@ -641,7 +664,7 @@ export function NotificationCenterModule() {
                   {isLoadingTabs ? (
                     <span className="text-xs text-muted-foreground flex items-center gap-1.5 py-1">
                       <RefreshCw size={11} className="animate-spin text-primary" />
-                      Đang tải danh sách Tab từ Google Sheet...
+                      {tr("Đang tải danh sách Tab từ Google Sheet...", "Loading tabs from Google Sheet...")}
                     </span>
                   ) : availableTabs.map((tab) => {
                     const isChecked = selectedTabs.includes(tab);
@@ -670,11 +693,11 @@ export function NotificationCenterModule() {
                 <div className="flex items-center gap-2">
                   <Sliders size={16} className="text-amber-500" />
                   <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
-                    2. Cấu hình 3 Điều kiện quét Khẩn cấp
+                    {tr("2. Cấu hình 3 Điều kiện quét Khẩn cấp", "2. Configure 3 Urgent Alert Conditions")}
                   </h3>
                 </div>
                 <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
-                  Đồng thời xảy ra
+                  {tr("Đồng thời xảy ra", "All must match")}
                 </span>
               </div>
 
@@ -683,14 +706,14 @@ export function NotificationCenterModule() {
                 <div className="space-y-1.5 p-3 rounded-lg bg-muted/30 border border-border/70">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-bold text-foreground">
-                      Điều kiện 1: Trạng thái
+                      {tr("Điều kiện 1: Trạng thái", "Condition 1: Status")}
                     </span>
-                    <span className="text-[10px] text-muted-foreground font-mono">Cột M</span>
+                    <span className="text-[10px] text-muted-foreground font-mono">{tr("Cột M", "Col M")}</span>
                   </div>
 
                   <div>
                     <label className="block text-[10px] text-muted-foreground mb-1">
-                      Cột trạng thái trên Sheet
+                      {tr("Cột trạng thái trên Sheet", "Status column in Sheet")}
                     </label>
                     <div className="relative">
                       <select
@@ -700,7 +723,7 @@ export function NotificationCenterModule() {
                       >
                         {STANDARD_LETTERS.map((col) => (
                           <option key={col} value={col}>
-                            Cột {col} {col === "M" ? "(Mặc định)" : ""}
+                            {tr("Cột", "Col")} {col} {col === "M" ? tr("(Mặc định)", "(Default)") : ""}
                           </option>
                         ))}
                       </select>
@@ -713,7 +736,7 @@ export function NotificationCenterModule() {
 
                   <div>
                     <label className="block text-[10px] text-muted-foreground mb-1">
-                      Giá trị cần thông báo
+                      {tr("Giá trị cần thông báo", "Target status value")}
                     </label>
                     <input
                       type="text"
@@ -729,14 +752,14 @@ export function NotificationCenterModule() {
                 <div className="space-y-1.5 p-3 rounded-lg bg-muted/30 border border-border/70">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-bold text-foreground">
-                      Điều kiện 2: Hạn trả ảnh
+                      {tr("Điều kiện 2: Hạn trả ảnh", "Condition 2: Due Date")}
                     </span>
-                    <span className="text-[10px] text-muted-foreground font-mono">Cột L</span>
+                    <span className="text-[10px] text-muted-foreground font-mono">{tr("Cột L", "Col L")}</span>
                   </div>
 
                   <div>
                     <label className="block text-[10px] text-muted-foreground mb-1">
-                      Cột ngày hẹn trả ảnh
+                      {tr("Cột ngày hẹn trả ảnh", "Due date column")}
                     </label>
                     <div className="relative">
                       <select
@@ -746,7 +769,7 @@ export function NotificationCenterModule() {
                       >
                         {STANDARD_LETTERS.map((col) => (
                           <option key={col} value={col}>
-                            Cột {col} {col === "L" ? "(Mặc định)" : ""}
+                            {tr("Cột", "Col")} {col} {col === "L" ? tr("(Mặc định)", "(Default)") : ""}
                           </option>
                         ))}
                       </select>
@@ -758,9 +781,12 @@ export function NotificationCenterModule() {
                   </div>
 
                   <div className="text-[10px] text-muted-foreground pt-1 leading-relaxed">
-                    Hôm nay (GMT+7): <strong className="text-foreground font-mono">{todayLabel}</strong>
+                    {tr("Hôm nay (GMT+7):", "Today (GMT+7):")} <strong className="text-foreground font-mono">{todayLabel}</strong>
                     <p className="mt-0.5 text-[9px] text-zinc-500">
-                      Tự động quét khách có ngày hẹn là hôm nay hoặc đã quá hạn trước đó.
+                      {tr(
+                        "Tự động quét khách có ngày hẹn là hôm nay hoặc đã quá hạn trước đó.",
+                        "Automatically detects customers whose due date is today or overdue."
+                      )}
                     </p>
                   </div>
                 </div>
@@ -769,14 +795,14 @@ export function NotificationCenterModule() {
                 <div className="space-y-1.5 p-3 rounded-lg bg-muted/30 border border-border/70">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-bold text-foreground">
-                      Điều kiện 3: Link Edit
+                      {tr("Điều kiện 3: Link Edit", "Condition 3: Edit Link")}
                     </span>
-                    <span className="text-[10px] text-amber-500 font-mono font-bold">Cột O</span>
+                    <span className="text-[10px] text-amber-500 font-mono font-bold">{tr("Cột O", "Col O")}</span>
                   </div>
 
                   <div>
                     <label className="block text-[10px] text-muted-foreground mb-1">
-                      Cột Link edit / Bàn giao
+                      {tr("Cột Link edit / Bàn giao", "Edit / Delivery Link column")}
                     </label>
                     <div className="relative">
                       <select
@@ -784,10 +810,10 @@ export function NotificationCenterModule() {
                         onChange={(e) => setLinkEditColumn(e.target.value)}
                         className="w-full appearance-none px-2.5 py-1 text-xs font-semibold rounded bg-background border border-amber-500/40 text-foreground focus:outline-none focus:border-primary cursor-pointer pr-6"
                       >
-                        <option value="OFF">TẮT — Không kiểm tra</option>
+                        <option value="OFF">{tr("TẮT — Không kiểm tra", "OFF — Disabled")}</option>
                         {STANDARD_LETTERS.map((col) => (
                           <option key={col} value={col}>
-                            Cột {col} {col === "O" ? "(Cột O - Mặc định)" : col === "N" ? "(Cột N)" : ""}
+                            {tr("Cột", "Col")} {col} {col === "O" ? tr("(Cột O - Mặc định)", "(Col O - Default)") : col === "N" ? tr("(Cột N)", "(Col N)") : ""}
                           </option>
                         ))}
                       </select>
@@ -799,16 +825,22 @@ export function NotificationCenterModule() {
                   </div>
 
                   <div className="text-[10px] text-muted-foreground pt-1 leading-relaxed">
-                    Logic: Ô này phải <strong>RỖNG</strong> (chưa có dữ liệu link bàn giao). Nếu đã có link $\implies$ tự động bỏ qua.
+                    {tr(
+                      "Logic: Ô này phải RỖNG (chưa có dữ liệu link bàn giao). Nếu đã có link ⇒ tự động bỏ qua.",
+                      "Rule: This cell must be EMPTY (no delivery link yet). Rows that already have a link are skipped."
+                    )}
                   </div>
                 </div>
               </div>
 
               {/* Tóm tắt logic 3 điều kiện */}
               <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-600 dark:text-amber-400 space-y-1">
-                <p className="font-bold">Tóm tắt logic kích hoạt thông báo khẩn cấp:</p>
+                <p className="font-bold">{tr("Tóm tắt logic kích hoạt thông báo khẩn cấp:", "Urgent trigger summary:")}</p>
                 <p className="leading-relaxed">
-                  Một hàng khách hàng sẽ được báo khẩn cấp khi đồng thời: <strong>(1)</strong> Cột {statusColumn} là "{targetStatusValue}", <strong>(2)</strong> Ngày hẹn trả ở Cột {dueDateColumn} là {todayLabel} hoặc trước đó, và <strong>(3)</strong> Cột {linkEditColumn !== "OFF" ? linkEditColumn : "(đang tắt)"} đang rỗng (chưa có dữ liệu link edit bàn giao).
+                  {tr(
+                    `Một hàng khách hàng sẽ được báo khẩn cấp khi đồng thời: (1) Cột ${statusColumn} là "${targetStatusValue}", (2) Ngày hẹn trả ở Cột ${dueDateColumn} là ${todayLabel} hoặc trước đó, và (3) Cột ${linkEditColumn !== "OFF" ? linkEditColumn : "(đang tắt)"} đang rỗng (chưa có dữ liệu link edit bàn giao).`,
+                    `A row triggers an urgent alert when all 3 match: (1) Column ${statusColumn} equals "${targetStatusValue}", (2) Due date in Column ${dueDateColumn} is ${todayLabel} or earlier, and (3) Column ${linkEditColumn !== "OFF" ? linkEditColumn : "(disabled)"} is empty.`
+                  )}
                 </p>
               </div>
             </div>
@@ -819,7 +851,7 @@ export function NotificationCenterModule() {
                 <div className="flex items-center gap-2">
                   <Bell size={16} className="text-emerald-500" />
                   <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
-                    3. Bật/Tắt Quét định kỳ 5 phút & Thông báo hệ điều hành
+                    {tr("3. Bật/Tắt Quét định kỳ 5 phút & Thông báo hệ điều hành", "3. Periodic 5-Min Background Scan & OS Notifications")}
                   </h3>
                 </div>
               </div>
@@ -827,10 +859,16 @@ export function NotificationCenterModule() {
               <label className="flex items-start justify-between gap-3 cursor-pointer group p-2.5 rounded-lg hover:bg-muted/30 transition-colors">
                 <div className="space-y-0.5">
                   <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
-                    Tự động quét định kỳ 5 phút/lần & Bắn thông báo ra macOS / Windows
+                    {tr(
+                      "Tự động quét định kỳ 5 phút/lần & Bắn thông báo ra macOS / Windows",
+                      "Auto-scan every 5 minutes & send macOS / Windows alerts"
+                    )}
                   </span>
                   <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    App tự động kiểm tra toàn bộ bảng tính Google Sheet định kỳ mỗi 5 phút kể cả khi không mở cửa sổ (chạy ngầm trên Menu Bar / Tray). Khi có khách thỏa mãn 3 điều kiện trên, hệ thống sẽ phát chuông và hiển thị thông báo khẩn cấp.
+                    {tr(
+                      "App tự động kiểm tra toàn bộ bảng tính Google Sheet định kỳ mỗi 5 phút kể cả khi không mở cửa sổ (chạy ngầm trên Menu Bar / Tray). Khi có khách thỏa mãn 3 điều kiện trên, hệ thống sẽ phát chuông và hiển thị thông báo khẩn cấp.",
+                      "Periodically scans your Google Sheet every 5 minutes even when minimized to the Menu Bar / System Tray, playing a chime and alerting when urgent customers match."
+                    )}
                   </p>
                 </div>
                 <div
@@ -858,17 +896,23 @@ export function NotificationCenterModule() {
                   <div className="flex items-center gap-2">
                     <CheckCircle2 size={16} className="text-emerald-500" />
                     <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
-                      Kết quả quét trực tiếp ({liveScanResult.urgentCount} khách hàng tới hạn)
+                      {tr(
+                        `Kết quả quét trực tiếp (${liveScanResult.urgentCount} khách hàng tới hạn)`,
+                        `Live Scan Results (${liveScanResult.urgentCount} urgent customer(s))`
+                      )}
                     </h3>
                   </div>
                   <span className="text-[10px] text-muted-foreground font-mono">
-                    Đã quét {liveScanResult.scannedTabsCount} tab
+                    {tr(`Đã quét ${liveScanResult.scannedTabsCount} tab`, `Scanned ${liveScanResult.scannedTabsCount} tab(s)`)}
                   </span>
                 </div>
 
                 {liveScanResult.urgentCount === 0 ? (
                   <p className="text-xs text-muted-foreground p-3 bg-muted/30 rounded-lg text-center">
-                    Không tìm thấy khách hàng nào thỏa mãn đồng thời 3 điều kiện trên (Trạng thái: {targetStatusValue}, Hạn trả $\le$ {todayLabel}, Link edit: Cột {linkEditColumn} rỗng).
+                    {tr(
+                      `Không tìm thấy khách hàng nào thỏa mãn đồng thời 3 điều kiện trên (Trạng thái: ${targetStatusValue}, Hạn trả <= ${todayLabel}, Link edit: Cột ${linkEditColumn} rỗng).`,
+                      `No matching customers found (Status: ${targetStatusValue}, Due <= ${todayLabel}, Edit Link: Col ${linkEditColumn} empty).`
+                    )}
                   </p>
                 ) : (
                   <div className="space-y-1.5 max-h-60 overflow-y-auto scrollbar-thin">
@@ -885,18 +929,18 @@ export function NotificationCenterModule() {
                             {c.customerName}
                           </span>
                           <span className="text-[10px] px-1.5 py-0.2 rounded bg-muted text-muted-foreground">
-                            {c.tabTitle} (Dòng {c.row})
+                            {tr(`${c.tabTitle} (Dòng ${c.row})`, `${c.tabTitle} (Row ${c.row})`)}
                           </span>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
                           <span className="text-[10px] text-amber-600 dark:text-amber-400 font-mono font-medium">
-                            Hạn: {c.dueDate}
+                            {tr("Hạn:", "Due:")} {c.dueDate}
                           </span>
                           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                             {c.actualStatus}
                           </span>
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-medium">
-                            Link edit: Rỗng
+                            {tr("Link edit: Rỗng", "Edit Link: Empty")}
                           </span>
                         </div>
                       </div>
@@ -915,7 +959,7 @@ export function NotificationCenterModule() {
                   <div className="flex items-center gap-2 border-b border-border pb-3">
                     <Bell size={16} className="text-primary" />
                     <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
-                      Cài đặt Thông báo Hệ thống (macOS / Windows)
+                      {tr("Cài đặt Thông báo Hệ thống (macOS / Windows)", "System Notification Settings (macOS / Windows)")}
                     </h3>
                   </div>
 
@@ -924,10 +968,13 @@ export function NotificationCenterModule() {
                     <div className="flex items-center justify-between p-3.5 rounded-xl bg-muted/30 border border-border/60">
                       <div>
                         <div className="text-xs font-bold text-foreground">
-                          Bật thông báo trên màn hình hệ điều hành
+                          {tr("Bật thông báo trên màn hình hệ điều hành", "Enable OS Desktop Banners")}
                         </div>
                         <div className="text-[11px] text-muted-foreground mt-0.5">
-                          Hiển thị biểu ngữ (Banner) thông báo và âm thanh chuông Glass khi có khách hàng tới hạn gấp.
+                          {tr(
+                            "Hiển thị biểu ngữ (Banner) thông báo và âm thanh chuông Glass khi có khách hàng tới hạn gấp.",
+                            "Show native desktop banner notifications and Glass chime when urgent customers are due."
+                          )}
                         </div>
                       </div>
                       <input
@@ -949,10 +996,13 @@ export function NotificationCenterModule() {
                     <div className="flex items-center justify-between p-3.5 rounded-xl bg-muted/30 border border-border/60">
                       <div>
                         <div className="text-xs font-bold text-foreground">
-                          Tự động quét Google Sheet ngầm
+                          {tr("Tự động quét Google Sheet ngầm", "Background Google Sheet Polling")}
                         </div>
                         <div className="text-[11px] text-muted-foreground mt-0.5">
-                          Quét tự động mỗi 5 phút ngay cả khi thu nhỏ xuống thanh Menu Bar (Tray).
+                          {tr(
+                            "Quét tự động mỗi 5 phút ngay cả khi thu nhỏ xuống thanh Menu Bar (Tray).",
+                            "Automatically scan every 5 minutes even when minimized to the Menu Bar / System Tray."
+                          )}
                         </div>
                       </div>
                       <input
@@ -967,10 +1017,13 @@ export function NotificationCenterModule() {
                     <div className="flex items-center justify-between p-3.5 rounded-xl bg-muted/30 border border-border/60">
                       <div>
                         <div className="text-xs font-bold text-foreground">
-                          Quyền Thông báo trong Cài đặt Hệ thống macOS
+                          {tr("Quyền Thông báo trong Cài đặt Hệ thống macOS", "Notification Permission in macOS System Settings")}
                         </div>
                         <div className="text-[11px] text-muted-foreground mt-0.5">
-                          Kiểm tra DH Studio Pro trong danh sách Cài đặt Thông báo của macOS.
+                          {tr(
+                            "Kiểm tra DH Studio Pro trong danh sách Cài đặt Thông báo của macOS.",
+                            "Verify DH Studio Pro in your macOS Notification Center settings."
+                          )}
                         </div>
                       </div>
                       <button
@@ -982,7 +1035,7 @@ export function NotificationCenterModule() {
                         className="px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-muted text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-97"
                       >
                         <ExternalLink size={12} />
-                        <span>Mở Cài đặt Mac</span>
+                        <span>{tr("Mở Cài đặt Mac", "Open System Settings")}</span>
                       </button>
                     </div>
 
@@ -994,7 +1047,7 @@ export function NotificationCenterModule() {
                         className="h-8 px-4 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-97"
                       >
                         {saveSuccess ? <Check size={13} /> : <Save size={13} />}
-                        <span>{saveSuccess ? "Đã lưu cài đặt!" : "Lưu cài đặt thông báo"}</span>
+                        <span>{saveSuccess ? tr("Đã lưu cài đặt!", "Settings saved!") : tr("Lưu cài đặt thông báo", "Save Notification Settings")}</span>
                       </button>
                     </div>
                   </div>

@@ -50,7 +50,7 @@ export function LeftPanel() {
   const favoriteFolders = useSettingsStore((s) => s.settings.favorite_folders);
   const addFavoriteFolder = useSettingsStore((s) => s.addFavoriteFolder);
   const removeFavoriteFolder = useSettingsStore((s) => s.removeFavoriteFolder);
-  const { t } = useTranslation();
+  const { t, tr } = useTranslation();
 
   const [isDragging, setIsDragging] = useState(false);
   const [isExpandingBatch, setIsExpandingBatch] = useState(false);
@@ -185,7 +185,9 @@ export function LeftPanel() {
       const selected = await open({
         directory: true,
         multiple: isMultiAllowed,
-        title: isMultiAllowed ? "Chọn thư mục Tháng, Ngày hoặc nhiều khách" : "Chọn thư mục ảnh của khách",
+        title: isMultiAllowed
+          ? tr("Chọn thư mục Tháng, Ngày hoặc nhiều khách", "Select Month, Day, or customer folders")
+          : tr("Chọn thư mục ảnh của khách", "Select customer photo folder"),
       });
 
       if (selected) {
@@ -277,11 +279,11 @@ export function LeftPanel() {
     }
 
     if (includeMissing && missingCodes.length > 0) {
-      parts.push(`sai mã: ${missingCodes.join(", ")}`);
+      parts.push(`${tr("sai mã:", "missing:")} ${missingCodes.join(", ")}`);
     }
 
     if (includeDuplicates && duplicateCodes.length > 0) {
-      parts.push(`trùng mã: ${duplicateCodes.join(", ")}`);
+      parts.push(`${tr("trùng mã:", "duplicate:")} ${duplicateCodes.join(", ")}`);
     }
 
     return parts.join(" ");
@@ -329,7 +331,7 @@ export function LeftPanel() {
         <button 
           onClick={() => setIsCollapsed(false)}
           className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-all mb-4 cursor-pointer"
-          title="Mở bảng điều khiển" aria-label="Mở bảng điều khiển"
+          title={tr("Mở bảng điều khiển", "Expand panel")} aria-label={tr("Mở bảng điều khiển", "Expand panel")}
         >
           <Menu size={16} />
         </button>
@@ -348,7 +350,7 @@ export function LeftPanel() {
           
           <div className="w-5 h-px bg-border/40"></div>
           
-          <div className="relative group cursor-pointer" onClick={() => setIsCollapsed(false)} title="Đã tìm thấy">
+          <div className="relative group cursor-pointer" onClick={() => setIsCollapsed(false)} title={tr("Đã tìm thấy", "Found")}>
             <div className="p-2 text-emerald-600/60 dark:text-emerald-400/60 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 rounded-lg transition-all">
               <CheckCircle size={16} />
             </div>
@@ -359,7 +361,7 @@ export function LeftPanel() {
             )}
           </div>
 
-          <div className="relative group cursor-pointer" onClick={() => setIsCollapsed(false)} title="Các file lỗi">
+          <div className="relative group cursor-pointer" onClick={() => setIsCollapsed(false)} title={tr("Các file lỗi", "Errors")}>
             <div className="p-2 text-red-500/60 group-hover:text-red-500 rounded-lg transition-all">
               <AlertTriangle size={16} />
             </div>
@@ -387,7 +389,7 @@ export function LeftPanel() {
         <div className="py-2.5 px-3 flex justify-between items-center border-b border-border bg-muted/10">
           <span className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-foreground uppercase">
             <FolderOpen size={13} className="text-muted-foreground" />
-            <span>{pickerMode === "multi" ? "Hàng đợi khách" : t("input_folders")}</span>
+            <span>{pickerMode === "multi" ? tr("Hàng đợi khách", "Customer Queue") : t("input_folders")}</span>
             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted/60 text-muted-foreground border border-border/30 font-mono font-bold">
               {inputFolders.length}
             </span>
@@ -399,7 +401,7 @@ export function LeftPanel() {
                 type="button"
                 onClick={clearInputFolders}
                 className="text-muted-foreground hover:text-destructive transition-colors p-1.5 rounded-md hover:bg-destructive/10 cursor-pointer"
-                title="Xoá tất cả khách khỏi hàng đợi" aria-label="Xoá tất cả khách khỏi hàng đợi"
+                title={tr("Xoá tất cả khách khỏi hàng đợi", "Clear all customers from queue")} aria-label={tr("Xoá tất cả khách khỏi hàng đợi", "Clear all customers from queue")}
               >
                 <Trash2 size={13} />
               </button>
@@ -409,7 +411,7 @@ export function LeftPanel() {
               type="button"
               onClick={handleAddFolder}
               className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-muted/60 cursor-pointer"
-              title={pickerMode === "multi" ? "Thêm thư mục Tháng, Ngày hoặc Khách" : t("add_folder")} aria-label={pickerMode === "multi" ? "Thêm thư mục Tháng, Ngày hoặc Khách" : t("add_folder")}
+              title={pickerMode === "multi" ? tr("Thêm thư mục Tháng, Ngày hoặc Khách", "Add Month, Day, or Customer folder") : t("add_folder")} aria-label={pickerMode === "multi" ? tr("Thêm thư mục Tháng, Ngày hoặc Khách", "Add Month, Day, or Customer folder") : t("add_folder")}
             >
               <FolderPlus size={14} />
             </button>
@@ -418,7 +420,7 @@ export function LeftPanel() {
               type="button"
               onClick={() => setIsCollapsed(true)}
               className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-muted/60 cursor-pointer"
-              title="Thu gọn" aria-label="Thu gọn"
+              title={tr("Thu gọn", "Collapse")} aria-label={tr("Thu gọn", "Collapse")}
             >
               <ChevronLeft size={14} />
             </button>
@@ -438,7 +440,7 @@ export function LeftPanel() {
               }`}
             >
               <User size={11} />
-              <span>Lọc 1 khách</span>
+              <span>{tr("Lọc 1 khách", "Single")}</span>
             </button>
             <button
               type="button"
@@ -448,10 +450,10 @@ export function LeftPanel() {
                   ? "bg-card text-foreground font-bold shadow-xs border border-border/60"
                   : "text-muted-foreground hover:text-foreground"
               }`}
-              title="Lọc nhiều khách cùng lúc"
+              title={tr("Lọc nhiều khách cùng lúc", "Batch filter multiple customers")}
             >
               <Users size={11} />
-              <span>Lọc nhiều khách</span>
+              <span>{tr("Lọc nhiều khách", "Batch Queue")}</span>
             </button>
           </div>
 
@@ -464,13 +466,13 @@ export function LeftPanel() {
               />
               <input
                 type="text"
-                placeholder="Tìm tên khách cần lọc trước..."
+                placeholder={tr("Tìm tên khách cần lọc trước...", "Search customer name...")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-7 pr-7 py-1 text-[11px] rounded-md bg-background border border-border/60 text-foreground placeholder:text-muted-foreground/80 focus:outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/30"
               />
               {searchQuery && (
-                <button aria-label="Xoá"
+                <button aria-label={tr("Xoá", "Clear")}
                   type="button"
                   onClick={() => setSearchQuery("")}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
@@ -499,7 +501,7 @@ export function LeftPanel() {
           {isExpandingBatch && (
             <div className="p-3 flex items-center justify-center gap-2 text-xs text-primary animate-pulse bg-primary/5 rounded-lg border border-primary/20">
               <Loader2 size={14} className="animate-spin shrink-0" />
-              <span>Đang quét và bóc tách thư mục khách...</span>
+              <span>{tr("Đang quét và bóc tách thư mục khách...", "Scanning and expanding customer folders...")}</span>
             </div>
           )}
 
@@ -509,8 +511,8 @@ export function LeftPanel() {
               <p className="text-[11px] text-foreground/60">{t("no_folders_added")}</p>
               <p className="text-[10px] mt-1 text-muted-foreground max-w-[200px] leading-relaxed">
                 {pickerMode === "multi"
-                  ? "Kéo thả thư mục Tháng, Ngày hoặc nhiều thư mục khách vào đây"
-                  : "Bấm nút thêm ở góc trên hoặc kéo thả thư mục vào đây"}
+                  ? tr("Kéo thả thư mục Tháng, Ngày hoặc nhiều thư mục khách vào đây", "Drag & drop Month, Day, or customer folders here")
+                  : tr("Bấm nút thêm ở góc trên hoặc kéo thả thư mục vào đây", "Click Add above or drag & drop a folder here")}
               </p>
             </div>
           ) : pickerMode === "single" ? (
@@ -527,7 +529,7 @@ export function LeftPanel() {
                   data-active-customer={isSelected ? "true" : "false"}
                   onClick={() => handleOpenPreview(folder)}
                   className="flex items-center gap-2 p-2 rounded-lg border bg-background/50 border-border/30 hover:border-border/60 hover:bg-muted/30 transition-colors group cursor-pointer select-none"
-                  title="Bấm để mở kho ảnh xem trước"
+                  title={tr("Bấm để mở kho ảnh xem trước", "Click to open photo gallery")}
                 >
                   <FolderOpen size={13} className="text-muted-foreground group-hover:text-primary shrink-0 transition-colors" />
                   <div
@@ -544,7 +546,7 @@ export function LeftPanel() {
                       handleOpenPreview(folder);
                     }}
                     className="p-1 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer shrink-0"
-                    title="Xem toàn bộ ảnh trong thư mục này" aria-label="Xem toàn bộ ảnh trong thư mục này"
+                    title={tr("Xem toàn bộ ảnh trong thư mục này", "Preview all photos in this folder")} aria-label={tr("Xem toàn bộ ảnh trong thư mục này", "Preview all photos in this folder")}
                   >
                     <Eye size={13} />
                   </button>
@@ -608,7 +610,7 @@ export function LeftPanel() {
                       handleOpenPreview(folder);
                     }}
                     className="p-1 rounded hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all cursor-pointer shrink-0"
-                    title="Xem trước ảnh của khách này" aria-label="Xem trước ảnh của khách này"
+                    title={tr("Xem trước ảnh của khách này", "Preview this customer's photos")} aria-label={tr("Xem trước ảnh của khách này", "Preview this customer's photos")}
                   >
                     <Eye size={12} />
                   </button>
@@ -621,7 +623,7 @@ export function LeftPanel() {
                       removeInputFolder(folder);
                     }}
                     className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer shrink-0"
-                    title="Xoá khách này khỏi hàng đợi" aria-label="Xoá khách này khỏi hàng đợi"
+                    title={tr("Xoá khách này khỏi hàng đợi", "Remove customer from queue")} aria-label={tr("Xoá khách này khỏi hàng đợi", "Remove customer from queue")}
                   >
                     <Trash2 size={12} />
                   </button>
@@ -666,7 +668,7 @@ export function LeftPanel() {
         <div className="py-2.5 px-3 flex justify-between items-center border-b border-border">
           <span className="flex items-center gap-2 text-[11px] font-semibold tracking-wide text-foreground uppercase">
             <CheckCircle size={13} className="text-emerald-600 dark:text-emerald-400" />
-            Đã tìm thấy
+            {tr("Đã tìm thấy", "Found")}
             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
               {matchResult?.found_count ?? 0}
             </span>
@@ -676,17 +678,17 @@ export function LeftPanel() {
               type="button"
               onClick={() => handleOpenFoundPreview(0)}
               className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 border border-emerald-500/20 transition-colors cursor-pointer"
-              title="Xem trước tất cả các ảnh đã tìm thấy"
+              title={tr("Xem trước tất cả các ảnh đã tìm thấy", "Preview all found photos")}
             >
               <Eye size={12} />
-              <span>Xem trước</span>
+              <span>{tr("Xem trước", "Preview")}</span>
             </button>
           )}
         </div>
         <div className="flex-1 overflow-y-auto p-2.5 space-y-1" style={{ scrollbarWidth: 'thin' }}>
           {(!matchResult || matchResult.found_count === 0) ? (
             <div className="flex h-full items-center justify-center text-[11px] text-muted-foreground">
-              Chưa có file nào
+              {tr("Chưa có file nào", "No matched files yet")}
             </div>
           ) : (
             foundMatches.map((match, idx) => (
@@ -708,7 +710,7 @@ export function LeftPanel() {
                       handleOpenFoundPreview(idx);
                     }}
                     className="p-1 rounded-md text-muted-foreground/80 hover:text-emerald-400 hover:bg-emerald-500/15 transition-all cursor-pointer shrink-0 opacity-80 group-hover:opacity-100"
-                    title={`Xem trước ảnh ${match.photo.filename}`} aria-label={`Xem trước ảnh ${match.photo.filename}`}
+                    title={tr(`Xem trước ảnh ${match.photo.filename}`, `Preview ${match.photo.filename}`)} aria-label={tr(`Xem trước ảnh ${match.photo.filename}`, `Preview ${match.photo.filename}`)}
                   >
                     <Eye size={14} />
                   </button>
@@ -724,7 +726,7 @@ export function LeftPanel() {
         <div className="py-2.5 px-3 flex justify-between items-center border-b border-border">
           <span className="flex items-center gap-2 text-[11px] font-semibold tracking-wide text-foreground uppercase">
             <AlertTriangle size={13} className="text-red-500" />
-            Các file lỗi
+            {tr("Các file lỗi", "Errors")}
             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-500 border border-red-500/20">
               {(matchResult?.missing_count ?? 0) + (matchResult?.duplicate_count ?? 0)}
             </span>
@@ -733,7 +735,7 @@ export function LeftPanel() {
         <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5" style={{ scrollbarWidth: 'thin' }}>
           {(!matchResult || (matchResult.missing_count === 0 && matchResult.duplicate_count === 0)) ? (
             <div className="flex h-full items-center justify-center text-[11px] text-muted-foreground">
-              Không có lỗi
+              {tr("Không có lỗi", "No errors")}
             </div>
           ) : (
             <>
@@ -743,14 +745,14 @@ export function LeftPanel() {
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-medium text-primary flex items-center gap-1">
                       <Copy size={10} />
-                      Gộp tất cả lỗi ({missingCodes.length + duplicateCodes.length})
+                      {tr(`Gộp tất cả lỗi (${missingCodes.length + duplicateCodes.length})`, `All errors (${missingCodes.length + duplicateCodes.length})`)}
                     </span>
                     <button
                       onClick={handleCopyAllErrors}
                       className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer font-medium"
                     >
                       {copiedAll ? <ClipboardCheck size={9} /> : <Clipboard size={9} />}
-                      {copiedAll ? "Đã sao chép" : "Sao chép tất cả"}
+                      {copiedAll ? tr("Đã sao chép", "Copied") : tr("Sao chép tất cả", "Copy all")}
                     </button>
                   </div>
                   <p className="text-[10px] text-foreground/85 font-mono leading-relaxed break-all bg-background/50 p-1.5 rounded border border-border/30">
@@ -765,14 +767,14 @@ export function LeftPanel() {
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1">
                       <Copy size={10} />
-                      Trùng mã ({duplicateCodes.length})
+                      {tr(`Trùng mã (${duplicateCodes.length})`, `Duplicates (${duplicateCodes.length})`)}
                     </span>
                     <button
                       onClick={handleCopyDuplicateCodes}
                       className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 transition-colors cursor-pointer"
                     >
                       {copiedDuplicates ? <ClipboardCheck size={9} /> : <Clipboard size={9} />}
-                      {copiedDuplicates ? "Đã sao chép" : "Sao chép"}
+                      {copiedDuplicates ? tr("Đã sao chép", "Copied") : tr("Sao chép", "Copy")}
                     </button>
                   </div>
                   <p className="text-[10px] text-amber-700/80 dark:text-amber-300/70 font-mono leading-relaxed break-all">
@@ -787,14 +789,14 @@ export function LeftPanel() {
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-medium text-red-600 dark:text-red-400 flex items-center gap-1">
                       <XCircle size={10} />
-                      Sai mã ({missingCodes.length})
+                      {tr(`Sai mã (${missingCodes.length})`, `Missing (${missingCodes.length})`)}
                     </span>
                     <button
                       onClick={handleCopyMissingCodes}
                       className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 transition-colors cursor-pointer"
                     >
                       {copiedMissing ? <ClipboardCheck size={9} /> : <Clipboard size={9} />}
-                      {copiedMissing ? "Đã sao chép" : "Sao chép"}
+                      {copiedMissing ? tr("Đã sao chép", "Copied") : tr("Sao chép", "Copy")}
                     </button>
                   </div>
                   <p className="text-[10px] text-red-700/80 dark:text-red-300/70 font-mono leading-relaxed break-all">
@@ -811,7 +813,11 @@ export function LeftPanel() {
                       {match.code}
                     </span>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${match.status === "Missing" ? "bg-red-500/10 text-red-500" : "bg-amber-500/10 text-amber-500"}`}>
-                      {match.status === "Missing" ? "Sai mã" : (match.status === "InputDuplicate" ? "Trùng mã" : `Trùng (${match.all_matches.length})`)}
+                      {match.status === "Missing"
+                        ? tr("Sai mã", "Missing")
+                        : match.status === "InputDuplicate"
+                          ? tr("Trùng mã", "Duplicate input")
+                          : tr(`Trùng (${match.all_matches.length})`, `Match (${match.all_matches.length})`)}
                     </span>
                   </div>
                   {match.status === "Duplicate" && match.photo && (

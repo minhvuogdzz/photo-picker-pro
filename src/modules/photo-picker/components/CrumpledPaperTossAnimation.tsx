@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useAppStore } from "@/core/stores/useAppStore";
 import { CheckCircle2, FileText, Sparkles } from "lucide-react";
 import { playMacTrashSound } from "@/core/lib/trashSound";
+import { useTranslation } from "@/core/lib/i18n";
 
 interface FlyingBall {
   id: number;
@@ -24,6 +25,7 @@ interface Particle {
 }
 
 export function CrumpledPaperTossAnimation() {
+  const { tr } = useTranslation();
   const tossAnimationTrigger = useAppStore((s) => s.tossAnimationTrigger);
   const [activeBall, setActiveBall] = useState<FlyingBall | null>(null);
   const [phase, setPhase] = useState<"card" | "crumpling" | "flying" | "impact" | "done">("card");
@@ -212,7 +214,7 @@ export function CrumpledPaperTossAnimation() {
             </div>
             <div className="min-w-0 flex-1">
               <span className="text-[9px] uppercase font-bold text-emerald-600 dark:text-emerald-400 block tracking-wider leading-tight">
-                ✓ Lọc xong · Bỏ vào thùng rác
+                ✓ {tr("Lọc xong · Bỏ vào thùng rác", "Filtered · Moving to Trash")}
               </span>
               <p className="text-[11px] font-bold text-foreground truncate mt-0.5">
                 {activeBall.folderName}
@@ -269,7 +271,7 @@ export function CrumpledPaperTossAnimation() {
           {/* Floating +1 Pill floating upwards */}
           <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-emerald-500 text-white font-mono font-bold text-[11px] shadow-lg animate-[slideUp_0.5s_ease-out_forwards] flex items-center gap-1 whitespace-nowrap">
             <Sparkles size={11} />
-            <span>+1 Đã đá ra thùng rác</span>
+            <span>{tr("+1 Đã đá ra thùng rác", "+1 Moved to Trash")}</span>
           </div>
 
           {/* Burst Particles */}

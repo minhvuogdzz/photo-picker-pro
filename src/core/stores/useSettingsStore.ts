@@ -1,17 +1,28 @@
 import { create } from "zustand";
-import type { AppSettings } from "@/core/types";
+import type { AppSettings } from "../types/index.ts";
 
 interface SettingsState {
   readonly settings: AppSettings;
   setSettings: (settings: AppSettings) => void;
+  setLanguageLocal: (language: string) => void;
   updateSetting: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => void;
   addFavoriteFolder: (folder: string) => void;
   removeFavoriteFolder: (folder: string) => void;
 }
 
+function getInitialLanguage(): string {
+  try {
+    if (typeof localStorage !== "undefined") {
+      const saved = localStorage.getItem("mvd_app_language");
+      if (saved === "en" || saved === "vi") return saved;
+    }
+  } catch {}
+  return "vi";
+}
+
 const defaultSettings: AppSettings = {
   theme: "dark",
-  language: "vi",
+  language: getInitialLanguage(),
   default_match_mode: "ExactNumber",
   default_output: "",
   default_duplicate_policy: "CopyFirst",
@@ -33,6 +44,13 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   settings: defaultSettings,
 
   setSettings: (settings) => set({ settings }),
+
+  setLanguageLocal: (language) =>
+    set((state) => {
+      const normalized = language === "en" ? "en" : "vi";
+      if (state.settings.language === normalized) return state;
+      return { settings: { ...state.settings, language: normalized } };
+    }),
 
   updateSetting: (key, value) =>
     set((state) => {

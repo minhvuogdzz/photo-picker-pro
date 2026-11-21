@@ -17,26 +17,26 @@ export function TopBar() {
   const setActiveModule = useAppStore((s) => s.setActiveModule);
   const session = useAuthStore((s) => s.session);
   const { formattedTime, isExpiringSoon, isUnlimited } = useSessionTimeout();
-  const { t } = useTranslation();
+  const { t, tr } = useTranslation();
 
   const getModuleTitle = () => {
     switch (activeModule) {
       case "launcher":
-        return "Bảng điều khiển";
+        return tr("Bảng điều khiển", "Dashboard");
       case "photo-picker":
-        return "Lọc ảnh Pro";
+        return tr("Lọc ảnh Pro", "Photo Picker Pro");
       case "contact-the-sheet":
         return "Contact Sheet";
       case "mvd-convert":
-        return t("convert_file") || "Chuyển đổi file";
+        return t("convert_file");
       case "resources":
-        return "Kho Tài nguyên Creative";
+        return tr("Kho Tài nguyên Creative", "Creative Resources Hub");
       case "photo-counter":
-        return "Thống kê sản lượng";
+        return tr("Thống kê sản lượng", "Photo Analytics");
       case "system":
-        return "Cài đặt & Bản quyền";
+        return tr("Cài đặt & Bản quyền", "Settings & License");
       case "notifications":
-        return "Trung tâm thông báo";
+        return tr("Trung tâm thông báo", "Notifications");
       default:
         return "DH Studio Pro";
     }
@@ -51,8 +51,8 @@ export function TopBar() {
             type="button"
             onClick={() => setActiveModule("launcher")}
             className="w-7 h-7 -ml-1 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-foreground/[0.06] transition-colors cursor-pointer"
-            title="Về Bảng điều khiển"
-            aria-label="Về Bảng điều khiển"
+            title={tr("Về Bảng điều khiển", "Back to Dashboard")}
+            aria-label={tr("Về Bảng điều khiển", "Back to Dashboard")}
           >
             <ChevronLeft size={17} strokeWidth={1.75} />
           </button>
@@ -70,10 +70,10 @@ export function TopBar() {
               openModal();
             }}
             className="ml-1 h-6 px-2.5 text-[11px] bg-primary/10 hover:bg-primary/15 text-primary font-medium flex items-center gap-1.5 rounded-full cursor-pointer transition-colors"
-            title={`Có bản cập nhật mới v${updateResult.version}`}
+            title={tr(`Có bản cập nhật mới v${updateResult.version}`, `New update v${updateResult.version} available`)}
           >
             <ArrowUpCircle size={12} strokeWidth={2} className="shrink-0" />
-            <span>Cập nhật v{updateResult.version}</span>
+            <span>{tr(`Cập nhật v${updateResult.version}`, `Update v${updateResult.version}`)}</span>
           </button>
         )}
       </div>
@@ -97,7 +97,7 @@ export function TopBar() {
                 ? "bg-destructive/10 text-destructive font-medium"
                 : "glass-pill text-muted-foreground"
             }`}
-            title="Thời gian phiên làm việc còn lại"
+            title={tr("Thời gian phiên làm việc còn lại", "Remaining session time")}
           >
             <Clock size={12} strokeWidth={1.75} />
             <span>{formattedTime}</span>

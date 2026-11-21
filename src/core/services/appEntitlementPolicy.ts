@@ -1,4 +1,5 @@
 import type { AuthSession } from "@/core/types/auth";
+import { getCurrentLanguage, trText, type Language } from "../lib/i18n.ts";
 
 export interface AppAccessResult {
   readonly hasAccess: boolean;
@@ -205,21 +206,21 @@ export interface UserPlanInfo {
   readonly appsStatus: AppStatusDetail[];
 }
 
-export function getUserPlanInfo(session: AuthSession | null | undefined): UserPlanInfo {
+export function getUserPlanInfo(session: AuthSession | null | undefined, lang: Language = getCurrentLanguage()): UserPlanInfo {
   const apps = [
-    { id: "photo-picker", name: "Photo Picker Pro (Lọc ảnh)" },
-    { id: "contact-the-sheet", name: "Contact The Sheet (Cấu hình Sheet)" },
-    { id: "resources", name: "Kho Tài Nguyên Creative" },
-    { id: "photo-counter", name: "Photo Counter (Thống kê / Đếm ảnh)" },
+    { id: "photo-picker", name: trText("Photo Picker Pro (Lọc ảnh)", "Photo Picker Pro", lang) },
+    { id: "contact-the-sheet", name: trText("Contact The Sheet (Cấu hình Sheet)", "Contact The Sheet", lang) },
+    { id: "resources", name: trText("Kho Tài Nguyên Creative", "Creative Resources Hub", lang) },
+    { id: "photo-counter", name: trText("Photo Counter (Thống kê / Đếm ảnh)", "Photo Analytics & Counter", lang) },
   ];
 
   if (!session) {
     return {
       planType: "EXPIRED",
-      badgeLabel: "Chưa đăng nhập",
-      shortBadgeLabel: "Chưa đăng nhập",
-      planName: "Chưa đăng nhập",
-      description: "Vui lòng đăng nhập để sử dụng các tính năng.",
+      badgeLabel: trText("Chưa đăng nhập", "Signed Out", lang),
+      shortBadgeLabel: trText("Chưa đăng nhập", "Signed Out", lang),
+      planName: trText("Chưa đăng nhập", "Signed Out", lang),
+      description: trText("Vui lòng đăng nhập để sử dụng các tính năng.", "Please sign in to use features.", lang),
       isFullApp: false,
       isPhotoPickerOnly: false,
       isTrial: false,
@@ -234,9 +235,9 @@ export function getUserPlanInfo(session: AuthSession | null | undefined): UserPl
         isTrial: false,
         daysRemaining: 0,
         expiresAt: null,
-        badgeText: "Chưa đăng nhập",
+        badgeText: trText("Chưa đăng nhập", "Signed Out", lang),
         badgeVariant: "locked",
-        statusText: "Vui lòng đăng nhập",
+        statusText: trText("Vui lòng đăng nhập", "Sign in required", lang),
       })),
     };
   }
@@ -253,10 +254,10 @@ export function getUserPlanInfo(session: AuthSession | null | undefined): UserPl
   if (isSuspended) {
     return {
       planType: "EXPIRED",
-      badgeLabel: "Tài khoản bị khoá",
-      shortBadgeLabel: "Đã khoá",
-      planName: "Tài khoản tạm khoá",
-      description: "Tài khoản của bạn đang bị tạm ngưng hoặc vô hiệu hoá.",
+      badgeLabel: trText("Tài khoản bị khoá", "Account Locked", lang),
+      shortBadgeLabel: trText("Đã khoá", "Locked", lang),
+      planName: trText("Tài khoản tạm khoá", "Suspended Account", lang),
+      description: trText("Tài khoản của bạn đang bị tạm ngưng hoặc vô hiệu hoá.", "Your account is suspended or deactivated.", lang),
       isFullApp: false,
       isPhotoPickerOnly: false,
       isTrial: false,
@@ -271,9 +272,9 @@ export function getUserPlanInfo(session: AuthSession | null | undefined): UserPl
         isTrial: false,
         daysRemaining: 0,
         expiresAt: null,
-        badgeText: "Đã khoá",
+        badgeText: trText("Đã khoá", "Locked", lang),
         badgeVariant: "locked",
-        statusText: "Tài khoản bị khoá",
+        statusText: trText("Tài khoản bị khoá", "Account locked", lang),
       })),
     };
   }
@@ -323,22 +324,24 @@ export function getUserPlanInfo(session: AuthSession | null | undefined): UserPl
     }
 
     let badgeVariant: "paid" | "trial" | "locked" = "locked";
-    let badgeText = "Chưa mở khoá";
-    let statusText = "Chưa kích hoạt / Cần mua gói";
+    let badgeText = trText("Chưa mở khoá", "Locked", lang);
+    let statusText = trText("Chưa kích hoạt / Cần mua gói", "Not activated / Plan required", lang);
 
     if (access.hasAccess) {
       if (!access.isTrial) {
         badgeVariant = "paid";
         badgeText = isAdmin
-          ? "Quản trị viên"
+          ? trText("Quản trị viên", "Admin", lang)
           : isLifetime
-            ? "Bản quyền vĩnh viễn"
-            : `Đã mua · ${access.daysRemaining ?? "∞"} ngày`;
-        statusText = isAdmin ? "Toàn quyền quản trị" : "Đã kích hoạt bản quyền";
+            ? trText("Bản quyền vĩnh viễn", "Lifetime License", lang)
+            : trText(`Đã mua · ${access.daysRemaining ?? "∞"} ngày`, `Active · ${access.daysRemaining ?? "∞"}d`, lang);
+        statusText = isAdmin
+          ? trText("Toàn quyền quản trị", "Full administrator access", lang)
+          : trText("Đã kích hoạt bản quyền", "License active", lang);
       } else {
         badgeVariant = "trial";
-        badgeText = `Dùng thử · ${access.daysRemaining ?? 0} ngày`;
-        statusText = "Đang dùng thử hệ sinh thái";
+        badgeText = trText(`Dùng thử · ${access.daysRemaining ?? 0} ngày`, `Trial · ${access.daysRemaining ?? 0}d`, lang);
+        statusText = trText("Đang dùng thử hệ sinh thái", "Ecosystem trial active", lang);
       }
     }
 
@@ -364,15 +367,17 @@ export function getUserPlanInfo(session: AuthSession | null | undefined): UserPl
     return {
       planType: "FULL_APP",
       badgeLabel: isAdmin
-        ? "Quản trị viên · Toàn quyền"
+        ? trText("Quản trị viên · Toàn quyền", "Admin · Full Access", lang)
         : isLifetime
-          ? "Full App · Vĩnh viễn"
-          : `Full App · ${days ?? "∞"} ngày`,
-      shortBadgeLabel: isAdmin ? "Quản trị viên" : "Full App",
-      planName: isAdmin ? "Tài khoản Quản trị (Admin)" : "Gói Toàn Bộ Super App",
+          ? trText("Full App · Vĩnh viễn", "Full App · Lifetime", lang)
+          : trText(`Full App · ${days ?? "∞"} ngày`, `Full App · ${days ?? "∞"}d`, lang),
+      shortBadgeLabel: isAdmin ? trText("Quản trị viên", "Admin", lang) : "Full App",
+      planName: isAdmin
+        ? trText("Tài khoản Quản trị (Admin)", "Administrator Account", lang)
+        : trText("Gói Toàn Bộ Super App", "Full Super App Plan", lang),
       description: isAdmin
-        ? "Tài khoản quản trị có toàn quyền truy cập mọi ứng dụng trong hệ sinh thái DH Studio Pro."
-        : "Bạn đang sở hữu bản quyền toàn bộ hệ sinh thái ứng dụng DH Studio Pro.",
+        ? trText("Tài khoản quản trị có toàn quyền truy cập mọi ứng dụng trong hệ sinh thái DH Studio Pro.", "Administrator account with full access across DH Studio Pro.", lang)
+        : trText("Bạn đang sở hữu bản quyền toàn bộ hệ sinh thái ứng dụng DH Studio Pro.", "You hold a full license for the entire DH Studio Pro ecosystem.", lang),
       isFullApp: true,
       isPhotoPickerOnly: false,
       isTrial: false,
@@ -391,10 +396,14 @@ export function getUserPlanInfo(session: AuthSession | null | undefined): UserPl
 
     return {
       planType: "PHOTO_PICKER_ONLY",
-      badgeLabel: `App Lọc Ảnh · ${days ?? "∞"} ngày`,
-      shortBadgeLabel: "App Lọc Ảnh",
-      planName: "Gói App Lọc Ảnh (Photo Picker)",
-      description: "Bạn đang sử dụng bản quyền riêng cho App Lọc Ảnh. Các ứng dụng khác trong hệ sinh thái mở theo thời gian dùng thử (nếu còn).",
+      badgeLabel: trText(`App Lọc Ảnh · ${days ?? "∞"} ngày`, `Photo Picker · ${days ?? "∞"}d`, lang),
+      shortBadgeLabel: trText("App Lọc Ảnh", "Photo Picker", lang),
+      planName: trText("Gói App Lọc Ảnh (Photo Picker)", "Photo Picker Pro Plan", lang),
+      description: trText(
+        "Bạn đang sử dụng bản quyền riêng cho App Lọc Ảnh. Các ứng dụng khác trong hệ sinh thái mở theo thời gian dùng thử (nếu còn).",
+        "You have a standalone Photo Picker Pro license. Other ecosystem modules remain open while trial days remain.",
+        lang
+      ),
       isFullApp: false,
       isPhotoPickerOnly: true,
       isTrial: false,
@@ -415,10 +424,10 @@ export function getUserPlanInfo(session: AuthSession | null | undefined): UserPl
 
     return {
       planType: "OTHER_APP_ONLY",
-      badgeLabel: `Gói ${primary.app} · ${days ?? "∞"} ngày`,
+      badgeLabel: trText(`Gói ${primary.app} · ${days ?? "∞"} ngày`, `${primary.app} · ${days ?? "∞"}d`, lang),
       shortBadgeLabel: primary.app,
-      planName: `Gói Bản Quyền: ${appLabel}`,
-      description: `Bạn đang sử dụng bản quyền riêng cho ứng dụng ${appLabel}.`,
+      planName: trText(`Gói Bản Quyền: ${appLabel}`, `Module License: ${appLabel}`, lang),
+      description: trText(`Bạn đang sử dụng bản quyền riêng cho ứng dụng ${appLabel}.`, `You have an active license for ${appLabel}.`, lang),
       isFullApp: false,
       isPhotoPickerOnly: false,
       isTrial: false,
@@ -438,10 +447,14 @@ export function getUserPlanInfo(session: AuthSession | null | undefined): UserPl
 
     return {
       planType: "TRIAL",
-      badgeLabel: `Dùng thử Full App · ${days} ngày`,
-      shortBadgeLabel: "Dùng thử Full App",
-      planName: "Gói Dùng Thử Trải Nghiệm (Full App)",
-      description: "Tài khoản đang trong thời gian trải nghiệm miễn phí toàn bộ hệ sinh thái DH Studio Pro.",
+      badgeLabel: trText(`Dùng thử Full App · ${days} ngày`, `Full App Trial · ${days}d`, lang),
+      shortBadgeLabel: trText("Dùng thử Full App", "Full App Trial", lang),
+      planName: trText("Gói Dùng Thử Trải Nghiệm (Full App)", "Full App Free Trial", lang),
+      description: trText(
+        "Tài khoản đang trong thời gian trải nghiệm miễn phí toàn bộ hệ sinh thái DH Studio Pro.",
+        "Your account is on a free full-access trial of DH Studio Pro.",
+        lang
+      ),
       isFullApp: true,
       isPhotoPickerOnly: false,
       isTrial: true,
@@ -456,10 +469,14 @@ export function getUserPlanInfo(session: AuthSession | null | undefined): UserPl
   // 5. Expired
   return {
     planType: "EXPIRED",
-    badgeLabel: "Đã hết hạn",
-    shortBadgeLabel: "Hết hạn",
-    planName: "Hết Hạn Bản Quyền",
-    description: "Gói bản quyền hoặc thời gian dùng thử của bạn đã kết thúc. Vui lòng gia hạn để tiếp tục sử dụng.",
+    badgeLabel: trText("Đã hết hạn", "Expired", lang),
+    shortBadgeLabel: trText("Hết hạn", "Expired", lang),
+    planName: trText("Hết Hạn Bản Quyền", "License Expired", lang),
+    description: trText(
+      "Gói bản quyền hoặc thời gian dùng thử của bạn đã kết thúc. Vui lòng gia hạn để tiếp tục sử dụng.",
+      "Your license or trial has expired. Please renew to continue using DH Studio Pro.",
+      lang
+    ),
     isFullApp: false,
     isPhotoPickerOnly: false,
     isTrial: false,

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuthStore } from "../stores/useAuthStore";
+import { trText } from "../lib/i18n.ts";
 
 export function useUserAvatar() {
   const session = useAuthStore((s) => s.session);
@@ -54,7 +55,7 @@ export function useUserAvatar() {
             canvas.height = size;
             const ctx = canvas.getContext("2d");
             if (!ctx) {
-              reject(new Error("Không thể khởi tạo canvas"));
+              reject(new Error(trText("Không thể khởi tạo canvas", "Failed to initialize canvas")));
               return;
             }
 
@@ -75,10 +76,10 @@ export function useUserAvatar() {
               reject(err);
             }
           };
-          img.onerror = () => reject(new Error("Không thể đọc ảnh"));
+          img.onerror = () => reject(new Error(trText("Không thể đọc ảnh", "Unable to read image")));
           img.src = event.target?.result as string;
         };
-        reader.onerror = () => reject(new Error("Lỗi đọc tệp"));
+        reader.onerror = () => reject(new Error(trText("Lỗi đọc tệp", "Error reading file")));
         reader.readAsDataURL(file);
       });
     },

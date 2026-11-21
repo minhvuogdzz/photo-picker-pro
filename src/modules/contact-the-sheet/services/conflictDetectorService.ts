@@ -1,3 +1,5 @@
+import { trText } from "../../../core/lib/i18n.ts";
+
 export interface ConflictCheckResult {
   hasConflict: boolean;
   conflictType?: "EXISTING_URL" | "MULTIPLE_URLS" | "URL_AND_NOTES" | "PLAIN_NOTES" | "FORMULA";
@@ -29,7 +31,10 @@ export class ConflictDetectorService {
         conflictType: "FORMULA",
         existingValue: trimmed,
         suggestedAction: "SKIP",
-        description: "Ô chứa công thức Google Sheets, bị chặn ghi đè để bảo vệ tính toàn vẹn dữ liệu.",
+        description: trText(
+          "Ô chứa công thức Google Sheets, bị chặn ghi đè để bảo vệ tính toàn vẹn dữ liệu.",
+          "Cell contains a Google Sheets formula and is write-protected to preserve integrity."
+        ),
       };
     }
 
@@ -43,7 +48,10 @@ export class ConflictDetectorService {
         conflictType: "MULTIPLE_URLS",
         existingValue: trimmed,
         suggestedAction: "ASK",
-        description: `Ô đang chứa ${urlMatches.length} đường dẫn Drive khác nhau. Cần chọn ghi đè hoặc thêm nối tiếp.`,
+        description: trText(
+          `Ô đang chứa ${urlMatches.length} đường dẫn Drive khác nhau. Cần chọn ghi đè hoặc thêm nối tiếp.`,
+          `Cell contains ${urlMatches.length} different Drive links. Choose overwrite or append.`
+        ),
       };
     }
 
@@ -53,7 +61,10 @@ export class ConflictDetectorService {
         conflictType: "URL_AND_NOTES",
         existingValue: trimmed,
         suggestedAction: "ASK",
-        description: `Ô chứa link cũ kèm ghi chú: "${nonUrlText.slice(0, 40)}...". Cần chọn giữ ghi chú hay ghi đè.`,
+        description: trText(
+          `Ô chứa link cũ kèm ghi chú: "${nonUrlText.slice(0, 40)}...". Cần chọn giữ ghi chú hay ghi đè.`,
+          `Cell contains an existing link plus notes: "${nonUrlText.slice(0, 40)}...". Choose keep/append or overwrite.`
+        ),
       };
     }
 
@@ -63,7 +74,10 @@ export class ConflictDetectorService {
         conflictType: "PLAIN_NOTES",
         existingValue: trimmed,
         suggestedAction: "ASK",
-        description: `Ô đang chứa ghi chú: "${nonUrlText.slice(0, 40)}...". Cần chọn thêm link hay ghi đè.`,
+        description: trText(
+          `Ô đang chứa ghi chú: "${nonUrlText.slice(0, 40)}...". Cần chọn thêm link hay ghi đè.`,
+          `Cell contains text notes: "${nonUrlText.slice(0, 40)}...". Choose append link or overwrite.`
+        ),
       };
     }
 
@@ -72,7 +86,10 @@ export class ConflictDetectorService {
       conflictType: "EXISTING_URL",
       existingValue: trimmed,
       suggestedAction: "ASK",
-      description: "Ô đã có sẵn 1 link Drive cũ. Cần xác nhận trước khi thay thế.",
+      description: trText(
+        "Ô đã có sẵn 1 link Drive cũ. Cần xác nhận trước khi thay thế.",
+        "Cell already has an existing Drive link. Confirmation needed before replacing."
+      ),
     };
   }
 

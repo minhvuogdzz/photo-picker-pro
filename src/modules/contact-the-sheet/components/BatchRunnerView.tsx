@@ -28,10 +28,12 @@ import { PreviewPlanModal } from "./PreviewPlanModal";
 import { ConflictResolverDialog } from "./ConflictResolverDialog";
 import type { DiscoveredJob } from "../types";
 import type { SheetRowRecord } from "../services/jobMatchingService";
+import { useTranslation } from "@/core/lib/i18n";
 
 const COMPACT_TAB_PREVIEW_LIMIT = 4;
 
 export function BatchRunnerView() {
+  const { tr } = useTranslation();
   const activeProfile = useContactSheetStore((s) => s.activeProfile);
   const discoveredJobs = useContactSheetStore((s) => s.discoveredJobs);
   const setDiscoveredJobs = useContactSheetStore((s) => s.setDiscoveredJobs);
@@ -187,7 +189,7 @@ export function BatchRunnerView() {
       const selected = await open({
         directory: true,
         multiple: true,
-        title: "Chọn thư mục chứa các job hoàn thành của ngày",
+        title: tr("Chọn thư mục chứa các job hoàn thành của ngày", "Select folder(s) containing completed jobs"),
       });
       if (selected) {
         const paths = Array.isArray(selected) ? selected : [selected];
@@ -202,7 +204,7 @@ export function BatchRunnerView() {
     if (!activeProfile) return;
 
     if (selectedTabTitles.length === 0) {
-      alert("Bạn đang bỏ chọn tất cả các tab. Vui lòng chọn ít nhất 1 tab trước khi quét dữ liệu.");
+      alert(tr("Bạn đang bỏ chọn tất cả các tab. Vui lòng chọn ít nhất 1 tab trước khi quét dữ liệu.", "All tabs are deselected. Please select at least 1 tab before scanning."));
       setIsTabsExpanded(true);
       return;
     }
@@ -221,7 +223,7 @@ export function BatchRunnerView() {
       setLastScannedPaths(effectivePaths);
     }
     setIsScanning(true);
-    setScanProgress({ current: 0, total: 100, message: "Đang phân tích cây thư mục..." });
+    setScanProgress({ current: 0, total: 100, message: tr("Đang phân tích cây thư mục...", "Analyzing folder tree...") });
 
     try {
       const isSandbox = activeProfile.isMockSandbox && googleConnection.status !== "CONNECTED";
@@ -230,7 +232,7 @@ export function BatchRunnerView() {
       setScanProgress({
         current: 10,
         total: 100,
-        message: `Đang kết nối tải dữ liệu trên ${tabsToScan.length} tab...`,
+        message: tr(`Đang kết nối tải dữ liệu trên ${tabsToScan.length} tab...`, `Connecting to load data across ${tabsToScan.length} tab(s)...`),
       });
 
       const allSheetRows: SheetRowRecord[] = [];
@@ -239,8 +241,8 @@ export function BatchRunnerView() {
         current: 30,
         total: 100,
         message: isSandbox
-          ? "Đang nạp dữ liệu bảng tính mẫu..."
-          : `Đang tải dữ liệu Google Sheet (${tabsToScan.length} tab)...`,
+          ? tr("Đang nạp dữ liệu bảng tính mẫu...", "Loading sample spreadsheet data...")
+          : tr(`Đang tải dữ liệu Google Sheet (${tabsToScan.length} tab)...`, `Loading Google Sheet data (${tabsToScan.length} tab(s))...`),
       });
 
       const perTabRows = await Promise.all(
@@ -269,7 +271,7 @@ export function BatchRunnerView() {
       setScanProgress({
         current: 50,
         total: 100,
-        message: `Đang quét thư mục thành phẩm & so khớp trên ${tabsToScan.length} tab...`,
+        message: tr(`Đang quét thư mục thành phẩm & so khớp trên ${tabsToScan.length} tab...`, `Scanning finished folders & matching across ${tabsToScan.length} tab(s)...`),
       });
 
       const jobs = await folderScannerService.scanAndDiscoverJobs(
@@ -283,7 +285,7 @@ export function BatchRunnerView() {
       setScanProgress({
         current: 85,
         total: 100,
-        message: "Đang lập kế hoạch cập nhật bảng tính...",
+        message: tr("Đang lập kế hoạch cập nhật bảng tính...", "Planning spreadsheet updates..."),
       });
 
       const planSummary = batchPlannerService.planBatch(jobs, activeProfile);
@@ -307,7 +309,7 @@ export function BatchRunnerView() {
       setDiscoveredJobs([...existingRemaining, ...finalJobs]);
     } catch (err: any) {
       console.error("Scan & discover jobs error:", err);
-      alert(`Lỗi khi quét và khớp dữ liệu: ${err?.message || String(err)}`);
+      alert(`${tr("Lỗi khi quét và khớp dữ liệu:", "Scan & match error:")} ${err?.message || String(err)}`);
     } finally {
       setIsScanning(false);
       setScanProgress(null);
@@ -355,11 +357,14 @@ export function BatchRunnerView() {
       setDiscoveredJobs(updated);
 
       alert(
-        `Hoàn tất cập nhật:\n- Thành công: ${summary.successCount} job\n- Xung đột: ${summary.conflictCount}\n- Lỗi: ${summary.failedCount}`
+        tr(
+          `Hoàn tất cập nhật:\n- Thành công: ${summary.successCount} job\n- Xung đột: ${summary.conflictCount}\n- Lỗi: ${summary.failedCount}`,
+          `Update complete:\n- Success: ${summary.successCount} job(s)\n- Conflicts: ${summary.conflictCount}\n- Errors: ${summary.failedCount}`
+        )
       );
     } catch (err) {
       console.error("Execute batch error:", err);
-      alert(`Lỗi thực thi cập nhật: ${err}`);
+      alert(`${tr("Lỗi thực thi cập nhật:", "Batch update error:")} ${err}`);
     } finally {
       setIsExecutingBatch(false);
       setBatchProgress(null);
@@ -448,7 +453,7 @@ export function BatchRunnerView() {
   const handleCancelJob = (jobId: string) => {
     updateJob(jobId, {
       status: "SKIPPED",
-      statusReason: "Người dùng bỏ qua",
+      statusReason: tr("Người dùng bỏ qua", "Skipped by user"),
     });
   };
 
@@ -466,7 +471,7 @@ export function BatchRunnerView() {
     } else {
       updateJob(job.id, {
         status: "NEEDS_REVIEW",
-        statusReason: "Cần gán số hàng",
+        statusReason: tr("Cần gán số hàng", "Needs row assignment"),
       });
     }
   };
@@ -509,7 +514,7 @@ export function BatchRunnerView() {
     activeProfile?.fieldMappings
       .filter((m) => m.permission === "READ_WRITE")
       .map((m) => `${m.columnHeader} (${m.columnLetter})`)
-      .join(", ") || "Chưa chọn cột ghi";
+      .join(", ") || tr("Chưa chọn cột ghi", "No writable column selected");
 
   // Compact preview tabs when collapsed
   const compactPreviewTabs =
@@ -531,7 +536,7 @@ export function BatchRunnerView() {
           <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
             <div className="flex items-center gap-1.5 shrink-0">
               <Layers size={14} strokeWidth={1.75} className="text-muted-foreground" />
-              <span className="text-[12px] font-medium text-foreground">Quét Tab:</span>
+              <span className="text-[12px] font-medium text-foreground">{tr("Quét Tab:", "Scan Tabs:")}</span>
               <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-foreground/[0.05] text-muted-foreground font-medium tabular-nums">
                 {selectedTabTitles.length}/{availableTabTitles.length}
               </span>
@@ -542,7 +547,7 @@ export function BatchRunnerView() {
               <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                 {selectedTabTitles.length === 0 ? (
                   <span className="text-[11.5px] text-muted-foreground italic px-1">
-                    Đã bỏ chọn tất cả — bấm Mở rộng hoặc chọn tab để quét
+                    {tr("Đã bỏ chọn tất cả — bấm Mở rộng hoặc chọn tab để quét", "All tabs deselected — click Expand or pick a tab to scan")}
                   </span>
                 ) : (
                   compactPreviewTabs.map((title) => {
@@ -578,11 +583,11 @@ export function BatchRunnerView() {
                     type="button"
                     onClick={() => setIsTabsExpanded(true)}
                     className="h-7 px-2.5 rounded-lg text-[11.5px] font-medium bg-foreground/[0.05] hover:bg-foreground/[0.08] text-muted-foreground hover:text-foreground border border-border transition-colors cursor-pointer"
-                    title="Bấm để xem và chọn trong danh sách đầy đủ các tab"
+                    title={tr("Bấm để xem và chọn trong danh sách đầy đủ các tab", "Click to view and pick from all tabs")}
                   >
                     {hiddenSelectedCount > 0
-                      ? `+${hiddenSelectedCount} tab đã chọn khác`
-                      : `+${hiddenTotalCount} tab khác`}
+                      ? tr(`+${hiddenSelectedCount} tab đã chọn khác`, `+${hiddenSelectedCount} more selected`)
+                      : tr(`+${hiddenTotalCount} tab khác`, `+${hiddenTotalCount} more`)}
                   </button>
                 )}
               </div>
@@ -592,11 +597,11 @@ export function BatchRunnerView() {
 
             <div className="hidden xl:flex items-center gap-1.5 text-[11.5px] text-muted-foreground truncate">
               <span className="shrink-0">
-                Tiêu đề: <span className="font-medium text-foreground">Dòng {activeProfile?.headerRow || 3}</span>
+                {tr("Tiêu đề:", "Header:")} <span className="font-medium text-foreground">{tr("Dòng", "Row")} {activeProfile?.headerRow || 3}</span>
               </span>
               <span>·</span>
               <span className="truncate max-w-[260px]" title={writableColsText}>
-                Cột ghi: <span className="font-medium text-foreground">{writableColsText}</span>
+                {tr("Cột ghi:", "Write cols:")} <span className="font-medium text-foreground">{writableColsText}</span>
               </span>
             </div>
           </div>
@@ -610,27 +615,27 @@ export function BatchRunnerView() {
                   onClick={selectAllTabs}
                   disabled={selectedTabTitles.length === availableTabTitles.length}
                   className="h-7 px-2.5 rounded-lg text-[11.5px] font-medium bg-foreground/[0.04] hover:bg-foreground/[0.08] text-foreground border border-border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                  title="Chọn tất cả các tab"
+                  title={tr("Chọn tất cả các tab", "Select all tabs")}
                 >
-                  Chọn tất cả
+                  {tr("Chọn tất cả", "Select All")}
                 </button>
                 <button
                   type="button"
                   onClick={deselectAllTabs}
                   disabled={selectedTabTitles.length === 0}
                   className="h-7 px-2.5 rounded-lg text-[11.5px] font-medium bg-foreground/[0.04] hover:bg-foreground/[0.08] text-muted-foreground hover:text-foreground border border-border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                  title="Bỏ chọn tất cả các tab"
+                  title={tr("Bỏ chọn tất cả các tab", "Deselect all tabs")}
                 >
-                  Bỏ chọn tất cả
+                  {tr("Bỏ chọn tất cả", "Deselect All")}
                 </button>
                 <button
                   type="button"
                   onClick={handleUndoApplyAllTabs}
                   className="h-7 px-2.5 rounded-lg text-[11.5px] font-medium bg-foreground/[0.04] hover:bg-foreground/[0.08] text-muted-foreground hover:text-foreground border border-border transition-colors flex items-center gap-1 cursor-pointer"
-                  title="Hoàn tác việc áp dụng cho tất cả các tab (chỉ giữ lại tab chính đã cấu hình)"
+                  title={tr("Hoàn tác việc áp dụng cho tất cả các tab (chỉ giữ lại tab chính đã cấu hình)", "Undo apply-all (keep primary configured tab only)")}
                 >
                   <RotateCcw size={12} strokeWidth={1.75} />
-                  <span>Hoàn tác áp dụng tất cả</span>
+                  <span>{tr("Hoàn tác áp dụng tất cả", "Undo Apply All")}</span>
                 </button>
               </>
             )}
@@ -641,7 +646,7 @@ export function BatchRunnerView() {
                 onClick={() => setIsTabsExpanded(!isTabsExpanded)}
                 className="h-7 px-2.5 rounded-lg text-[11.5px] font-medium bg-foreground/[0.04] hover:bg-foreground/[0.08] text-foreground border border-border transition-colors flex items-center gap-1 cursor-pointer"
               >
-                <span>{isTabsExpanded ? "Thu gọn" : `Mở rộng (${availableTabTitles.length})`}</span>
+                <span>{isTabsExpanded ? tr("Thu gọn", "Collapse") : tr(`Mở rộng (${availableTabTitles.length})`, `Expand (${availableTabTitles.length})`)}</span>
                 {isTabsExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
               </button>
             )}
@@ -651,10 +656,10 @@ export function BatchRunnerView() {
               onClick={handleRefreshData}
               disabled={isScanning}
               className="h-7 px-2.5 rounded-lg text-[11.5px] font-medium bg-foreground/[0.04] hover:bg-foreground/[0.08] text-foreground border border-border transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-              title="Tải lại dữ liệu Google Sheets mới nhất và quét lại"
+              title={tr("Tải lại dữ liệu Google Sheets mới nhất và quét lại", "Reload latest Google Sheets data and rescan")}
             >
               <RotateCw size={12} strokeWidth={1.75} className={isScanning ? "animate-spin" : ""} />
-              <span>Làm mới</span>
+              <span>{tr("Làm mới", "Refresh")}</span>
             </button>
           </div>
         </div>
@@ -674,13 +679,13 @@ export function BatchRunnerView() {
                       type="text"
                       value={tabSearchQuery}
                       onChange={(e) => setTabSearchQuery(e.target.value)}
-                      placeholder="Tìm nhanh tab..."
+                      placeholder={tr("Tìm nhanh tab...", "Quick filter tabs...")}
                       className="w-full h-7 pl-7 pr-2.5 rounded-lg bg-background border border-border text-[11.5px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
                     />
                   </div>
                 )}
                 <span className="text-[11px] text-muted-foreground">
-                  Bấm vào tab để chọn/bỏ chọn quét, hoặc bấm dấu × để gỡ khỏi danh sách thực thi Batch.
+                  {tr("Bấm vào tab để chọn/bỏ chọn quét, hoặc bấm dấu × để gỡ khỏi danh sách thực thi Batch.", "Click a tab to toggle scanning, or click × to remove it from Batch Runner.")}
                 </span>
               </div>
 
@@ -690,7 +695,7 @@ export function BatchRunnerView() {
                   onClick={selectOnlyPrimaryTab}
                   className="h-6 px-2 rounded-md text-[11px] text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05] transition-colors cursor-pointer"
                 >
-                  Chỉ chọn tab chính ({activeProfile?.selectedTabTitle})
+                  {tr("Chỉ chọn tab chính", "Primary tab only")} ({activeProfile?.selectedTabTitle})
                 </button>
               </div>
             </div>
@@ -730,14 +735,14 @@ export function BatchRunnerView() {
                       <span className="truncate max-w-[150px]">{title}</span>
                       {isPrimary && (
                         <span className="text-[10px] px-1 rounded bg-foreground/[0.06] text-muted-foreground">
-                          Chính
+                          {tr("Chính", "Primary")}
                         </span>
                       )}
                       {availableTabTitles.length > 1 && (
                         <button
                           type="button"
                           onClick={(e) => handleRemoveTabFromBatchList(title, e)}
-                          title={`Gỡ tab "${title}" khỏi phần Thực thi Batch`}
+                          title={tr(`Gỡ tab "${title}" khỏi phần Thực thi Batch`, `Remove "${title}" from Batch Runner`)}
                           className="w-4 h-4 rounded flex items-center justify-center text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
                         >
                           <X size={11} />
@@ -768,11 +773,11 @@ export function BatchRunnerView() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 min-w-0 truncate">
             <span className="text-[12.5px] font-medium text-foreground truncate">
               {isDragging
-                ? "Thả thư mục vào đây để bắt đầu quét"
-                : "Kéo thả thư mục ngày hoặc từng job vào đây"}
+                ? tr("Thả thư mục vào đây để bắt đầu quét", "Drop folders here to start scanning")
+                : tr("Kéo thả thư mục ngày hoặc từng job vào đây", "Drag & drop date or job folders here")}
             </span>
             <span className="text-[11.5px] text-muted-foreground hidden lg:inline truncate">
-              — tự động quét đệ quy & đối soát hàng trên Google Sheets
+              {tr("— tự động quét đệ quy & đối soát hàng trên Google Sheets", "— auto recursive scan & Google Sheets row matching")}
             </span>
           </div>
         </div>
@@ -781,7 +786,7 @@ export function BatchRunnerView() {
           {isScanning ? (
             <div className="flex items-center gap-1.5 h-7 px-3 bg-primary/10 text-primary text-[11.5px] font-medium rounded-lg">
               <RotateCw size={12} className="animate-spin" />
-              <span>Đang quét...</span>
+              <span>{tr("Đang quét...", "Scanning...")}</span>
             </div>
           ) : (
             <div className="flex items-center gap-1.5">
@@ -795,14 +800,14 @@ export function BatchRunnerView() {
                   className="h-7 px-3 bg-foreground/[0.05] hover:bg-foreground/[0.08] text-foreground text-[11.5px] font-medium rounded-lg border border-border transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <RotateCw size={12} strokeWidth={1.75} />
-                  <span>Quét lại</span>
+                  <span>{tr("Quét lại", "Rescan")}</span>
                 </button>
               )}
               <button
                 type="button"
                 className="h-7 px-3 bg-foreground/[0.05] hover:bg-foreground/[0.08] text-foreground text-[11.5px] font-medium rounded-lg border border-border transition-colors cursor-pointer"
               >
-                Chọn thư mục
+                {tr("Chọn thư mục", "Choose Folders")}
               </button>
             </div>
           )}
@@ -815,7 +820,7 @@ export function BatchRunnerView() {
           <div className="flex items-center gap-2.5 min-w-0">
             <RotateCw size={14} className="animate-spin text-primary shrink-0" />
             <span className="text-[12px] font-medium text-foreground truncate">
-              {scanProgress?.message || "Đang đồng bộ Google Sheets & quét cây thư mục..."}
+              {scanProgress?.message || tr("Đang đồng bộ Google Sheets & quét cây thư mục...", "Syncing Google Sheets & scanning folder tree...")}
             </span>
           </div>
 
@@ -840,15 +845,15 @@ export function BatchRunnerView() {
         <div className="flex flex-wrap items-center justify-between gap-2.5 shrink-0 min-w-0">
           <div className="flex items-center gap-0.5 p-1 bg-foreground/[0.04] border border-border rounded-xl overflow-x-auto max-w-full custom-scrollbar">
             {[
-              { id: "ALL", label: "Tất cả", count: discoveredJobs.length, dot: "" },
-              { id: "READY", label: "Sẵn sàng", count: readyCount, dot: "bg-success" },
-              { id: "CONFLICT", label: "Xung đột", count: conflictCount, dot: "bg-warning" },
-              { id: "NEEDS_REVIEW", label: "Cần duyệt", count: needsReviewCount, dot: "bg-info" },
+              { id: "ALL", label: tr("Tất cả", "All"), count: discoveredJobs.length, dot: "" },
+              { id: "READY", label: tr("Sẵn sàng", "Ready"), count: readyCount, dot: "bg-success" },
+              { id: "CONFLICT", label: tr("Xung đột", "Conflicts"), count: conflictCount, dot: "bg-warning" },
+              { id: "NEEDS_REVIEW", label: tr("Cần duyệt", "Needs Review"), count: needsReviewCount, dot: "bg-info" },
               ...(completedCount > 0
-                ? [{ id: "COMPLETED", label: "Đã cập nhật", count: completedCount, dot: "bg-primary" }]
+                ? [{ id: "COMPLETED", label: tr("Đã cập nhật", "Updated"), count: completedCount, dot: "bg-primary" }]
                 : []),
               ...(skippedCount > 0
-                ? [{ id: "SKIPPED", label: "Đã bỏ qua", count: skippedCount, dot: "bg-muted-foreground/50" }]
+                ? [{ id: "SKIPPED", label: tr("Đã bỏ qua", "Skipped"), count: skippedCount, dot: "bg-muted-foreground/50" }]
                 : []),
             ].map((tab) => {
               const active = filterStatus === tab.id;
@@ -874,27 +879,27 @@ export function BatchRunnerView() {
 
           {filterStatus === "CONFLICT" && conflictCount > 0 && (
             <div className="flex items-center gap-1.5">
-              <span className="text-[11.5px] text-muted-foreground">Xử lý nhanh:</span>
+              <span className="text-[11.5px] text-muted-foreground">{tr("Xử lý nhanh:", "Quick resolve:")}</span>
               <button
                 type="button"
                 onClick={() => handleBulkResolveConflict("APPEND")}
                 className="h-7 px-2.5 bg-primary/10 hover:bg-primary/15 border border-primary/25 text-primary font-medium rounded-lg text-[11.5px] transition-colors cursor-pointer"
               >
-                Nối tiếp tất cả
+                {tr("Nối tiếp tất cả", "Append All")}
               </button>
               <button
                 type="button"
                 onClick={() => handleBulkResolveConflict("OVERWRITE")}
                 className="h-7 px-2.5 bg-foreground/[0.05] hover:bg-foreground/[0.08] border border-border text-foreground font-medium rounded-lg text-[11.5px] transition-colors cursor-pointer"
               >
-                Ghi đè tất cả
+                {tr("Ghi đè tất cả", "Overwrite All")}
               </button>
               <button
                 type="button"
                 onClick={() => handleBulkResolveConflict("SKIP")}
                 className="h-7 px-2.5 bg-foreground/[0.03] hover:bg-foreground/[0.06] border border-border text-muted-foreground hover:text-foreground font-medium rounded-lg text-[11.5px] transition-colors cursor-pointer"
               >
-                Bỏ qua tất cả
+                {tr("Bỏ qua tất cả", "Skip All")}
               </button>
             </div>
           )}
@@ -909,7 +914,7 @@ export function BatchRunnerView() {
                   className="bg-transparent text-[11.5px] font-medium text-foreground focus:outline-none cursor-pointer"
                 >
                   <option value="ALL" className="bg-card text-foreground">
-                    Tất cả ({discoveredJobs.length})
+                    {tr(`Tất cả (${discoveredJobs.length})`, `All (${discoveredJobs.length})`)}
                   </option>
                   {discoveredTabTitles.map((tab) => (
                     <option key={tab} value={tab} className="bg-card text-foreground">
@@ -930,7 +935,7 @@ export function BatchRunnerView() {
               onClick={clearJobs}
               className="h-7 px-2.5 rounded-lg border border-border text-muted-foreground hover:text-foreground text-[11.5px] font-medium hover:bg-foreground/[0.04] transition-colors cursor-pointer"
             >
-              Xóa danh sách
+              {tr("Xóa danh sách", "Clear List")}
             </button>
           </div>
         </div>
@@ -943,9 +948,9 @@ export function BatchRunnerView() {
             <div className="w-10 h-10 rounded-2xl bg-foreground/[0.04] border border-border flex items-center justify-center text-muted-foreground mb-3">
               <Layers size={18} strokeWidth={1.75} />
             </div>
-            <p className="text-[13px] font-medium text-foreground">Chưa có job nào được quét</p>
+            <p className="text-[13px] font-medium text-foreground">{tr("Chưa có job nào được quét", "No jobs scanned yet")}</p>
             <p className="text-[12px] mt-1 text-muted-foreground max-w-md">
-              Kéo thả thư mục chứa ảnh vào khung phía trên hoặc bấm "Chọn thư mục" để đối soát tự động với Google Sheets.
+              {tr('Kéo thả thư mục chứa ảnh vào khung phía trên hoặc bấm "Chọn thư mục" để đối soát tự động với Google Sheets.', 'Drag & drop finished folders into the zone above or click "Choose Folders" to auto-match with Google Sheets.')}
             </p>
           </div>
         ) : (
@@ -953,12 +958,12 @@ export function BatchRunnerView() {
             <table className="w-full text-left text-[12px] border-collapse">
               <thead>
                 <tr className="border-b border-border bg-foreground/[0.03] text-muted-foreground font-medium sticky top-0 backdrop-blur-md z-10">
-                  <th className="py-2.5 px-4 font-medium">Thư mục Job</th>
-                  <th className="py-2.5 px-4 font-medium">Thư mục thành phẩm</th>
-                  <th className="py-2.5 px-4 font-medium">Số ảnh</th>
-                  <th className="py-2.5 px-4 font-medium">Hàng khớp trên Sheet</th>
-                  <th className="py-2.5 px-4 font-medium">Trạng thái</th>
-                  <th className="py-2.5 px-4 font-medium text-right">Thao tác</th>
+                  <th className="py-2.5 px-4 font-medium">{tr("Thư mục Job", "Job Folder")}</th>
+                  <th className="py-2.5 px-4 font-medium">{tr("Thư mục thành phẩm", "Finished Folder")}</th>
+                  <th className="py-2.5 px-4 font-medium">{tr("Số ảnh", "Photos")}</th>
+                  <th className="py-2.5 px-4 font-medium">{tr("Hàng khớp trên Sheet", "Matched Sheet Row")}</th>
+                  <th className="py-2.5 px-4 font-medium">{tr("Trạng thái", "Status")}</th>
+                  <th className="py-2.5 px-4 font-medium text-right">{tr("Thao tác", "Actions")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -976,7 +981,7 @@ export function BatchRunnerView() {
                       </span>
                     </td>
                     <td className="py-2.5 px-4 text-muted-foreground tabular-nums">
-                      {job.imageCount} ảnh
+                      {job.imageCount} {tr("ảnh", "photos")}
                     </td>
                     <td className="py-2.5 px-4">
                       {job.status === "SKIPPED" ? (
@@ -987,7 +992,7 @@ export function BatchRunnerView() {
                             </span>
                           )}
                           <span className="text-muted-foreground line-through text-[11.5px]">
-                            {job.targetSheetRow ? `Hàng ${job.targetSheetRow}` : "Chưa gắn"}
+                            {job.targetSheetRow ? `${tr("Hàng", "Row")} ${job.targetSheetRow}` : tr("Chưa gắn", "Unassigned")}
                           </span>
                         </div>
                       ) : job.status === "NEEDS_REVIEW" ? (
@@ -997,7 +1002,7 @@ export function BatchRunnerView() {
                             onClick={() => setReviewingJob(job)}
                             className="h-6 px-2.5 bg-primary/10 hover:bg-primary/15 text-primary border border-primary/25 rounded-md text-[11px] font-medium transition-colors cursor-pointer"
                           >
-                            Chọn hàng ({job.candidateRows?.length || 0})
+                            {tr("Chọn hàng", "Choose Row")} ({job.candidateRows?.length || 0})
                           </button>
                           <button
                             type="button"
@@ -1008,7 +1013,7 @@ export function BatchRunnerView() {
                             }}
                             className="text-[11px] text-muted-foreground hover:text-foreground underline cursor-pointer"
                           >
-                            Nhập tay
+                            {tr("Nhập tay", "Manual")}
                           </button>
                         </div>
                       ) : job.targetSheetRow ? (
@@ -1019,7 +1024,7 @@ export function BatchRunnerView() {
                             </span>
                           )}
                           <span className="font-medium text-foreground bg-foreground/[0.04] border border-border px-2 py-0.5 rounded text-[11px] font-mono">
-                            Hàng {job.targetSheetRow}
+                            {tr("Hàng", "Row")} {job.targetSheetRow}
                           </span>
                           <button
                             type="button"
@@ -1030,13 +1035,13 @@ export function BatchRunnerView() {
                             }}
                             className="text-[11px] text-muted-foreground hover:text-foreground underline cursor-pointer ml-0.5"
                           >
-                            Đổi
+                            {tr("Đổi", "Edit")}
                           </button>
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
                           <span className="text-muted-foreground text-[11.5px] truncate max-w-[160px]">
-                            {job.statusReason || "Chưa tìm thấy"}
+                            {job.statusReason || tr("Chưa tìm thấy", "Not found")}
                           </span>
                           <button
                             type="button"
@@ -1047,7 +1052,7 @@ export function BatchRunnerView() {
                             }}
                             className="h-6 px-2 bg-foreground/[0.05] hover:bg-foreground/[0.08] text-foreground border border-border rounded text-[11px] font-medium transition-colors cursor-pointer shrink-0"
                           >
-                            Gán hàng
+                            {tr("Gán hàng", "Assign Row")}
                           </button>
                         </div>
                       )}
@@ -1056,13 +1061,13 @@ export function BatchRunnerView() {
                       {job.status === "READY" && (
                         <span className="inline-flex items-center gap-1.5 text-foreground text-[11.5px]">
                           <span className="w-1.5 h-1.5 rounded-full bg-success" />
-                          <span>Sẵn sàng</span>
+                          <span>{tr("Sẵn sàng", "Ready")}</span>
                         </span>
                       )}
                       {job.status === "CONFLICT" && (
                         <span className="inline-flex items-center gap-1.5 text-foreground text-[11.5px]">
                           <span className="w-1.5 h-1.5 rounded-full bg-warning" />
-                          <span>Xung đột ({job.conflictDetails?.field || "Dữ liệu"})</span>
+                          <span>{tr("Xung đột", "Conflict")} ({job.conflictDetails?.field || tr("Dữ liệu", "Data")})</span>
                         </span>
                       )}
                       {job.status === "NEEDS_REVIEW" && (
@@ -1072,18 +1077,18 @@ export function BatchRunnerView() {
                           className="inline-flex items-center gap-1.5 text-foreground hover:text-primary text-[11.5px] cursor-pointer"
                         >
                           <span className="w-1.5 h-1.5 rounded-full bg-info" />
-                          <span>Cần duyệt</span>
+                          <span>{tr("Cần duyệt", "Needs Review")}</span>
                         </button>
                       )}
                       {job.status === "COMPLETED" && (
                         <span className="inline-flex items-center gap-1.5 text-primary text-[11.5px] font-medium">
                           <Check size={12} />
-                          <span>Đã cập nhật</span>
+                          <span>{tr("Đã cập nhật", "Updated")}</span>
                         </span>
                       )}
                       {job.status === "SKIPPED" && (
                         <span className="inline-flex items-center gap-1.5 text-muted-foreground text-[11.5px]">
-                          <span>Đã bỏ qua</span>
+                          <span>{tr("Đã bỏ qua", "Skipped")}</span>
                         </span>
                       )}
                       {job.status === "ERROR" && (
@@ -1093,7 +1098,7 @@ export function BatchRunnerView() {
                         >
                           <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
                           <span className="truncate max-w-[180px]">
-                            {job.statusReason || "Lỗi"}
+                            {job.statusReason || tr("Lỗi", "Error")}
                           </span>
                         </span>
                       )}
@@ -1106,7 +1111,7 @@ export function BatchRunnerView() {
                             onClick={() => setReviewingJob(job)}
                             className="h-7 px-2.5 bg-primary/10 hover:bg-primary/15 text-primary border border-primary/25 rounded-lg text-[11px] font-medium transition-colors cursor-pointer"
                           >
-                            Chọn hàng
+                            {tr("Chọn hàng", "Select Row")}
                           </button>
                         )}
                         {job.status === "CONFLICT" && (
@@ -1115,42 +1120,42 @@ export function BatchRunnerView() {
                             onClick={() => setResolvingConflictJob(job)}
                             className="h-7 px-2.5 bg-foreground/[0.05] hover:bg-foreground/[0.08] text-foreground border border-border rounded-lg text-[11px] font-medium transition-colors cursor-pointer"
                           >
-                            Xử lý
+                            {tr("Xử lý", "Resolve")}
                           </button>
                         )}
                         <button
                           type="button"
                           onClick={() => setInspectingJob(job)}
                           className="h-7 px-2.5 bg-foreground/[0.04] hover:bg-foreground/[0.08] text-foreground border border-border rounded-lg text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer"
-                          title="Xem chi tiết thay đổi"
+                          title={tr("Xem chi tiết thay đổi", "Preview changes")}
                         >
                           <Eye size={12} strokeWidth={1.75} />
-                          <span>Chi tiết</span>
+                          <span>{tr("Chi tiết", "Details")}</span>
                         </button>
                         {job.status !== "SKIPPED" ? (
                           <button
                             type="button"
                             onClick={() => handleCancelJob(job.id)}
                             className="h-7 px-2 text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05] rounded-lg text-[11px] transition-colors cursor-pointer"
-                            title="Bỏ qua job này"
+                            title={tr("Bỏ qua job này", "Skip this job")}
                           >
-                            Bỏ qua
+                            {tr("Bỏ qua", "Skip")}
                           </button>
                         ) : (
                           <button
                             type="button"
                             onClick={() => handleRestoreJob(job.id)}
                             className="h-7 px-2 text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05] rounded-lg text-[11px] transition-colors cursor-pointer"
-                            title="Khôi phục job này"
+                            title={tr("Khôi phục job này", "Restore this job")}
                           >
-                            Khôi phục
+                            {tr("Khôi phục", "Restore")}
                           </button>
                         )}
                         <button
                           type="button"
                           onClick={() => handleRemoveJob(job.id)}
                           className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors cursor-pointer"
-                          title="Xóa khỏi danh sách"
+                          title={tr("Xóa khỏi danh sách", "Remove from list")}
                         >
                           <Trash2 size={13} strokeWidth={1.75} />
                         </button>
@@ -1169,12 +1174,12 @@ export function BatchRunnerView() {
         <div className="px-4 py-3 bg-card border border-border rounded-2xl flex items-center justify-between gap-4 shrink-0">
           <div className="flex flex-col">
             <span className="text-[12.5px] font-medium text-foreground">
-              Sẵn sàng cập nhật: <span className="font-semibold">{readyCount} job</span>
-              {conflictCount > 0 && ` · Xung đột: ${conflictCount}`}
-              {needsReviewCount > 0 && ` · Cần duyệt: ${needsReviewCount}`}
+              {tr("Sẵn sàng cập nhật:", "Ready to update:")} <span className="font-semibold">{readyCount} job</span>
+              {conflictCount > 0 && ` · ${tr("Xung đột:", "Conflicts:")} ${conflictCount}`}
+              {needsReviewCount > 0 && ` · ${tr("Cần duyệt:", "Needs review:")} ${needsReviewCount}`}
             </span>
             <span className="text-[11px] text-muted-foreground">
-              Chỉ cập nhật các job ở trạng thái Sẵn sàng, giữ nguyên các cột công thức.
+              {tr("Chỉ cập nhật các job ở trạng thái Sẵn sàng, giữ nguyên các cột công thức.", "Only updates Ready jobs while preserving formula columns.")}
             </span>
           </div>
 
@@ -1187,8 +1192,8 @@ export function BatchRunnerView() {
             <Play size={13} className="fill-current" />
             <span>
               {isExecutingBatch
-                ? `Đang cập nhật (${batchProgress?.current || 0}/${batchProgress?.total || readyCount})...`
-                : `Cập nhật ${readyCount} job sẵn sàng`}
+                ? tr(`Đang cập nhật (${batchProgress?.current || 0}/${batchProgress?.total || readyCount})...`, `Updating (${batchProgress?.current || 0}/${batchProgress?.total || readyCount})...`)
+                : tr(`Cập nhật ${readyCount} job sẵn sàng`, `Update ${readyCount} Ready Job(s)`)}
             </span>
           </button>
         </div>
@@ -1217,7 +1222,7 @@ export function BatchRunnerView() {
           <div className="bg-card border border-border rounded-2xl w-full max-w-md p-5 shadow-xl flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <h3 className="text-[14px] font-semibold text-foreground">
-                Gán số hàng trên Sheet
+                {tr("Gán số hàng trên Sheet", "Assign Sheet Row Number")}
               </h3>
               <button
                 type="button"
@@ -1233,11 +1238,11 @@ export function BatchRunnerView() {
 
             <div className="p-3 bg-foreground/[0.03] rounded-xl border border-border text-[12px] flex flex-col gap-1.5">
               <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Thư mục Job:</span>
+                <span className="text-muted-foreground">{tr("Thư mục Job:", "Job Folder:")}</span>
                 <span className="font-medium text-foreground truncate">{assigningRowJob.jobFolderName}</span>
               </div>
               <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Khách hàng:</span>
+                <span className="text-muted-foreground">{tr("Khách hàng:", "Customer:")}</span>
                 <span className="font-medium text-foreground">
                   {assigningRowJob.metadata?.customerName || assigningRowJob.finalFolderName}
                 </span>
@@ -1249,7 +1254,7 @@ export function BatchRunnerView() {
                 e.preventDefault();
                 const rowNum = parseInt(manualRowInput.trim(), 10);
                 if (isNaN(rowNum) || rowNum <= 0) {
-                  alert("Vui lòng nhập số hàng hợp lệ (lớn hơn 0)");
+                  alert(tr("Vui lòng nhập số hàng hợp lệ (lớn hơn 0)", "Please enter a valid row number (> 0)"));
                   return;
                 }
                 const targetTab = manualTabInput || assigningRowJob.targetTabTitle || selectedTabTitles[0];
@@ -1260,7 +1265,7 @@ export function BatchRunnerView() {
               {availableTabTitles.length > 1 && (
                 <div>
                   <label className="text-[12px] font-medium text-foreground block mb-1.5">
-                    Tab Google Sheet
+                    {tr("Tab Google Sheet", "Google Sheet Tab")}
                   </label>
                   <select
                     value={manualTabInput || assigningRowJob.targetTabTitle || selectedTabTitles[0] || ""}
@@ -1278,13 +1283,13 @@ export function BatchRunnerView() {
 
               <div>
                 <label className="text-[12px] font-medium text-foreground block mb-1.5">
-                  Số thứ tự hàng (Row)
+                  {tr("Số thứ tự hàng (Row)", "Row Number")}
                 </label>
                 <input
                   type="number"
                   min="1"
                   autoFocus
-                  placeholder="Ví dụ: 14"
+                  placeholder={tr("Ví dụ: 14", "e.g., 14")}
                   value={manualRowInput}
                   onChange={(e) => setManualRowInput(e.target.value)}
                   className="w-full h-9 px-3 bg-background border border-border rounded-xl text-[13px] font-medium text-foreground focus:outline-none focus:border-primary"
@@ -1300,13 +1305,13 @@ export function BatchRunnerView() {
                   }}
                   className="h-8 px-3 text-[12px] text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer"
                 >
-                  Hủy
+                  {tr("Hủy", "Cancel")}
                 </button>
                 <button
                   type="submit"
                   className="btn-base btn-primary h-8 px-4 rounded-lg text-[12px]"
                 >
-                  Xác nhận
+                  {tr("Xác nhận", "Confirm")}
                 </button>
               </div>
             </form>
@@ -1321,10 +1326,10 @@ export function BatchRunnerView() {
             <div className="flex items-center justify-between pb-3 border-b border-border">
               <div>
                 <h3 className="text-[14px] font-semibold text-foreground">
-                  Chọn hàng tương ứng trên Sheet
+                  {tr("Chọn hàng tương ứng trên Sheet", "Select Matching Sheet Row")}
                 </h3>
                 <p className="text-[11.5px] text-muted-foreground mt-0.5">
-                  Chọn một hàng đề xuất bên dưới hoặc nhập số hàng thủ công.
+                  {tr("Chọn một hàng đề xuất bên dưới hoặc nhập số hàng thủ công.", "Pick a suggested row below or enter the row number manually.")}
                 </p>
               </div>
               <button
@@ -1338,11 +1343,11 @@ export function BatchRunnerView() {
 
             <div className="p-3 bg-foreground/[0.03] rounded-xl border border-border text-[12px] flex flex-col gap-1 shrink-0">
               <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Thư mục job:</span>
+                <span className="text-muted-foreground">{tr("Thư mục job:", "Job folder:")}</span>
                 <span className="font-medium text-foreground font-mono">{reviewingJob.jobFolderName}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Khách hàng:</span>
+                <span className="text-muted-foreground">{tr("Khách hàng:", "Customer:")}</span>
                 <span className="font-medium text-foreground">
                   {reviewingJob.metadata?.customerName || reviewingJob.finalFolderName}
                 </span>
@@ -1351,12 +1356,12 @@ export function BatchRunnerView() {
 
             <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-2 pr-1">
               <span className="text-[12px] font-medium text-foreground">
-                Hàng đề xuất ({reviewingJob.candidateRows?.length || 0}):
+                {tr("Hàng đề xuất", "Suggested rows")} ({reviewingJob.candidateRows?.length || 0}):
               </span>
 
               {!reviewingJob.candidateRows || reviewingJob.candidateRows.length === 0 ? (
                 <div className="p-4 text-center text-[12px] text-muted-foreground bg-foreground/[0.02] rounded-xl border border-border">
-                  Không có hàng đề xuất tự động. Bạn có thể nhập số hàng thủ công bên dưới.
+                  {tr("Không có hàng đề xuất tự động. Bạn có thể nhập số hàng thủ công bên dưới.", "No automatic row suggestions. Enter the row number manually below.")}
                 </div>
               ) : (
                 reviewingJob.candidateRows.map((candidate) => (
@@ -1372,17 +1377,17 @@ export function BatchRunnerView() {
                           </span>
                         )}
                         <span className="px-2 py-0.5 bg-foreground/[0.05] text-foreground rounded text-[11.5px] font-medium font-mono">
-                          Hàng {candidate.row}
+                          {tr("Hàng", "Row")} {candidate.row}
                         </span>
                         <span className="text-[11px] text-muted-foreground">
-                          Độ khớp: {Math.min(100, Math.round((candidate.score / 2.0) * 100))}%
+                          {tr("Độ khớp:", "Match:")} {Math.min(100, Math.round((candidate.score / 2.0) * 100))}%
                         </span>
                       </div>
 
                       <div className="text-[11px] text-muted-foreground grid grid-cols-2 gap-x-3 gap-y-0.5 mt-1">
                         {candidate.values["C"] && (
                           <div className="truncate">
-                            <span className="text-foreground font-medium">Khách:</span> {candidate.values["C"]}
+                            <span className="text-foreground font-medium">{tr("Khách:", "Customer:")}</span> {candidate.values["C"]}
                           </div>
                         )}
                         {candidate.values["H"] && (
@@ -1392,7 +1397,7 @@ export function BatchRunnerView() {
                         )}
                         {candidate.values["B"] && (
                           <div>
-                            <span className="text-foreground font-medium">Giờ:</span> {candidate.values["B"]}
+                            <span className="text-foreground font-medium">{tr("Giờ:", "Time:")}</span> {candidate.values["B"]}
                           </div>
                         )}
                         {candidate.values["D"] && (
@@ -1415,7 +1420,7 @@ export function BatchRunnerView() {
                       }
                       className="btn-base btn-primary h-8 px-3.5 rounded-lg text-[11.5px] shrink-0"
                     >
-                      Chọn hàng này
+                      {tr("Chọn hàng này", "Select This Row")}
                     </button>
                   </div>
                 ))
@@ -1434,14 +1439,14 @@ export function BatchRunnerView() {
                 }}
                 className="text-[12px] text-muted-foreground hover:text-foreground cursor-pointer font-medium"
               >
-                Nhập số hàng bằng tay...
+                {tr("Nhập số hàng bằng tay...", "Enter row number manually...")}
               </button>
               <button
                 type="button"
                 onClick={() => setReviewingJob(null)}
                 className="h-8 px-3.5 text-[12px] text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer"
               >
-                Đóng
+                {tr("Đóng", "Close")}
               </button>
             </div>
           </div>

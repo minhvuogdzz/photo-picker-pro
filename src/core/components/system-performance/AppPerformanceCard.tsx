@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Cpu } from "lucide-react";
 import { ProcessMetrics, MetricDataPoint } from "./types";
 import { PerformanceLineChart } from "./PerformanceLineChart";
+import { useTranslation } from "@/core/lib/i18n";
 
 interface AppPerformanceCardProps {
   metrics: ProcessMetrics | null;
@@ -9,6 +10,7 @@ interface AppPerformanceCardProps {
 }
 
 export function AppPerformanceCard({ metrics, history }: AppPerformanceCardProps) {
+  const { tr } = useTranslation();
   const [activeMetric, setActiveMetric] = useState<"cpu" | "memory">("cpu");
 
   const cpuData = history.map((h) => h.appCpu);
@@ -31,7 +33,7 @@ export function AppPerformanceCard({ metrics, history }: AppPerformanceCardProps
               DH Studio Pro
             </h3>
             <span className="text-[9px] text-muted-foreground leading-none">
-              Tiến trình ứng dụng
+              {tr("Tiến trình ứng dụng", "App process")}
             </span>
           </div>
         </div>
@@ -70,11 +72,13 @@ export function AppPerformanceCard({ metrics, history }: AppPerformanceCardProps
             {activeMetric === "cpu" ? `${currentCpu.toFixed(1)}%` : currentMemory}
           </span>
           <span className="text-[10px] text-muted-foreground font-medium">
-            {activeMetric === "cpu" ? "sử dụng" : "đang chiếm"}
+            {activeMetric === "cpu" ? tr("sử dụng", "usage") : tr("đang chiếm", "allocated")}
           </span>
         </div>
         <span className="text-[9px] text-muted-foreground font-mono">
-          {activeMetric === "cpu" ? `Đỉnh ${Math.max(...cpuData, currentCpu).toFixed(0)}%` : "Bộ nhớ thực"}
+          {activeMetric === "cpu"
+            ? `${tr("Đỉnh", "Peak")} ${Math.max(...cpuData, currentCpu).toFixed(0)}%`
+            : tr("Bộ nhớ thực", "Physical RAM")}
         </span>
       </div>
 

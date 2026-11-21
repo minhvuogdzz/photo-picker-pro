@@ -34,6 +34,7 @@ import { photoPreviewService } from "../services/photoPreviewService";
 import { getFolderName } from "@/core/lib/utils";
 import { useAppStore } from "@/core/stores/useAppStore";
 import { open } from "@tauri-apps/plugin-dialog";
+import { useTranslation } from "@/core/lib/i18n";
 
 interface FolderPreviewModalProps {
   isOpen: boolean;
@@ -72,6 +73,7 @@ function FloatingCursorPreview({
   initialX,
   initialY,
 }: FloatingCursorPreviewProps) {
+  const { tr } = useTranslation();
   const cardRef = useRef<HTMLDivElement>(null);
   const coordsRef = useRef({ x: initialX, y: initialY });
 
@@ -155,7 +157,7 @@ function FloatingCursorPreview({
           ) : (
             <div className="w-full h-44 flex flex-col items-center justify-center text-muted-foreground gap-1">
               <Loader2 size={24} className="animate-spin text-primary" />
-              <span className="text-[11px]">Đang tạo preview...</span>
+              <span className="text-[11px]">{tr("Đang tạo preview...", "Generating preview...")}</span>
             </div>
           )}
 
@@ -191,7 +193,7 @@ function FloatingCursorPreview({
           </div>
 
           <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-            <span className="font-mono">Mã số: #{photo.normalized_number || "---"}</span>
+            <span className="font-mono">{tr("Mã số:", "Code:")} #{photo.normalized_number || "---"}</span>
             <span className="text-border">·</span>
             <span className="truncate max-w-[200px]" title={photo.full_path}>
               {photo.folder}
@@ -209,6 +211,7 @@ export function FolderPreviewModal({
   folderPath,
   onClose,
 }: FolderPreviewModalProps) {
+  const { tr } = useTranslation();
   const modalRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const setRawCodeInput = useAppStore((s) => s.setRawCodeInput);
@@ -408,7 +411,7 @@ export function FolderPreviewModal({
       })
       .catch((err) => {
         if (!isMounted) return;
-        setErrorMsg(err?.toString() || "Không thể quét ảnh trong thư mục.");
+        setErrorMsg(err?.toString() || tr("Không thể quét ảnh trong thư mục.", "Unable to scan images in folder."));
       })
       .finally(() => {
         if (isMounted) setIsLoading(false);
@@ -779,7 +782,7 @@ export function FolderPreviewModal({
       const selected = await open({
         directory: true,
         multiple: false,
-        title: "Chọn thư mục xuất ảnh đã lọc",
+        title: tr("Chọn thư mục xuất ảnh đã lọc", "Select export folder for rated photos"),
         defaultPath: folderPath || undefined,
       });
       if (selected && typeof selected === "string") {
@@ -801,7 +804,7 @@ export function FolderPreviewModal({
     }
 
     if (targetPhotos.length === 0) {
-      setExportMessage({ type: "error", text: "Không có bức ảnh nào trong nhóm đã chọn để xuất." });
+      setExportMessage({ type: "error", text: tr("Không có bức ảnh nào trong nhóm đã chọn để xuất.", "No photos in the selected group to export.") });
       return;
     }
 
@@ -814,7 +817,7 @@ export function FolderPreviewModal({
     }
 
     if (!finalDest) {
-      setExportMessage({ type: "error", text: "Vui lòng chọn thư mục đích để lưu ảnh." });
+      setExportMessage({ type: "error", text: tr("Vui lòng chọn thư mục đích để lưu ảnh.", "Please choose a destination folder.") });
       return;
     }
 
@@ -827,18 +830,24 @@ export function FolderPreviewModal({
       if (res.success_count > 0) {
         setExportMessage({
           type: "success",
-          text: `Đã xuất thành công ${res.success_count} ảnh vào: ${finalDest}`,
+          text: tr(
+            `Đã xuất thành công ${res.success_count} ảnh vào: ${finalDest}`,
+            `Successfully exported ${res.success_count} photo(s) to: ${finalDest}`
+          ),
         });
       } else {
         setExportMessage({
           type: "error",
-          text: `Không xuất được file nào. Lỗi: ${res.errors.join("; ")}`,
+          text: tr(
+            `Không xuất được file nào. Lỗi: ${res.errors.join("; ")}`,
+            `No files exported. Errors: ${res.errors.join("; ")}`
+          ),
         });
       }
     } catch (err: any) {
       setExportMessage({
         type: "error",
-        text: `Lỗi khi xuất ảnh: ${err?.message || err}`,
+        text: tr(`Lỗi khi xuất ảnh: ${err?.message || err}`, `Export error: ${err?.message || err}`),
       });
     } finally {
       setIsExporting(false);
@@ -909,12 +918,12 @@ export function FolderPreviewModal({
                   {currentFolderTitle}
                 </h2>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 shrink-0 font-semibold">
-                  {stats.total.toLocaleString()} ảnh
+                  {tr(`${stats.total.toLocaleString()} ảnh`, `${stats.total.toLocaleString()} photos`)}
                 </span>
                 {stats.totalRated > 0 && (
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 shrink-0 flex items-center gap-1">
                     <Star size={10} className="fill-amber-400 text-amber-400" />
-                    <span>Đã lọc {stats.totalRated} ảnh</span>
+                    <span>{tr(`Đã lọc ${stats.totalRated} ảnh`, `${stats.totalRated} rated`)}</span>
                   </span>
                 )}
               </div>
@@ -934,13 +943,13 @@ export function FolderPreviewModal({
               />
               <input
                 type="text"
-                placeholder="Tìm tên hoặc mã số..."
+                placeholder={tr("Tìm tên hoặc mã số...", "Search filename or code...")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-8 pr-7 py-1.5 text-xs rounded-lg bg-background border border-border/60 focus:outline-none focus:ring-1 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground/80"
               />
               {searchQuery && (
-                <button aria-label="Đóng"
+                <button aria-label={tr("Đóng", "Clear")}
                   type="button"
                   onClick={() => setSearchQuery("")}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 cursor-pointer"
@@ -961,7 +970,7 @@ export function FolderPreviewModal({
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                Tất cả ({stats.total})
+                {tr(`Tất cả (${stats.total})`, `All (${stats.total})`)}
               </button>
               <button
                 type="button"
@@ -998,10 +1007,10 @@ export function FolderPreviewModal({
                 setIsExportModalOpen(true);
               }}
               className="px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/35 hover:border-amber-500/60 font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
-              title="Xuất bộ ảnh đã đánh giá theo Rate 1, 2, 3, 4, 5"
+              title={tr("Xuất bộ ảnh đã đánh giá theo Rate 1, 2, 3, 4, 5", "Export rated photos by Rate 1, 2, 3, 4, 5")}
             >
               <FolderOutput size={14} className="text-amber-600 dark:text-amber-400" />
-              <span>Xuất ảnh đã lọc</span>
+              <span>{tr("Xuất ảnh đã lọc", "Export filtered photos")}</span>
               {stats.totalRated > 0 && (
                 <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-200 font-bold font-mono">
                   {stats.totalRated}
@@ -1018,11 +1027,11 @@ export function FolderPreviewModal({
                   ? "bg-primary text-primary-foreground border-primary shadow-xs"
                   : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground border-border/50"
               }`}
-              title={viewMode === "split" ? "Chuyển sang chỉ xem dạng lưới" : "Mở khung xem ảnh chi tiết cố định bên phải"}
+              title={viewMode === "split" ? tr("Chuyển sang chỉ xem dạng lưới", "Switch to grid-only view") : tr("Mở khung xem ảnh chi tiết cố định bên phải", "Open fixed detail preview panel on right")}
             >
               {viewMode === "split" ? <PanelRight size={14} /> : <LayoutGrid size={14} />}
               <span className="hidden sm:inline">
-                {viewMode === "split" ? "Khung chi tiết" : "Lưới full"}
+                {viewMode === "split" ? tr("Khung chi tiết", "Detail pane") : tr("Lưới full", "Full grid")}
               </span>
             </button>
 
@@ -1034,7 +1043,7 @@ export function FolderPreviewModal({
                 className={`p-1 rounded-md transition-all cursor-pointer ${
                   gridSize === "sm" ? "bg-card text-foreground shadow-2xs" : "hover:text-foreground"
                 }`}
-                title="Lưới nhỏ" aria-label="Lưới nhỏ"
+                title={tr("Lưới nhỏ", "Small grid")} aria-label={tr("Lưới nhỏ", "Small grid")}
               >
                 <Grid3X3 size={13} />
               </button>
@@ -1044,7 +1053,7 @@ export function FolderPreviewModal({
                 className={`p-1 rounded-md transition-all cursor-pointer ${
                   gridSize === "md" ? "bg-card text-foreground shadow-2xs" : "hover:text-foreground"
                 }`}
-                title="Lưới vừa" aria-label="Lưới vừa"
+                title={tr("Lưới vừa", "Medium grid")} aria-label={tr("Lưới vừa", "Medium grid")}
               >
                 <Grid2X2 size={13} />
               </button>
@@ -1054,7 +1063,7 @@ export function FolderPreviewModal({
                 className={`p-1 rounded-md transition-all cursor-pointer ${
                   gridSize === "lg" ? "bg-card text-foreground shadow-2xs" : "hover:text-foreground"
                 }`}
-                title="Lưới lớn" aria-label="Lưới lớn"
+                title={tr("Lưới lớn", "Large grid")} aria-label={tr("Lưới lớn", "Large grid")}
               >
                 <Layers size={13} />
               </button>
@@ -1069,11 +1078,11 @@ export function FolderPreviewModal({
                   ? "bg-primary/15 text-primary border-primary/40 hover:bg-primary/25 shadow-2xs"
                   : "border-border/50 bg-background/60 hover:bg-muted text-muted-foreground hover:text-foreground"
               }`}
-              title={isFullscreen ? "Thu nhỏ về dạng cửa sổ (Esc)" : "Mở rộng toàn màn hình"}
+              title={isFullscreen ? tr("Thu nhỏ về dạng cửa sổ (Esc)", "Exit fullscreen (Esc)") : tr("Mở rộng toàn màn hình", "Expand fullscreen")}
             >
               {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
               <span className="hidden xl:inline text-[11px]">
-                {isFullscreen ? "Thu lại" : "Toàn màn hình"}
+                {isFullscreen ? tr("Thu lại", "Collapse") : tr("Toàn màn hình", "Fullscreen")}
               </span>
             </button>
 
@@ -1082,7 +1091,7 @@ export function FolderPreviewModal({
               type="button"
               onClick={onClose}
               className="p-1.5 rounded-lg border border-border/50 bg-background/60 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer"
-              title="Đóng cửa sổ xem ảnh (ESC)" aria-label="Đóng cửa sổ xem ảnh (ESC)"
+              title={tr("Đóng cửa sổ xem ảnh (ESC)", "Close photo viewer (ESC)")} aria-label={tr("Đóng cửa sổ xem ảnh (ESC)", "Close photo viewer (ESC)")}
             >
               <X size={15} />
             </button>
@@ -1095,7 +1104,7 @@ export function FolderPreviewModal({
           <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
             <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mr-1 flex items-center gap-1">
               <Star size={12} className="text-amber-500 fill-amber-500" />
-              <span>Bộ Rate:</span>
+              <span>{tr("Bộ Rate:", "Rating:")}</span>
             </span>
 
             {/* All */}
@@ -1108,7 +1117,7 @@ export function FolderPreviewModal({
                   : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/40"
               }`}
             >
-              Tất cả ({stats.total})
+              {tr(`Tất cả (${stats.total})`, `All (${stats.total})`)}
             </button>
 
             {/* Star 1 to 5 buttons */}
@@ -1128,7 +1137,7 @@ export function FolderPreviewModal({
                       ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/20"
                       : "bg-muted/30 text-muted-foreground/85 border-border/40 hover:text-foreground"
                   }`}
-                  title={`Lọc ảnh Rate ${starNum} (Phím tắt: Cmd+${starNum} hoặc phím ${starNum})`}
+                  title={tr(`Lọc ảnh Rate ${starNum} (Phím tắt: Cmd+${starNum} hoặc phím ${starNum})`, `Filter Rate ${starNum} photos (Shortcut: Cmd+${starNum} or key ${starNum})`)}
                 >
                   <span className="flex items-center">
                     {Array.from({ length: starNum }).map((_, i) => (
@@ -1153,9 +1162,9 @@ export function FolderPreviewModal({
                   ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
                   : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border-border/40"
               }`}
-              title="Xem tất cả ảnh đã được gắn sao từ 1 đến 5"
+              title={tr("Xem tất cả ảnh đã được gắn sao từ 1 đến 5", "View all photos rated 1 to 5 stars")}
             >
-              Đã đánh dấu ({stats.totalRated})
+              {tr(`Đã đánh dấu (${stats.totalRated})`, `Rated (${stats.totalRated})`)}
             </button>
 
             {/* Unrated */}
@@ -1167,9 +1176,9 @@ export function FolderPreviewModal({
                   ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
                   : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border-border/40"
               }`}
-              title="Xem các ảnh chưa được gắn sao"
+              title={tr("Xem các ảnh chưa được gắn sao", "View unrated photos")}
             >
-              Chưa đánh dấu ({stats.unratedCount})
+              {tr(`Chưa đánh dấu (${stats.unratedCount})`, `Unrated (${stats.unratedCount})`)}
             </button>
           </div>
 
@@ -1178,17 +1187,17 @@ export function FolderPreviewModal({
             <span className="px-1.5 py-0.5 rounded bg-muted/60 border border-border/50">
               Cmd / Ctrl + 1..5
             </span>
-            <span>đánh dấu sao</span>
+            <span>{tr("đánh dấu sao", "set rating")}</span>
             <span className="text-border">·</span>
             <span className="px-1.5 py-0.5 rounded bg-muted/60 border border-border/50">
               0
             </span>
-            <span>huỷ sao</span>
+            <span>{tr("huỷ sao", "clear rating")}</span>
             <span className="text-border">·</span>
             <span className="px-1.5 py-0.5 rounded bg-muted/60 border border-border/50">
               ← →
             </span>
-            <span>chuyển ảnh</span>
+            <span>{tr("chuyển ảnh", "navigate")}</span>
           </div>
         </div>
 
@@ -1204,7 +1213,7 @@ export function FolderPreviewModal({
             {isLoading ? (
               <div className="flex flex-col items-center justify-center h-full gap-3 py-20 text-muted-foreground">
                 <Loader2 size={32} className="animate-spin text-primary" />
-                <p className="text-sm font-medium">Đang quét và bóc tách danh sách ảnh trong thư mục...</p>
+                <p className="text-sm font-medium">{tr("Đang quét và bóc tách danh sách ảnh trong thư mục...", "Scanning and loading photos in folder...")}</p>
               </div>
             ) : errorMsg ? (
               <div className="flex flex-col items-center justify-center h-full gap-3 py-20 text-red-500">
@@ -1214,13 +1223,13 @@ export function FolderPreviewModal({
                   onClick={onClose}
                   className="px-4 py-1.5 rounded-lg border border-border bg-background text-xs text-foreground hover:bg-muted"
                 >
-                  Đóng
+                  {tr("Đóng", "Close")}
                 </button>
               </div>
             ) : filteredPhotos.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full gap-2 py-20 text-muted-foreground">
                 <ImageIcon size={36} className="opacity-30 mb-1" />
-                <p className="text-sm font-medium">Không tìm thấy ảnh nào phù hợp.</p>
+                <p className="text-sm font-medium">{tr("Không tìm thấy ảnh nào phù hợp.", "No matching photos found.")}</p>
                 {searchQuery || ratingFilter !== "all" ? (
                   <button
                     type="button"
@@ -1230,7 +1239,7 @@ export function FolderPreviewModal({
                     }}
                     className="text-xs text-primary hover:underline mt-1 cursor-pointer"
                   >
-                    Bỏ tất cả bộ lọc để xem lại toàn bộ ảnh
+                    {tr("Bỏ tất cả bộ lọc để xem lại toàn bộ ảnh", "Clear all filters to show all photos")}
                   </button>
                 ) : null}
               </div>
@@ -1361,7 +1370,7 @@ export function FolderPreviewModal({
                               setLightboxIndex(idx);
                             }}
                             className="pointer-events-auto p-2 rounded-full bg-black/75 text-white hover:bg-primary hover:text-primary-foreground backdrop-blur-xs shadow-lg transition-transform hover:scale-110 cursor-pointer border border-white/20"
-                            title="Phóng to toàn màn hình (Double-click hoặc Space)" aria-label="Phóng to toàn màn hình (Double-click hoặc Space)"
+                            title={tr("Phóng to toàn màn hình (Double-click hoặc Space)", "Zoom fullscreen (Double-click or Space)")} aria-label={tr("Phóng to toàn màn hình (Double-click hoặc Space)", "Zoom fullscreen (Double-click or Space)")}
                           >
                             <ZoomIn size={15} />
                           </button>
@@ -1396,7 +1405,7 @@ export function FolderPreviewModal({
                                   handleSetRating(photo.full_path, starIdx);
                                 }}
                                 className="p-0.5 text-muted-foreground hover:scale-125 transition-transform cursor-pointer"
-                                title={`Gắn Rate ${starIdx} (Cmd+${starIdx})`} aria-label={`Gắn Rate ${starIdx} (Cmd+${starIdx})`}
+                                title={tr(`Gắn Rate ${starIdx} (Cmd+${starIdx})`, `Set Rate ${starIdx} (Cmd+${starIdx})`)} aria-label={tr(`Gắn Rate ${starIdx} (Cmd+${starIdx})`, `Set Rate ${starIdx} (Cmd+${starIdx})`)}
                               >
                                 <Star
                                   size={11}
@@ -1443,7 +1452,7 @@ export function FolderPreviewModal({
                         {activeSidePhoto.filename}
                       </span>
                       <span className="text-[10px] text-muted-foreground font-mono">
-                        Mã: #{activeSidePhoto.normalized_number || "---"} · {formatBytes(activeSidePhoto.size)}
+                        {tr("Mã:", "Code:")} #{activeSidePhoto.normalized_number || "---"} · {formatBytes(activeSidePhoto.size)}
                       </span>
                     </div>
 
@@ -1469,7 +1478,7 @@ export function FolderPreviewModal({
                         ? "max-h-[44vh] xl:max-h-[50vh] min-h-[240px]"
                         : "max-h-[260px] lg:max-h-[300px] xl:max-h-[340px] min-h-[180px]"
                     } rounded-xl overflow-hidden bg-black/80 flex items-center justify-center border border-border/50 shadow-inner group cursor-pointer shrink-0 transition-all duration-300`}
-                    title="Bấm để xem toàn màn hình (Phím Space hoặc Click)"
+                    title={tr("Bấm để xem toàn màn hình (Phím Space hoặc Click)", "Click for fullscreen preview (Space or Click)")}
                   >
                     {/* Sharp Image with True Aspect Ratio */}
                     {((highResThumb?.path === activeSidePhoto.full_path ? highResThumb.dataUrl : null) || thumbnails[activeSidePhoto.full_path]) ? (
@@ -1485,7 +1494,7 @@ export function FolderPreviewModal({
                     ) : (
                       <div className="flex flex-col items-center justify-center text-muted-foreground gap-2">
                         <Loader2 size={24} className="animate-spin text-primary" />
-                        <span className="text-xs">Đang tải ảnh HD...</span>
+                        <span className="text-xs">{tr("Đang tải ảnh HD...", "Loading HD preview...")}</span>
                       </div>
                     )}
 
@@ -1503,7 +1512,7 @@ export function FolderPreviewModal({
                     <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
                       <span className="px-3 py-1.5 rounded-full bg-black/70 text-white backdrop-blur-md text-xs font-medium flex items-center gap-1.5 shadow-lg">
                         <ZoomIn size={13} />
-                        <span>Xem toàn màn hình</span>
+                        <span>{tr("Xem toàn màn hình", "View Fullscreen")}</span>
                       </span>
                     </div>
                   </div>
@@ -1513,12 +1522,12 @@ export function FolderPreviewModal({
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                         <Star size={13} className="fill-amber-400 text-amber-400" />
-                        <span>Đánh giá ảnh (1 – 5 Star):</span>
+                        <span>{tr("Đánh giá ảnh (1 – 5 Star):", "Rate Photo (1–5 Stars):")}</span>
                       </span>
                       <span className="text-[10px] text-muted-foreground font-mono">
                         {(ratings[activeSidePhoto.full_path] || 0) > 0
-                          ? `Đang là Rate ${ratings[activeSidePhoto.full_path]}`
-                          : "Chưa đánh dấu"}
+                          ? `Rate ${ratings[activeSidePhoto.full_path]}`
+                          : tr("Chưa đánh dấu", "Unrated")}
                       </span>
                     </div>
 
@@ -1532,7 +1541,7 @@ export function FolderPreviewModal({
                               type="button"
                               onClick={() => handleSetRating(activeSidePhoto.full_path, starIdx)}
                               className="p-1 rounded-md hover:bg-amber-500/15 hover:scale-115 transition-all cursor-pointer group"
-                              title={`Chọn Rate ${starIdx} (Phím: ${starIdx} hoặc Cmd+${starIdx})`} aria-label={`Chọn Rate ${starIdx} (Phím: ${starIdx} hoặc Cmd+${starIdx})`}
+                              title={tr(`Chọn Rate ${starIdx} (Phím: ${starIdx} hoặc Cmd+${starIdx})`, `Select Rate ${starIdx} (Key: ${starIdx} or Cmd+${starIdx})`)} aria-label={tr(`Chọn Rate ${starIdx} (Phím: ${starIdx} hoặc Cmd+${starIdx})`, `Select Rate ${starIdx} (Key: ${starIdx} or Cmd+${starIdx})`)}
                             >
                               <Star
                                 size={18}
@@ -1552,10 +1561,10 @@ export function FolderPreviewModal({
                           type="button"
                           onClick={() => handleSetRating(activeSidePhoto.full_path, 0)}
                           className="text-[10px] text-muted-foreground hover:text-destructive flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-destructive/10 transition-colors cursor-pointer"
-                          title="Xoá đánh giá (Phím 0)"
+                          title={tr("Xoá đánh giá (Phím 0)", "Clear rating (Key 0)")}
                         >
                           <StarOff size={11} />
-                          <span>Bỏ chọn</span>
+                          <span>{tr("Bỏ chọn", "Clear")}</span>
                         </button>
                       )}
                     </div>
@@ -1564,14 +1573,14 @@ export function FolderPreviewModal({
                   {/* Details Card */}
                   <div className="flex-1 rounded-xl bg-background/50 border border-border/40 p-3 flex flex-col gap-2 text-xs">
                     <div className="flex justify-between items-center py-1 border-b border-border/30">
-                      <span className="text-muted-foreground text-[11px]">Định dạng:</span>
+                      <span className="text-muted-foreground text-[11px]">{tr("Định dạng:", "Format:")}</span>
                       <span className="font-mono font-semibold text-foreground uppercase">
                         {activeSidePhoto.extension} {RAW_EXTS.has(activeSidePhoto.extension.toLowerCase()) ? "(Camera RAW)" : ""}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center py-1 border-b border-border/30">
-                      <span className="text-muted-foreground text-[11px]">Dung lượng gốc:</span>
+                      <span className="text-muted-foreground text-[11px]">{tr("Dung lượng gốc:", "File size:")}</span>
                       <span className="font-mono font-semibold text-foreground">
                         {formatBytes(activeSidePhoto.size)}
                       </span>
@@ -1579,15 +1588,15 @@ export function FolderPreviewModal({
 
                     <div className="flex flex-col gap-1 py-1">
                       <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                        <span>Đường dẫn file:</span>
+                        <span>{tr("Đường dẫn file:", "File path:")}</span>
                         <button
                           type="button"
                           onClick={() => handleCopyPath(activeSidePhoto.full_path)}
                           className="hover:text-foreground text-[10px] flex items-center gap-1 cursor-pointer transition-colors px-1.5 py-0.5 rounded bg-muted/60 hover:bg-muted border border-border/30"
-                          title="Sao chép toàn bộ đường dẫn"
+                          title={tr("Sao chép toàn bộ đường dẫn", "Copy full file path")}
                         >
                           {copiedPath ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
-                          <span>{copiedPath ? "Đã chép" : "Sao chép"}</span>
+                          <span>{copiedPath ? tr("Đã chép", "Copied") : tr("Sao chép", "Copy")}</span>
                         </button>
                       </div>
                       <div
@@ -1607,14 +1616,14 @@ export function FolderPreviewModal({
                       className="mt-auto w-full py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-xs"
                     >
                       <ZoomIn size={14} />
-                      <span>Phóng to xem ảnh (Space)</span>
+                      <span>{tr("Phóng to xem ảnh (Space)", "Zoom to inspect (Space)")}</span>
                     </button>
                   </div>
                 </>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
                   <ImageIcon size={32} className="opacity-40" />
-                  <span className="text-xs">Rê chuột vào ảnh để xem chi tiết</span>
+                  <span className="text-xs">{tr("Rê chuột vào ảnh để xem chi tiết", "Hover or select a photo to inspect")}</span>
                 </div>
               )}
             </div>
@@ -1667,7 +1676,7 @@ export function FolderPreviewModal({
                       type="button"
                       onClick={() => handleSetRating(filteredPhotos[lightboxIndex].full_path, starIdx)}
                       className="p-1 hover:scale-125 transition-transform cursor-pointer"
-                      title={`Đánh giá Rate ${starIdx} (Phím tắt: ${starIdx})`} aria-label={`Đánh giá Rate ${starIdx} (Phím tắt: ${starIdx})`}
+                      title={tr(`Đánh giá Rate ${starIdx} (Phím tắt: ${starIdx})`, `Set Rate ${starIdx} (Shortcut: ${starIdx})`)} aria-label={tr(`Đánh giá Rate ${starIdx} (Phím tắt: ${starIdx})`, `Set Rate ${starIdx} (Shortcut: ${starIdx})`)}
                     >
                       <Star
                         size={16}
@@ -1691,7 +1700,7 @@ export function FolderPreviewModal({
                   type="button"
                   onClick={() => setLightboxIndex(null)}
                   className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer"
-                  title="Đóng (ESC)" aria-label="Đóng (ESC)"
+                  title={tr("Đóng (ESC)", "Close (ESC)")} aria-label={tr("Đóng (ESC)", "Close (ESC)")}
                 >
                   <X size={18} />
                 </button>
@@ -1708,7 +1717,7 @@ export function FolderPreviewModal({
                   type="button"
                   onClick={() => setLightboxIndex(lightboxIndex - 1)}
                   className="absolute left-6 z-20 p-3 rounded-full bg-white/10 hover:bg-white/25 text-white transition-all cursor-pointer backdrop-blur-md"
-                  title="Ảnh trước (Mũi tên trái)" aria-label="Ảnh trước (Mũi tên trái)"
+                  title={tr("Ảnh trước (Mũi tên trái)", "Previous (Left Arrow)")} aria-label={tr("Ảnh trước (Mũi tên trái)", "Previous (Left Arrow)")}
                 >
                   <ChevronLeft size={24} />
                 </button>
@@ -1719,7 +1728,7 @@ export function FolderPreviewModal({
                   type="button"
                   onClick={() => setLightboxIndex(lightboxIndex + 1)}
                   className="absolute right-6 z-20 p-3 rounded-full bg-white/10 hover:bg-white/25 text-white transition-all cursor-pointer backdrop-blur-md"
-                  title="Ảnh tiếp theo (Mũi tên phải)" aria-label="Ảnh tiếp theo (Mũi tên phải)"
+                  title={tr("Ảnh tiếp theo (Mũi tên phải)", "Next (Right Arrow)")} aria-label={tr("Ảnh tiếp theo (Mũi tên phải)", "Next (Right Arrow)")}
                 >
                   <ChevronRight size={24} />
                 </button>
@@ -1748,7 +1757,7 @@ export function FolderPreviewModal({
                 ) : (
                   <div className="flex flex-col items-center justify-center text-white/50 gap-2">
                     <Loader2 size={32} className="animate-spin text-primary" />
-                    <span className="text-xs">Đang tải ảnh HD...</span>
+                    <span className="text-xs">{tr("Đang tải ảnh HD...", "Loading HD preview...")}</span>
                   </div>
                 )}
               </div>
@@ -1760,7 +1769,7 @@ export function FolderPreviewModal({
                   onClick={handleZoomOut}
                   disabled={lightboxZoom <= 0.5}
                   className="p-1.5 rounded-full hover:bg-white/20 active:scale-95 disabled:opacity-30 disabled:hover:bg-transparent transition-all cursor-pointer"
-                  title="Thu nhỏ (-) hoặc Cuộn chuột xuống" aria-label="Thu nhỏ (-) hoặc Cuộn chuột xuống"
+                  title={tr("Thu nhỏ (-) hoặc Cuộn chuột xuống", "Zoom out (-) or scroll down")} aria-label={tr("Thu nhỏ (-) hoặc Cuộn chuột xuống", "Zoom out (-) or scroll down")}
                 >
                   <ZoomOut size={16} />
                 </button>
@@ -1769,7 +1778,7 @@ export function FolderPreviewModal({
                   type="button"
                   onClick={handleToggle100Percent}
                   className="px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold hover:bg-white/20 active:scale-95 transition-all cursor-pointer min-w-[56px] text-center"
-                  title="Bấm để chuyển đổi giữa Vừa màn hình (FIT) và Phóng to 200%"
+                  title={tr("Bấm để chuyển đổi giữa Vừa màn hình (FIT) và Phóng to 200%", "Toggle Fit vs 200% Zoom")}
                 >
                   {lightboxZoom === 1 ? "FIT" : `${Math.round(lightboxZoom * 100)}%`}
                 </button>
@@ -1779,7 +1788,7 @@ export function FolderPreviewModal({
                   onClick={handleZoomIn}
                   disabled={lightboxZoom >= 5}
                   className="p-1.5 rounded-full hover:bg-white/20 active:scale-95 disabled:opacity-30 disabled:hover:bg-transparent transition-all cursor-pointer"
-                  title="Phóng to (+) hoặc Cuộn chuột lên" aria-label="Phóng to (+) hoặc Cuộn chuột lên"
+                  title={tr("Phóng to (+) hoặc Cuộn chuột lên", "Zoom in (+) or scroll up")} aria-label={tr("Phóng to (+) hoặc Cuộn chuột lên", "Zoom in (+) or scroll up")}
                 >
                   <ZoomIn size={16} />
                 </button>
@@ -1791,7 +1800,7 @@ export function FolderPreviewModal({
                       type="button"
                       onClick={handleResetZoom}
                       className="p-1.5 rounded-full hover:bg-white/20 active:scale-95 transition-all cursor-pointer text-amber-300 hover:text-amber-200"
-                      title="Đặt lại vừa màn hình (Fit)" aria-label="Đặt lại vừa màn hình (Fit)"
+                      title={tr("Đặt lại vừa màn hình (Fit)", "Reset zoom to Fit")} aria-label={tr("Đặt lại vừa màn hình (Fit)", "Reset zoom to Fit")}
                     >
                       <RotateCcw size={14} />
                     </button>
@@ -1806,15 +1815,15 @@ export function FolderPreviewModal({
                 {filteredPhotos[lightboxIndex].full_path}
               </span>
               <div className="flex items-center gap-3 text-[11px]">
-                <span>Phím <strong>1..5</strong>: Đánh dấu sao</span>
+                <span>{tr("Phím 1..5: Đánh dấu sao", "Keys 1–5: Rate")}</span>
                 <span>·</span>
-                <span>Phím <strong>← / →</strong>: Chuyển ảnh</span>
+                <span>{tr("Phím ← / →: Chuyển ảnh", "← / →: Navigate")}</span>
                 <span>·</span>
-                <span><strong>Cuộn chuột / Click đúp</strong>: Zoom</span>
+                <span>{tr("Cuộn chuột / Click đúp: Zoom", "Scroll / Double-click: Zoom")}</span>
                 <span>·</span>
-                <span><strong>Kéo chuột</strong>: Di chuyển</span>
+                <span>{tr("Kéo chuột: Di chuyển", "Drag: Pan")}</span>
                 <span>·</span>
-                <span>Phím <strong>ESC</strong>: Đóng</span>
+                <span>{tr("Phím ESC: Đóng", "ESC: Close")}</span>
               </div>
             </div>
           </div>
@@ -1831,11 +1840,11 @@ export function FolderPreviewModal({
                     <FolderOutput size={16} />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-foreground">Xuất bộ ảnh đã lọc (Rate)</h3>
-                    <p className="text-[11px] text-muted-foreground">Sao chép ảnh theo phân loại sao vào thư mục riêng</p>
+                    <h3 className="text-sm font-bold text-foreground">{tr("Xuất bộ ảnh đã lọc (Rate)", "Export Rated Photos")}</h3>
+                    <p className="text-[11px] text-muted-foreground">{tr("Sao chép ảnh theo phân loại sao vào thư mục riêng", "Copy photos by star rating to a separate folder")}</p>
                   </div>
                 </div>
-                <button aria-label="Đóng"
+                <button aria-label={tr("Đóng", "Close")}
                   type="button"
                   onClick={() => setIsExportModalOpen(false)}
                   className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
@@ -1847,7 +1856,7 @@ export function FolderPreviewModal({
               {/* Choose Which Rating to Export */}
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-foreground flex items-center gap-1">
-                  <span>Chọn nhóm ảnh muốn xuất:</span>
+                  <span>{tr("Chọn nhóm ảnh muốn xuất:", "Select photo rating group:")}</span>
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {[1, 2, 3, 4, 5].map((starNum) => {
@@ -1876,7 +1885,7 @@ export function FolderPreviewModal({
                           <span>Rate {starNum}</span>
                         </div>
                         <span className="text-[10px] font-mono text-muted-foreground">
-                          {count} ảnh
+                          {tr(`${count} ảnh`, `${count} photos`)}
                         </span>
                       </button>
                     );
@@ -1898,10 +1907,10 @@ export function FolderPreviewModal({
                     }`}
                   >
                     <div className="flex items-center gap-1 text-xs font-medium">
-                      <span>Tất cả đã chọn</span>
+                      <span>{tr("Tất cả đã chọn", "All Rated")}</span>
                     </div>
                     <span className="text-[10px] font-mono text-muted-foreground">
-                      {stats.totalRated} ảnh
+                      {tr(`${stats.totalRated} ảnh`, `${stats.totalRated} photos`)}
                     </span>
                   </button>
                 </div>
@@ -1910,13 +1919,13 @@ export function FolderPreviewModal({
               {/* Destination Folder Selector */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-foreground flex items-center justify-between">
-                  <span>Thư mục đích lưu ảnh xuất:</span>
+                  <span>{tr("Thư mục đích lưu ảnh xuất:", "Destination Folder:")}</span>
                   <button
                     type="button"
                     onClick={handleBrowseExportDest}
                     className="text-[11px] text-primary hover:underline flex items-center gap-1 cursor-pointer font-normal"
                   >
-                    <span>Thay đổi thư mục...</span>
+                    <span>{tr("Thay đổi thư mục...", "Change folder...")}</span>
                   </button>
                 </label>
                 <div className="flex gap-2">
@@ -1924,7 +1933,7 @@ export function FolderPreviewModal({
                     type="text"
                     value={exportDestFolder}
                     onChange={(e) => setExportDestFolder(e.target.value)}
-                    placeholder="Chọn đường dẫn thư mục lưu ảnh..."
+                    placeholder={tr("Chọn đường dẫn thư mục lưu ảnh...", "Choose destination folder path...")}
                     className="flex-1 px-3 py-1.5 text-xs rounded-lg bg-background border border-border/60 text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-primary/40"
                   />
                   <button
@@ -1932,11 +1941,11 @@ export function FolderPreviewModal({
                     onClick={handleBrowseExportDest}
                     className="px-3 py-1.5 rounded-lg border border-border/60 bg-muted/40 hover:bg-muted text-xs font-medium text-foreground cursor-pointer"
                   >
-                    Duyệt...
+                    {tr("Duyệt...", "Browse...")}
                   </button>
                 </div>
                 <p className="text-[10px] text-muted-foreground leading-relaxed">
-                  Thư mục sẽ tự động được tạo nếu chưa tồn tại. Không ghi đè ảnh gốc.
+                  {tr("Thư mục sẽ tự động được tạo nếu chưa tồn tại. Không ghi đè ảnh gốc.", "Folder will be created if needed. Originals are never overwritten.")}
                 </p>
               </div>
 
@@ -1962,10 +1971,10 @@ export function FolderPreviewModal({
                       type="button"
                       onClick={() => handleCopyFilenames(exportRateTarget === "all_rated" ? "all" : exportRateTarget)}
                       className="px-2.5 py-1.5 rounded-lg border border-border/60 bg-background hover:bg-muted text-[11px] text-foreground font-medium flex items-center gap-1.5 cursor-pointer"
-                      title="Sao chép danh sách tên file vào clipboard"
+                      title={tr("Sao chép danh sách tên file vào clipboard", "Copy filenames to clipboard")}
                     >
                       {copiedCodes ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
-                      <span>{copiedCodes ? "Đã sao chép!" : "Copy tên file"}</span>
+                      <span>{copiedCodes ? tr("Đã sao chép!", "Copied!") : tr("Copy tên file", "Copy Names")}</span>
                     </button>
 
                     {/* Send to Main Picker Button */}
@@ -1973,10 +1982,10 @@ export function FolderPreviewModal({
                       type="button"
                       onClick={() => handleSendCodesToMainPicker(exportRateTarget === "all_rated" ? "all" : exportRateTarget)}
                       className="px-2.5 py-1.5 rounded-lg border border-border/60 bg-background hover:bg-muted text-[11px] text-foreground font-medium flex items-center gap-1.5 cursor-pointer"
-                      title="Chuyển toàn bộ mã ảnh này vào ô nhập mã của màn hình chính"
+                      title={tr("Chuyển toàn bộ mã ảnh này vào ô nhập mã của màn hình chính", "Send all selected photo codes to the main filter input")}
                     >
                       <Send size={12} className="text-primary" />
-                      <span>Đưa vào ô lọc chính</span>
+                      <span>{tr("Đưa vào ô lọc chính", "Send to Picker")}</span>
                     </button>
                   </div>
 
@@ -1986,7 +1995,7 @@ export function FolderPreviewModal({
                       onClick={() => setIsExportModalOpen(false)}
                       className="px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-muted text-xs text-foreground font-medium cursor-pointer"
                     >
-                      Đóng
+                      {tr("Đóng", "Close")}
                     </button>
 
                     <button
@@ -1996,7 +2005,7 @@ export function FolderPreviewModal({
                       className="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-sm transition-all disabled:opacity-50"
                     >
                       {isExporting ? <Loader2 size={13} className="animate-spin" /> : <FolderOutput size={13} />}
-                      <span>{isExporting ? "Đang sao chép..." : "Bắt đầu xuất ảnh"}</span>
+                      <span>{isExporting ? tr("Đang sao chép...", "Copying...") : tr("Bắt đầu xuất ảnh", "Start Export")}</span>
                     </button>
                   </div>
                 </div>

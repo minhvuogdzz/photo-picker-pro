@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAppStore } from "@/core/stores/useAppStore";
 import { useAuthStore } from "@/core/stores/useAuthStore";
-import { modules } from "@/registry";
+import { modules, getLocalizedModule } from "@/registry";
+import { useTranslation, getLocaleCode, trText } from "@/core/lib/i18n";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -20,16 +21,17 @@ const DEFAULT_COMPANY_URL = "https://mvdphotoshopacademy.com";
 const LIFETIME_DAYS_THRESHOLD = 3650;
 
 function formatRemainingDays(days: number | null | undefined): string {
-  if (days == null || days > LIFETIME_DAYS_THRESHOLD) return "Vĩnh viễn";
-  return `${days} ngày`;
+  if (days == null || days > LIFETIME_DAYS_THRESHOLD) return trText("Vĩnh viễn", "Lifetime");
+  return trText(`${days} ngày`, `${days} days`);
 }
 
 export function LauncherPage() {
   const setActiveModule = useAppStore((s) => s.setActiveModule);
   const setLastClickPos = useAppStore((s) => s.setLastClickPos);
   const session = useAuthStore((s) => s.session);
+  const { tr, lang } = useTranslation();
 
-  const [version, setVersion] = useState("3.5.1");
+  const [version, setVersion] = useState("3.5.2");
   const [companyUrl, setCompanyUrl] = useState("");
   const [showLicenseManager, setShowLicenseManager] = useState(false);
 
@@ -77,8 +79,15 @@ export function LauncherPage() {
 
   const firstName = session?.name?.trim().split(/\s+/).pop() || "";
   const hour = new Date().getHours();
-  const greeting = hour < 11 ? "Chào buổi sáng" : hour < 14 ? "Chào buổi trưa" : hour < 18 ? "Chào buổi chiều" : "Chào buổi tối";
-  const todayLabel = new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "long" });
+  const greeting =
+    hour < 11
+      ? tr("Chào buổi sáng", "Good morning")
+      : hour < 14
+        ? tr("Chào buổi trưa", "Good afternoon")
+        : hour < 18
+          ? tr("Chào buổi chiều", "Good afternoon")
+          : tr("Chào buổi tối", "Good evening");
+  const todayLabel = new Date().toLocaleDateString(getLocaleCode(lang), { weekday: "long", day: "numeric", month: "long" });
   const readyCount = workflowApps.filter((m) => checkAppAccess(session, m.id).hasAccess).length;
 
   return (
@@ -94,7 +103,7 @@ export function LauncherPage() {
             </h2>
           </div>
           <p className="text-[12.5px] text-muted-foreground shrink-0">
-            {readyCount}/{workflowApps.length} ứng dụng sẵn sàng
+            {tr(`${readyCount}/${workflowApps.length} ứng dụng sẵn sàng`, `${readyCount}/${workflowApps.length} apps ready`)}
           </p>
         </header>
 
@@ -103,19 +112,20 @@ export function LauncherPage() {
           <div className="flex items-center justify-between px-1">
             <h2 className="text-[13px] font-semibold text-foreground flex items-center gap-2">
               <LayoutGrid size={14} strokeWidth={1.75} className="text-muted-foreground" />
-              <span>Ứng dụng làm việc</span>
+              <span>{tr("Ứng dụng làm việc", "Workspace Apps")}</span>
             </h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {workflowApps.map((mod) => {
               const Icon = mod.icon;
+              const localized = getLocalizedModule(mod, lang);
               const modAccess = checkAppAccess(session, mod.id);
               const statusLabel = modAccess.hasAccess
                 ? !modAccess.isTrial
-                  ? `Đã mua · ${formatRemainingDays(modAccess.daysRemaining)}`
-                  : `Dùng thử · ${modAccess.daysRemaining ?? 0} ngày`
-                : "Chưa kích hoạt";
+                  ? tr(`Đã mua · ${formatRemainingDays(modAccess.daysRemaining)}`, `Licensed · ${formatRemainingDays(modAccess.daysRemaining)}`)
+                  : tr(`Dùng thử · ${modAccess.daysRemaining ?? 0} ngày`, `Trial · ${modAccess.daysRemaining ?? 0} days`)
+                : tr("Chưa kích hoạt", "Not activated");
               const statusDot = modAccess.hasAccess
                 ? !modAccess.isTrial
                   ? "bg-success"
@@ -127,7 +137,7 @@ export function LauncherPage() {
                   key={mod.id}
                   role="button"
                   tabIndex={0}
-                  aria-label={`Mở ${mod.name}`}
+                  aria-label={tr(`Mở ${localized.name}`, `Open ${localized.name}`)}
                   onClick={(e) => handleLaunch(mod.id, e)}
                   onKeyDown={launchOnKey(mod.id)}
                   className="group bg-card rounded-[20px] p-4 border border-border shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-[box-shadow,transform] duration-200 cursor-pointer flex flex-col gap-4 min-h-[172px]"
@@ -145,10 +155,10 @@ export function LauncherPage() {
 
                   <div className="flex flex-col flex-1">
                     <h3 className="text-[14px] font-semibold text-foreground tracking-tight">
-                      {mod.name}
+                      {localized.name}
                     </h3>
                     <p className="text-[12px] text-muted-foreground leading-relaxed mt-1">
-                      {mod.description}
+                      {localized.description}
                     </p>
                   </div>
 
@@ -158,7 +168,7 @@ export function LauncherPage() {
                       <span className="truncate">{statusLabel}</span>
                     </span>
                     <span className="font-medium text-primary shrink-0">
-                      {modAccess.hasAccess ? "Mở" : "Kích hoạt"}
+                      {modAccess.hasAccess ? tr("Mở", "Open") : tr("Kích hoạt", "Activate")}
                     </span>
                   </div>
                 </div>
@@ -172,7 +182,7 @@ export function LauncherPage() {
           <div
             role="button"
             tabIndex={0}
-            aria-label="Mở Kho Tài Nguyên Creative"
+            aria-label={tr("Mở Kho Tài Nguyên Creative", "Open Creative Resources Hub")}
             onClick={(e) => handleLaunch("resources", e)}
             onKeyDown={launchOnKey("resources")}
             className="w-full bg-card rounded-[22px] p-5 border border-border shadow-sm hover:shadow-lg transition-shadow duration-200 cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 group"
@@ -184,7 +194,7 @@ export function LauncherPage() {
               <div className="flex flex-col min-w-0">
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <h3 className="text-[15px] font-semibold text-foreground tracking-tight">
-                    Kho Tài Nguyên Creative
+                    {tr("Kho Tài Nguyên Creative", "Creative Resources Hub")}
                   </h3>
                   <span className="flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
                     <span
@@ -198,16 +208,25 @@ export function LauncherPage() {
                     />
                     {resourcesAccess.hasAccess
                       ? !resourcesAccess.isTrial
-                        ? `Đã mua · ${formatRemainingDays(resourcesAccess.daysRemaining)}`
-                        : `Dùng thử · ${resourcesAccess.daysRemaining ?? 0} ngày`
-                      : "Chưa kích hoạt"}
+                        ? tr(`Đã mua · ${formatRemainingDays(resourcesAccess.daysRemaining)}`, `Licensed · ${formatRemainingDays(resourcesAccess.daysRemaining)}`)
+                        : tr(`Dùng thử · ${resourcesAccess.daysRemaining ?? 0} ngày`, `Trial · ${resourcesAccess.daysRemaining ?? 0} days`)
+                      : tr("Chưa kích hoạt", "Not activated")}
                   </span>
                 </div>
                 <p className="text-[12.5px] text-muted-foreground leading-relaxed mt-1 max-w-2xl">
-                  Presets Lightroom, Actions Photoshop retouch da chuyên sâu, Brushes vẽ tóc và LUTs màu ảnh cưới, studio độc quyền.
+                  {tr(
+                    "Presets Lightroom, Actions Photoshop retouch da chuyên sâu, Brushes vẽ tóc và LUTs màu ảnh cưới, studio độc quyền.",
+                    "Lightroom Presets, pro skin-retouching Photoshop Actions, hair Brushes, and exclusive wedding & studio Color LUTs."
+                  )}
                 </p>
                 <div className="flex flex-wrap items-center gap-1.5 mt-3">
-                  {["10.000+ Presets", "Actions Retouch Da", "LUTs Cinematic", "Brushes Studio", "RAW Profiles"].map((tag, idx) => (
+                  {[
+                    "10.000+ Presets",
+                    tr("Actions Retouch Da", "Skin Retouch Actions"),
+                    "LUTs Cinematic",
+                    "Brushes Studio",
+                    "RAW Profiles",
+                  ].map((tag, idx) => (
                     <span
                       key={idx}
                       className="text-[11px] text-muted-foreground px-2.5 h-6 inline-flex items-center rounded-full bg-foreground/[0.05]"
@@ -220,7 +239,7 @@ export function LauncherPage() {
             </div>
 
             <div className="btn-base btn-primary shrink-0 self-end sm:self-center rounded-full px-5">
-              <span>{resourcesAccess.hasAccess ? "Khám phá" : "Kích hoạt gói"}</span>
+              <span>{resourcesAccess.hasAccess ? tr("Khám phá", "Explore") : tr("Kích hoạt gói", "Activate Plan")}</span>
               <ArrowRight size={14} strokeWidth={2} className="group-hover:translate-x-0.5 transition-transform" />
             </div>
           </div>
@@ -263,7 +282,7 @@ export function LauncherPage() {
                   type="button"
                   onClick={handleOpenUrl}
                   className="flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
-                  title={`Mở trang web ${displayUrl}`}
+                  title={tr(`Mở trang web ${displayUrl}`, `Open website ${displayUrl}`)}
                 >
                   <span>{displayUrl}</span>
                   <ExternalLink size={11} strokeWidth={1.75} />

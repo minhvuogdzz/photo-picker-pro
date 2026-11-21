@@ -3,6 +3,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { useContactSheetStore } from "../stores/useContactSheetStore.ts";
 import { useAuthStore } from "../../../core/stores/useAuthStore.ts";
 import { hasGoogleFeatureAccess } from "../../../core/services/appEntitlementPolicy.ts";
+import { trText } from "../../../core/lib/i18n.ts";
 
 /**
  * Standard MVD Tech & Design Studio Desktop Google OAuth Client ID & Secret.
@@ -55,7 +56,12 @@ interface GoogleUserInfo {
 
 class GoogleNetworkError extends Error {
   constructor() {
-    super("GOOGLE_NETWORK_ERROR: Không kết nối được tới Google. Vui lòng kiểm tra mạng rồi thử lại.");
+    super(
+      trText(
+        "GOOGLE_NETWORK_ERROR: Không kết nối được tới Google. Vui lòng kiểm tra mạng rồi thử lại.",
+        "GOOGLE_NETWORK_ERROR: Could not connect to Google. Please check your internet connection and retry."
+      )
+    );
     this.name = "GoogleNetworkError";
   }
 }
@@ -261,7 +267,12 @@ class GoogleCredentialManager {
     const session = useAuthStore.getState().session;
     if (session && !hasGoogleFeatureAccess(session)) {
       this.clearActiveSession();
-      throw new Error("EXPIRED: Gói sử dụng tính năng Google Sheet đã hết hạn. Vui lòng gia hạn để tiếp tục (tài khoản Google vẫn được giữ).");
+      throw new Error(
+        trText(
+          "EXPIRED: Gói sử dụng tính năng Google Sheet đã hết hạn. Vui lòng gia hạn để tiếp tục (tài khoản Google vẫn được giữ).",
+          "EXPIRED: Your Google Sheet feature plan has expired. Please renew to continue (your Google link is preserved)."
+        )
+      );
     }
 
     const now = Date.now();
@@ -272,7 +283,12 @@ class GoogleCredentialManager {
     // Attempt silent refresh
     const email = this.getAccountEmail();
     if (!email) {
-      throw new Error("GOOGLE_NOT_CONNECTED: Chưa kết nối tài khoản Google. Vui lòng bấm 'Kết nối Google' trước.");
+      throw new Error(
+        trText(
+          "GOOGLE_NOT_CONNECTED: Chưa kết nối tài khoản Google. Vui lòng bấm 'Kết nối Google' trước.",
+          "GOOGLE_NOT_CONNECTED: Google account not connected. Please click 'Connect Google' first."
+        )
+      );
     }
 
     return await this.refreshAccessToken(email);
@@ -302,9 +318,17 @@ class GoogleCredentialManager {
     if (!refreshToken) {
       useContactSheetStore.getState().setGoogleConnection({
         status: "AUTHORIZATION_EXPIRED",
-        error: "Phiên làm việc Google đã hết hạn. Vui lòng bấm 'Kết nối Google' để đăng nhập lại.",
+        error: trText(
+          "Phiên làm việc Google đã hết hạn. Vui lòng bấm 'Kết nối Google' để đăng nhập lại.",
+          "Google session expired. Please click 'Connect Google' to sign in again."
+        ),
       });
-      throw new Error("GOOGLE_REFRESH_TOKEN_NOT_FOUND: Phiên làm việc đã hết hạn. Vui lòng bấm 'Kết nối Google' để đăng nhập lại.");
+      throw new Error(
+        trText(
+          "GOOGLE_REFRESH_TOKEN_NOT_FOUND: Phiên làm việc đã hết hạn. Vui lòng bấm 'Kết nối Google' để đăng nhập lại.",
+          "GOOGLE_REFRESH_TOKEN_NOT_FOUND: Google session expired. Click 'Connect Google' to sign in again."
+        )
+      );
     }
 
     try {
@@ -388,7 +412,12 @@ class GoogleCredentialManager {
   public async connectGoogle(clientId: string = DEFAULT_MVD_GOOGLE_CLIENT_ID): Promise<void> {
     const session = useAuthStore.getState().session;
     if (session && !hasGoogleFeatureAccess(session)) {
-      throw new Error("EXPIRED: Tính năng kết nối Google Sheet yêu cầu kích hoạt gói sử dụng hợp lệ.");
+      throw new Error(
+        trText(
+          "EXPIRED: Tính năng kết nối Google Sheet yêu cầu kích hoạt gói sử dụng hợp lệ.",
+          "EXPIRED: Connecting Google Sheets requires an active plan."
+        )
+      );
     }
 
     useContactSheetStore.getState().setGoogleConnection({ status: "CONNECTING", error: undefined });

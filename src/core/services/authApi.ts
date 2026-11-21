@@ -10,6 +10,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { apiRequest, USE_MOCK, isOnline } from "./apiClient";
 import { mergeSession, persistSession, toLocalSession } from "./sessionPersistence";
 import { clearSessionStart } from "./sessionTimeoutPolicy";
+import { trText } from "../lib/i18n.ts";
 import { useAuthStore } from "@/core/stores/useAuthStore";
 import type {
   AuthSession,
@@ -126,10 +127,10 @@ export async function login(request: LoginRequest, autoLogin: boolean = true): P
   if (USE_MOCK) {
     // Mock validation
     if (!request.email.includes("@")) {
-      throw new Error("Email không hợp lệ");
+      throw new Error(trText("Email không hợp lệ", "Invalid email address"));
     }
     if (request.password.length < 6) {
-      throw new Error("Mật khẩu phải có ít nhất 6 ký tự");
+      throw new Error(trText("Mật khẩu phải có ít nhất 6 ký tự", "Password must be at least 6 characters"));
     }
 
     // Simulate network delay
@@ -394,7 +395,7 @@ export async function requestPasswordReset(
 ): Promise<{ success?: boolean; message?: string; otp?: string } | void> {
   if (USE_MOCK) {
     await new Promise((r) => setTimeout(r, 500));
-    return { success: true, message: "Mã xác nhận đã gửi", otp: "123456" };
+    return { success: true, message: trText("Mã xác nhận đã gửi", "Verification code sent"), otp: "123456" };
   }
   return await apiRequest<{ success?: boolean; message?: string; otp?: string }>("/auth/forgot-password", {
     method: "POST",
@@ -426,7 +427,7 @@ export async function resetPassword(
 ): Promise<void> {
   if (USE_MOCK) {
     if (newPassword.length < 6) {
-      throw new Error("Mật khẩu mới phải có ít nhất 6 ký tự");
+      throw new Error(trText("Mật khẩu mới phải có ít nhất 6 ký tự", "New password must be at least 6 characters"));
     }
     await new Promise((r) => setTimeout(r, 500));
     return;
@@ -444,7 +445,7 @@ export async function register(
 ): Promise<{ message?: string; otp?: string } | void> {
   if (USE_MOCK) {
     await new Promise((r) => setTimeout(r, 500));
-    return { message: "Mã xác nhận đã gửi", otp: "123456" };
+    return { message: trText("Mã xác nhận đã gửi", "Verification code sent"), otp: "123456" };
   }
   return await apiRequest<{ message?: string; otp?: string }>("/auth/register", {
     method: "POST",
@@ -457,7 +458,7 @@ export async function verifyRegister(
   request: LoginRequest & { name: string; code: string; username?: string }
 ): Promise<AuthSession> {
   if (USE_MOCK) {
-    throw new Error("Mock mode không hỗ trợ Đăng ký");
+    throw new Error(trText("Mock mode không hỗ trợ Đăng ký", "Sign up is not supported in mock mode"));
   }
   const session = await apiRequest<AuthSession>("/auth/verify-register", {
     method: "POST",
@@ -494,7 +495,7 @@ export async function changePassword(
   accessToken?: string
 ): Promise<{ success: boolean; message: string }> {
   if (USE_MOCK) {
-    return { success: true, message: "Đổi mật khẩu thành công" };
+    return { success: true, message: trText("Đổi mật khẩu thành công", "Password updated successfully") };
   }
   return apiRequest<{ success: boolean; message: string }>("/auth/change-password", {
     method: "POST",
@@ -508,7 +509,7 @@ export async function logoutOtherDevices(
   accessToken?: string
 ): Promise<{ success: boolean; message: string }> {
   if (USE_MOCK) {
-    return { success: true, message: "Đã đăng xuất khỏi các thiết bị khác" };
+    return { success: true, message: trText("Đã đăng xuất khỏi các thiết bị khác", "Signed out from all other devices") };
   }
   return apiRequest<{ success: boolean; message: string }>("/auth/logout-others", {
     method: "POST",

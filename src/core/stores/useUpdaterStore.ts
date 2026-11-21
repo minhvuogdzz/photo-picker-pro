@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { checkForUpdates, downloadAndInstallUpdate, installAndRestart, UpdateCheckResult } from '@/core/updater';
 import { useSettingsStore } from './useSettingsStore';
+import { trText } from '../lib/i18n.ts';
 
 export interface DownloadProgress {
   downloaded: number;
@@ -149,7 +150,10 @@ export const useUpdaterStore = create<UpdaterState>((set, get) => ({
     } catch (err) {
       console.error('Restart app error:', err);
       set({
-        error: 'Không thể khởi động lại ứng dụng tự động. Vui lòng tắt và mở lại app thủ công.',
+        error: trText(
+          'Không thể khởi động lại ứng dụng tự động. Vui lòng tắt và mở lại app thủ công.',
+          'Could not restart the app automatically. Please quit and reopen the app manually.'
+        ),
       });
     }
   },

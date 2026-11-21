@@ -14,12 +14,12 @@ export function SettingsPage() {
   const supportZalo = useSupportZalo();
   const settings = useSettingsStore((s) => s.settings);
   const updateSetting = useSettingsStore((s) => s.updateSetting);
-  const { t } = useTranslation();
+  const { t, tr } = useTranslation();
 
   const handleSave = async () => {
     try {
       await invoke("save_settings", { settings });
-      alert(t("settings_saved") || "Đã lưu cài đặt");
+      alert(t("settings_saved") || tr("Đã lưu cài đặt", "Settings saved"));
     } catch (error) {
       console.error("Failed to save settings:", error);
     }
@@ -31,7 +31,7 @@ export function SettingsPage() {
         <div className="flex items-center justify-between pb-2 border-b border-white/5">
           <div>
             <h2 className="text-sm font-bold text-foreground">{t("settings")}</h2>
-            <p className="text-[11px] text-muted-foreground">Cấu hình thuật toán quét và sao chép ảnh</p>
+            <p className="text-[11px] text-muted-foreground">{tr("Cấu hình thuật toán quét và sao chép ảnh", "Configure image scanning and file copying behavior")}</p>
           </div>
           <button onClick={handleSave} className="btn-primary text-xs py-1.5 px-3 rounded-lg font-semibold flex items-center gap-1.5 cursor-pointer">
             <Save size={13} />
@@ -62,8 +62,11 @@ export function SettingsPage() {
           onClick={() =>
             alert(
               supportZalo
-                ? `Vui lòng liên hệ nhà cung cấp để sử dụng tính năng trả phí qua Zalo: ${supportZalo.display}`
-                : "Vui lòng liên hệ nhà cung cấp để sử dụng tính năng trả phí.",
+                ? tr(
+                    `Vui lòng liên hệ nhà cung cấp để sử dụng tính năng trả phí qua Zalo: ${supportZalo.display}`,
+                    `Please contact support via Zalo to unlock this paid feature: ${supportZalo.display}`
+                  )
+                : tr("Vui lòng liên hệ nhà cung cấp để sử dụng tính năng trả phí.", "Please contact support to unlock this paid feature.")
             )
           }
         >
@@ -81,7 +84,7 @@ export function SettingsPage() {
             className="w-full bg-muted/40 border border-border text-foreground py-1.5 px-2.5 rounded-lg text-xs opacity-70 pointer-events-none cursor-pointer"
             value=""
             readOnly
-            placeholder="Tính năng tự động đồng bộ theo Studio"
+            placeholder={tr("Tính năng tự động đồng bộ theo Studio", "Automatic Studio workspace sync feature")}
           />
         </div>
 

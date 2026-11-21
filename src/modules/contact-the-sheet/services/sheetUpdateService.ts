@@ -8,6 +8,7 @@ import type {
 } from "../types/index.ts";
 import { googleCredentialManager } from "./googleCredentialBridge.ts";
 import { auditService } from "./auditService.ts";
+import { trText } from "../../../core/lib/i18n.ts";
 
 export class SheetUpdateService {
   /**
@@ -87,7 +88,10 @@ export class SheetUpdateService {
           staleJobs.push({
             ...job,
             status: "CONFLICT",
-            statusReason: "STALE_ROW_CONFLICT: Hàng này vừa được người khác chỉnh sửa trên Sheet",
+            statusReason: trText(
+              "STALE_ROW_CONFLICT: Hàng này vừa được người khác chỉnh sửa trên Sheet",
+              "STALE_ROW_CONFLICT: This row was just modified by someone else on the Sheet"
+            ),
           });
         } else {
           validJobs.push(job);
@@ -310,7 +314,10 @@ export class SheetUpdateService {
     if (profile.rowScope?.startRow && row < profile.rowScope.startRow) {
       return {
         success: false,
-        error: `Dòng ${row} nằm ngoài phạm vi xử lý cho phép (StartRow: ${profile.rowScope.startRow})`,
+        error: trText(
+          `Dòng ${row} nằm ngoài phạm vi xử lý cho phép (StartRow: ${profile.rowScope.startRow})`,
+          `Row ${row} is outside the allowed range (StartRow: ${profile.rowScope.startRow})`
+        ),
       };
     }
 
@@ -371,7 +378,10 @@ export class SheetUpdateService {
           success: false,
           skipped: true,
           oldValue: currentValue,
-          error: `Ô ${columnLetter}${row} đã có nội dung ("${currentValue}"). Chính sách là 'Chỉ ghi nếu ô trống'.`,
+          error: trText(
+            `Ô ${columnLetter}${row} đã có nội dung ("${currentValue}"). Chính sách là 'Chỉ ghi nếu ô trống'.`,
+            `Cell ${columnLetter}${row} already has content ("${currentValue}"). Policy is 'Write if empty'.`
+          ),
         };
       }
 
@@ -415,7 +425,10 @@ export class SheetUpdateService {
       if (!writeRes.ok) {
         const errBody = await writeRes.json().catch(() => null);
         throw new Error(
-          `Cập nhật ô thất bại (HTTP ${writeRes.status}): ${errBody?.error?.message || writeRes.statusText}`
+          trText(
+            `Cập nhật ô thất bại (HTTP ${writeRes.status}): ${errBody?.error?.message || writeRes.statusText}`,
+            `Cell update failed (HTTP ${writeRes.status}): ${errBody?.error?.message || writeRes.statusText}`
+          )
         );
       }
 

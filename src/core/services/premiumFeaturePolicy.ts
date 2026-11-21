@@ -1,5 +1,6 @@
 import type { AuthSession } from "@/core/types/auth";
 import { checkAppAccess } from "./appEntitlementPolicy.ts";
+import { trText, type Language } from "../lib/i18n.ts";
 
 export type PremiumFeatureKey = "sheet_extract" | "sheet_config" | "multi_client" | "photo_counter";
 
@@ -9,6 +10,21 @@ export const PREMIUM_FEATURE_LABELS: Record<PremiumFeatureKey, string> = {
   multi_client: "Lọc nhiều khách",
   photo_counter: "Thống kê & Tính lương",
 };
+
+export function getPremiumFeatureLabel(key: PremiumFeatureKey, lang?: Language): string {
+  switch (key) {
+    case "sheet_extract":
+      return trText("Truy xuất trang tính", "Sheet Code Extractor", lang);
+    case "sheet_config":
+      return trText("Cấu hình Sheet", "Sheet Configuration", lang);
+    case "multi_client":
+      return trText("Lọc nhiều khách", "Multi-Customer Culling", lang);
+    case "photo_counter":
+      return trText("Thống kê & Tính lương", "Analytics & Payroll", lang);
+    default:
+      return trText("Tính năng VIP", "VIP Feature", lang);
+  }
+}
 
 /** Release date of update: 24/09/2026 00:00:00 GMT+7 */
 export const APP_UPDATE_RELEASE_TIMESTAMP = 1790211600000;

@@ -6,6 +6,7 @@ import { sheetDiscoveryService } from "./sheetDiscoveryService.ts";
 import { batchPlannerService } from "./batchPlannerService.ts";
 import { sheetUpdateService } from "./sheetUpdateService.ts";
 import { googleCredentialManager } from "./googleCredentialBridge.ts";
+import { trText } from "../../../core/lib/i18n.ts";
 import type { SheetRowRecord } from "./jobMatchingService.ts";
 import type { DiscoveredJob, UpdatePlan, WorkspaceProfile } from "../types/index.ts";
 
@@ -159,14 +160,20 @@ function assertContactSheetAccess(): void {
   if (!session) {
     throw new BridgeError(
       "NOT_AUTHENTICATED",
-      "Bạn chưa đăng nhập DH Studio Pro. Hãy mở DH Studio Pro để đăng nhập trước."
+      trText(
+        "Bạn chưa đăng nhập DH Studio Pro. Hãy mở DH Studio Pro để đăng nhập trước.",
+        "You are not signed in to DH Studio Pro. Open DH Studio Pro to sign in first."
+      )
     );
   }
   const access = checkAppAccess(session, "contact-the-sheet");
   if (!access.hasAccess) {
     throw new BridgeError(
       "ENTITLEMENT_DENIED",
-      "Tài khoản hiện tại chưa mở khóa bản quyền Contact the Sheet."
+      trText(
+        "Tài khoản hiện tại chưa mở khóa bản quyền Contact the Sheet.",
+        "This account does not have Contact the Sheet license access."
+      )
     );
   }
 }
@@ -176,7 +183,10 @@ function assertActiveProfile(): WorkspaceProfile {
   if (!profile) {
     throw new BridgeError(
       "NO_ACTIVE_PROFILE",
-      "Chưa có cấu hình Google Sheet trong DH Studio Pro. Hãy mở DH Studio Pro để cấu hình Sheet."
+      trText(
+        "Chưa có cấu hình Google Sheet trong DH Studio Pro. Hãy mở DH Studio Pro để cấu hình Sheet.",
+        "No Google Sheet configuration found in DH Studio Pro. Open DH Studio Pro to configure Sheet."
+      )
     );
   }
   return profile;
@@ -203,7 +213,7 @@ export async function handleContactSheetBridgeRequest(
       assertContactSheetAccess();
       const profileId = typeof params.profileId === "string" ? params.profileId.trim() : "";
       if (!profileId) {
-        throw new BridgeError("INVALID_REQUEST", "Thiếu profileId.");
+        throw new BridgeError("INVALID_REQUEST", trText("Thiếu profileId.", "Missing profileId."));
       }
       useContactSheetStore.getState().setActiveProfile(profileId);
       return buildContactSheetContext();
@@ -213,7 +223,7 @@ export async function handleContactSheetBridgeRequest(
       assertContactSheetAccess();
       const tabTitle = typeof params.tabTitle === "string" ? params.tabTitle.trim() : "";
       if (!tabTitle) {
-        throw new BridgeError("INVALID_REQUEST", "Thiếu tabTitle.");
+        throw new BridgeError("INVALID_REQUEST", trText("Thiếu tabTitle.", "Missing tabTitle."));
       }
       const profile = assertActiveProfile();
       const available = getAvailableTabTitles(profile);
@@ -236,14 +246,14 @@ export async function handleContactSheetBridgeRequest(
       const store = useContactSheetStore.getState();
 
       if (store.isScanning || store.isExecutingBatch) {
-        throw new BridgeError("BUSY", "DH Studio Pro đang bận xử lý một tác vụ khác.");
+        throw new BridgeError("BUSY", trText("DH Studio Pro đang bận xử lý một tác vụ khác.", "DH Studio Pro is busy with another task."));
       }
 
       const paths: string[] = Array.isArray(params.paths)
         ? params.paths.filter((p): p is string => typeof p === "string" && p.trim().length > 0)
         : [];
       if (paths.length === 0) {
-        throw new BridgeError("INVALID_REQUEST", "Chưa chọn thư mục nào để quét.");
+        throw new BridgeError("INVALID_REQUEST", trText("Chưa chọn thư mục nào để quét.", "No folders selected to scan."));
       }
 
       const requestedTabs: string[] = Array.isArray(params.tabTitles)
@@ -252,7 +262,10 @@ export async function handleContactSheetBridgeRequest(
       if (requestedTabs.length === 0) {
         throw new BridgeError(
           "NO_TABS_SELECTED",
-          "Chưa chọn tab nào. Vui lòng chọn ít nhất một tab trước khi quét."
+          trText(
+            "Chưa chọn tab nào. Vui lòng chọn ít nhất một tab trước khi quét.",
+            "No tabs selected. Please select at least one tab before scanning."
+          )
         );
       }
 
@@ -261,13 +274,19 @@ export async function handleContactSheetBridgeRequest(
       if (!isSandbox && googleStatus !== "CONNECTED") {
         throw new BridgeError(
           "GOOGLE_NOT_CONNECTED",
-          "Chưa kết nối tài khoản Google trong DH Studio Pro."
+          trText(
+            "Chưa kết nối tài khoản Google trong DH Studio Pro.",
+            "Google account is not connected in DH Studio Pro."
+          )
         );
       }
       if (!isSandbox && !activeProfile.spreadsheetId) {
         throw new BridgeError(
           "NO_ACTIVE_PROFILE",
-          "Chưa liên kết Google Sheet trong cấu hình Contact the Sheet."
+          trText(
+            "Chưa liên kết Google Sheet trong cấu hình Contact the Sheet.",
+            "No Google Sheet linked in Contact the Sheet settings."
+          )
         );
       }
 
@@ -290,15 +309,15 @@ export async function handleContactSheetBridgeRequest(
         onProgress?.(current, total, message);
       };
 
-      report(5, 100, "Đang phân tích cây thư mục...");
+      report(5, 100, trText("Đang phân tích cây thư mục...", "Analyzing folder tree..."));
 
       try {
         report(
           20,
           100,
           isSandbox
-            ? "Đang nạp dữ liệu bảng tính mẫu..."
-            : `Đang tải dữ liệu Google Sheet (${requestedTabs.length} tab)...`
+            ? trText("Đang nạp dữ liệu bảng tính mẫu...", "Loading sample spreadsheet data...")
+            : trText(`Đang tải dữ liệu Google Sheet (${requestedTabs.length} tab)...`, `Loading Google Sheet data (${requestedTabs.length} tab(s))...`)
         );
 
         const allSheetRows: SheetRowRecord[] = [];
@@ -325,7 +344,14 @@ export async function handleContactSheetBridgeRequest(
           allSheetRows.push(...rows);
         }
 
-        report(50, 100, `Đang quét thư mục thành phẩm và so khớp trên ${requestedTabs.length} tab...`);
+        report(
+          50,
+          100,
+          trText(
+            `Đang quét thư mục thành phẩm và so khớp trên ${requestedTabs.length} tab...`,
+            `Scanning finished folders and matching across ${requestedTabs.length} tab(s)...`
+          )
+        );
 
         const jobs = await folderScannerService.scanAndDiscoverJobs(
           effectivePaths,
@@ -335,7 +361,7 @@ export async function handleContactSheetBridgeRequest(
           (msg) => report(68, 100, msg)
         );
 
-        report(86, 100, "Đang lập kế hoạch cập nhật bảng tính...");
+        report(86, 100, trText("Đang lập kế hoạch cập nhật bảng tính...", "Planning spreadsheet updates..."));
 
         const planSummary = batchPlannerService.planBatch(jobs, activeProfile);
         const finalJobs = [
@@ -363,7 +389,7 @@ export async function handleContactSheetBridgeRequest(
           latestStore.setDiscoveredJobs([...existingRemaining, ...finalJobs]);
         }
 
-        report(100, 100, "Đã hoàn tất quét.");
+        report(100, 100, trText("Đã hoàn tất quét.", "Scan completed."));
 
         const updatedState = useContactSheetStore.getState();
         return {
@@ -385,7 +411,7 @@ export async function handleContactSheetBridgeRequest(
       const activeProfile = assertActiveProfile();
       const policy = params.policy;
       if (policy !== "OVERWRITE" && policy !== "APPEND" && policy !== "SKIP") {
-        throw new BridgeError("INVALID_REQUEST", "Chính sách xử lý xung đột không hợp lệ.");
+        throw new BridgeError("INVALID_REQUEST", trText("Chính sách xử lý xung đột không hợp lệ.", "Invalid conflict resolution policy."));
       }
 
       const store = useContactSheetStore.getState();
@@ -415,7 +441,7 @@ export async function handleContactSheetBridgeRequest(
         const jobId = typeof params.jobId === "string" ? params.jobId : "";
         const job = store.discoveredJobs.find((j) => j.id === jobId);
         if (!job) {
-          throw new BridgeError("INVALID_REQUEST", "Không tìm thấy job cần xử lý xung đột.");
+          throw new BridgeError("INVALID_REQUEST", trText("Không tìm thấy job cần xử lý xung đột.", "Job not found for conflict resolution."));
         }
         const allowed = job.conflictDetails?.allowedPolicies || ["OVERWRITE", "SKIP"];
         const effectivePolicy =
@@ -448,13 +474,13 @@ export async function handleContactSheetBridgeRequest(
       const jobId = typeof params.jobId === "string" ? params.jobId : "";
       const rowNumber = Number(params.rowNumber);
       if (!jobId || !Number.isInteger(rowNumber) || rowNumber <= 0) {
-        throw new BridgeError("INVALID_REQUEST", "Số hàng không hợp lệ (cần số nguyên lớn hơn 0).");
+        throw new BridgeError("INVALID_REQUEST", trText("Số hàng không hợp lệ (cần số nguyên lớn hơn 0).", "Invalid row number (positive integer required)."));
       }
 
       const store = useContactSheetStore.getState();
       const job = store.discoveredJobs.find((j) => j.id === jobId);
       if (!job) {
-        throw new BridgeError("INVALID_REQUEST", "Không tìm thấy job cần gán hàng.");
+        throw new BridgeError("INVALID_REQUEST", trText("Không tìm thấy job cần gán hàng.", "Job not found for row assignment."));
       }
 
       const targetTabTitle =
@@ -500,13 +526,13 @@ export async function handleContactSheetBridgeRequest(
         const jobId = typeof params.jobId === "string" ? params.jobId : "";
         const job = store.discoveredJobs.find((j) => j.id === jobId);
         if (!job) {
-          throw new BridgeError("INVALID_REQUEST", "Không tìm thấy job.");
+          throw new BridgeError("INVALID_REQUEST", trText("Không tìm thấy job.", "Job not found."));
         }
 
         if (operation === "skip") {
           store.updateJob(jobId, {
             status: "SKIPPED",
-            statusReason: "Người dùng bỏ qua",
+            statusReason: trText("Người dùng bỏ qua", "Skipped by user"),
           });
         } else if (operation === "restore") {
           const activeProfile = assertActiveProfile();
@@ -520,13 +546,13 @@ export async function handleContactSheetBridgeRequest(
           } else {
             store.updateJob(jobId, {
               status: "NEEDS_REVIEW",
-              statusReason: "Cần gán số hàng",
+              statusReason: trText("Cần gán số hàng", "Needs row assignment"),
             });
           }
         } else if (operation === "remove") {
           store.removeJob(jobId);
         } else {
-          throw new BridgeError("INVALID_REQUEST", `Thao tác không hợp lệ: ${operation}`);
+          throw new BridgeError("INVALID_REQUEST", trText(`Thao tác không hợp lệ: ${operation}`, `Invalid operation: ${operation}`));
         }
       }
 
@@ -543,7 +569,7 @@ export async function handleContactSheetBridgeRequest(
       const store = useContactSheetStore.getState();
 
       if (store.isScanning || store.isExecutingBatch) {
-        throw new BridgeError("BUSY", "DH Studio Pro đang bận xử lý một tác vụ khác.");
+        throw new BridgeError("BUSY", trText("DH Studio Pro đang bận xử lý một tác vụ khác.", "DH Studio Pro is busy with another task."));
       }
 
       const requestedIds: Set<string> | null = Array.isArray(params.jobIds)
@@ -574,7 +600,7 @@ export async function handleContactSheetBridgeRequest(
 
       store.setIsExecutingBatch(true);
       store.setBatchProgress({ current: 0, total: readyJobs.length });
-      onProgress?.(0, readyJobs.length, `Đang cập nhật 0/${readyJobs.length} job...`);
+      onProgress?.(0, readyJobs.length, trText(`Đang cập nhật 0/${readyJobs.length} job...`, `Updating 0/${readyJobs.length} job(s)...`));
 
       try {
         const summary = await sheetUpdateService.executeBatchUpdates(
@@ -583,7 +609,7 @@ export async function handleContactSheetBridgeRequest(
           activeProfile,
           (current, total) => {
             useContactSheetStore.getState().setBatchProgress({ current, total });
-            onProgress?.(current, total, `Đang cập nhật ${current}/${total} job...`);
+            onProgress?.(current, total, trText(`Đang cập nhật ${current}/${total} job...`, `Updating ${current}/${total} job(s)...`));
           }
         );
 
@@ -601,7 +627,7 @@ export async function handleContactSheetBridgeRequest(
             return {
               ...j,
               status: "CONFLICT",
-              statusReason: "Hàng này vừa được người khác chỉnh sửa trên Sheet",
+              statusReason: trText("Hàng này vừa được người khác chỉnh sửa trên Sheet", "This row was just modified by someone else on the Sheet"),
             };
           }
           return { ...j, status: "COMPLETED" };
@@ -625,7 +651,7 @@ export async function handleContactSheetBridgeRequest(
     }
 
     default:
-      throw new BridgeError("UNKNOWN_ACTION", `Action không được hỗ trợ: ${action}`);
+      throw new BridgeError("UNKNOWN_ACTION", trText(`Action không được hỗ trợ: ${action}`, `Unsupported action: ${action}`));
   }
 }
 

@@ -1,3 +1,5 @@
+import { trText } from "../../../core/lib/i18n.ts";
+
 export interface FolderTopologyEntry {
   folder_path: string;
   folder_name: string;
@@ -31,7 +33,7 @@ export class FinalFolderResolver {
         depth: 0,
         imageCount: 0,
         status: "NO_FINISHED_IMAGES",
-        reason: "Không tìm thấy thư mục nào",
+        reason: trText("Không tìm thấy thư mục nào", "No folders found"),
       };
     }
 
@@ -45,7 +47,10 @@ export class FinalFolderResolver {
         depth: entries[0].depth,
         imageCount: 0,
         status: "NO_FINISHED_IMAGES",
-        reason: "Thư mục không chứa ảnh thành phẩm (.jpg, .jpeg, .png, .tif, .webp)",
+        reason: trText(
+          "Thư mục không chứa ảnh thành phẩm (.jpg, .jpeg, .png, .tif, .webp)",
+          "Folder contains no finished images (.jpg, .jpeg, .png, .tif, .webp)"
+        ),
       };
     }
 
@@ -96,7 +101,10 @@ export class FinalFolderResolver {
       depth: maxDepth,
       imageCount: deepestAtMax.reduce((acc, c) => acc + c.finished_image_count, 0),
       status: "NEEDS_REVIEW",
-      reason: `Phát hiện ${deepestAtMax.length} thư mục con cùng chứa ảnh thành phẩm ở cùng độ sâu`,
+      reason: trText(
+        `Phát hiện ${deepestAtMax.length} thư mục con cùng chứa ảnh thành phẩm ở cùng độ sâu`,
+        `Found ${deepestAtMax.length} subfolders containing finished images at the same depth`
+      ),
       competingCandidates: deepestAtMax.map((c) => c.folder_path),
     };
   }

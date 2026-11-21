@@ -3,6 +3,7 @@ import { useAvailabilityStore } from "@/core/stores/useAvailabilityStore";
 import { useAuthStore } from "@/core/stores/useAuthStore";
 import { availabilityService } from "@/core/services/availabilityService";
 import { canSessionWorkOffline } from "@/core/services/authApi";
+import { useTranslation } from "@/core/lib/i18n";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import {
   Server,
@@ -26,6 +27,7 @@ export function MaintenanceScreen({ onContinueOffline }: MaintenanceScreenProps)
   const isManualChecking = useAvailabilityStore((s) => s.isManualChecking);
   const setOfflineBypass = useAvailabilityStore((s) => s.setOfflineBypass);
   const session = useAuthStore((s) => s.session);
+  const { tr } = useTranslation();
 
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [canWorkOffline, setCanWorkOffline] = useState<boolean>(false);
@@ -59,7 +61,7 @@ export function MaintenanceScreen({ onContinueOffline }: MaintenanceScreenProps)
 
     const triggered = await availabilityService.manualRetry();
     if (!triggered) {
-      setFeedbackMessage("Vui lòng đợi vài giây trước khi thử lại...");
+      setFeedbackMessage(tr("Vui lòng đợi vài giây trước khi thử lại...", "Please wait a few seconds before trying again..."));
       feedbackTimerRef.current = setTimeout(() => setFeedbackMessage(null), 3000);
     }
   };
@@ -80,10 +82,13 @@ export function MaintenanceScreen({ onContinueOffline }: MaintenanceScreenProps)
     }
   };
 
-  const title = info?.title || "Phần mềm đang được bảo trì";
+  const title = info?.title || tr("Phần mềm đang được bảo trì", "Software Under Maintenance");
   const message =
     info?.message ||
-    "Hệ thống đang được nâng cấp máy chủ để hoạt động ổn định và mượt mà hơn. Các tính năng trực tuyến sẽ sớm quay trở lại. Dữ liệu và tài khoản của bạn vẫn được bảo toàn.";
+    tr(
+      "Hệ thống đang được nâng cấp máy chủ để hoạt động ổn định và mượt mà hơn. Các tính năng trực tuyến sẽ sớm quay trở lại. Dữ liệu và tài khoản của bạn vẫn được bảo toàn.",
+      "Our servers are undergoing maintenance to improve stability and performance. Online features will be back shortly. Your data and account remain safe."
+    );
 
   return (
     <div role="dialog" aria-modal="true" aria-labelledby="dlg-MaintenanceScreen-1" className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-950/95 backdrop-blur-xl text-white select-none animate-fade-in p-6">
@@ -108,7 +113,7 @@ export function MaintenanceScreen({ onContinueOffline }: MaintenanceScreenProps)
         <div className="space-y-3">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
             <Info className="w-3.5 h-3.5" />
-            <span>Thông báo hệ thống</span>
+            <span>{tr("Thông báo hệ thống", "System Notice")}</span>
           </div>
           <h1 id="dlg-MaintenanceScreen-1" className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
             {title}
@@ -124,18 +129,18 @@ export function MaintenanceScreen({ onContinueOffline }: MaintenanceScreenProps)
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
             <div className="text-xs">
               <span className="font-semibold text-slate-200 block">
-                Dữ liệu an toàn
+                {tr("Dữ liệu an toàn", "Data Safe")}
               </span>
-              <span className="text-slate-400">Không cần đăng nhập lại</span>
+              <span className="text-slate-400">{tr("Không cần đăng nhập lại", "No re-login required")}</span>
             </div>
           </div>
           <div className="flex items-center gap-2.5 p-3 rounded-xl bg-white/[0.04] border border-white/5">
             <ShieldCheck className="w-4 h-4 text-blue-400 shrink-0" />
             <div className="text-xs">
               <span className="font-semibold text-slate-200 block">
-                Bản quyền lưu giữ
+                {tr("Bản quyền lưu giữ", "License Preserved")}
               </span>
-              <span className="text-slate-400">Tự động kết nối lại</span>
+              <span className="text-slate-400">{tr("Tự động kết nối lại", "Auto-reconnecting")}</span>
             </div>
           </div>
         </div>
@@ -149,8 +154,8 @@ export function MaintenanceScreen({ onContinueOffline }: MaintenanceScreenProps)
             </span>
             <span>
               {isManualChecking
-                ? "Đang kiểm tra máy chủ..."
-                : "Tự động kiểm tra lại kết nối..."}
+                ? tr("Đang kiểm tra máy chủ...", "Checking server status...")
+                : tr("Tự động kiểm tra lại kết nối...", "Auto-rechecking connection...")}
             </span>
           </div>
           {nextRetryCountdown > 0 && !isManualChecking && (
@@ -177,7 +182,7 @@ export function MaintenanceScreen({ onContinueOffline }: MaintenanceScreenProps)
             <RefreshCw
               className={`w-4 h-4 ${isManualChecking ? "animate-spin" : ""}`}
             />
-            <span>{isManualChecking ? "Đang kết nối..." : "Thử lại ngay"}</span>
+            <span>{isManualChecking ? tr("Đang kết nối...", "Connecting...") : tr("Thử lại ngay", "Retry Now")}</span>
           </button>
 
           {canWorkOffline && (
@@ -185,7 +190,7 @@ export function MaintenanceScreen({ onContinueOffline }: MaintenanceScreenProps)
               onClick={handleContinueOffline}
               className="w-full h-11 px-4 rounded-xl font-semibold text-sm bg-white/10 hover:bg-white/15 text-slate-200 border border-white/10 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>Tiếp tục làm việc ngoại tuyến</span>
+              <span>{tr("Tiếp tục làm việc ngoại tuyến", "Continue Working Offline")}</span>
               <ArrowRight className="w-4 h-4 text-slate-400" />
             </button>
           )}
@@ -194,7 +199,7 @@ export function MaintenanceScreen({ onContinueOffline }: MaintenanceScreenProps)
             onClick={handleOpenSupport}
             className="w-full py-2 text-xs font-medium text-slate-400 hover:text-slate-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
           >
-            <span>Liên hệ hỗ trợ kỹ thuật</span>
+            <span>{tr("Liên hệ hỗ trợ kỹ thuật", "Contact Technical Support")}</span>
             <ExternalLink className="w-3.5 h-3.5" />
           </button>
         </div>

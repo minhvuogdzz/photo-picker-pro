@@ -16,12 +16,14 @@ import { useContactSheetStore } from "../stores/useContactSheetStore";
 import { driveResolverService } from "../services/driveResolverService";
 import { googleCredentialManager } from "../services/googleCredentialBridge";
 import type { DriveConfig } from "../types";
+import { useTranslation } from "@/core/lib/i18n";
 
 interface Props {
   onClose: () => void;
 }
 
 export function DriveConfigModal({ onClose }: Props) {
+  const { tr } = useTranslation();
   const activeProfile = useContactSheetStore((s) => s.activeProfile);
   const saveProfile = useContactSheetStore((s) => s.saveProfile);
   const lastDriveConfig = useContactSheetStore((s) => s.lastDriveConfig);
@@ -72,7 +74,7 @@ export function DriveConfigModal({ onClose }: Props) {
       const selected = await open({
         directory: true,
         multiple: false,
-        title: "Chọn thư mục gốc Google Drive Desktop (My Drive hoặc Shared Drive)",
+        title: tr("Chọn thư mục gốc Google Drive Desktop (My Drive hoặc Shared Drive)", "Select Google Drive Desktop Root Folder (My Drive or Shared Drive)"),
       });
       if (selected && typeof selected === "string") {
         setLocalRoot(selected);
@@ -87,7 +89,7 @@ export function DriveConfigModal({ onClose }: Props) {
     if (!localRoot.trim()) {
       setTestResult({
         success: false,
-        message: "Vui lòng nhập hoặc chọn đường dẫn thư mục gốc Google Drive trên máy.",
+        message: tr("Vui lòng nhập hoặc chọn đường dẫn thư mục gốc Google Drive trên máy.", "Please enter or select your local Google Drive root folder path."),
       });
       return;
     }
@@ -104,7 +106,7 @@ export function DriveConfigModal({ onClose }: Props) {
     } catch (err: any) {
       setTestResult({
         success: false,
-        message: `Lỗi kiểm tra kết nối: ${err?.message || String(err)}`,
+        message: `${tr("Lỗi kiểm tra kết nối:", "Connection test error:")} ${err?.message || String(err)}`,
       });
     } finally {
       setIsTesting(false);
@@ -148,15 +150,15 @@ export function DriveConfigModal({ onClose }: Props) {
             </div>
             <div>
               <h3 id="dlg-DriveConfigModal-1" className="font-semibold text-xs text-foreground">
-                Cấu hình Google Drive Desktop
+                {tr("Cấu hình Google Drive Desktop", "Google Drive Desktop Config")}
               </h3>
               <p className="text-[11px] text-muted-foreground">
-                Thiết lập thư mục gốc cục bộ để tự động ánh xạ link Drive
+                {tr("Thiết lập thư mục gốc cục bộ để tự động ánh xạ link Drive", "Configure local root folder to auto-map Drive links")}
               </p>
             </div>
           </div>
           <button
-            aria-label="Đóng"
+            aria-label={tr("Đóng", "Close")}
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted transition-colors cursor-pointer"
           >
@@ -169,7 +171,7 @@ export function DriveConfigModal({ onClose }: Props) {
           {/* Local Root Path */}
           <div className="flex flex-col gap-1.5">
             <label className="font-medium text-foreground">
-              Thư mục gốc Google Drive trên máy (Local Root)
+              {tr("Thư mục gốc Google Drive trên máy (Local Root)", "Local Google Drive Root Folder")}
             </label>
             <div className="flex gap-2">
               <input
@@ -188,18 +190,18 @@ export function DriveConfigModal({ onClose }: Props) {
                 className="px-3 py-1.5 bg-muted/40 hover:bg-muted border border-border/60 text-foreground font-medium rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
               >
                 <Folder size={13} />
-                <span>Chọn thư mục</span>
+                <span>{tr("Chọn thư mục", "Choose Folder")}</span>
               </button>
             </div>
             <span className="text-[11px] text-muted-foreground">
-              Ví dụ: Thư mục "My Drive" hoặc thư mục làm việc trong Google Drive Desktop.
+              {tr('Ví dụ: Thư mục "My Drive" hoặc thư mục làm việc trong Google Drive Desktop.', 'Example: "My Drive" or working directory inside Google Drive Desktop.')}
             </span>
 
             {shortcutTargetMatch && (
               <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60 flex items-center gap-2 text-foreground text-[11px]">
                 <Link2 size={13} className="shrink-0 text-primary" />
                 <span className="truncate">
-                  Nhận diện lối tắt Google Drive: ID gốc <span className="font-mono font-medium">{shortcutTargetMatch[1]}</span>
+                  {tr("Nhận diện lối tắt Google Drive: ID gốc", "Detected Google Drive shortcut: Target ID")} <span className="font-mono font-medium">{shortcutTargetMatch[1]}</span>
                 </span>
               </div>
             )}
@@ -215,7 +217,7 @@ export function DriveConfigModal({ onClose }: Props) {
                 className="px-3 py-1.5 bg-muted/40 hover:bg-muted border border-border/60 text-foreground font-medium rounded-lg text-[11px] flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
               >
                 {isTesting ? <Loader2 size={12} className="animate-spin text-primary" /> : <HardDrive size={12} />}
-                <span>Kiểm tra nhận diện thư mục Drive</span>
+                <span>{tr("Kiểm tra nhận diện thư mục Drive", "Test Drive Folder Detection")}</span>
               </button>
             </div>
 
@@ -236,16 +238,16 @@ export function DriveConfigModal({ onClose }: Props) {
                   {testResult.success ? (
                     <>
                       <span className="font-medium">
-                        Đã nhận diện: "{testResult.folderName}"
+                        {tr("Đã nhận diện:", "Detected:")} "{testResult.folderName}"
                       </span>
                       <span className="text-[10px] text-muted-foreground truncate font-mono">
                         Drive Folder ID: {testResult.folderId}
                       </span>
                       <span className="text-[10px] text-muted-foreground">
-                        Chứa {testResult.childCount ?? 0} thư mục con ·{" "}
+                        {tr("Chứa", "Contains")} {testResult.childCount ?? 0} {tr("thư mục con", "subfolders")} ·{" "}
                         {testResult.isOwnerMatched
-                          ? "Khớp chủ sở hữu tài khoản"
-                          : "Thư mục dùng chung / chia sẻ"}
+                          ? tr("Khớp chủ sở hữu tài khoản", "Matches account owner")
+                          : tr("Thư mục dùng chung / chia sẻ", "Shared / external folder")}
                       </span>
                     </>
                   ) : (
@@ -259,7 +261,7 @@ export function DriveConfigModal({ onClose }: Props) {
           {/* Remote Root ID */}
           <div className="flex flex-col gap-1.5">
             <label className="font-medium text-foreground">
-              Remote Drive Folder ID (Tùy chọn)
+              {tr("Remote Drive Folder ID (Tùy chọn)", "Remote Drive Folder ID (Optional)")}
             </label>
             <input
               type="text"
@@ -268,11 +270,11 @@ export function DriveConfigModal({ onClose }: Props) {
                 setRemoteRootId(e.target.value);
                 setTestResult(null);
               }}
-              placeholder="root (hoặc ID thư mục Drive tương ứng)"
+              placeholder={tr("root (hoặc ID thư mục Drive tương ứng)", "root (or target Drive folder ID)")}
               className="px-3 py-1.5 bg-background border border-border/70 rounded-lg text-foreground font-mono text-[11px] focus:outline-none focus:ring-1 focus:ring-primary"
             />
             <span className="text-[11px] text-muted-foreground">
-              Mặc định để "root" nếu ánh xạ toàn bộ Drive cá nhân hoặc tự động dò từ đường dẫn cục bộ.
+              {tr('Mặc định để "root" nếu ánh xạ toàn bộ Drive cá nhân hoặc tự động dò từ đường dẫn cục bộ.', 'Leave as "root" to map your entire personal Drive or auto-detect from local path.')}
             </span>
           </div>
 
@@ -280,7 +282,7 @@ export function DriveConfigModal({ onClose }: Props) {
           <div className="flex flex-col gap-1.5">
             <label className="font-medium text-foreground flex items-center gap-1.5">
               <UserCheck size={13} className="text-muted-foreground" />
-              <span>Kiểm tra chủ sở hữu thư mục (Chống nhầm link ảnh gốc)</span>
+              <span>{tr("Kiểm tra chủ sở hữu thư mục (Chống nhầm link ảnh gốc)", "Verify Folder Owner (Prevent Raw Photo Link Confusion)")}</span>
             </label>
             <div className="p-3 rounded-lg bg-background/60 border border-border/60 flex items-start gap-2.5">
               <input
@@ -292,14 +294,14 @@ export function DriveConfigModal({ onClose }: Props) {
               />
               <label htmlFor="require_owner_match" className="flex flex-col gap-0.5 cursor-pointer">
                 <span className="font-medium text-foreground">
-                  Ưu tiên / giới hạn thư mục do chính tài khoản Google này tạo
+                  {tr("Ưu tiên / giới hạn thư mục do chính tài khoản Google này tạo", "Prefer / restrict to folders created by this Google account")}
                 </span>
                 <span className="text-[11px] text-muted-foreground">
-                  Tài khoản hiện tại:{" "}
+                  {tr("Tài khoản hiện tại:", "Current account:")}{" "}
                   <span className="font-medium text-foreground">
-                    {accountEmail || "Chưa kết nối Google"}
+                    {accountEmail || tr("Chưa kết nối Google", "Google Not Connected")}
                   </span>
-                  . Tự động loại bỏ link ảnh gốc do tài khoản khác tải lên.
+                  {tr(". Tự động loại bỏ link ảnh gốc do tài khoản khác tải lên.", ". Automatically excludes original photo folders uploaded by other accounts.")}
                 </span>
               </label>
             </div>
@@ -309,7 +311,7 @@ export function DriveConfigModal({ onClose }: Props) {
           <div className="flex flex-col gap-1.5">
             <label className="font-medium text-foreground flex items-center gap-1.5">
               <Shield size={13} className="text-muted-foreground" />
-              <span>Chính sách quyền truy cập Drive</span>
+              <span>{tr("Chính sách quyền truy cập Drive", "Drive Permission Policy")}</span>
             </label>
             <div className="p-3 rounded-lg bg-background/60 border border-border/60 flex flex-col gap-1.5">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -321,11 +323,11 @@ export function DriveConfigModal({ onClose }: Props) {
                   className="text-primary focus:ring-primary"
                 />
                 <span className="font-medium text-foreground">
-                  Giữ nguyên quyền hiện tại của thư mục (Mặc định)
+                  {tr("Giữ nguyên quyền hiện tại của thư mục (Mặc định)", "Keep current folder permissions (Default)")}
                 </span>
               </label>
               <p className="text-[11px] text-muted-foreground pl-5">
-                Không thay đổi quyền chia sẻ của thư mục. Chỉ lấy đường dẫn Drive và điền vào bảng tính.
+                {tr("Không thay đổi quyền chia sẻ của thư mục. Chỉ lấy đường dẫn Drive và điền vào bảng tính.", "Does not modify folder sharing permissions. Only resolves the Drive link to write to the sheet.")}
               </p>
             </div>
           </div>
@@ -337,14 +339,14 @@ export function DriveConfigModal({ onClose }: Props) {
             onClick={onClose}
             className="px-3 py-1.5 rounded-lg border border-border/60 text-muted-foreground hover:text-foreground text-xs font-medium cursor-pointer"
           >
-            Hủy
+            {tr("Hủy", "Cancel")}
           </button>
           <button
             onClick={handleSave}
             className="px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-95 transition-all cursor-pointer flex items-center gap-1.5"
           >
             <Check size={13} />
-            <span>Lưu cấu hình</span>
+            <span>{tr("Lưu cấu hình", "Save Config")}</span>
           </button>
         </div>
       </div>

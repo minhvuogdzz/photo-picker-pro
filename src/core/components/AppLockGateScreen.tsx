@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Lock, ArrowLeft, KeyRound } from "lucide-react";
 import { useAppStore } from "@/core/stores/useAppStore";
 import { LicenseManager } from "@/core/license/LicenseManager";
+import { useTranslation } from "@/core/lib/i18n";
 
 interface AppLockGateScreenProps {
   readonly appId: string;
@@ -12,6 +13,7 @@ interface AppLockGateScreenProps {
 export function AppLockGateScreen({ appId, appName, description }: AppLockGateScreenProps) {
   const setActiveModule = useAppStore((s) => s.setActiveModule);
   const [showLicenseModal, setShowLicenseModal] = useState(false);
+  const { tr } = useTranslation();
 
   return (
     <div className="w-full h-full flex flex-col items-center justify-center bg-card/90 backdrop-blur-md rounded-xl border border-border p-8 text-center relative overflow-hidden animate-fade-in select-none text-foreground">
@@ -19,7 +21,7 @@ export function AppLockGateScreen({ appId, appName, description }: AppLockGateSc
       <button
         onClick={() => setActiveModule("launcher")}
         className="absolute top-4 left-4 w-7 h-7 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer border border-border"
-        title="Quay lại Launcher" aria-label="Quay lại Launcher"
+        title={tr("Quay lại Launcher", "Back to Launcher")} aria-label={tr("Quay lại Launcher", "Back to Launcher")}
       >
         <ArrowLeft size={14} />
       </button>
@@ -31,16 +33,19 @@ export function AppLockGateScreen({ appId, appName, description }: AppLockGateSc
 
       <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted border border-border text-muted-foreground text-[10px] font-semibold mb-2.5">
         <KeyRound size={11} className="text-primary" />
-        <span>GÓI BẢN QUYỀN ỨNG DỤNG</span>
+        <span>{tr("GÓI BẢN QUYỀN ỨNG DỤNG", "APP LICENSE PACKAGE")}</span>
       </div>
 
       <h2 className="text-base sm:text-lg font-semibold text-foreground mb-1.5 tracking-tight">
-        Kích Hoạt Gói Sử Dụng Cho {appName}
+        {tr(`Kích Hoạt Gói Sử Dụng Cho ${appName}`, `Activate License for ${appName}`)}
       </h2>
 
       <p className="text-xs text-muted-foreground max-w-md mb-6 leading-relaxed">
         {description ||
-          `Thời gian dùng thử miễn phí đã kết thúc hoặc tài khoản của bạn chưa kích hoạt gói sử dụng cho ứng dụng ${appName}. Vui lòng đăng ký gói sử dụng để tiếp tục làm việc.`}
+          tr(
+            `Thời gian dùng thử miễn phí đã kết thúc hoặc tài khoản của bạn chưa kích hoạt gói sử dụng cho ứng dụng ${appName}. Vui lòng đăng ký gói sử dụng để tiếp tục làm việc.`,
+            `Your free trial has ended or your account does not have an active license for ${appName}. Please subscribe or enter a License Key to continue.`
+          )}
       </p>
 
       <div className="flex items-center gap-2.5">
@@ -48,7 +53,7 @@ export function AppLockGateScreen({ appId, appName, description }: AppLockGateSc
           onClick={() => setActiveModule("launcher")}
           className="h-9 px-3.5 rounded-lg bg-muted hover:bg-muted/80 text-xs font-medium text-foreground border border-border transition-colors cursor-pointer"
         >
-          Quay lại Launcher
+          {tr("Quay lại Launcher", "Back to Launcher")}
         </button>
 
         <button
@@ -56,7 +61,7 @@ export function AppLockGateScreen({ appId, appName, description }: AppLockGateSc
           className="h-9 px-4 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
         >
           <KeyRound size={13} />
-          <span>Mua gói / Kích hoạt</span>
+          <span>{tr("Mua gói / Kích hoạt", "Buy Plan / Activate")}</span>
         </button>
       </div>
 

@@ -2,6 +2,7 @@ import type { WorkspaceProfile } from "../../contact-the-sheet/types/index.ts";
 import type { SheetRowRecord } from "../../contact-the-sheet/services/jobMatchingService.ts";
 import { sheetExtractorService } from "../../contact-the-sheet/services/sheetExtractorService.ts";
 import { folderParserService } from "../../contact-the-sheet/services/folderParserService.ts";
+import { trText } from "../../../core/lib/i18n.ts";
 
 /**
  * Pure logic behind "Check TT": decides which customer folders in the queue are kept
@@ -172,27 +173,37 @@ export function evaluateRow(
 
   let reason: string;
   if (isKept) {
-    reason = `Khớp trạng thái "${actualVal}" (Dòng ${row.row})`;
-    if (dueCol && dueKey !== null) reason += ` • Tới hạn trả ${formatDateKey(dueKey)}`;
-    if (linkEditCol) reason += ` • Link edit đang rỗng`;
+    reason = trText(`Khớp trạng thái "${actualVal}" (Dòng ${row.row})`, `Matched status "${actualVal}" (Row ${row.row})`);
+    if (dueCol && dueKey !== null) reason += trText(` • Tới hạn trả ${formatDateKey(dueKey)}`, ` • Due ${formatDateKey(dueKey)}`);
+    if (linkEditCol) reason += trText(" • Link edit đang rỗng", " • Edit link is empty");
   } else {
     const reasons: string[] = [];
     if (!statusOk) {
-      reasons.push(`Trạng thái là "${actualVal || "Trống"}" (Dòng ${row.row}), khác "${conditions.targetStatusValue}"`);
+      reasons.push(
+        trText(
+          `Trạng thái là "${actualVal || "Trống"}" (Dòng ${row.row}), khác "${conditions.targetStatusValue}"`,
+          `Status is "${actualVal || "Empty"}" (Row ${row.row}), expected "${conditions.targetStatusValue}"`
+        )
+      );
     }
-    if (!code1Ok) reasons.push(`Cột ${code1Col} (Mã ảnh chọn 1) trống — không có mã ảnh`);
-    if (!code2Ok) reasons.push(`Cột ${code2Col} (Mã ảnh chọn 2) trống — không có mã ảnh`);
+    if (!code1Ok) reasons.push(trText(`Cột ${code1Col} (Mã ảnh chọn 1) trống — không có mã ảnh`, `Column ${code1Col} (Photo code 1) is empty`));
+    if (!code2Ok) reasons.push(trText(`Cột ${code2Col} (Mã ảnh chọn 2) trống — không có mã ảnh`, `Column ${code2Col} (Photo code 2) is empty`));
     if (!dueOk) {
       if (!dueVal) {
-        reasons.push(`Cột ${dueCol} (Hẹn trả ảnh) trống`);
+        reasons.push(trText(`Cột ${dueCol} (Hẹn trả ảnh) trống`, `Column ${dueCol} (Due date) is empty`));
       } else if (dueKey === null) {
-        reasons.push(`Cột ${dueCol} (Hẹn trả ảnh) "${dueVal}" không đọc được ngày`);
+        reasons.push(trText(`Cột ${dueCol} (Hẹn trả ảnh) "${dueVal}" không đọc được ngày`, `Column ${dueCol} (Due date) "${dueVal}" invalid date`));
       } else {
-        reasons.push(`Hẹn trả ${formatDateKey(dueKey)} — chưa tới hạn (hôm nay ${formatDateKey(conditions.todayKey)})`);
+        reasons.push(
+          trText(
+            `Hẹn trả ${formatDateKey(dueKey)} — chưa tới hạn (hôm nay ${formatDateKey(conditions.todayKey)})`,
+            `Due ${formatDateKey(dueKey)} — not yet due (today ${formatDateKey(conditions.todayKey)})`
+          )
+        );
       }
     }
     if (!linkEditOk) {
-      reasons.push(`Cột ${linkEditCol} (Link edit) đã có dữ liệu — đã xong, không cần lọc gấp`);
+      reasons.push(trText(`Cột ${linkEditCol} (Link edit) đã có dữ liệu — đã xong, không cần lọc gấp`, `Column ${linkEditCol} (Edit link) already filled — completed`));
     }
     reason = reasons.join(" • ");
   }
@@ -200,7 +211,7 @@ export function evaluateRow(
   return {
     isKept,
     matchedRow: row.row,
-    actualStatus: actualVal || "(Trống)",
+    actualStatus: actualVal || trText("(Trống)", "(Empty)"),
     photoCode1Value: code1Val ?? undefined,
     photoCode2Value: code2Val ?? undefined,
     dueDateValue: dueVal ?? undefined,
@@ -263,10 +274,13 @@ export function checkFolder(
       folderPath,
       folderName,
       isKept: false,
-      actualStatus: "Không tìm thấy trên Sheet",
+      actualStatus: trText("Không tìm thấy trên Sheet", "Not found on Sheet"),
       reason:
         noMatchReason ||
-        `Tên thư mục không khớp với dòng nào trên Tab: ${tabRows.map((t) => t.tabTitle).join(", ")}`,
+        trText(
+          `Tên thư mục không khớp với dòng nào trên Tab: ${tabRows.map((t) => t.tabTitle).join(", ")}`,
+          `Folder name matched no row on tab(s): ${tabRows.map((t) => t.tabTitle).join(", ")}`
+        ),
     };
   }
 
@@ -274,9 +288,11 @@ export function checkFolder(
   const best = evaluated.find((r) => r.isKept) || evaluated[0];
   let reason = multiTab ? `[${best.tabTitle}] ${best.reason}` : best.reason;
   if (evaluated.length > 1) {
-    reason += ` • Tên file có ở ${evaluated.length} dòng: ${evaluated
-      .map((r) => (multiTab ? `${r.tabTitle} dòng ${r.matchedRow}` : `dòng ${r.matchedRow}`))
-      .join(", ")}`;
+    reason +=
+      trText(` • Tên file có ở ${evaluated.length} dòng: `, ` • File name found on ${evaluated.length} rows: `) +
+      evaluated
+        .map((r) => (multiTab ? `${r.tabTitle} ${trText("dòng", "row")} ${r.matchedRow}` : `${trText("dòng", "row")} ${r.matchedRow}`))
+        .join(", ");
   }
 
   return { folderPath, folderName, ...best, reason };

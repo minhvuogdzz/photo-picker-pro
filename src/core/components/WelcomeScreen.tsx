@@ -4,6 +4,7 @@ import { useSettingsStore } from "@/core/stores/useSettingsStore";
 import { ArrowRight } from "lucide-react";
 import { BrandLogo } from "@/core/components/BrandLogo";
 import { apiRequest } from "@/core/services/apiClient";
+import { useTranslation } from "@/core/lib/i18n";
 
 interface WelcomeConfig {
   viSubtitle?: string;
@@ -35,6 +36,7 @@ function useTypewriter(text: string, speed = 25, delay = 0) {
 }
 
 export function WelcomeScreen() {
+  const { tr } = useTranslation();
   const [phase, setPhase] = useState<"vi" | "en" | "done">("vi");
   const setHasSeenWelcome = useAppStore((s) => s.setHasSeenWelcome);
   const theme = useSettingsStore((s) => s.settings.theme);
@@ -163,7 +165,7 @@ export function WelcomeScreen() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [phase, handleSkip]);
 
-  const viSubtitle = config.viSubtitle || "Chào mừng bạn đến với hệ sinh thái";
+  const viSubtitle = config.viSubtitle || tr("Chào mừng bạn đến với hệ sinh thái", "Welcome to the ecosystem of");
   const enSubtitle = config.enSubtitle || "Welcome to the ecosystem of";
   const title = config.title || "DH Studio Pro";
 
@@ -268,7 +270,7 @@ export function WelcomeScreen() {
               }`}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-              <span>Đang khởi động hệ sinh thái...</span>
+              <span>{tr("Đang khởi động hệ sinh thái...", "Initializing ecosystem...")}</span>
             </div>
           )}
 
@@ -282,10 +284,10 @@ export function WelcomeScreen() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
               </span>
-              <span className="text-emerald-500 font-semibold">Sẵn sàng</span>
+              <span className="text-emerald-500 font-semibold">{tr("Sẵn sàng", "Ready")}</span>
               <span className="opacity-40">·</span>
               <span className="normal-case flex items-center gap-1.5">
-                <span>Nhấn phím bất kỳ hoặc click để tiếp tục</span>
+                <span>{tr("Nhấn phím bất kỳ hoặc click để tiếp tục", "Press any key or click to continue")}</span>
                 <ArrowRight className="w-3.5 h-3.5 animate-pulse" />
               </span>
             </div>

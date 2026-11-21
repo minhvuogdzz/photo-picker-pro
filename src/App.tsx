@@ -153,6 +153,7 @@ function App() {
   }
 
   const theme = useSettingsStore((s) => s.settings.theme);
+  const language = useSettingsStore((s) => s.settings.language);
   const setSettings = useSettingsStore((s) => s.setSettings);
   const autoCheck = useSettingsStore((s) => s.settings.auto_check_updates);
   const checkUpdates = useUpdaterStore((s) => s.checkForUpdates);
@@ -258,6 +259,21 @@ function App() {
       media.removeEventListener("change", applyCurrentTheme);
     };
   }, [theme]);
+
+  // Apply and broadcast language globally (main window, tray-panel, native tray menu)
+  useEffect(() => {
+    const normalized = language === "en" ? "en" : "vi";
+    document.documentElement.lang = normalized;
+    try {
+      localStorage.setItem("mvd_app_language", normalized);
+    } catch {}
+    import("@tauri-apps/api/event")
+      .then(({ emit }) => {
+        emit("app-language-changed", { language: normalized });
+      })
+      .catch(() => {});
+    invoke("update_tray_language", { language: normalized }).catch(() => {});
+  }, [language]);
 
   // Startup update check with intelligent retry (cold start)
   useEffect(() => {

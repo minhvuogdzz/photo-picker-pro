@@ -19,6 +19,7 @@ import {
   type SpreadsheetExportData,
 } from "../services/spreadsheetExportService";
 import { useContactSheetStore } from "@/modules/contact-the-sheet/stores/useContactSheetStore";
+import { useTranslation } from "@/core/lib/i18n";
 
 interface ExportSpreadsheetModalProps {
   isOpen: boolean;
@@ -31,6 +32,7 @@ export function ExportSpreadsheetModal({
   onClose,
   data,
 }: ExportSpreadsheetModalProps) {
+  const { tr } = useTranslation();
   const [isExportingGoogle, setIsExportingGoogle] = useState(false);
   const [googleProgress, setGoogleProgress] = useState<string>("");
   const [googleSuccessUrl, setGoogleSuccessUrl] = useState<string | null>(null);
@@ -58,7 +60,7 @@ export function ExportSpreadsheetModal({
     setError(null);
     setGoogleSuccessUrl(null);
     setIsExportingGoogle(true);
-    setGoogleProgress("Bắt đầu xử lý...");
+    setGoogleProgress(tr("Bắt đầu xử lý...", "Starting export..."));
 
     try {
       const res = await exportDirectlyToGoogleSheets(data, (msg) => {
@@ -88,7 +90,12 @@ export function ExportSpreadsheetModal({
       setCopiedSuccess(true);
       setTimeout(() => setCopiedSuccess(false), 2500);
     } catch {
-      setError("Không thể sao chép vào bộ nhớ tạm. Vui lòng cấp quyền clipboard.");
+      setError(
+        tr(
+          "Không thể sao chép vào bộ nhớ tạm. Vui lòng cấp quyền clipboard.",
+          "Could not copy to clipboard. Please grant clipboard permission.",
+        ),
+      );
     }
   };
 
@@ -104,7 +111,7 @@ export function ExportSpreadsheetModal({
           onClick={onClose}
           disabled={isExportingGoogle}
           className="absolute right-4 top-4 w-7 h-7 rounded-full bg-muted hover:bg-muted/80 active:scale-95 text-muted-foreground hover:text-foreground flex items-center justify-center transition-all cursor-pointer disabled:opacity-50"
-          title="Đóng" aria-label="Đóng"
+          title={tr("Đóng", "Close")} aria-label={tr("Đóng", "Close")}
         >
           <X size={14} />
         </button>
@@ -117,14 +124,14 @@ export function ExportSpreadsheetModal({
           <div>
             <div className="flex items-center gap-2">
               <h2 id="dlg-ExportSpreadsheetModal-1" className="text-base font-bold text-foreground tracking-tight">
-                Xuất Sang Trang Tính
+                {tr("Xuất Sang Trang Tính", "Export to Spreadsheet")}
               </h2>
               <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-                {data.monthName || "Tháng này"}
+                {data.monthName || tr("Tháng này", "This Month")}
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Tạo trang tính với sẵn công thức tự động tính toán như trong ứng dụng
+              {tr("Tạo trang tính với sẵn công thức tự động tính toán như trong ứng dụng", "Create a spreadsheet pre-filled with dynamic formulas matching the app")}
             </p>
           </div>
         </div>
@@ -133,14 +140,25 @@ export function ExportSpreadsheetModal({
         <div className="p-3 rounded-2xl bg-muted/50 border border-border/80 mb-4 text-xs space-y-1.5">
           <div className="font-semibold text-foreground flex items-center gap-1.5">
             <ListChecks size={13} className="text-emerald-500" />
-            <span>Nội dung được tạo sẵn trong trang tính:</span>
+            <span>{tr("Nội dung được tạo sẵn trong trang tính:", "Included in the generated spreadsheet:")}</span>
           </div>
           <ul className="text-[11px] text-muted-foreground space-y-1 pl-4 list-disc">
             <li>
-              <strong>Công thức tính lương động</strong>: Tự động tính ngày công, định mức KPI, lương cơ bản theo điều kiện, thưởng vượt, thưởng hiệu suất và <strong>công thức tính tổng lương thực lĩnh</strong>.
+              <strong>{tr("Công thức tính lương động", "Dynamic payroll formulas")}</strong>:{" "}
+              {tr(
+                "Tự động tính ngày công, định mức KPI, lương cơ bản theo điều kiện, thưởng vượt, thưởng hiệu suất và",
+                "Auto-calculates working days, KPI quota, conditional base salary, excess pay, performance bonus, and",
+              )}{" "}
+              <strong>{tr("công thức tính tổng lương thực lĩnh", "net salary total formulas")}</strong>.
             </li>
             <li>
-              <strong>Bảng kê chi tiết từng ngày</strong>: Liệt kê số ảnh làm được của từng ngày trong tháng, và dòng <strong>TỔNG CỘNG CẢ THÁNG</strong> kèm công thức <code>=SUM(...)</code>.
+              <strong>{tr("Bảng kê chi tiết từng ngày", "Daily breakdown table")}</strong>:{" "}
+              {tr(
+                "Liệt kê số ảnh làm được của từng ngày trong tháng, và dòng",
+                "Lists weighted photo count per day of the month, plus a",
+              )}{" "}
+              <strong>{tr("TỔNG CỘNG CẢ THÁNG", "MONTHLY TOTAL")}</strong>{" "}
+              {tr("kèm công thức", "row with")} <code>=SUM(...)</code>.
             </li>
           </ul>
         </div>
@@ -150,7 +168,7 @@ export function ExportSpreadsheetModal({
           <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/30 flex items-start gap-2.5 text-destructive text-xs mb-4 animate-fade-in">
             <AlertCircle size={15} className="shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="font-bold">Có lỗi xảy ra:</p>
+              <p className="font-bold">{tr("Có lỗi xảy ra:", "An error occurred:")}</p>
               <p className="text-[11px] opacity-90">{error}</p>
             </div>
           </div>
@@ -161,10 +179,10 @@ export function ExportSpreadsheetModal({
           <div className="p-3.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/35 text-foreground text-xs mb-4 animate-fade-in space-y-2">
             <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 font-bold">
               <CheckCircle2 size={16} />
-              <span>Đã tạo Google Trang Tính thành công!</span>
+              <span>{tr("Đã tạo Google Trang Tính thành công!", "Google Sheet created successfully!")}</span>
             </div>
             <p className="text-[11px] text-muted-foreground">
-              Bảng tính mới đã được lưu trên Google Drive của bạn và đã mở trong trình duyệt.
+              {tr("Bảng tính mới đã được lưu trên Google Drive của bạn và đã mở trong trình duyệt.", "Your new spreadsheet has been saved to Google Drive and opened in the browser.")}
             </p>
             <a
               href={googleSuccessUrl}
@@ -173,7 +191,7 @@ export function ExportSpreadsheetModal({
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs shadow-sm transition-colors cursor-pointer"
             >
               <ExternalLink size={12} />
-              <span>Mở lại Google Sheet trong trình duyệt</span>
+              <span>{tr("Mở lại Google Sheet trong trình duyệt", "Re-open Google Sheet in browser")}</span>
             </a>
           </div>
         )}
@@ -189,12 +207,12 @@ export function ExportSpreadsheetModal({
                 </div>
                 <div>
                   <span className="font-bold text-xs block text-foreground">
-                    1. Xuất trực tiếp lên Google Trang tính
+                    {tr("1. Xuất trực tiếp lên Google Trang tính", "1. Export directly to Google Sheets")}
                   </span>
                   <span className="text-[10px] text-muted-foreground">
                     {isGoogleConnected
-                      ? `Tài khoản Google: ${googleConnection.accountEmail || "Đã kết nối"}`
-                      : "Tạo trang tính mới trên Google Drive & mở ngay trên trình duyệt"}
+                      ? `${tr("Tài khoản Google:", "Google Account:")} ${googleConnection.accountEmail || tr("Đã kết nối", "Connected")}`
+                      : tr("Tạo trang tính mới trên Google Drive & mở ngay trên trình duyệt", "Create a new spreadsheet on Google Drive & open in browser")}
                   </span>
                 </div>
               </div>
@@ -208,12 +226,12 @@ export function ExportSpreadsheetModal({
                 {isExportingGoogle ? (
                   <>
                     <Loader2 size={12} className="animate-spin" />
-                    <span>{googleProgress || "Đang tạo..."}</span>
+                    <span>{googleProgress || tr("Đang tạo...", "Creating...")}</span>
                   </>
                 ) : (
                   <>
                     <FileSpreadsheet size={12} />
-                    <span>Tạo Google Sheet</span>
+                    <span>{tr("Tạo Google Sheet", "Create Google Sheet")}</span>
                   </>
                 )}
               </button>
@@ -228,10 +246,12 @@ export function ExportSpreadsheetModal({
               </div>
               <div className="min-w-0">
                 <span className="font-bold text-xs block text-foreground truncate">
-                  2. Tải tệp Trang tính (.csv có công thức)
+                  {tr("2. Tải tệp Trang tính (.csv có công thức)", "2. Download Spreadsheet (.csv with formulas)")}
                 </span>
                 <span className="text-[10px] text-muted-foreground block truncate">
-                  {downloadedName ? `Đã tải xuống: ${downloadedName}` : "Mở trực tiếp trên Microsoft Excel, Google Sheets, LibreOffice"}
+                  {downloadedName
+                    ? `${tr("Đã tải xuống:", "Downloaded:")} ${downloadedName}`
+                    : tr("Mở trực tiếp trên Microsoft Excel, Google Sheets, LibreOffice", "Open directly in Microsoft Excel, Google Sheets, or LibreOffice")}
                 </span>
               </div>
             </div>
@@ -242,7 +262,7 @@ export function ExportSpreadsheetModal({
               className="px-3.5 py-1.5 rounded-xl bg-muted hover:bg-muted/80 active:scale-[0.98] border border-border text-foreground font-semibold text-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
             >
               {downloadedName ? <Check size={12} className="text-emerald-500" /> : <Download size={12} />}
-              <span>{downloadedName ? "Đã tải xong!" : "Tải tệp"}</span>
+              <span>{downloadedName ? tr("Đã tải xong!", "Downloaded!") : tr("Tải tệp", "Download")}</span>
             </button>
           </div>
 
@@ -254,10 +274,12 @@ export function ExportSpreadsheetModal({
               </div>
               <div className="min-w-0">
                 <span className="font-bold text-xs block text-foreground truncate">
-                  3. Sao chép dữ liệu dạng Trang tính
+                  {tr("3. Sao chép dữ liệu dạng Trang tính", "3. Copy spreadsheet table data")}
                 </span>
                 <span className="text-[10px] text-muted-foreground block truncate">
-                  {copiedSuccess ? "Đã sao chép! Mở Google Sheets và bấm Ctrl + V" : "Dán trực tiếp vào bất kỳ trang tính nào có sẵn"}
+                  {copiedSuccess
+                    ? tr("Đã sao chép! Mở Google Sheets và bấm Ctrl + V", "Copied! Open Google Sheets and press Ctrl/Cmd + V")
+                    : tr("Dán trực tiếp vào bất kỳ trang tính nào có sẵn", "Paste directly into any existing spreadsheet")}
                 </span>
               </div>
             </div>
@@ -268,7 +290,7 @@ export function ExportSpreadsheetModal({
               className="px-3.5 py-1.5 rounded-xl bg-muted hover:bg-muted/80 active:scale-[0.98] border border-border text-foreground font-semibold text-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
             >
               {copiedSuccess ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
-              <span>{copiedSuccess ? "Đã sao chép!" : "Sao chép"}</span>
+              <span>{copiedSuccess ? tr("Đã sao chép!", "Copied!") : tr("Sao chép", "Copy")}</span>
             </button>
           </div>
         </div>
@@ -280,7 +302,7 @@ export function ExportSpreadsheetModal({
             onClick={onClose}
             className="px-4 py-2 rounded-xl bg-muted hover:bg-muted/80 text-foreground font-semibold text-xs transition-colors cursor-pointer"
           >
-            Đóng
+            {tr("Đóng", "Close")}
           </button>
         </div>
       </div>

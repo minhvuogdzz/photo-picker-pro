@@ -4,6 +4,7 @@ import { useAuthStore } from "@/core/stores/useAuthStore";
 import { useUserAvatar } from "@/core/hooks/useUserAvatar";
 import { updateProfile, changePassword, logoutOtherDevices } from "@/core/services/authApi";
 import { invoke } from "@tauri-apps/api/core";
+import { useTranslation } from "@/core/lib/i18n";
 import {
   X,
   User,
@@ -30,6 +31,7 @@ type TabType = "profile" | "password" | "devices";
 export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalProps) {
   const session = useAuthStore((s) => s.session);
   const setSession = useAuthStore((s) => s.setSession);
+  const { tr } = useTranslation();
 
   const { avatarUrl, updateAvatar, removeAvatar } = useUserAvatar();
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -42,7 +44,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
       setAvatarError(null);
       await updateAvatar(file);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Không thể tải ảnh";
+      const msg = err instanceof Error ? err.message : tr("Không thể tải ảnh", "Unable to load image");
       setAvatarError(msg);
     } finally {
       if (avatarInputRef.current) avatarInputRef.current.value = "";
@@ -99,13 +101,16 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
 
     const cleanUsername = username.trim().toLowerCase();
     if (!cleanUsername) {
-      setProfileMessage({ type: "error", text: "Tên tài khoản không được để trống." });
+      setProfileMessage({ type: "error", text: tr("Tên tài khoản không được để trống.", "Username cannot be empty.") });
       return;
     }
     if (!/^[a-z0-9_.-]{3,30}$/.test(cleanUsername)) {
       setProfileMessage({
         type: "error",
-        text: "Tên tài khoản từ 3-30 ký tự, viết liền không dấu (chỉ gồm chữ, số, ., _, -).",
+        text: tr(
+          "Tên tài khoản từ 3-30 ký tự, viết liền không dấu (chỉ gồm chữ, số, ., _, -).",
+          "Username must be 3–30 characters without accents or spaces (letters, numbers, ., _, - only)."
+        ),
       });
       return;
     }
@@ -146,11 +151,11 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
         // Best effort
       }
 
-      setProfileMessage({ type: "success", text: "Cập nhật thông tin tài khoản thành công!" });
+      setProfileMessage({ type: "success", text: tr("Cập nhật thông tin tài khoản thành công!", "Account profile updated successfully!") });
     } catch (err: any) {
       setProfileMessage({
         type: "error",
-        text: err?.message || "Không thể cập nhật thông tin. Vui lòng thử lại.",
+        text: err?.message || tr("Không thể cập nhật thông tin. Vui lòng thử lại.", "Unable to update profile. Please try again."),
       });
     } finally {
       setIsSavingProfile(false);
@@ -162,17 +167,17 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
     setPwMessage(null);
 
     if (!currentPassword) {
-      setPwMessage({ type: "error", text: "Vui lòng nhập mật khẩu hiện tại." });
+      setPwMessage({ type: "error", text: tr("Vui lòng nhập mật khẩu hiện tại.", "Please enter your current password.") });
       return;
     }
 
     if (newPassword.length < 6) {
-      setPwMessage({ type: "error", text: "Mật khẩu mới phải có ít nhất 6 ký tự." });
+      setPwMessage({ type: "error", text: tr("Mật khẩu mới phải có ít nhất 6 ký tự.", "New password must be at least 6 characters.") });
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setPwMessage({ type: "error", text: "Mật khẩu xác nhận không trùng khớp." });
+      setPwMessage({ type: "error", text: tr("Mật khẩu xác nhận không trùng khớp.", "Confirmation password does not match.") });
       return;
     }
 
@@ -182,14 +187,14 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
         { currentPassword, newPassword },
         session.accessToken
       );
-      setPwMessage({ type: "success", text: res.message || "Đổi mật khẩu thành công!" });
+      setPwMessage({ type: "success", text: res.message || tr("Đổi mật khẩu thành công!", "Password changed successfully!") });
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (err: any) {
       setPwMessage({
         type: "error",
-        text: err?.message || "Không thể đổi mật khẩu. Vui lòng kiểm tra lại mật khẩu hiện tại.",
+        text: err?.message || tr("Không thể đổi mật khẩu. Vui lòng kiểm tra lại mật khẩu hiện tại.", "Unable to change password. Please verify your current password."),
       });
     } finally {
       setIsChangingPw(false);
@@ -197,7 +202,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
   };
 
   const handleLogoutOthers = async () => {
-    if (!confirm("Bạn có chắc chắn muốn đăng xuất khỏi tất cả các thiết bị khác không?")) {
+    if (!confirm(tr("Bạn có chắc chắn muốn đăng xuất khỏi tất cả các thiết bị khác không?", "Are you sure you want to sign out of all other devices?"))) {
       return;
     }
     setDeviceMessage(null);
@@ -206,12 +211,12 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
       const res = await logoutOtherDevices(session.accessToken);
       setDeviceMessage({
         type: "success",
-        text: res.message || "Đã đăng xuất khỏi tất cả thiết bị khác thành công.",
+        text: res.message || tr("Đã đăng xuất khỏi tất cả thiết bị khác thành công.", "Successfully signed out of all other devices."),
       });
     } catch (err: any) {
       setDeviceMessage({
         type: "error",
-        text: err?.message || "Không thể đăng xuất các thiết bị khác.",
+        text: err?.message || tr("Không thể đăng xuất các thiết bị khác.", "Unable to sign out other devices."),
       });
     } finally {
       setIsLoggingOutOthers(false);
@@ -239,15 +244,15 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
               <Shield size={16} />
             </div>
             <div>
-              <h2 id="dlg-AccountSecurityModal-1" className="text-sm font-bold text-foreground">Tài khoản & Bảo mật</h2>
-              <p className="text-[11px] text-muted-foreground">Quản lý tên đăng nhập, mật khẩu và thiết bị</p>
+              <h2 id="dlg-AccountSecurityModal-1" className="text-sm font-bold text-foreground">{tr("Tài khoản & Bảo mật", "Account & Security")}</h2>
+              <p className="text-[11px] text-muted-foreground">{tr("Quản lý tên đăng nhập, mật khẩu và thiết bị", "Manage username, password, and devices")}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer border border-transparent hover:border-border"
-            title="Đóng (ESC)" aria-label="Đóng (ESC)"
+            title={tr("Đóng (ESC)", "Close (ESC)")} aria-label={tr("Đóng (ESC)", "Close (ESC)")}
           >
             <X size={16} />
           </button>
@@ -268,7 +273,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
             }`}
           >
             <User size={13} />
-            Hồ sơ & Tài khoản
+            {tr("Hồ sơ & Tài khoản", "Profile & Account")}
           </button>
           <button
             type="button"
@@ -283,7 +288,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
             }`}
           >
             <KeyRound size={13} />
-            Đổi mật khẩu
+            {tr("Đổi mật khẩu", "Change Password")}
           </button>
           <button
             type="button"
@@ -298,7 +303,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
             }`}
           >
             <Laptop size={13} />
-            Thiết bị & Phiên
+            {tr("Thiết bị & Phiên", "Devices & Sessions")}
           </button>
         </div>
 
@@ -322,7 +327,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
                   <div
                     onClick={() => avatarInputRef.current?.click()}
                     className="relative group/modal-avt cursor-pointer shrink-0"
-                    title="Bấm để đổi ảnh đại diện"
+                    title={tr("Bấm để đổi ảnh đại diện", "Click to change avatar")}
                   >
                     <div className="w-11 h-11 rounded-xl bg-primary/15 border border-primary/25 overflow-hidden flex items-center justify-center text-primary shadow-xs">
                       {avatarUrl ? (
@@ -344,7 +349,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
                         onClick={() => avatarInputRef.current?.click()}
                         className="text-[10px] text-primary hover:underline font-semibold cursor-pointer"
                       >
-                        Đổi ảnh
+                        {tr("Đổi ảnh", "Change")}
                       </button>
                       {avatarUrl && (
                         <button
@@ -352,7 +357,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
                           onClick={removeAvatar}
                           className="text-[10px] text-muted-foreground hover:text-destructive hover:underline font-medium cursor-pointer"
                         >
-                          Gỡ ảnh
+                          {tr("Gỡ ảnh", "Remove")}
                         </button>
                       )}
                     </div>
@@ -364,9 +369,9 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
                 <div className="text-right">
                   <span className="text-[10px] px-2 py-0.5 rounded-lg bg-muted text-muted-foreground font-semibold">
                     {session.subscription?.status === "LIFETIME"
-                      ? "Vĩnh viễn"
+                      ? tr("Vĩnh viễn", "Lifetime")
                       : session.subscription?.daysRemaining !== null
-                      ? `Còn ${session.subscription.daysRemaining} ngày`
+                      ? tr(`Còn ${session.subscription.daysRemaining} ngày`, `${session.subscription.daysRemaining} days left`)
                       : session.subscription?.status}
                   </span>
                 </div>
@@ -375,7 +380,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
               {/* Username Field */}
               <div className="space-y-1">
                 <label className="text-[11px] font-semibold text-foreground/90 uppercase tracking-wider">
-                  Tên tài khoản (Username)
+                  {tr("Tên tài khoản (Username)", "Username")}
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-xs font-bold">
@@ -393,20 +398,23 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
                   />
                 </div>
                 <p className="text-[10px] text-muted-foreground">
-                  Dùng để đăng nhập thay thế email (3-30 ký tự, viết liền không dấu).
+                  {tr(
+                    "Dùng để đăng nhập thay thế email (3-30 ký tự, viết liền không dấu).",
+                    "Used to sign in instead of email (3–30 characters, no accents or spaces)."
+                  )}
                 </p>
               </div>
 
               {/* Full Name Field */}
               <div className="space-y-1">
                 <label className="text-[11px] font-semibold text-foreground/90 uppercase tracking-wider">
-                  Họ và tên hiển thị
+                  {tr("Họ và tên hiển thị", "Display Name")}
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Họ và tên của bạn"
+                  placeholder={tr("Họ và tên của bạn", "Your full name")}
                   className="input-field text-xs font-medium"
                   required
                 />
@@ -415,12 +423,12 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
               {/* Email (Readonly) */}
               <div className="space-y-1">
                 <label className="text-[11px] font-semibold text-foreground/90 uppercase tracking-wider">
-                  Email đăng ký
+                  {tr("Email đăng ký", "Registered Email")}
                 </label>
                 <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-muted/40 border border-border text-xs text-foreground">
                   <span>{session.email}</span>
                   <span className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
-                    <CheckCircle2 size={11} /> Đã xác minh
+                    <CheckCircle2 size={11} /> {tr("Đã xác minh", "Verified")}
                   </span>
                 </div>
               </div>
@@ -444,7 +452,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
                   onClick={onClose}
                   className="flex-1 btn-base btn-outline py-2 text-xs font-bold transition-colors cursor-pointer rounded-xl"
                 >
-                  Đóng
+                  {tr("Đóng", "Close")}
                 </button>
                 <button
                   type="submit"
@@ -454,12 +462,12 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
                   {isSavingProfile ? (
                     <>
                       <Loader2 size={14} className="animate-spin" />
-                      Đang lưu...
+                      {tr("Đang lưu...", "Saving...")}
                     </>
                   ) : (
                     <>
                       <Save size={14} />
-                      Lưu thay đổi
+                      {tr("Lưu thay đổi", "Save Changes")}
                     </>
                   )}
                 </button>
@@ -471,7 +479,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
           {activeTab === "password" && (
             <form onSubmit={handleChangePassword} className="space-y-3.5 animate-fade-in">
               <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-foreground/90 uppercase tracking-wider">Mật khẩu hiện tại</label>
+                <label className="text-[11px] font-semibold text-foreground/90 uppercase tracking-wider">{tr("Mật khẩu hiện tại", "Current Password")}</label>
                 <div className="relative">
                   <input
                     type={showCurrentPw ? "text" : "password"}
@@ -492,13 +500,13 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
               </div>
 
               <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-foreground/90 uppercase tracking-wider">Mật khẩu mới</label>
+                <label className="text-[11px] font-semibold text-foreground/90 uppercase tracking-wider">{tr("Mật khẩu mới", "New Password")}</label>
                 <div className="relative">
                   <input
                     type={showNewPw ? "text" : "password"}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Ít nhất 6 ký tự"
+                    placeholder={tr("Ít nhất 6 ký tự", "At least 6 characters")}
                     minLength={6}
                     className="input-field pr-9 text-xs"
                     required
@@ -514,12 +522,12 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
               </div>
 
               <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-foreground/90 uppercase tracking-wider">Xác nhận mật khẩu mới</label>
+                <label className="text-[11px] font-semibold text-foreground/90 uppercase tracking-wider">{tr("Xác nhận mật khẩu mới", "Confirm New Password")}</label>
                 <input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Nhập lại mật khẩu mới"
+                  placeholder={tr("Nhập lại mật khẩu mới", "Re-enter new password")}
                   minLength={6}
                   className="input-field text-xs"
                   required
@@ -545,7 +553,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
                   onClick={onClose}
                   className="flex-1 btn-base btn-outline py-2 text-xs font-bold transition-colors cursor-pointer rounded-xl"
                 >
-                  Đóng
+                  {tr("Đóng", "Close")}
                 </button>
                 <button
                   type="submit"
@@ -555,12 +563,12 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
                   {isChangingPw ? (
                     <>
                       <Loader2 size={14} className="animate-spin" />
-                      Đang đổi...
+                      {tr("Đang đổi...", "Updating...")}
                     </>
                   ) : (
                     <>
                       <KeyRound size={14} />
-                      Cập nhật mật khẩu
+                      {tr("Cập nhật mật khẩu", "Update Password")}
                     </>
                   )}
                 </button>
@@ -572,16 +580,16 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
           {activeTab === "devices" && (
             <div className="space-y-4 animate-fade-in">
               <div className="space-y-1.5">
-                <label className="text-[11px] font-semibold text-foreground/90 uppercase tracking-wider">Thiết bị hiện tại</label>
+                <label className="text-[11px] font-semibold text-foreground/90 uppercase tracking-wider">{tr("Thiết bị hiện tại", "Current Device")}</label>
                 <div className="p-3 rounded-2xl bg-card border border-border flex items-center justify-between shadow-xs">
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                       <Laptop size={16} />
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-foreground">Máy tính này (Active)</p>
+                      <p className="text-xs font-bold text-foreground">{tr("Máy tính này (Active)", "This Computer (Active)")}</p>
                       <p className="text-[10px] font-mono text-muted-foreground truncate max-w-[240px]">
-                        ID: {session.deviceId || "Không rõ"}
+                        ID: {session.deviceId || tr("Không rõ", "Unknown")}
                       </p>
                     </div>
                   </div>
@@ -595,9 +603,12 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
                 <div className="flex items-start gap-2">
                   <AlertCircle size={15} className="text-destructive shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="text-xs font-bold text-foreground">Đăng xuất khỏi các thiết bị khác</h4>
+                    <h4 className="text-xs font-bold text-foreground">{tr("Đăng xuất khỏi các thiết bị khác", "Sign out of other devices")}</h4>
                     <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
-                      Đăng xuất tài khoản của bạn khỏi tất cả các máy tính hoặc phiên đăng nhập khác ngay lập tức.
+                      {tr(
+                        "Đăng xuất tài khoản của bạn khỏi tất cả các máy tính hoặc phiên đăng nhập khác ngay lập tức.",
+                        "Immediately sign your account out of all other computers and active sessions."
+                      )}
                     </p>
                   </div>
                 </div>
@@ -611,12 +622,12 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
                   {isLoggingOutOthers ? (
                     <>
                       <Loader2 size={14} className="animate-spin" />
-                      Đang xử lý...
+                      {tr("Đang xử lý...", "Processing...")}
                     </>
                   ) : (
                     <>
                       <LogOut size={14} />
-                      Đăng xuất tất cả thiết bị khác
+                      {tr("Đăng xuất tất cả thiết bị khác", "Sign Out All Other Devices")}
                     </>
                   )}
                 </button>
@@ -640,7 +651,7 @@ export function AccountSecurityModal({ isOpen, onClose }: AccountSecurityModalPr
                 onClick={onClose}
                 className="w-full btn-base btn-outline py-2 text-xs font-bold transition-colors cursor-pointer rounded-xl mt-2"
               >
-                Đóng
+                {tr("Đóng", "Close")}
               </button>
             </div>
           )}

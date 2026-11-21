@@ -1,8 +1,10 @@
 import React from "react";
 import { Trash2, RotateCcw, X, FolderCheck, ShieldCheck, Clock, Image } from "lucide-react";
 import { useAppStore } from "@/core/stores/useAppStore";
+import { useTranslation } from "@/core/lib/i18n";
 
 export function EjectedCustomersModal() {
+  const { tr } = useTranslation();
   const isTrashModalOpen = useAppStore((s) => s.isTrashModalOpen);
   const setIsTrashModalOpen = useAppStore((s) => s.setIsTrashModalOpen);
   const ejectedCustomers = useAppStore((s) => s.ejectedCustomers);
@@ -27,20 +29,20 @@ export function EjectedCustomersModal() {
             </div>
             <div>
               <h3 id="dlg-trash-title" className="text-sm font-bold text-foreground flex items-center gap-2">
-                <span>Thùng rác khách đã xong</span>
+                <span>{tr("Thùng rác khách đã xong", "Completed Customers Trash")}</span>
                 <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-mono font-semibold border border-emerald-500/30">
                   {ejectedCustomers.length}
                 </span>
               </h3>
               <p className="text-[11px] text-muted-foreground">
-                Danh sách khách đã lọc và được đưa ra khỏi hàng đợi chờ
+                {tr("Danh sách khách đã lọc và được đưa ra khỏi hàng đợi chờ", "Filtered customers removed from the active queue")}
               </p>
             </div>
           </div>
 
           <button
             type="button"
-            aria-label="Đóng"
+            aria-label={tr("Đóng", "Close")}
             onClick={() => setIsTrashModalOpen(false)}
             className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition-colors cursor-pointer"
           >
@@ -52,7 +54,8 @@ export function EjectedCustomersModal() {
         <div className="px-5 py-2.5 bg-emerald-500/8 border-b border-emerald-500/20 flex items-center gap-2 text-[11px] text-emerald-700 dark:text-emerald-300">
           <ShieldCheck size={14} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
           <span>
-            <strong>An toàn tuyệt đối:</strong> Các thư mục ở đây chỉ bị loại khỏi hàng đợi trong app. Toàn bộ file gốc trên ổ cứng không hề bị xóa.
+            <strong>{tr("An toàn tuyệt đối:", "100% File-Safe:")}</strong>{" "}
+            {tr("Các thư mục ở đây chỉ bị loại khỏi hàng đợi trong app. Toàn bộ file gốc trên ổ cứng không hề bị xóa.", "Folders listed here are only hidden from the in-app queue. Original files on disk are never deleted.")}
           </span>
         </div>
 
@@ -63,9 +66,9 @@ export function EjectedCustomersModal() {
               <div className="w-12 h-12 rounded-2xl bg-muted/50 border border-border/60 flex items-center justify-center mb-2.5 text-muted-foreground/60">
                 <Trash2 size={22} />
               </div>
-              <p className="text-xs font-semibold text-foreground/80">Thùng rác trống</p>
+              <p className="text-xs font-semibold text-foreground/80">{tr("Thùng rác trống", "Trash is empty")}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5 max-w-[240px]">
-                Khi bạn lọc xong một khách, khách đó sẽ được vo gọn vào đây để dọn sạch hàng đợi.
+                {tr("Khi bạn lọc xong một khách, khách đó sẽ được vo gọn vào đây để dọn sạch hàng đợi.", "Once a customer finishes filtering, they can be tossed here to keep your queue tidy.")}
               </p>
             </div>
           ) : (
@@ -92,7 +95,7 @@ export function EjectedCustomersModal() {
                           <span>•</span>
                           <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
                             <Image size={10} />
-                            {cust.copyCount} file đã lọc
+                            {tr(`${cust.copyCount} file đã lọc`, `${cust.copyCount} files filtered`)}
                           </span>
                         </>
                       )}
@@ -108,10 +111,10 @@ export function EjectedCustomersModal() {
                     setIsTrashModalOpen(false);
                   }}
                   className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 hover:border-primary/40 transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer shadow-2xs"
-                  title="Đưa khách này quay trở lại hàng đợi lọc ảnh"
+                  title={tr("Đưa khách này quay trở lại hàng đợi lọc ảnh", "Restore customer to the active queue")}
                 >
                   <RotateCcw size={12} />
-                  <span>Khôi phục</span>
+                  <span>{tr("Khôi phục", "Restore")}</span>
                 </button>
               </div>
             ))
@@ -127,7 +130,7 @@ export function EjectedCustomersModal() {
               className="text-[11px] text-destructive hover:underline cursor-pointer flex items-center gap-1"
             >
               <Trash2 size={12} />
-              <span>Dọn sạch lịch sử thùng rác</span>
+              <span>{tr("Dọn sạch lịch sử thùng rác", "Clear trash history")}</span>
             </button>
           ) : (
             <div />
@@ -138,7 +141,7 @@ export function EjectedCustomersModal() {
             onClick={() => setIsTrashModalOpen(false)}
             className="px-4 py-1.5 text-xs font-medium rounded-lg bg-card hover:bg-muted border border-border text-foreground transition-colors cursor-pointer shadow-2xs"
           >
-            Đóng
+            {tr("Đóng", "Close")}
           </button>
         </div>
       </div>

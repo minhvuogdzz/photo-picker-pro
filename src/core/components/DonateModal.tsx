@@ -4,10 +4,12 @@ import { X, Heart } from "lucide-react";
 import qrImage from "@/assets/qr_donate.jpg";
 import { useAppStore } from "@/core/stores/useAppStore";
 import { CoffeeSteamIcon } from "./CoffeeSteamIcon";
+import { useTranslation } from "@/core/lib/i18n";
 
 export function DonateModal() {
   const isOpen = useAppStore((s) => s.isDonateModalOpen);
   const onClose = () => useAppStore.getState().setIsDonateModalOpen(false);
+  const { tr } = useTranslation();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -38,8 +40,8 @@ export function DonateModal() {
             </div>
             <div>
               <h3 id="dlg-DonateModal-1" className="text-xs font-bold text-foreground leading-tight flex items-center gap-1">
-                <span>Ủng hộ tác giả</span>
-                <span className="text-amber-500">· Donate Cafe</span>
+                <span>{tr("Ủng hộ tác giả", "Support Author")}</span>
+                <span className="text-amber-500">· Buy Me a Coffee</span>
               </h3>
               <p className="text-[10px] text-muted-foreground mt-0.5">
                 DH Studio Pro
@@ -51,7 +53,7 @@ export function DonateModal() {
             type="button"
             onClick={onClose}
             className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
-            title="Đóng (Esc)" aria-label="Đóng (Esc)"
+            title={tr("Đóng (Esc)", "Close (Esc)")} aria-label={tr("Đóng (Esc)", "Close (Esc)")}
           >
             <X size={15} />
           </button>
@@ -63,7 +65,10 @@ export function DonateModal() {
           <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 relative overflow-hidden">
             <div className="flex items-start gap-2">
               <p className="text-[11px] text-amber-900 dark:text-amber-200 italic font-medium leading-relaxed">
-                "Sự ủng hộ của bạn sẽ góp phần vào sự phát triển công nghệ mới của tôi - Vuong Dev"
+                {tr(
+                  '"Sự ủng hộ của bạn sẽ góp phần vào sự phát triển công nghệ mới của tôi - Vuong Dev"',
+                  '"Your support fuels the continuous development of new creative tools — Vuong Dev"'
+                )}
               </p>
             </div>
           </div>
@@ -73,7 +78,7 @@ export function DonateModal() {
             <div className="relative group overflow-hidden rounded-lg border border-border/80 shadow-md bg-white p-1.5 transition-transform duration-200 hover:scale-[1.01]">
               <img
                 src={qrImage}
-                alt="Mã VietQR Napas 247 Ủng Hộ Tác Giả"
+                alt={tr("Mã VietQR Napas 247 Ủng Hộ Tác Giả", "VietQR Napas 247 Support QR Code")}
                 className="w-[260px] h-auto object-contain rounded"
                 onError={(e) => {
                   (e.currentTarget as HTMLImageElement).src = "/qr_donate.jpg";
@@ -81,14 +86,14 @@ export function DonateModal() {
               />
             </div>
             <p className="text-[10px] text-muted-foreground text-center mt-2 font-medium">
-              Quét mã bằng app ngân hàng bất kỳ (Napas 24/7)
+              {tr("Quét mã bằng app ngân hàng bất kỳ (Napas 24/7)", "Scan with any Vietnamese banking app (Napas 24/7)")}
             </p>
           </div>
 
           {/* Gratitude note */}
           <div className="text-center text-[11px] text-muted-foreground flex items-center justify-center gap-1.5 pt-0.5">
             <Heart size={12} className="text-rose-500 fill-rose-500/30 shrink-0 animate-pulse" />
-            <span>Trân trọng cảm ơn sự đồng hành từ bạn!</span>
+            <span>{tr("Trân trọng cảm ơn sự đồng hành từ bạn!", "Thank you sincerely for your support!")}</span>
           </div>
         </div>
 
@@ -99,7 +104,7 @@ export function DonateModal() {
             onClick={onClose}
             className="w-full py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all cursor-pointer shadow-xs active:scale-[0.98]"
           >
-            Đóng
+            {tr("Đóng", "Close")}
           </button>
         </div>
       </div>

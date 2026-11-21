@@ -1,7 +1,9 @@
 import { useAppStore } from "@/core/stores/useAppStore";
 import { Loader2 } from "lucide-react";
+import { localizeBackendMessage, useTranslation } from "@/core/lib/i18n";
 
 export function MatchProgressPopup() {
+  const { tr, lang } = useTranslation();
   const phase = useAppStore((s) => s.phase);
   const progress = useAppStore((s) => s.progress);
 
@@ -16,10 +18,10 @@ export function MatchProgressPopup() {
           </div>
           <div className="flex-1 min-w-0">
             <h3 id="dlg-MatchProgressPopup-1" className="font-semibold text-sm text-foreground truncate">
-              {progress?.message || "Đang xử lý file..."}
+              {progress?.message ? localizeBackendMessage(progress.message, lang) : tr("Đang xử lý file...", "Processing files...")}
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Vui lòng chờ trong giây lát
+              {tr("Vui lòng chờ trong giây lát", "Please wait a moment")}
             </p>
           </div>
         </div>

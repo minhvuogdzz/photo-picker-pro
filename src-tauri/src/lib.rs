@@ -152,6 +152,7 @@ pub fn run() {
             commands::preview::clear_thumbnail_cache,
             commands::preview::copy_photo_files,
             commands::system_monitor::get_system_performance_metrics,
+            tray::update_tray_language,
             bridge::bridge_mark_ready,
             bridge::bridge_emit_progress,
             bridge::bridge_reply,

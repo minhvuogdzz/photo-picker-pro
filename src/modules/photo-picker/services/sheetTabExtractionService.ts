@@ -7,6 +7,7 @@ import {
 } from "../../contact-the-sheet/services/sheetExtractorService.ts";
 import { folderParserService } from "../../contact-the-sheet/services/folderParserService.ts";
 import { foldText, type TabRows } from "./filterStatusCheckService.ts";
+import { trText } from "../../../core/lib/i18n.ts";
 
 /**
  * Pure logic behind "Truy xuất trang tính" when several sheet tabs are checked:
@@ -194,11 +195,19 @@ export function extractCodesAcrossTabs(
       getTabProfile(profile, picked.tabTitle).fieldMappings.find((m) => m.semanticField === "JOB_FOLDER_NAME")
     );
 
-    let reason = `Khớp chính xác Tên file (Cột ${fileCol})${multiTab ? ` trên Tab ${picked.tabTitle}` : ""}`;
+    let reason = trText(
+      `Khớp chính xác Tên file (Cột ${fileCol})${multiTab ? ` trên Tab ${picked.tabTitle}` : ""}`,
+      `Exact File Name match (Col ${fileCol})${multiTab ? ` on Tab ${picked.tabTitle}` : ""}`
+    );
     if (candidates.length > 1) {
-      reason += ` • Tên file có ở ${candidates.length} dòng: ${candidates
-        .map((c) => `${multiTab ? `${c.tabTitle} dòng ${c.row}` : `dòng ${c.row}`}${c.isCompleted ? " (đã lọc)" : ""}`)
-        .join(", ")}`;
+      reason +=
+        trText(` • Tên file có ở ${candidates.length} dòng: `, ` • File name found on ${candidates.length} rows: `) +
+        candidates
+          .map(
+            (c) =>
+              `${multiTab ? `${c.tabTitle} ${trText("dòng", "row")} ${c.row}` : `${trText("dòng", "row")} ${c.row}`}${c.isCompleted ? trText(" (đã lọc)", " (picked)") : ""}`
+          )
+          .join(", ");
     }
 
     return {
@@ -235,7 +244,7 @@ export function extractCodesAcrossTabs(
       jobFolderName: rawName,
       customerName: metadata.customerName,
       status: "NO_MATCH",
-      reason: match.reason || `Không tìm thấy dòng tương ứng với "${rawName}" trên bảng tính.`,
+      reason: match.reason || trText(`Không tìm thấy dòng tương ứng với "${rawName}" trên bảng tính.`, `No matching row found for "${rawName}" on spreadsheet.`),
       candidateColumns: [],
       candidateRows: match.candidateRows,
       searchedTabs,

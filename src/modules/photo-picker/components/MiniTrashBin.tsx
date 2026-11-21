@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useAppStore } from "@/core/stores/useAppStore";
 import { ShieldCheck, Sparkles } from "lucide-react";
+import { useTranslation } from "@/core/lib/i18n";
 
 export function MiniTrashBin() {
+  const { tr } = useTranslation();
   const ejectedCustomers = useAppStore((s) => s.ejectedCustomers);
   const setIsTrashModalOpen = useAppStore((s) => s.setIsTrashModalOpen);
   const tossAnimationTrigger = useAppStore((s) => s.tossAnimationTrigger);
@@ -54,7 +56,7 @@ export function MiniTrashBin() {
           ? "bg-card hover:bg-muted/30 border-border/80 hover:border-emerald-500/50 shadow-2xs"
           : "bg-muted/10 hover:bg-muted/20 border-border/40 hover:border-border/60"
       }`}
-      title="Bấm để xem danh sách khách đã lọc và khôi phục khi cần"
+      title={tr("Bấm để xem danh sách khách đã lọc và khôi phục khi cần", "Click to view filtered customers and restore if needed")}
     >
       <div className="flex items-center gap-3 min-w-0">
         {/* Animated Trash Bin SVG with 3D Lid */}
@@ -102,7 +104,7 @@ export function MiniTrashBin() {
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-bold text-foreground truncate">
-              Thùng rác đã lọc
+              {tr("Thùng rác đã lọc", "Completed Trash")}
             </span>
             {count > 0 && (
               <span className="px-1.5 py-0.2 text-[10px] font-mono font-bold rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
@@ -111,7 +113,7 @@ export function MiniTrashBin() {
             )}
           </div>
           <span className="text-[10px] text-muted-foreground truncate block">
-            {count > 0 ? "Bấm xem & khôi phục khách" : "Chưa có khách nào bị đá"}
+            {count > 0 ? tr("Bấm xem & khôi phục khách", "Click to inspect or restore") : tr("Chưa có khách nào bị đá", "Trash is empty")}
           </span>
         </div>
       </div>
@@ -119,7 +121,7 @@ export function MiniTrashBin() {
       {/* Safety Badge hint */}
       <div className="flex items-center gap-1 text-[10px] text-muted-foreground/80 shrink-0 font-medium bg-muted/30 px-2 py-0.5 rounded-md border border-border/40">
         <ShieldCheck size={12} className="text-emerald-600 dark:text-emerald-400" />
-        <span className="hidden sm:inline">An toàn file</span>
+        <span className="hidden sm:inline">{tr("An toàn file", "File-safe")}</span>
       </div>
 
       {/* Floating Sparkle Pill on Impact */}

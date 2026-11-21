@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useAppStore } from "@/core/stores/useAppStore";
-import { modules } from "@/registry";
+import { modules, getLocalizedModule } from "@/registry";
 import { apiRequest } from "@/core/services/apiClient";
 import { socketService } from "@/core/services/socketService";
+import { useTranslation } from "@/core/lib/i18n";
 import {
   Search,
   ArrowRight,
@@ -39,6 +40,7 @@ export function SmartSearchBar() {
 
   const setActiveModule = useAppStore((s) => s.setActiveModule);
   const setActiveTab = useAppStore((s) => s.setActiveTab);
+  const { tr, lang } = useTranslation();
 
   // Fetch real resources dynamically for search indexing
   const fetchLiveResources = async () => {
@@ -99,14 +101,15 @@ export function SmartSearchBar() {
 
     // Core Modules / Apps
     modules.forEach((mod) => {
+      const localized = getLocalizedModule(mod, lang);
       list.push({
         id: `mod-${mod.id}`,
         moduleId: mod.id,
-        name: mod.name,
-        subName: mod.shortName,
-        description: mod.description,
+        name: localized.name,
+        subName: localized.shortName,
+        description: localized.description,
         category: mod.id === "resources" ? "resource" : "app",
-        categoryName: mod.id === "resources" ? "Kho Tài Nguyên" : "Ứng dụng",
+        categoryName: mod.id === "resources" ? tr("Kho Tài Nguyên", "Resources Hub") : tr("Ứng dụng", "App"),
         icon: mod.icon,
         tags: mod.tags,
         badge: mod.badge,
@@ -122,13 +125,16 @@ export function SmartSearchBar() {
     list.push({
       id: "feature-history",
       moduleId: "photo-picker",
-      name: "Lịch sử lọc ảnh (History)",
-      subName: "Nhật ký lọc ảnh",
-      description: "Xem lại danh sách các phiên lọc ảnh và xuất mã khách hàng đã thực hiện.",
+      name: tr("Lịch sử lọc ảnh (History)", "Photo Picker History"),
+      subName: tr("Nhật ký lọc ảnh", "Culling Log"),
+      description: tr(
+        "Xem lại danh sách các phiên lọc ảnh và xuất mã khách hàng đã thực hiện.",
+        "Review past photo picking sessions and exported customer code logs."
+      ),
       category: "app",
       categoryName: "Photo Picker Pro",
       icon: History,
-      tags: ["lịch sử", "history", "đã lọc", "nhật ký"],
+      tags: ["lịch sử", "history", "đã lọc", "nhật ký", "log", "sessions"],
       action: () => {
         setActiveModule("photo-picker");
         setActiveTab("history");
@@ -140,13 +146,16 @@ export function SmartSearchBar() {
     list.push({
       id: "feature-settings",
       moduleId: "system",
-      name: "Cài đặt hệ thống & Giao diện",
-      subName: "Cấu hình chung",
-      description: "Tùy chỉnh giao diện Dark/Light mode, tự động cập nhật và ngôn ngữ.",
+      name: tr("Cài đặt hệ thống & Giao diện", "System Settings & Appearance"),
+      subName: tr("Cấu hình chung", "General Settings"),
+      description: tr(
+        "Tùy chỉnh giao diện Dark/Light mode, tự động cập nhật và ngôn ngữ.",
+        "Customize Dark/Light theme, auto updates, and interface language."
+      ),
       category: "system",
-      categoryName: "Hệ thống",
+      categoryName: tr("Hệ thống", "System"),
       icon: Settings,
-      tags: ["cài đặt", "settings", "giao diện", "theme", "dark mode", "ngôn ngữ"],
+      tags: ["cài đặt", "settings", "giao diện", "theme", "dark mode", "ngôn ngữ", "language"],
       action: () => {
         setActiveModule("system");
         setIsOpen(false);
@@ -157,13 +166,16 @@ export function SmartSearchBar() {
     list.push({
       id: "feature-photo-counter",
       moduleId: "photo-counter",
-      name: "Thống kê",
-      subName: "Sản lượng & Tiến độ Studio",
-      description: "Thống kê số lượng ảnh hoàn thiện theo ngày, bóc tách thư mục sâu nhất và tổng hợp sản lượng.",
+      name: tr("Thống kê", "Photo Analytics"),
+      subName: tr("Sản lượng & Tiến độ Studio", "Studio Output & Progress"),
+      description: tr(
+        "Thống kê số lượng ảnh hoàn thiện theo ngày, bóc tách thư mục sâu nhất và tổng hợp sản lượng.",
+        "Track daily finished photo counts, extract deepest folders, and summarize studio throughput."
+      ),
       category: "app",
-      categoryName: "Công cụ Studio",
+      categoryName: tr("Công cụ Studio", "Studio Tools"),
       icon: BarChart3,
-      tags: ["thống kê", "sản lượng", "kpi", "đếm ảnh", "tháng", "tiến độ"],
+      tags: ["thống kê", "sản lượng", "kpi", "đếm ảnh", "tháng", "tiến độ", "analytics", "counter"],
       badge: "PRO",
       action: () => {
         setActiveModule("photo-counter");
@@ -181,7 +193,7 @@ export function SmartSearchBar() {
         subName: res.category,
         description: res.description,
         category: "resource",
-        categoryName: res.category || "Kho Tài Nguyên",
+        categoryName: res.category || tr("Kho Tài Nguyên", "Resources Hub"),
         icon: Sparkles,
         tags: [
           res.category,
@@ -199,7 +211,7 @@ export function SmartSearchBar() {
     });
 
     return list;
-  }, [liveResources, setActiveModule, setActiveTab]);
+  }, [liveResources, setActiveModule, setActiveTab, lang]);
 
   // Filter items
   const filteredItems = useMemo(() => {
@@ -259,12 +271,12 @@ export function SmartSearchBar() {
             if (!isOpen) setIsOpen(true);
           }}
           onKeyDown={handleKeyDown}
-          placeholder="Tìm ứng dụng, công cụ, tài nguyên"
+          placeholder={tr("Tìm ứng dụng, công cụ, tài nguyên", "Search apps, tools, resources")}
           className="w-full bg-transparent text-[12.5px] text-foreground placeholder:text-muted-foreground focus:outline-none"
         />
 
         {query ? (
-          <button aria-label="Đóng"
+          <button aria-label={tr("Đóng", "Clear")}
             onClick={() => {
               setQuery("");
               inputRef.current?.focus();
@@ -288,13 +300,13 @@ export function SmartSearchBar() {
         >
           {/* Quick Filter Tag Hints Bar */}
           <div className="px-3 py-2.5 border-b border-border flex items-center gap-1.5 overflow-x-auto text-xs text-muted-foreground shrink-0 custom-scrollbar">
-            <span className="text-[11px] text-muted-foreground shrink-0 pl-1 pr-0.5">Gợi ý</span>
+            <span className="text-[11px] text-muted-foreground shrink-0 pl-1 pr-0.5">{tr("Gợi ý", "Quick")}</span>
             {[
-              { label: "Photo Picker", q: "lọc ảnh" },
+              { label: "Photo Picker", q: tr("lọc ảnh", "photo picker") },
               { label: "Contact Sheet", q: "contact" },
               { label: "Convert RAW", q: "convert" },
-              { label: "Kho Tài Nguyên", q: "tài nguyên" },
-              { label: "Cài đặt", q: "cài đặt" },
+              { label: tr("Kho Tài Nguyên", "Resources"), q: tr("tài nguyên", "resources") },
+              { label: tr("Cài đặt", "Settings"), q: tr("cài đặt", "settings") },
             ].map((hint, idx) => (
               <button
                 key={idx}
@@ -314,9 +326,14 @@ export function SmartSearchBar() {
           <div className="flex-1 overflow-y-auto p-1.5 space-y-0.5 custom-scrollbar">
             {filteredItems.length === 0 ? (
               <div className="py-8 text-center text-muted-foreground">
-                <p className="text-xs font-medium text-foreground/80">Không tìm thấy kết quả cho "{query}"</p>
+                <p className="text-xs font-medium text-foreground/80">
+                  {tr(`Không tìm thấy kết quả cho "${query}"`, `No results found for "${query}"`)}
+                </p>
                 <p className="text-[11px] text-muted-foreground/85 mt-1">
-                  Thử tìm "lọc ảnh", "contact sheet", "convert", "tài nguyên"
+                  {tr(
+                    'Thử tìm "lọc ảnh", "contact sheet", "convert", "tài nguyên"',
+                    'Try searching "photo picker", "contact sheet", "convert", "resources"'
+                  )}
                 </p>
               </div>
             ) : (
@@ -380,8 +397,8 @@ export function SmartSearchBar() {
           {/* Footer hints */}
           <div className="px-4 py-2 border-t border-border flex items-center justify-between text-[11px] text-muted-foreground">
             <div className="flex items-center gap-3">
-              <span><kbd className="px-1.5 py-0.5 rounded-md bg-foreground/[0.06] text-[10px]">↑</kbd> <kbd className="px-1.5 py-0.5 rounded-md bg-foreground/[0.06] text-[10px]">↓</kbd> di chuyển</span>
-              <span><kbd className="px-1.5 py-0.5 rounded-md bg-foreground/[0.06] text-[10px]">↵</kbd> chọn</span>
+              <span><kbd className="px-1.5 py-0.5 rounded-md bg-foreground/[0.06] text-[10px]">↑</kbd> <kbd className="px-1.5 py-0.5 rounded-md bg-foreground/[0.06] text-[10px]">↓</kbd> {tr("di chuyển", "navigate")}</span>
+              <span><kbd className="px-1.5 py-0.5 rounded-md bg-foreground/[0.06] text-[10px]">↵</kbd> {tr("chọn", "select")}</span>
             </div>
             <span>DH Studio Pro</span>
           </div>

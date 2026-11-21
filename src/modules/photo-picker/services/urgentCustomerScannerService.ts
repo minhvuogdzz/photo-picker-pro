@@ -3,13 +3,14 @@ import { isPermissionGranted, requestPermission } from "@tauri-apps/plugin-notif
 import { useSettingsStore } from "@/core/stores/useSettingsStore";
 import { useNotificationStore } from "@/core/stores/useNotificationStore";
 import { useAuthStore } from "@/core/stores/useAuthStore";
+import { trText } from "../../../core/lib/i18n.ts";
 
 function getUserGreetingPrefix(): string {
   try {
     const session = useAuthStore.getState().session;
     const name = session?.name || session?.username || "";
     if (name.trim()) {
-      return `${name.trim()} ơii, `;
+      return trText(`${name.trim()} ơii, `, `Hey ${name.trim()}, `);
     }
   } catch {}
   return "";
@@ -212,7 +213,7 @@ class UrgentCustomerScannerService {
           for (const row of rows) {
             const evalResult = evaluateRow(row, conditions);
             if (evalResult.isKept) {
-              const custName = (row.values[jobCol] || "").trim() || `Khách dòng ${row.row}`;
+              const custName = (row.values[jobCol] || "").trim() || trText(`Khách dòng ${row.row}`, `Customer row ${row.row}`);
               urgentCustomers.push({
                 row: row.row,
                 tabTitle,
@@ -282,7 +283,10 @@ class UrgentCustomerScannerService {
     // Header MUST be DH STUDIO PRO, content only states number of urgent customers with friendly user greeting
     const title = "DH STUDIO PRO";
     const prefix = getUserGreetingPrefix();
-    const body = `${prefix}Khẩn cấp: Có ${result.urgentCount} khách tới hạn cần lọc gấp hôm nay!`;
+    const body = `${prefix}${trText(
+      `Khẩn cấp: Có ${result.urgentCount} khách tới hạn cần lọc gấp hôm nay!`,
+      `Urgent: ${result.urgentCount} customer(s) due for picking today!`
+    )}`;
 
     // 1. Send native OS notification (macOS / Windows)
     try {
@@ -338,7 +342,10 @@ class UrgentCustomerScannerService {
   public async sendTestNotification(): Promise<void> {
     const title = "DH STUDIO PRO";
     const prefix = getUserGreetingPrefix();
-    const body = `${prefix}Khẩn cấp: Có 5 khách tới hạn cần lọc gấp!`;
+    const body = `${prefix}${trText(
+      "Khẩn cấp: Có 5 khách tới hạn cần lọc gấp!",
+      "Urgent: 5 customer(s) due for picking urgently!"
+    )}`;
 
     // Save test alert to app Notification Center
     try {
@@ -351,7 +358,7 @@ class UrgentCustomerScannerService {
           {
             row: 14,
             tabTitle: "Edit 10/2026",
-            customerName: "Nguyễn Thu Hà - Váy cưới 1cc",
+            customerName: trText("Nguyễn Thu Hà - Váy cưới 1cc", "Nguyen Thu Ha - Wedding Dress 1cc"),
             actualStatus: "Chưa lọc",
             photoCode1: "IMG_0124",
             dueDate: "31/10/2026",
@@ -359,7 +366,7 @@ class UrgentCustomerScannerService {
           {
             row: 28,
             tabTitle: "Edit 10/2026",
-            customerName: "Lê Minh Tuấn - Phóng sự",
+            customerName: trText("Lê Minh Tuấn - Phóng sự", "Le Minh Tuan - Reportage"),
             actualStatus: "Chưa lọc",
             photoCode1: "DSC_9821",
             dueDate: "31/10/2026",
@@ -367,7 +374,7 @@ class UrgentCustomerScannerService {
           {
             row: 42,
             tabTitle: "Edit 10/2026",
-            customerName: "Phạm Thúy Vy - Baby studio",
+            customerName: trText("Phạm Thúy Vy - Baby studio", "Pham Thuy Vy - Baby studio"),
             actualStatus: "Chưa lọc",
             photoCode1: "VY_0052",
             dueDate: "30/10/2026",
@@ -375,7 +382,7 @@ class UrgentCustomerScannerService {
           {
             row: 55,
             tabTitle: "Edit 11/2026",
-            customerName: "Trần Bảo Anh - Gia đình 2cc",
+            customerName: trText("Trần Bảo Anh - Gia đình 2cc", "Tran Bao Anh - Family 2cc"),
             actualStatus: "Chưa lọc",
             photoCode1: "BA_0110",
             dueDate: "29/10/2026",
@@ -383,7 +390,7 @@ class UrgentCustomerScannerService {
           {
             row: 68,
             tabTitle: "Edit 11/2026",
-            customerName: "Vũ Hoàng Long - Tiệc cưới",
+            customerName: trText("Vũ Hoàng Long - Tiệc cưới", "Vu Hoang Long - Wedding Party"),
             actualStatus: "Chưa lọc",
             photoCode1: "LONG_0332",
             dueDate: "31/10/2026",

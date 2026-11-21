@@ -28,7 +28,7 @@ export function SessionExpiredDialog({
   const setOfflineGracePeriodExpired = useAuthStore((s) => s.setOfflineGracePeriodExpired);
   const setSessionTimeoutExpired = useAuthStore((s) => s.setSessionTimeoutExpired);
   const { totalDurationMinutes } = useSessionTimeout();
-  const { t } = useTranslation();
+  const { t, tr } = useTranslation();
   const [countdown, setCountdown] = useState(3);
 
   const isUnlimited = isUnlimitedSession(session);
@@ -101,13 +101,20 @@ export function SessionExpiredDialog({
           {/* Header Info */}
           <div className="space-y-2.5">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-[11px] font-extrabold uppercase tracking-widest">
-              Bảo vệ phiên làm việc
+              {tr("Bảo vệ phiên làm việc", "Session Protection")}
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
-              Hết Thời Gian Phiên
+              {tr("Hết Thời Gian Phiên", "Session Timed Out")}
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed px-1">
-              Phiên làm việc đã kết thúc sau <span className="font-bold text-amber-600 dark:text-amber-400">{totalDurationMinutes || 10} phút</span> làm việc liên tục. Hệ thống đã tự động lưu trạng thái và bảo vệ tài khoản an toàn.
+              {tr("Phiên làm việc đã kết thúc sau", "Your session ended after")}{" "}
+              <span className="font-bold text-amber-600 dark:text-amber-400">
+                {totalDurationMinutes || 10} {tr("phút", "min")}
+              </span>{" "}
+              {tr(
+                "làm việc liên tục. Hệ thống đã tự động lưu trạng thái và bảo vệ tài khoản an toàn.",
+                "of continuous work. Your state has been saved to keep your account protected."
+              )}
             </p>
           </div>
 
@@ -115,18 +122,18 @@ export function SessionExpiredDialog({
           <div className="grid grid-cols-2 gap-2.5 py-1">
             <div className="p-3 rounded-xl bg-muted/40 border border-border/80 text-left">
               <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">
-                Thời lượng phiên
+                {tr("Thời lượng phiên", "Session Duration")}
               </span>
               <span className="text-sm font-mono font-black text-foreground mt-0.5 block">
-                {totalDurationMinutes || 10} phút
+                {totalDurationMinutes || 10} {tr("phút", "min")}
               </span>
             </div>
             <div className="p-3 rounded-xl bg-muted/40 border border-border/80 text-left">
               <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">
-                Trạng thái phiên
+                {tr("Trạng thái phiên", "Session Status")}
               </span>
               <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block flex items-center gap-1">
-                <ShieldCheck size={14} /> Đã làm mới
+                <ShieldCheck size={14} /> {tr("Đã làm mới", "Refreshed")}
               </span>
             </div>
           </div>
@@ -138,10 +145,13 @@ export function SessionExpiredDialog({
               className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:via-orange-400 hover:to-amber-500 text-white font-extrabold text-sm sm:text-base shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 cursor-pointer"
             >
               <LogIn size={18} />
-              Đăng nhập lại ngay
+              {tr("Đăng nhập lại ngay", "Sign In Again Now")}
             </button>
             <p className="text-[11px] text-muted-foreground/80">
-              Thông tin đăng nhập đã được ghi nhớ sẵn để bạn tiếp tục phiên mới.
+              {tr(
+                "Thông tin đăng nhập đã được ghi nhớ sẵn để bạn tiếp tục phiên mới.",
+                "Your login credentials are saved so you can start a new session quickly."
+              )}
             </p>
           </div>
         </div>
@@ -168,13 +178,13 @@ export function SessionExpiredDialog({
     },
     error: {
       icon: <AlertTriangle size={40} className="text-warning" />,
-      title: "Lỗi khởi tạo",
-      description: errorMessage || "Đã xảy ra lỗi không mong muốn.",
+      title: tr("Lỗi khởi tạo", "Initialization Error"),
+      description: errorMessage || tr("Đã xảy ra lỗi không mong muốn.", "An unexpected error occurred."),
     },
     suspended: {
       icon: <XCircle size={40} className="text-destructive" />,
-      title: "Tài khoản bị khoá",
-      description: "Tài khoản của bạn đã bị khoá.",
+      title: tr("Tài khoản bị khoá", "Account Suspended"),
+      description: tr("Tài khoản của bạn đã bị khoá.", "Your account has been suspended."),
     },
   }[reason as "device" | "subscription" | "offline" | "error" | "suspended"];
 
@@ -186,13 +196,13 @@ export function SessionExpiredDialog({
             onClick={handleChangePassword}
             className="btn-outline flex-1 py-3 text-sm font-bold"
           >
-            Đổi mật khẩu
+            {tr("Đổi mật khẩu", "Change Password")}
           </button>
           <button
             onClick={handleLoginAgain}
             className="btn-primary flex-1 py-3 text-sm font-bold"
           >
-            Để sau
+            {tr("Để sau", "Later")}
           </button>
         </div>
       );
@@ -201,7 +211,7 @@ export function SessionExpiredDialog({
     if (reason === "suspended" || reason === "subscription") {
       return (
         <div className="text-sm font-bold text-muted-foreground w-full py-3 text-center">
-          Tự động rời đi sau {countdown}s...
+          {tr(`Tự động rời đi sau ${countdown}s...`, `Signing out in ${countdown}s...`)}
         </div>
       );
     }

@@ -36,3 +36,19 @@
    - `initContactSheetBridge()` trong `src/App.tsx` phải luôn được đăng ký ở tầng gốc (không phụ thuộc việc người dùng đã mở tab Contact the Sheet hay chưa) và gọi `bridge_mark_ready` sau khi gắn listener.
 4. **Bảo mật cầu nối:** `bridge.rs` chỉ tạo socket quyền `0600` trong thư mục `0700` và luôn kiểm tra `uid` của tiến trình kết nối (`getpeereid` / `SO_PEERCRED`).
 5. **Kiểm tra sau khi sửa:** Luôn chạy `npm test`, `npm run build`, và `cargo test --manifest-path src-tauri/Cargo.toml`, đồng thời cập nhật `CHANGELOG.md` và `docs/DH_BRIDGE.md` nếu thay đổi hành vi cầu nối.
+
+## Nguyên tắc đồng bộ ngôn ngữ song song (VI <-> EN)
+
+Mọi thay đổi UI, thông báo, lỗi người dùng, cấu hình, menu khay hệ thống (Tray) hoặc ghi chú phát hành trong DH Studio Pro **bắt buộc phải hỗ trợ song ngữ Việt - Anh (`vi` <-> `en`) ngay tại thời điểm sửa code**:
+
+1. **Trong React component (`.tsx`):** Luôn dùng `useTranslation()` (`t()`, `tr(vi, en)`, `lang`), `getLocaleCode(lang)` để định dạng ngày/số, và `localizeBackendMessage(..., lang)` cho thông điệp trả về từ Rust/backend. Tuyệt đối không hardcode chuỗi tiếng Việt thuần trong JSX, `title`, `placeholder`, `aria-label`, `alert`/`confirm`, hay toast/banner. Nhớ đưa `lang` vào dependency array của `useMemo`/`useCallback` nếu giá trị trả về có text dịch.
+2. **Trong TypeScript service, hook và Zustand store (`.ts`):** Dùng `trText(vi, en)`, `translate(key)`, `getCurrentLanguage()`, `getLocaleCode()` import qua **đường dẫn tương đối có đuôi `.ts`** (ví dụ `../../../core/lib/i18n.ts`) để tương thích với `node --experimental-strip-types --test`. Giữ nguyên mặc định `defaultSettings.language === "vi"` trong `src/core/stores/useSettingsStore.ts` khi không có `localStorage`.
+3. **Từ điển trung tâm, Release Notes & Registry:**
+   - Thêm key vào cả `translations.vi` và `translations.en` trong `src/core/lib/i18n.ts` (được kiểm tra khớp key lúc compile).
+   - Khi thêm phiên bản mới vào `src/core/data/versionHistory.ts`, bắt buộc điền đầy đủ `title` + `titleEn` và `items` + `itemsEn`.
+   - Giữ thông tin song ngữ trong `src/registry.ts` và `getAvailableGeminiModels(lang)` (`src/core/services/aiSettingsService.ts`).
+4. **Native Tray & đồng bộ đa cửa sổ:** Nếu thêm/sửa mục menu Tray hoặc thông báo từ Rust, cập nhật đồng thời `build_tray_menu` / `update_tray_language` (`src-tauri/src/tray.rs`) và `localizeBackendMessage()` (`src/core/lib/i18n.ts`), đồng thời giữ nguyên cơ chế đồng bộ `app-language-changed` + `tray-panel-shown` trong `src/modules/tray-panel/TrayControlPanel.tsx`.
+5. **Không dịch các token dữ liệu nghiệp vụ (Domain Data Tokens):** Giữ nguyên tiếng Việt cho chuỗi so khớp Google Sheet (`"Chưa lọc"`, `"Đã lọc"`, `"Đang lọc"`, `"Chờ lọc"`, `"Chưa chụp"`, `"Đang xử lý"`, `"Chưa sửa"`, `"DS Khách"`, `KNOWN_SEMANTIC_ALIASES` trong `sheetDiscoveryService.ts`, `codeHeaderKeywords` trong `sheetExtractorService.ts`, `STANDARD_19_STUDIO_MAPPINGS` trong `useContactSheetStore.ts`), heuristic phân tích tên thư mục (`"màu final"`, `"ảnh gốc"`, `"file gốc"`, `"cọ"`, `"giáo trình"`, `"tài liệu"`), tiền tố mã lỗi (`INVALID_SHEET_URL: `, `GOOGLE_TOKEN_EXPIRED: `, v.v.), và hợp đồng bridge v1 (`contactSheetBridge.ts`).
+6. **Kiểm tra bắt buộc trước khi kết thúc tác vụ UI/tính năng:**
+   - `node --experimental-strip-types --test tests/i18n/i18n-sync.test.ts` (phải đạt 100%, 0 chuỗi tiếng Việt bị bỏ quên trong `src/**/*.tsx`; nếu là token nghiệp vụ mới thực sự dùng để match Sheet/thư mục thì mới cân nhắc thêm vào `DOMAIN_DATA_TOKENS` trong file test này).
+   - `npm run build` (`tsc && vite build`) và `cargo test --manifest-path src-tauri/Cargo.toml`.

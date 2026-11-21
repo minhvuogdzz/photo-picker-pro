@@ -8,6 +8,7 @@ import { apiRequest, API_BASE_URL } from "@/core/services/apiClient";
 import { save } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
+import { useTranslation } from "@/core/lib/i18n";
 import {
   Layers,
   Search,
@@ -56,6 +57,7 @@ export interface ResourceItem {
 }
 
 export default function ResourcesApp() {
+  const { tr, lang } = useTranslation();
   const setActiveModule = useAppStore((s) => s.setActiveModule);
   const session = useAuthStore((s) => s.session);
   const [resources, setResources] = useState<ResourceItem[]>([]);
@@ -111,7 +113,7 @@ export default function ResourcesApp() {
   const categories = useMemo(() => {
     const catMap = new Map<string, number>();
     resources.forEach((r) => {
-      const c = (r.category || "Tài nguyên").trim();
+      const c = (r.category || tr("Tài nguyên", "Resources")).trim();
       if (c) {
         catMap.set(c, (catMap.get(c) || 0) + 1);
       }
@@ -124,14 +126,14 @@ export default function ResourcesApp() {
       if (lower.includes("brush") || lower.includes("cọ")) return Palette;
       if (lower.includes("panel")) return Layers;
       if (lower.includes("overlay") || lower.includes("texture")) return FileCode;
-      if (lower.includes("giáo trình") || lower.includes("ebook") || lower.includes("tài liệu")) return BookOpen;
+      if (lower.includes("giáo trình") || lower.includes("ebook") || lower.includes("tài liệu") || lower.includes("guide")) return BookOpen;
       return Layers;
     };
 
     const list = [
       {
         id: "all",
-        label: "Tất cả tài nguyên",
+        label: tr("Tất cả tài nguyên", "All Resources"),
         count: resources.length,
         icon: Layers,
       },
@@ -147,7 +149,7 @@ export default function ResourcesApp() {
     });
 
     return list;
-  }, [resources]);
+  }, [resources, lang]);
 
   // Filter resources
   const filteredResources = useMemo(() => {
@@ -193,7 +195,7 @@ export default function ResourcesApp() {
     // Case 1: Google Drive / Cloud Link
     if (item.downloadType === "DRIVE") {
       if (!item.downloadUrl && item.hasDownloadUrl === false) {
-        setErrorMessage("Liên kết tải chưa khả dụng.");
+        setErrorMessage(tr("Liên kết tải chưa khả dụng.", "Download link is not available yet."));
         return;
       }
       setDownloadStatus("downloading");
@@ -210,14 +212,14 @@ export default function ResourcesApp() {
           targetUrl = linkData?.downloadUrl;
         } catch (err: any) {
           setDownloadStatus("error");
-          setErrorMessage(err?.message || "Không lấy được liên kết tải. Vui lòng thử lại.");
+          setErrorMessage(err?.message || tr("Không lấy được liên kết tải. Vui lòng thử lại.", "Failed to retrieve download link. Please try again."));
           return;
         }
       }
 
       if (!targetUrl) {
         setDownloadStatus("error");
-        setErrorMessage("Liên kết tải chưa khả dụng.");
+        setErrorMessage(tr("Liên kết tải chưa khả dụng.", "Download link is not available yet."));
         return;
       }
 
@@ -248,7 +250,7 @@ export default function ResourcesApp() {
       // Open Native Save Dialog
       const selectedPath = await save({
         defaultPath: defaultFilename,
-        title: "Chọn thư mục lưu tài nguyên",
+        title: tr("Chọn thư mục lưu tài nguyên", "Choose save location"),
         filters: [
           {
             name: `${cleanFormat.toUpperCase()} Files`,
@@ -287,14 +289,17 @@ export default function ResourcesApp() {
       if (!response.ok) {
         clearInterval(progressTimer);
         if (response.status === 401) {
-          throw new Error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại rồi tải lại.");
+          throw new Error(tr("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại rồi tải lại.", "Session expired. Please sign in again and retry."));
         }
         if (response.status === 403) {
           throw new Error(
-            "Bạn cần gia hạn gói Kho Tài Nguyên hoặc Gói Toàn Hệ Sinh Thái để tải tài nguyên này.",
+            tr(
+              "Bạn cần gia hạn gói Kho Tài Nguyên hoặc Gói Toàn Hệ Sinh Thái để tải tài nguyên này.",
+              "You need an active Creative Resources or Full Ecosystem plan to download this resource."
+            ),
           );
         }
-        throw new Error(`Tải tệp thất bại (HTTP ${response.status})`);
+        throw new Error(tr(`Tải tệp thất bại (HTTP ${response.status})`, `Download failed (HTTP ${response.status})`));
       }
 
       setDownloadProgress(90);
@@ -319,7 +324,7 @@ export default function ResourcesApp() {
     } catch (err: any) {
       console.error("Direct download error:", err);
       setDownloadStatus("error");
-      setErrorMessage(err?.message || "Đã xảy ra lỗi trong quá trình lưu tệp.");
+      setErrorMessage(err?.message || tr("Đã xảy ra lỗi trong quá trình lưu tệp.", "An error occurred while saving the file."));
     }
   };
 
@@ -336,7 +341,7 @@ export default function ResourcesApp() {
 
   // If user does not have access (trial expired and not purchased)
   if (!appAccess.hasAccess) {
-    return <AppLockGateScreen appId="resources" appName="Kho Tài Nguyên Creative" />;
+    return <AppLockGateScreen appId="resources" appName={tr("Kho Tài Nguyên Creative", "Creative Resources Hub")} />;
   }
 
   return (
@@ -348,7 +353,7 @@ export default function ResourcesApp() {
           <button
             onClick={() => setActiveModule("launcher")}
             className="w-7 h-7 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer border border-border"
-            title="Quay lại Launcher" aria-label="Quay lại Launcher"
+            title={tr("Quay lại Launcher", "Back to Launcher")} aria-label={tr("Quay lại Launcher", "Back to Launcher")}
           >
             <ArrowLeft size={14} />
           </button>
@@ -359,13 +364,16 @@ export default function ResourcesApp() {
 
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xs font-semibold text-foreground tracking-tight">Kho Tài Nguyên Creative</h1>
+              <h1 className="text-xs font-semibold text-foreground tracking-tight">{tr("Kho Tài Nguyên Creative", "Creative Resources Hub")}</h1>
               <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20">
                 Pro Vault
               </span>
             </div>
             <p className="text-[10px] text-muted-foreground">
-              Kho tài nguyên tuyển chọn Actions, Presets, Brushes và tài liệu thực chiến ({resources.length} mục)
+              {tr(
+                `Kho tài nguyên tuyển chọn Actions, Presets, Brushes và tài liệu thực chiến (${resources.length} mục)`,
+                `Curated Photoshop Actions, Presets, Brushes, and field guides (${resources.length} items)`
+              )}
             </p>
           </div>
         </div>
@@ -377,7 +385,7 @@ export default function ResourcesApp() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Tìm tài nguyên, hashtag..."
+            placeholder={tr("Tìm tài nguyên, hashtag...", "Search resources, #tags...")}
             className="w-full bg-background border border-border rounded-lg pl-7 pr-2.5 py-1 text-xs text-foreground placeholder:text-muted-foreground/80 focus:outline-none focus:border-primary/50 transition-colors shadow-sm"
           />
         </div>
@@ -413,18 +421,18 @@ export default function ResourcesApp() {
         {isLoading ? (
           <div className="h-64 flex flex-col items-center justify-center text-center text-muted-foreground">
             <Loader2 size={24} className="animate-spin text-amber-500 mb-2" />
-            <p className="text-xs">Đang đồng bộ dữ liệu từ Kho Tài Nguyên...</p>
+            <p className="text-xs">{tr("Đang đồng bộ dữ liệu từ Kho Tài Nguyên...", "Syncing Creative Resources...")}</p>
           </div>
         ) : filteredResources.length === 0 ? (
           <div className="h-64 flex flex-col items-center justify-center text-center">
             <div className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center text-muted-foreground mb-2">
               <Search size={18} />
             </div>
-            <p className="text-xs font-semibold text-foreground">Không tìm thấy tài nguyên nào</p>
+            <p className="text-xs font-semibold text-foreground">{tr("Không tìm thấy tài nguyên nào", "No matching resources found")}</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
               {resources.length === 0
-                ? "Chưa có tài nguyên nào được tải lên từ Admin Dashboard."
-                : "Thử tìm kiếm với từ khóa khác hoặc chuyển danh mục."}
+                ? tr("Chưa có tài nguyên nào được tải lên từ Admin Dashboard.", "No resources uploaded from Admin Dashboard yet.")
+                : tr("Thử tìm kiếm với từ khóa khác hoặc chuyển danh mục.", "Try a different keyword or switch categories.")}
             </p>
           </div>
         ) : (
@@ -499,7 +507,7 @@ export default function ResourcesApp() {
                     className="h-7 flex items-center gap-1 px-2.5 rounded-lg bg-muted hover:bg-muted/80 text-foreground font-medium text-[11px] border border-border hover:border-primary/30 transition-colors cursor-pointer"
                   >
                     <Download size={11} className="text-muted-foreground" />
-                    <span>Chi tiết</span>
+                    <span>{tr("Chi tiết", "Details")}</span>
                   </button>
                 </div>
               </div>
@@ -522,7 +530,7 @@ export default function ResourcesApp() {
               <button
                 onClick={handleCloseModal}
                 className="w-6 h-6 rounded-md bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground flex items-center justify-center cursor-pointer transition-colors"
-                title="Đóng" aria-label="Đóng"
+                title={tr("Đóng", "Close")} aria-label={tr("Đóng", "Close")}
               >
                 <X size={13} />
               </button>
@@ -540,21 +548,21 @@ export default function ResourcesApp() {
             {/* 3-Column Info Box */}
             <div className="grid grid-cols-3 gap-2 p-2.5 rounded-lg bg-muted/40 border border-border mb-4 text-center">
               <div>
-                <span className="text-[10px] text-muted-foreground block mb-0.5">Định dạng</span>
+                <span className="text-[10px] text-muted-foreground block mb-0.5">{tr("Định dạng", "Format")}</span>
                 <span className="text-xs font-semibold text-foreground font-mono uppercase">
                   {activeItem.fileFormat?.startsWith(".") ? activeItem.fileFormat : `.${activeItem.fileFormat}`}
                 </span>
               </div>
 
               <div>
-                <span className="text-[10px] text-muted-foreground block mb-0.5">Dung lượng</span>
+                <span className="text-[10px] text-muted-foreground block mb-0.5">{tr("Dung lượng", "Size")}</span>
                 <span className="text-xs font-semibold text-foreground font-mono">
                   {activeItem.size || "0 MB"}
                 </span>
               </div>
 
               <div>
-                <span className="text-[10px] text-muted-foreground block mb-0.5">Tác giả</span>
+                <span className="text-[10px] text-muted-foreground block mb-0.5">{tr("Tác giả", "Author")}</span>
                 <span className="text-xs font-semibold text-foreground truncate block">
                   {activeItem.author || "MVD Academy"}
                 </span>
@@ -567,7 +575,7 @@ export default function ResourcesApp() {
                 <div className="flex items-center justify-between text-xs font-semibold text-primary">
                   <div className="flex items-center gap-1.5">
                     <Loader2 size={13} className="animate-spin" />
-                    <span>Đang tải xuống tài nguyên...</span>
+                    <span>{tr("Đang tải xuống tài nguyên...", "Downloading resource...")}</span>
                   </div>
                   <span>{downloadProgress}%</span>
                 </div>
@@ -580,7 +588,7 @@ export default function ResourcesApp() {
                   />
                 </div>
                 <p className="text-[10px] text-muted-foreground truncate">
-                  Đang ghi file vào máy tính của bạn...
+                  {tr("Đang ghi file vào máy tính của bạn...", "Saving file to your computer...")}
                 </p>
               </div>
             )}
@@ -589,12 +597,12 @@ export default function ResourcesApp() {
               <div className="mb-4 p-3 rounded-lg bg-primary/10 border border-primary/20 space-y-2 animate-scale-in">
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
                   <CheckCircle2 size={14} className="text-primary shrink-0" />
-                  <span>Tải về thành công!</span>
+                  <span>{tr("Tải về thành công!", "Download Complete!")}</span>
                 </div>
 
                 {savedFilePath ? (
                   <div className="text-[11px] text-muted-foreground space-y-1">
-                    <span>Đã lưu tại:</span>
+                    <span>{tr("Đã lưu tại:", "Saved to:")}</span>
                     <div className="p-2 rounded-md bg-muted/50 border border-border font-mono text-[10px] text-foreground break-all select-all flex items-center gap-1.5">
                       <FolderOpen size={12} className="text-primary shrink-0" />
                       <span className="truncate">{savedFilePath}</span>
@@ -602,7 +610,7 @@ export default function ResourcesApp() {
                   </div>
                 ) : (
                   <p className="text-[11px] text-muted-foreground">
-                    Đã mở trang tải về Google Drive trên trình duyệt của bạn.
+                    {tr("Đã mở trang tải về Google Drive trên trình duyệt của bạn.", "Opened Google Drive download link in your browser.")}
                   </p>
                 )}
               </div>
@@ -611,7 +619,7 @@ export default function ResourcesApp() {
             {downloadStatus === "error" && (
               <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2">
                 <X size={14} className="shrink-0" />
-                <span>{errorMessage || "Đã xảy ra lỗi trong quá trình tải về."}</span>
+                <span>{errorMessage || tr("Đã xảy ra lỗi trong quá trình tải về.", "An error occurred during download.")}</span>
               </div>
             )}
 
@@ -624,7 +632,7 @@ export default function ResourcesApp() {
                     className="flex-1 h-9 rounded-lg bg-muted hover:bg-muted/80 text-foreground font-medium text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 border border-border"
                   >
                     <FolderOpen size={13} className="text-primary" />
-                    <span>Mở thư mục</span>
+                    <span>{tr("Mở thư mục", "Show Folder")}</span>
                   </button>
 
                   <button
@@ -632,7 +640,7 @@ export default function ResourcesApp() {
                     className="flex-1 h-9 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs shadow-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <CheckCircle2 size={13} />
-                    <span>Hoàn tất</span>
+                    <span>{tr("Hoàn tất", "Done")}</span>
                   </button>
                 </>
               ) : (
@@ -641,7 +649,7 @@ export default function ResourcesApp() {
                     onClick={handleCloseModal}
                     className="flex-1 h-9 rounded-lg bg-muted hover:bg-muted/80 text-foreground font-medium text-xs transition-colors cursor-pointer border border-border"
                   >
-                    Đóng
+                    {tr("Đóng", "Close")}
                   </button>
 
                   <button
@@ -652,22 +660,22 @@ export default function ResourcesApp() {
                     {downloadStatus === "downloading" ? (
                       <>
                         <Loader2 size={13} className="animate-spin" />
-                        Đang tải {downloadProgress}%
+                        {tr(`Đang tải ${downloadProgress}%`, `Downloading ${downloadProgress}%`)}
                       </>
                     ) : downloadStatus === "picking" ? (
                       <>
                         <HardDrive size={13} className="animate-pulse" />
-                        Đang chọn thư mục...
+                        {tr("Đang chọn thư mục...", "Choosing folder...")}
                       </>
                     ) : activeItem.downloadType === "DRIVE" ? (
                       <>
                         <ExternalLink size={13} />
-                        Mở Google Drive
+                        {tr("Mở Google Drive", "Open Google Drive")}
                       </>
                     ) : (
                       <>
                         <Download size={13} />
-                        Tải về ngay
+                        {tr("Tải về ngay", "Download Now")}
                       </>
                     )}
                   </button>

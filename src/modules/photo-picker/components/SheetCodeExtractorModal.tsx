@@ -24,6 +24,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useAppStore } from "@/core/stores/useAppStore";
 import { useAuthStore } from "@/core/stores/useAuthStore";
+import { useTranslation } from "@/core/lib/i18n";
 import {
   useContactSheetStore,
   DEFAULT_PRODUCTION_PROFILE,
@@ -90,6 +91,7 @@ const readSavedExtractTabs = (): string[] | null => {
 };
 
 export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract" }: Props) {
+  const { tr, lang } = useTranslation();
   const inputFolders = useAppStore((s) => s.inputFolders);
   const selectedInputFolders = useAppStore((s) => s.selectedInputFolders);
   const selectSingleInputFolder = useAppStore((s) => s.selectSingleInputFolder);
@@ -449,7 +451,10 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
       setFailedTabs(failed);
       if (loaded.length === 0 && failed.length > 0) {
         setErrorMessage(
-          `Không tải được dữ liệu từ Tab: ${failed.join(", ")}. Hãy chắc chắn tài khoản Google của bạn đã được cấp quyền xem bảng tính.\n${firstError}`
+          tr(
+            `Không tải được dữ liệu từ Tab: ${failed.join(", ")}. Hãy chắc chắn tài khoản Google của bạn đã được cấp quyền xem bảng tính.\n${firstError}`,
+            `Could not load data from tab(s): ${failed.join(", ")}. Ensure your Google account has view permission.\n${firstError}`
+          )
         );
       }
       return loaded;
@@ -506,7 +511,12 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
   const runExtraction = async (options: { force?: boolean; silent?: boolean } = {}) => {
     if (!profile || !profile.spreadsheetId) {
       if (!options.silent) {
-        setErrorMessage("Chưa liên kết Google Sheet. Vui lòng dán link Google Sheet vào ô trên và nhấn 'Liên kết Sheet'.");
+        setErrorMessage(
+          tr(
+            "Chưa liên kết Google Sheet. Vui lòng dán link Google Sheet vào ô trên và nhấn 'Liên kết Sheet'.",
+            "Google Sheet not linked. Paste your Google Sheet URL above and click 'Link Sheet'."
+          )
+        );
       }
       return;
     }
@@ -517,12 +527,12 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
       setFailedTabs([]);
       setExtractionResult(null);
       setSelectedColumnLetters(new Set());
-      if (!options.silent) setErrorMessage("Vui lòng tích chọn ít nhất một Tab làm việc để dò tìm.");
+      if (!options.silent) setErrorMessage(tr("Vui lòng tích chọn ít nhất một Tab làm việc để dò tìm.", "Please check at least one sheet tab to search."));
       return;
     }
 
     if (!targetFolderName && !options.silent) {
-      setErrorMessage("Vui lòng nhập hoặc chọn một thư mục ảnh đầu vào để đối chiếu.");
+      setErrorMessage(tr("Vui lòng nhập hoặc chọn một thư mục ảnh đầu vào để đối chiếu.", "Please enter or select an input photo folder to match."));
       return;
     }
 
@@ -557,7 +567,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
       const selected = await open({
         directory: true,
         multiple: false,
-        title: "Chọn thư mục chụp cần lấy mã ảnh",
+        title: tr("Chọn thư mục chụp cần lấy mã ảnh", "Select photo folder to extract codes"),
       });
       if (selected && typeof selected === "string") {
         setSelectedFolder(selected);
@@ -582,7 +592,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
         setReloadToken((t) => t + 1);
       }
     } catch (err: any) {
-      setErrorMessage(`Lỗi kết nối Google: ${err.message || err}`);
+      setErrorMessage(tr(`Lỗi kết nối Google: ${err.message || err}`, `Google connection error: ${err.message || err}`));
     } finally {
       setIsConnectingGoogle(false);
     }
@@ -600,7 +610,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
       setSelectedColumnLetters(new Set());
     } catch (err: any) {
       console.error("Disconnect Google error:", err);
-      setErrorMessage("Lỗi khi đăng xuất Google: " + (err.message || String(err)));
+      setErrorMessage(tr("Lỗi khi đăng xuất Google: ", "Google sign-out error: ") + (err.message || String(err)));
     }
   };
 
@@ -621,13 +631,18 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
   const handleApplySheetUrl = async (customUrl?: string) => {
     const rawUrl = (customUrl !== undefined ? customUrl : sheetUrlInput).trim();
     if (!rawUrl) {
-      setErrorMessage("Vui lòng dán link Google Sheet (URL) hoặc nhập mã Spreadsheet ID.");
+      setErrorMessage(tr("Vui lòng dán link Google Sheet (URL) hoặc nhập mã Spreadsheet ID.", "Please paste a Google Sheet URL or enter the Spreadsheet ID."));
       return;
     }
 
     const sheetId = extractSpreadsheetId(rawUrl);
     if (!sheetId || sheetId.length < 15) {
-      setErrorMessage("Link Google Sheet không hợp lệ. Vui lòng dán đầy đủ đường link (ví dụ: https://docs.google.com/spreadsheets/d/...)");
+      setErrorMessage(
+        tr(
+          "Link Google Sheet không hợp lệ. Vui lòng dán đầy đủ đường link (ví dụ: https://docs.google.com/spreadsheets/d/...)",
+          "Invalid Google Sheet link. Please paste the full URL (e.g., https://docs.google.com/spreadsheets/d/...)"
+        )
+      );
       return;
     }
 
@@ -681,7 +696,11 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
     } catch (err: any) {
       console.error("Failed to link Google Sheet:", err);
       setErrorMessage(
-        err.message || "Không thể kết nối hoặc đọc Google Sheet này. Hãy chắc chắn tài khoản Google của bạn đã được cấp quyền xem/sửa bảng tính."
+        err.message ||
+          tr(
+            "Không thể kết nối hoặc đọc Google Sheet này. Hãy chắc chắn tài khoản Google của bạn đã được cấp quyền xem/sửa bảng tính.",
+            "Could not connect or read this Google Sheet. Make sure your Google account has view/edit permission."
+          )
       );
     } finally {
       setIsApplyingSheet(false);
@@ -694,7 +713,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
     saveProfile({
       ...profile,
       spreadsheetId: "",
-      spreadsheetTitle: "Chưa liên kết",
+      spreadsheetTitle: tr("Chưa liên kết", "Unlinked"),
       updatedAt: new Date().toISOString(),
     });
     setSheetUrlInput("");
@@ -793,7 +812,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
       if (analysis.columns && analysis.columns.length > 0) {
         const mapped = analysis.columns.map((c) => ({
           letter: c.letter,
-          header: c.headerName || `Cột ${c.letter}`,
+          header: c.headerName || tr(`Cột ${c.letter}`, `Col ${c.letter}`),
         }));
         setScannedColumns(mapped);
       }
@@ -807,7 +826,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
       // Fallback to active profile mappings
       const fromMappings = profile.fieldMappings.map((m) => ({
         letter: m.columnLetter,
-        header: m.columnHeader || `Cột ${m.columnLetter}`,
+        header: m.columnHeader || tr(`Cột ${m.columnLetter}`, `Col ${m.columnLetter}`),
       }));
       setScannedColumns(fromMappings);
     } finally {
@@ -827,9 +846,9 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
 
     return STANDARD_LETTERS.map((letter) => ({
       letter,
-      header: headerMap.get(letter) || `Cột ${letter}`,
+      header: headerMap.get(letter) || tr(`Cột ${letter}`, `Col ${letter}`),
     }));
-  }, [scannedColumns, profile?.fieldMappings]);
+  }, [scannedColumns, profile?.fieldMappings, lang]);
 
   // Tab 2: Save configuration for selected tab
   const handleSaveTabConfig = () => {
@@ -880,16 +899,16 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
     };
 
     // 1. Tên file (H - Tên file)
-    upsertField("JOB_FOLDER_NAME", configJobFolderCol, "Tên file", "READ_ONLY", "SET_IF_EMPTY");
+    upsertField("JOB_FOLDER_NAME", configJobFolderCol, tr("Tên file", "File Name"), "READ_ONLY", "SET_IF_EMPTY");
 
     // 2. Mã ảnh chọn (1) (I - Mã ảnh chọn (1))
-    upsertField("SELECTED_IMAGE_CODES_PRIMARY", configCodeCol1, "Mã ảnh chọn (1)", "READ_ONLY", "SET_IF_EMPTY");
+    upsertField("SELECTED_IMAGE_CODES_PRIMARY", configCodeCol1, tr("Mã ảnh chọn (1)", "Selected Codes (1)"), "READ_ONLY", "SET_IF_EMPTY");
 
     // 3. Mã ảnh chọn (2) (J - Mã ảnh chọn (2))
     upsertField(
       "SELECTED_IMAGE_CODES_SECONDARY",
       configCodeCol2,
-      "Mã ảnh chọn (2)",
+      tr("Mã ảnh chọn (2)", "Selected Codes (2)"),
       configCodeCol2 === "NONE" || configCodeCol2Permission === "IGNORE" ? "IGNORE" : "READ_ONLY",
       "SET_IF_EMPTY"
     );
@@ -898,7 +917,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
     upsertField(
       "PHOTO_PICK_STATUS",
       configStatusCol,
-      "Trạng Thái 1",
+      tr("Trạng Thái 1", "Status 1"),
       configStatusCol === "NONE" ? "IGNORE" : configStatusPermission,
       configStatusWritePolicy
     );
@@ -975,13 +994,13 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
             </div>
             <div>
               <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                Kết nối & Truy xuất Google Sheet
+                {tr("Kết nối & Truy xuất Google Sheet", "Connect & Extract Google Sheet")}
                 <span className="text-[10px] font-normal px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                  Lọc ảnh Studio
+                  {tr("Lọc ảnh Studio", "Studio Photo Picker")}
                 </span>
               </h2>
               <p className="text-[11px] text-muted-foreground">
-                Tự động lấy mã chọn từ Google Sheet dựa theo tên thư mục ảnh
+                {tr("Tự động lấy mã chọn từ Google Sheet dựa theo tên thư mục ảnh", "Automatically extract photo codes from Google Sheet by customer folder name")}
               </p>
             </div>
           </div>
@@ -1009,7 +1028,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
             }`}
           >
             <FileSpreadsheet size={13} className={modalTab === "extract" ? "text-emerald-500" : ""} />
-            <span>Truy xuất mã chọn</span>
+            <span>{tr("Truy xuất mã chọn", "Extract Photo Codes")}</span>
           </button>
 
           <button
@@ -1024,7 +1043,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
             }`}
           >
             <Settings2 size={13} className={modalTab === "config" ? "text-primary" : ""} />
-            <span>Cấu hình Sheet & Cột</span>
+            <span>{tr("Cấu hình Sheet & Cột", "Sheet & Column Config")}</span>
           </button>
         </div>
 
@@ -1035,7 +1054,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
             <div className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-lg flex items-center justify-between">
               <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
                 <AlertCircle size={16} className="shrink-0" />
-                <span>Chưa kết nối tài khoản Google để truy xuất Google Sheet.</span>
+                <span>{tr("Chưa kết nối tài khoản Google để truy xuất Google Sheet.", "Google account not connected to access Google Sheets.")}</span>
               </div>
               <button
                 type="button"
@@ -1044,7 +1063,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                 className="px-3 py-1 bg-amber-500 text-white rounded-md text-xs font-medium hover:bg-amber-600 transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
                 {isConnectingGoogle ? <RefreshCw size={12} className="animate-spin" /> : <LogIn size={12} />}
-                Kết nối Google
+                {tr("Kết nối Google", "Connect Google")}
               </button>
             </div>
           )}
@@ -1063,10 +1082,10 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-foreground truncate max-w-[220px] sm:max-w-[340px]">
-                      {googleConnection.accountEmail || (profile?.isMockSandbox ? "Sandbox Mode (Mock)" : "Tài khoản Google")}
+                      {googleConnection.accountEmail || (profile?.isMockSandbox ? "Sandbox Mode (Mock)" : tr("Tài khoản Google", "Google Account"))}
                     </span>
                     <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/30">
-                      Đã kết nối
+                      {tr("Đã kết nối", "Connected")}
                     </span>
                   </div>
                 </div>
@@ -1076,10 +1095,10 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                 type="button"
                 onClick={handleDisconnectGoogle}
                 className="px-2.5 py-1 bg-muted/60 hover:bg-destructive/15 text-muted-foreground hover:text-destructive border border-border/60 hover:border-destructive/30 rounded text-[11px] font-medium transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
-                title="Đăng xuất tài khoản Google này để kết nối tài khoản khác"
+                title={tr("Đăng xuất tài khoản Google này để kết nối tài khoản khác", "Sign out of this Google account to connect another")}
               >
                 <LogOut size={12} />
-                <span>Đăng xuất Google</span>
+                <span>{tr("Đăng xuất Google", "Sign out")}</span>
               </button>
             </div>
           )}
@@ -1089,7 +1108,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
             <div className="flex items-center justify-between">
               <label className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
                 <FileSpreadsheet size={13} className="text-emerald-500" />
-                <span>Link Google Sheet (Trang tính cần lấy mã):</span>
+                <span>{tr("Link Google Sheet (Trang tính cần lấy mã):", "Google Sheet Link (Source spreadsheet):")}</span>
               </label>
               {profile?.spreadsheetId && (
                 <div className="flex items-center gap-2">
@@ -1100,9 +1119,9 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                     type="button"
                     onClick={handleUnlinkSheet}
                     className="text-[10px] text-destructive hover:underline cursor-pointer"
-                    title="Gỡ liên kết bảng tính này"
+                    title={tr("Gỡ liên kết bảng tính này", "Unlink this spreadsheet")}
                   >
-                    Gỡ link
+                    {tr("Gỡ link", "Unlink")}
                   </button>
                 </div>
               )}
@@ -1112,7 +1131,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
               <div className="relative flex-1">
                 <input
                   type="text"
-                  placeholder="Dán link Google Sheet (https://docs.google.com/spreadsheets/d/...) hoặc ID tại đây..."
+                  placeholder={tr("Dán link Google Sheet (https://docs.google.com/spreadsheets/d/...) hoặc ID tại đây...", "Paste Google Sheet link (https://docs.google.com/spreadsheets/d/...) or ID here...")}
                   value={sheetUrlInput}
                   onChange={(e) => setSheetUrlInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleApplySheetUrl()}
@@ -1123,7 +1142,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                     type="button"
                     onClick={() => setSheetUrlInput("")}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 cursor-pointer"
-                    title="Xóa ô nhập"
+                    title={tr("Xóa ô nhập", "Clear input")}
                   >
                     <X size={12} />
                   </button>
@@ -1135,10 +1154,10 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                 onClick={() => handleApplySheetUrl()}
                 disabled={isApplyingSheet || !sheetUrlInput.trim()}
                 className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded text-xs transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0 shadow-xs"
-                title="Áp dụng link Sheet và tải các tab & dữ liệu"
+                title={tr("Áp dụng link Sheet và tải các tab & dữ liệu", "Apply Sheet URL and load tabs & data")}
               >
                 {isApplyingSheet ? <RefreshCw size={12} className="animate-spin" /> : <Link size={12} />}
-                <span>{profile?.spreadsheetId ? "Đổi Sheet" : "Liên kết Sheet"}</span>
+                <span>{profile?.spreadsheetId ? tr("Đổi Sheet", "Change Sheet") : tr("Liên kết Sheet", "Link Sheet")}</span>
               </button>
 
               {profile?.spreadsheetId && (
@@ -1151,7 +1170,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                     openUrl(url).catch(() => {});
                   }}
                   className="p-1.5 border border-border/60 hover:bg-muted/50 rounded text-muted-foreground hover:text-foreground cursor-pointer shrink-0"
-                  title="Mở Google Sheet trên trình duyệt"
+                  title={tr("Mở Google Sheet trên trình duyệt", "Open Google Sheet in browser")}
                 >
                   <ExternalLink size={13} />
                 </button>
@@ -1178,9 +1197,9 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                     <FileSpreadsheet size={24} />
                   </div>
                   <div className="space-y-1">
-                    <h4 className="text-sm font-semibold text-foreground">Chưa liên kết Google Sheet</h4>
+                    <h4 className="text-sm font-semibold text-foreground">{tr("Chưa liên kết Google Sheet", "Google Sheet Not Linked")}</h4>
                     <p className="text-xs text-muted-foreground max-w-md">
-                      Vui lòng dán đường link Google Sheet của bạn vào ô bên trên rồi nhấn <strong>"Liên kết Sheet"</strong> để app đọc danh sách mã ảnh và cập nhật trạng thái tự động.
+                      {tr('Vui lòng dán đường link Google Sheet của bạn vào ô bên trên rồi nhấn', "Paste your Google Sheet link above and click")} <strong>"{tr("Liên kết Sheet", "Link Sheet")}"</strong> {tr("để app đọc danh sách mã ảnh và cập nhật trạng thái tự động.", "so the app can extract photo codes and auto-update status.")}
                     </p>
                   </div>
                 </div>
@@ -1191,7 +1210,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                     <div className="min-w-0">
                       <div className="flex items-center justify-between mb-1 gap-2">
                         <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
-                          Tab làm việc (Trang tính) · {checkedTabs.length}/{availableTabs.length}
+                          {tr("Tab làm việc (Trang tính)", "Sheet Tabs")} · {checkedTabs.length}/{availableTabs.length}
                           {isLoadingMetadata && <RefreshCw size={10} className="animate-spin" />}
                         </label>
                         <div className="flex items-center gap-2 shrink-0">
@@ -1200,13 +1219,13 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                             onClick={handleToggleAllTabs}
                             className="text-[10px] font-medium text-primary hover:underline cursor-pointer"
                           >
-                            {checkedTabs.length === availableTabs.length ? "Bỏ chọn" : "Chọn tất cả"}
+                            {checkedTabs.length === availableTabs.length ? tr("Bỏ chọn", "Deselect all") : tr("Chọn tất cả", "Select all")}
                           </button>
                           <button
                             type="button"
                             onClick={() => openConfigForTab(statusTabTitle)}
                             className="p-1 border border-border/60 hover:bg-muted/50 rounded text-muted-foreground hover:text-foreground cursor-pointer"
-                            title={`Cấu hình cột cho Tab "${statusTabTitle}"`}
+                            title={tr(`Cấu hình cột cho Tab "${statusTabTitle}"`, `Configure columns for Tab "${statusTabTitle}"`)}
                           >
                             <Settings2 size={12} />
                           </button>
@@ -1237,35 +1256,35 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                       </div>
                       {checkedTabs.length === 0 && (
                         <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1">
-                          Chưa chọn Tab nào — tích ít nhất một Tab để dò tìm dòng khách.
+                          {tr("Chưa chọn Tab nào — tích ít nhất một Tab để dò tìm dòng khách.", "No tabs selected — check at least one tab to search customer rows.")}
                         </p>
                       )}
                     </div>
 
                     <div>
                       <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold block mb-1">
-                        Dữ liệu Sheet đã nạp
+                        {tr("Dữ liệu Sheet đã nạp", "Loaded Sheet Data")}
                       </label>
                       <div className="text-muted-foreground flex items-center justify-between py-1 gap-2">
                         <span className="text-[11px] font-medium text-foreground">
                           {loadedTabRows.length > 0
-                            ? `${totalLoadedRows} dòng dữ liệu${loadedTabRows.length > 1 ? ` · ${loadedTabRows.length} Tab` : ""}`
-                            : "Chưa tải dòng"}
+                            ? `${totalLoadedRows} ${tr("dòng dữ liệu", "rows")}${loadedTabRows.length > 1 ? ` · ${loadedTabRows.length} ${tr("Tab", "Tabs")}` : ""}`
+                            : tr("Chưa tải dòng", "No rows loaded")}
                         </span>
                         <button
                           type="button"
                           onClick={() => runExtraction({ force: true, silent: true })}
                           disabled={isLoadingRows || checkedTabs.length === 0}
                           className="px-2.5 py-1 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-md text-[11px] font-semibold flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
-                          title="Tải lại toàn bộ dữ liệu dòng Google Sheet mới nhất & quét lại"
+                          title={tr("Tải lại toàn bộ dữ liệu dòng Google Sheet mới nhất & quét lại", "Reload latest Google Sheet rows & rescan")}
                         >
                           <RefreshCw size={11} className={isLoadingRows ? "animate-spin" : ""} />
-                          <span>Làm mới dữ liệu</span>
+                          <span>{tr("Làm mới dữ liệu", "Refresh Data")}</span>
                         </button>
                       </div>
                       {failedTabs.length > 0 && loadedTabRows.length > 0 && (
                         <p className="text-[10px] text-amber-600 dark:text-amber-400 leading-snug" title={failedTabs.join(", ")}>
-                          Bỏ qua Tab không tải được: {failedTabs.join(", ")}
+                          {tr("Bỏ qua Tab không tải được:", "Skipped failed tab(s):")} {failedTabs.join(", ")}
                         </p>
                       )}
                     </div>
@@ -1276,7 +1295,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                 <div className="flex items-center justify-between">
                   <label className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
                     <Folder size={13} className="text-primary" />
-                    Thư mục ảnh đầu vào:
+                    {tr("Thư mục ảnh đầu vào:", "Input photo folder:")}
                   </label>
                   <div className="flex items-center gap-2">
                     <button
@@ -1284,7 +1303,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                       onClick={() => setUseCustomFolder(!useCustomFolder)}
                       className="text-[10px] text-primary hover:underline cursor-pointer"
                     >
-                      {useCustomFolder ? "Chọn từ thư mục đã thêm vào app" : "Nhập tên / đường dẫn khác"}
+                      {useCustomFolder ? tr("Chọn từ thư mục đã thêm vào app", "Select from queued folders") : tr("Nhập tên / đường dẫn khác", "Enter custom name / path")}
                     </button>
                   </div>
                 </div>
@@ -1311,14 +1330,14 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                       onClick={handleBrowseFolder}
                       className="px-2.5 py-1.5 border border-border/60 bg-muted/30 hover:bg-muted/60 rounded-md text-[11px] text-foreground transition-colors cursor-pointer"
                     >
-                      Thư mục khác
+                      {tr("Thư mục khác", "Other Folder")}
                     </button>
                   </div>
                 ) : (
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      placeholder="Ví dụ: 4-9 8h phuog_thyur08 - peppa 2cc..."
+                      placeholder={tr("Ví dụ: 4-9 8h phuog_thyur08 - peppa 2cc...", "e.g., 4-9 8h customer_name...")}
                       value={customFolderName}
                       onChange={(e) => setCustomFolderName(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && runExtraction()}
@@ -1329,7 +1348,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                       onClick={handleBrowseFolder}
                       className="px-2.5 py-1.5 border border-border/60 bg-muted/30 hover:bg-muted/60 rounded-md text-[11px] text-foreground transition-colors cursor-pointer"
                     >
-                      Duyệt
+                      {tr("Duyệt", "Browse")}
                     </button>
                     <button
                       type="button"
@@ -1338,7 +1357,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                       className="px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-xs font-medium hover:bg-primary/90 transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
                     >
                       {isLoadingRows ? <RefreshCw size={12} className="animate-spin" /> : <Search size={12} />}
-                      Dò tìm
+                      {tr("Dò tìm", "Search")}
                     </button>
                   </div>
                 )}
@@ -1350,8 +1369,14 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                   <RefreshCw size={24} className="animate-spin text-primary" />
                   <p className="text-xs text-center">
                     {checkedTabs.length > 1
-                      ? `Đang tải & đối chiếu dòng khách hàng trên ${checkedTabs.length} Tab: ${checkedTabs.join(", ")}...`
-                      : `Đang đối chiếu dòng khách hàng trên Tab "${checkedTabs[0] || currentTabTitle}"...`}
+                      ? tr(
+                          `Đang tải & đối chiếu dòng khách hàng trên ${checkedTabs.length} Tab: ${checkedTabs.join(", ")}...`,
+                          `Loading & matching customer rows across ${checkedTabs.length} tabs: ${checkedTabs.join(", ")}...`
+                        )
+                      : tr(
+                          `Đang đối chiếu dòng khách hàng trên Tab "${checkedTabs[0] || currentTabTitle}"...`,
+                          `Matching customer rows on tab "${checkedTabs[0] || currentTabTitle}"...`
+                        )}
                   </p>
                 </div>
               ) : extractionResult ? (
@@ -1378,13 +1403,16 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                         <div className="font-semibold text-xs flex items-center gap-2">
                           {extractionResult.matchedRow ? (
                             <span>
-                              Tab {extractionResult.matchedTabTitle} · Dòng {extractionResult.matchedRow}:{" "}
+                              Tab {extractionResult.matchedTabTitle} · {tr("Dòng", "Row")} {extractionResult.matchedRow}:{" "}
                               {extractionResult.customerName || extractionResult.jobFolderName}
                             </span>
                           ) : (
                             <div className="flex items-center gap-2 flex-wrap">
                               <span>
-                                Không tìm thấy dòng khớp trên {extractionResult.searchedTabs.length} tab:{" "}
+                                {tr(
+                                  `Không tìm thấy dòng khớp trên ${extractionResult.searchedTabs.length} tab:`,
+                                  `No matching row found across ${extractionResult.searchedTabs.length} tab(s):`
+                                )}{" "}
                                 {extractionResult.searchedTabs.join(", ")}
                               </span>
                               <button
@@ -1392,27 +1420,27 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                                 onClick={() => runExtraction({ force: true, silent: true })}
                                 disabled={isLoadingRows}
                                 className="px-2 py-0.5 bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 rounded text-[10px] font-semibold flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
-                                title="Tải lại dòng từ Google Sheet"
+                                title={tr("Tải lại dòng từ Google Sheet", "Reload rows from Google Sheet")}
                               >
                                 <RefreshCw size={10} className={isLoadingRows ? "animate-spin" : ""} />
-                                <span>Quét lại Sheet</span>
+                                <span>{tr("Quét lại Sheet", "Rescan Sheet")}</span>
                               </button>
                             </div>
                           )}
                           {extractionResult.confidence && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-background/60 border border-current/20 font-mono">
-                              {Math.round(extractionResult.confidence * 100)}% Khớp
+                              {Math.round(extractionResult.confidence * 100)}% {tr("Khớp", "Match")}
                             </span>
                           )}
                         </div>
                         <div className="text-[11px] opacity-80 mt-0.5">
-                          {extractionResult.reason || "Đã khớp đúng tên thư mục với Cột H (Tên file)."}
+                          {extractionResult.reason || tr("Đã khớp đúng tên thư mục với Cột H (Tên file).", "Exact folder name match with Column H (File Name).")}
                         </div>
 
                         {/* Same "Tên file" on several rows / tabs: let the user switch row */}
                         {extractionResult.sameFileRows.length > 1 && (
                           <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
-                            <span className="text-[10px] opacity-80">Chọn dòng khác:</span>
+                            <span className="text-[10px] opacity-80">{tr("Chọn dòng khác:", "Switch row:")}</span>
                             {extractionResult.sameFileRows.map((r) => {
                               const isActive =
                                 r.tabTitle === extractionResult.matchedTabTitle && r.row === extractionResult.matchedRow;
@@ -1426,9 +1454,9 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                                       ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-700 dark:text-emerald-300"
                                       : "bg-background/60 border-border/60 text-muted-foreground hover:text-foreground"
                                   }`}
-                                  title={`${r.hasCodes ? "Có mã ảnh" : "Chưa có mã ảnh"}${r.isCompleted ? ` · Trạng thái "${configuredStatusValue}"` : ""}`}
+                                  title={`${r.hasCodes ? tr("Có mã ảnh", "Has codes") : tr("Chưa có mã ảnh", "No codes yet")}${r.isCompleted ? ` · ${tr("Trạng thái", "Status")} "${configuredStatusValue}"` : ""}`}
                                 >
-                                  Tab {r.tabTitle} · Dòng {r.row}
+                                  Tab {r.tabTitle} · {tr("Dòng", "Row")} {r.row}
                                   {r.isCompleted ? ` · ${configuredStatusValue}` : ""}
                                 </button>
                               );
@@ -1445,10 +1473,10 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
                           <Layers size={13} className="text-primary" />
-                          Chọn ô cột mã ảnh cần sao chép:
+                          {tr("Chọn ô cột mã ảnh cần sao chép:", "Select photo code column(s) to copy:")}
                         </span>
                         <span className="text-[10px] text-muted-foreground">
-                          {activeSelectedColumns.length} cột đã chọn ({totalCodesCount} mã ảnh)
+                          {tr(`${activeSelectedColumns.length} cột đã chọn (${totalCodesCount} mã ảnh)`, `${activeSelectedColumns.length} column(s) selected (${totalCodesCount} codes)`)}
                         </span>
                       </div>
 
@@ -1480,15 +1508,15 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-2">
                                     <span className="font-semibold text-xs text-foreground">
-                                      Cột {col.columnLetter}: {col.columnHeader}
+                                      {tr("Cột", "Col")} {col.columnLetter}: {col.columnHeader}
                                     </span>
                                     {col.isPrimary ? (
                                       <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-medium border border-emerald-500/30">
-                                        Mã chính (1)
+                                        {tr("Mã chính (1)", "Primary (1)")}
                                       </span>
                                     ) : (
                                       <span className="text-[9px] px-1.5 py-0.2 rounded bg-blue-500/15 text-blue-600 dark:text-blue-400 font-medium border border-blue-500/30">
-                                        Mã phụ (2)
+                                        {tr("Mã phụ (2)", "Secondary (2)")}
                                       </span>
                                     )}
                                   </div>
@@ -1499,14 +1527,14 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                                         : "bg-muted/60 text-muted-foreground"
                                     }`}
                                   >
-                                    {col.codeCount > 0 ? `${col.codeCount} mã` : "0 mã (trống)"}
+                                    {col.codeCount > 0 ? tr(`${col.codeCount} mã`, `${col.codeCount} codes`) : tr("0 mã (trống)", "0 codes (empty)")}
                                   </span>
                                 </div>
 
                                 <p className="text-[11px] font-mono text-muted-foreground mt-1 truncate">
                                   {col.sampleCodes.length > 0
                                     ? col.sampleCodes.join(", ") + (col.codeCount > col.sampleCodes.length ? "..." : "")
-                                    : "(Ô trên dòng này chưa có mã ảnh)"}
+                                    : tr("(Ô trên dòng này chưa có mã ảnh)", "(No photo codes in this cell)")}
                                 </p>
                               </div>
                             </div>
@@ -1531,11 +1559,11 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                           )}
                         </button>
                         <span className="text-xs font-medium text-foreground">
-                          Tự động đổi trạng thái thành <span className="font-semibold text-emerald-600 dark:text-emerald-400">"{configuredStatusValue}"</span> vào Cột {statusMapping.columnLetter} ({statusMapping.columnHeader}) trên Tab "{statusTabTitle}" ngay khi lọc file xong
+                          {tr("Tự động đổi trạng thái thành", "Auto-update status to")} <span className="font-semibold text-emerald-600 dark:text-emerald-400">"{configuredStatusValue}"</span> {tr("vào Cột", "in Col")} {statusMapping.columnLetter} ({statusMapping.columnHeader}) {tr("trên Tab", "on Tab")} "{statusTabTitle}" {tr("ngay khi lọc file xong", "once filtering finishes")}
                         </span>
                       </div>
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-medium">
-                        Tự động đổi khi lọc xong
+                        {tr("Tự động đổi khi lọc xong", "Auto-update on complete")}
                       </span>
                     </div>
                   )}
@@ -1544,7 +1572,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                   {formattedCodePreview && (
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between text-[11px]">
-                        <span className="font-semibold text-foreground">Xem trước mã lọc sẽ đẩy vào:</span>
+                        <span className="font-semibold text-foreground">{tr("Xem trước mã lọc sẽ đẩy vào:", "Preview of extracted codes:")}</span>
                         <div className="flex items-center gap-3">
                           <label className="flex items-center gap-1 cursor-pointer text-muted-foreground hover:text-foreground">
                             <input
@@ -1554,7 +1582,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                               onChange={() => setInsertMode("replace")}
                               className="text-primary"
                             />
-                            Ghi đè ô mã
+                            {tr("Ghi đè ô mã", "Replace codes")}
                           </label>
                           <label className="flex items-center gap-1 cursor-pointer text-muted-foreground hover:text-foreground">
                             <input
@@ -1564,7 +1592,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                               onChange={() => setInsertMode("append")}
                               className="text-primary"
                             />
-                            Nối tiếp
+                            {tr("Nối tiếp", "Append")}
                           </label>
                         </div>
                       </div>
@@ -1589,7 +1617,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
               {!profile?.spreadsheetId && (
                 <div className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-lg text-amber-600 dark:text-amber-400 text-xs flex items-center gap-2">
                   <AlertCircle size={15} className="shrink-0" />
-                  <span>Vui lòng dán link Google Sheet vào ô phía trên và nhấn "Liên kết Sheet" trước khi cấu hình cột.</span>
+                  <span>{tr('Vui lòng dán link Google Sheet vào ô phía trên và nhấn "Liên kết Sheet" trước khi cấu hình cột.', 'Paste your Google Sheet link above and click "Link Sheet" before configuring columns.')}</span>
                 </div>
               )}
 
@@ -1598,7 +1626,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                 <div className="flex items-center justify-between">
                   <label className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
                     <FileSpreadsheet size={13} className="text-primary" />
-                    Chọn Tab để cấu hình vai trò cột:
+                    {tr("Chọn Tab để cấu hình vai trò cột:", "Select Tab to configure column roles:")}
                   </label>
                   <button
                     type="button"
@@ -1607,7 +1635,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                     className="text-[11px] text-primary hover:underline flex items-center gap-1 cursor-pointer"
                   >
                     <RefreshCw size={11} className={isScanningTabColumns ? "animate-spin" : ""} />
-                    {isScanningTabColumns ? "Đang quét..." : "Quét cấu trúc Tab thực tế"}
+                    {isScanningTabColumns ? tr("Đang quét...", "Scanning...") : tr("Quét cấu trúc Tab thực tế", "Scan Live Tab Structure")}
                   </button>
                 </div>
 
@@ -1632,7 +1660,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
               {/* Column Role Mappings */}
               <div className="space-y-3">
                 <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider text-[10px] text-muted-foreground">
-                  Phân công vai trò cột cho Tab "{configTabTitle}"
+                  {tr(`Phân công vai trò cột cho Tab "${configTabTitle}"`, `Column role assignment for Tab "${configTabTitle}"`)}
                 </h3>
 
                 {/* 1. Job Folder Name */}
@@ -1640,14 +1668,14 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-semibold text-xs text-foreground">
-                        1. Cột Tên file / Thư mục (Dò tìm dòng)
+                        {tr("1. Cột Tên file / Thư mục (Dò tìm dòng)", "1. File / Folder Name Column (Row Lookup)")}
                       </div>
                       <div className="text-[10px] text-muted-foreground">
-                        Cột chứa tên thư mục ảnh khách hàng để đối chiếu tìm dòng (mặc định: Cột H)
+                        {tr("Cột chứa tên thư mục ảnh khách hàng để đối chiếu tìm dòng (mặc định: Cột H)", "Column containing customer photo folder name for row lookup (default: Col H)")}
                       </div>
                     </div>
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground border border-border/50">
-                      Chỉ đọc (READ_ONLY)
+                      {tr("Chỉ đọc (READ_ONLY)", "Read-only (READ_ONLY)")}
                     </span>
                   </div>
 
@@ -1658,7 +1686,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                   >
                     {displayColumnsList.map((c) => (
                       <option key={c.letter} value={c.letter}>
-                        Cột {c.letter} — {c.header}
+                        {tr("Cột", "Col")} {c.letter} — {c.header}
                       </option>
                     ))}
                   </select>
@@ -1669,14 +1697,14 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-semibold text-xs text-foreground">
-                        2. Cột Mã ảnh chọn (1) — Chính
+                        {tr("2. Cột Mã ảnh chọn (1) — Chính", "2. Selected Photo Codes (1) — Primary")}
                       </div>
                       <div className="text-[10px] text-muted-foreground">
-                        Cột chứa danh sách mã ảnh khách chọn chính (mặc định: Cột I)
+                        {tr("Cột chứa danh sách mã ảnh khách chọn chính (mặc định: Cột I)", "Column containing primary selected photo codes (default: Col I)")}
                       </div>
                     </div>
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                      Đọc / Sao chép
+                      {tr("Đọc / Sao chép", "Read / Copy")}
                     </span>
                   </div>
 
@@ -1687,7 +1715,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                   >
                     {displayColumnsList.map((c) => (
                       <option key={c.letter} value={c.letter}>
-                        Cột {c.letter} — {c.header}
+                        {tr("Cột", "Col")} {c.letter} — {c.header}
                       </option>
                     ))}
                   </select>
@@ -1698,10 +1726,10 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-semibold text-xs text-foreground">
-                        3. Cột Mã ảnh chọn (2) — Phụ
+                        {tr("3. Cột Mã ảnh chọn (2) — Phụ", "3. Selected Photo Codes (2) — Secondary")}
                       </div>
                       <div className="text-[10px] text-muted-foreground">
-                        Cột chứa danh sách mã ảnh khách chọn phụ (ảnh phóng, ảnh cổng... mặc định: Cột J)
+                        {tr("Cột chứa danh sách mã ảnh khách chọn phụ (ảnh phóng, ảnh cổng... mặc định: Cột J)", "Column containing secondary photo codes (prints, large formats... default: Col J)")}
                       </div>
                     </div>
 
@@ -1717,8 +1745,8 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                         }}
                         className="bg-muted/40 border border-border/60 rounded px-2 py-0.5 text-[11px] font-medium text-foreground cursor-pointer focus:outline-none focus:border-primary"
                       >
-                        <option value="READ_ONLY">Đọc / Sao chép (READ_ONLY)</option>
-                        <option value="IGNORE">Không dùng / Bỏ qua (IGNORE)</option>
+                        <option value="READ_ONLY">{tr("Đọc / Sao chép (READ_ONLY)", "Read / Copy (READ_ONLY)")}</option>
+                        <option value="IGNORE">{tr("Không dùng / Bỏ qua (IGNORE)", "Disabled / Ignore (IGNORE)")}</option>
                       </select>
 
                       <span
@@ -1729,8 +1757,8 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                         }`}
                       >
                         {configCodeCol2Permission === "READ_ONLY" && configCodeCol2 !== "NONE"
-                          ? "Đọc / Sao chép"
-                          : "Bỏ qua"}
+                          ? tr("Đọc / Sao chép", "Read / Copy")
+                          : tr("Bỏ qua", "Ignore")}
                       </span>
                     </div>
                   </div>
@@ -1748,10 +1776,10 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                     }}
                     className="w-full bg-muted/20 border border-border/60 rounded px-2.5 py-1.5 text-xs text-foreground font-medium"
                   >
-                    <option value="NONE">[ Không sử dụng / Bỏ qua ]</option>
+                    <option value="NONE">{tr("[ Không sử dụng / Bỏ qua ]", "[ Unused / Ignore ]")}</option>
                     {displayColumnsList.map((c) => (
                       <option key={c.letter} value={c.letter}>
-                        Cột {c.letter} — {c.header}
+                        {tr("Cột", "Col")} {c.letter} — {c.header}
                       </option>
                     ))}
                   </select>
@@ -1762,10 +1790,10 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-semibold text-xs text-foreground">
-                        4. Cột Trạng thái lọc ảnh
+                        {tr("4. Cột Trạng thái lọc ảnh", "4. Pick Status Column")}
                       </div>
                       <div className="text-[10px] text-muted-foreground">
-                        Cột ghi nhận trạng thái sau khi lấy mã (mặc định: Cột G Trạng Thái 1)
+                        {tr("Cột ghi nhận trạng thái sau khi lấy mã (mặc định: Cột G Trạng Thái 1)", "Column updated after completion (default: Col G Status 1)")}
                       </div>
                     </div>
 
@@ -1774,8 +1802,8 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                       onChange={(e) => setConfigStatusPermission(e.target.value as FieldPermission)}
                       className="bg-muted/40 border border-border/60 rounded px-2 py-0.5 text-[11px] font-medium"
                     >
-                      <option value="READ_WRITE">Đọc & Ghi (READ_WRITE)</option>
-                      <option value="READ_ONLY">Chỉ đọc (READ_ONLY)</option>
+                      <option value="READ_WRITE">{tr("Đọc & Ghi (READ_WRITE)", "Read & Write (READ_WRITE)")}</option>
+                      <option value="READ_ONLY">{tr("Chỉ đọc (READ_ONLY)", "Read-only (READ_ONLY)")}</option>
                     </select>
                   </div>
 
@@ -1784,10 +1812,10 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                     onChange={(e) => setConfigStatusCol(e.target.value)}
                     className="w-full bg-muted/20 border border-border/60 rounded px-2.5 py-1.5 text-xs text-foreground font-medium"
                   >
-                    <option value="NONE">[ Không sử dụng ]</option>
+                    <option value="NONE">{tr("[ Không sử dụng ]", "[ Unused ]")}</option>
                     {displayColumnsList.map((c) => (
                       <option key={c.letter} value={c.letter}>
-                        Cột {c.letter} — {c.header}
+                        {tr("Cột", "Col")} {c.letter} — {c.header}
                       </option>
                     ))}
                   </select>
@@ -1796,29 +1824,29 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                     <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border/40">
                       <div>
                         <label className="text-[10px] text-muted-foreground block mb-1">
-                          Nội dung ghi trạng thái:
+                          {tr("Nội dung ghi trạng thái:", "Status value to write:")}
                         </label>
                         <input
                           type="text"
                           value={configStatusValue}
                           onChange={(e) => setConfigStatusValue(e.target.value)}
-                          placeholder="Ví dụ: Đã lọc"
+                          placeholder={tr("Ví dụ: ", "e.g., ") + "Đã lọc"}
                           className="w-full bg-background border border-border/60 rounded px-2 py-1 text-xs text-foreground"
                         />
                       </div>
 
                       <div>
                         <label className="text-[10px] text-muted-foreground block mb-1">
-                          Chính sách ghi ô:
+                          {tr("Chính sách ghi ô:", "Cell write policy:")}
                         </label>
                         <select
                           value={configStatusWritePolicy}
                           onChange={(e) => setConfigStatusWritePolicy(e.target.value as WritePolicy)}
                           className="w-full bg-background border border-border/60 rounded px-2 py-1 text-xs text-foreground"
                         >
-                          <option value="SET_IF_EMPTY">Chỉ ghi nếu ô trống</option>
-                          <option value="ALWAYS_REPLACE">Ghi đè luôn</option>
-                          <option value="ASK_BEFORE_OVERWRITE">Hỏi trước khi ghi</option>
+                          <option value="SET_IF_EMPTY">{tr("Chỉ ghi nếu ô trống", "Write only if empty")}</option>
+                          <option value="ALWAYS_REPLACE">{tr("Ghi đè luôn", "Always overwrite")}</option>
+                          <option value="ASK_BEFORE_OVERWRITE">{tr("Hỏi trước khi ghi", "Ask before overwrite")}</option>
                         </select>
                       </div>
                     </div>
@@ -1829,7 +1857,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                 <div className="grid grid-cols-2 gap-3 p-3 bg-muted/20 border border-border/50 rounded-lg">
                   <div>
                     <label className="text-[10px] text-muted-foreground block mb-1">
-                      Dòng tiêu đề (Header row):
+                      {tr("Dòng tiêu đề (Header row):", "Header row:")}
                     </label>
                     <input
                       type="number"
@@ -1843,7 +1871,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
 
                   <div>
                     <label className="text-[10px] text-muted-foreground block mb-1">
-                      Bắt đầu từ dòng dữ liệu:
+                      {tr("Bắt đầu từ dòng dữ liệu:", "Data starts at row:")}
                     </label>
                     <input
                       type="number"
@@ -1861,7 +1889,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
               {configSavedSuccess && (
                 <div className="p-3 bg-emerald-500/15 border border-emerald-500/40 text-emerald-600 dark:text-emerald-400 rounded-lg flex items-center gap-2 text-xs font-semibold animate-fade-in">
                   <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
-                  <span>Đã lưu cấu hình cột cho Tab "{configTabTitle}" thành công! Áp dụng ngay lập tức cho các lần truy xuất.</span>
+                  <span>{tr(`Đã lưu cấu hình cột cho Tab "${configTabTitle}" thành công! Áp dụng ngay lập tức cho các lần truy xuất.`, `Saved column configuration for Tab "${configTabTitle}"! Applied immediately to lookups.`)}</span>
                 </div>
               )}
             </div>
@@ -1875,7 +1903,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
             onClick={onClose}
             className="px-3.5 py-1.5 rounded-lg border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors cursor-pointer text-xs"
           >
-            Đóng
+            {tr("Đóng", "Close")}
           </button>
 
           {modalTab === "extract" ? (
@@ -1886,7 +1914,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                 className="px-3 py-1.5 rounded-lg border border-border/60 hover:bg-muted/40 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer flex items-center gap-1.5"
               >
                 <Settings2 size={13} />
-                <span>Cấu hình cột Tab</span>
+                <span>{tr("Cấu hình cột Tab", "Tab Column Config")}</span>
               </button>
 
               <button
@@ -1904,7 +1932,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                 ) : (
                   <Check size={14} />
                 )}
-                <span>Sao chép & Đẩy vào ô mã lọc ({totalCodesCount} mã)</span>
+                <span>{tr(`Sao chép & Đẩy vào ô mã lọc (${totalCodesCount} mã)`, `Copy & Apply to Code Box (${totalCodesCount} codes)`)}</span>
               </button>
             </div>
           ) : (
@@ -1914,7 +1942,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                 onClick={() => setModalTab("extract")}
                 className="px-3 py-1.5 rounded-lg border border-border/60 hover:bg-muted/40 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer flex items-center gap-1.5"
               >
-                <span>Quay lại truy xuất</span>
+                <span>{tr("Quay lại truy xuất", "Back to Extraction")}</span>
                 <ArrowRight size={13} />
               </button>
 
@@ -1924,7 +1952,7 @@ export function SheetCodeExtractorModal({ isOpen, onClose, initialTab = "extract
                 className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 transition-all cursor-pointer shadow-sm active:scale-98"
               >
                 <Save size={14} />
-                <span>Lưu cấu hình Tab "{configTabTitle}"</span>
+                <span>{tr(`Lưu cấu hình Tab "${configTabTitle}"`, `Save Config for "${configTabTitle}"`)}</span>
               </button>
             </div>
           )}

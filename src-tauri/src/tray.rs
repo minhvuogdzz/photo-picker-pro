@@ -11,11 +11,31 @@ extern "C" {
     fn macos_activate_main_window();
 }
 
-pub fn create_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
-    let show_i = MenuItem::with_id(app, "show", "Hiện DH Studio Pro", true, None::<&str>)?;
+pub fn build_tray_menu<R: Runtime>(app: &AppHandle<R>, language: &str) -> tauri::Result<Menu<R>> {
+    let is_en = language.eq_ignore_ascii_case("en");
+    let show_label = if is_en { "Show DH Studio Pro" } else { "Hiện DH Studio Pro" };
+    let quit_label = if is_en { "Quit App" } else { "Thoát ứng dụng" };
+
+    let show_i = MenuItem::with_id(app, "show", show_label, true, None::<&str>)?;
     let sep = PredefinedMenuItem::separator(app)?;
-    let quit_i = MenuItem::with_id(app, "quit", "Thoát ứng dụng", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&show_i, &sep, &quit_i])?;
+    let quit_i = MenuItem::with_id(app, "quit", quit_label, true, None::<&str>)?;
+    Menu::with_items(app, &[&show_i, &sep, &quit_i])
+}
+
+#[tauri::command]
+pub fn update_tray_language(app: AppHandle, language: String) -> Result<(), String> {
+    if let Some(tray) = app.tray_by_id("main-tray") {
+        let menu = build_tray_menu(&app, &language).map_err(|e| e.to_string())?;
+        tray.set_menu(Some(menu)).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+pub fn create_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
+    let initial_lang = crate::commands::config::load_settings()
+        .map(|s| s.language)
+        .unwrap_or_else(|_| "vi".to_string());
+    let menu = build_tray_menu(app, &initial_lang)?;
 
     // Sử dụng tray-white-44.png chuẩn màu trắng sắc nét hiển thị tuyệt đẹp trên Menu Bar macOS
     let tray_icon_bytes = include_bytes!("../icons/tray-white-44.png");

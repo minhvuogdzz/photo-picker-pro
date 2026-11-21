@@ -6,6 +6,7 @@ import type {
 } from "../types/index.ts";
 import { schemaMappingService } from "./schemaMappingService.ts";
 import { conflictDetectorService } from "./conflictDetectorService.ts";
+import { trText } from "../../../core/lib/i18n.ts";
 
 export interface BatchPlanSummary {
   readyJobs: DiscoveredJob[];
@@ -44,7 +45,7 @@ export class BatchPlannerService {
           targetTabTitle,
           writes: [],
           isSafeToExecute: false,
-          warnings: ["Chưa xác định được hàng đích trên Sheet"],
+          warnings: [trText("Chưa xác định được hàng đích trên Sheet", "Target row on Sheet has not been determined")],
         },
       };
     }
@@ -102,14 +103,21 @@ export class BatchPlannerService {
           // Cell already has another editor's name: DO NOT OVERWRITE!
           allowed = false;
           blockedReason = "EXISTING_VALUE_CONFLICT";
-          warnings.push(`Cột ${editorMapping.columnLetter} (Tên Edit) đã có "${currentVal}", giữ nguyên theo chính sách "Chỉ ghi nếu ô trống".`);
+          warnings.push(
+            trText(
+              `Cột ${editorMapping.columnLetter} (Tên Edit) đã có "${currentVal}", giữ nguyên theo chính sách "Chỉ ghi nếu ô trống".`,
+              `Column ${editorMapping.columnLetter} (Editor) already contains "${currentVal}"; keeping existing per "Write if empty" policy.`
+            )
+          );
         }
       } else if (editorMapping.writePolicy === "ASK_BEFORE_OVERWRITE") {
         if (currentVal.length === 0 || isSameEditor) {
           allowed = true;
         } else if (
           job.conflictDetails?.resolvedPolicy &&
-          (job.conflictDetails.field === "Tên Edit" || job.conflictDetails.field === "EDITOR")
+          (job.conflictDetails.field === "Tên Edit" ||
+            job.conflictDetails.field === "Editor Name" ||
+            job.conflictDetails.field === "EDITOR")
         ) {
           if (job.conflictDetails.resolvedPolicy === "OVERWRITE") {
             allowed = true;
@@ -121,7 +129,7 @@ export class BatchPlannerService {
         } else {
           hasConflict = true;
           detectedConflict = {
-            field: "Tên Edit",
+            field: trText("Tên Edit", "Editor Name"),
             columnLetter: editorMapping.columnLetter,
             existingValue: currentVal,
             proposedValue: currentUserEditor,
@@ -129,7 +137,12 @@ export class BatchPlannerService {
           };
           allowed = false;
           blockedReason = "EXISTING_VALUE_CONFLICT";
-          warnings.push(`Cột ${editorMapping.columnLetter} (Tên Edit) đã có dữ liệu "${currentVal}". Cần xác nhận trước khi ghi đè.`);
+          warnings.push(
+            trText(
+              `Cột ${editorMapping.columnLetter} (Tên Edit) đã có dữ liệu "${currentVal}". Cần xác nhận trước khi ghi đè.`,
+              `Column ${editorMapping.columnLetter} (Editor) already has value "${currentVal}". Confirmation required before overwriting.`
+            )
+          );
         }
       } else if (editorMapping.writePolicy === "ALWAYS_REPLACE") {
         allowed = true;
@@ -178,7 +191,12 @@ export class BatchPlannerService {
       } else if (!driveLink) {
         allowed = false;
         blockedReason = undefined;
-        warnings.push(`Chưa có đường dẫn Drive cho job "${job.jobFolderName}".`);
+        warnings.push(
+          trText(
+            `Chưa có đường dẫn Drive cho job "${job.jobFolderName}".`,
+            `No Drive link resolved yet for job "${job.jobFolderName}".`
+          )
+        );
       } else {
         const isSameLink = currentVal.includes(driveLink);
 
@@ -191,7 +209,12 @@ export class BatchPlannerService {
           } else {
             allowed = false;
             blockedReason = "EXISTING_VALUE_CONFLICT";
-            warnings.push(`Cột ${linkMapping.columnLetter} (Link Edit) đã có dữ liệu, giữ nguyên theo chính sách "Chỉ ghi nếu ô trống".`);
+            warnings.push(
+              trText(
+                `Cột ${linkMapping.columnLetter} (Link Edit) đã có dữ liệu, giữ nguyên theo chính sách "Chỉ ghi nếu ô trống".`,
+                `Column ${linkMapping.columnLetter} (Link Edit) already has data; keeping existing per "Write if empty" policy.`
+              )
+            );
           }
         } else if (linkMapping.writePolicy === "ASK_BEFORE_OVERWRITE") {
           const conflictCheck = conflictDetectorService.inspectLinkConflict(currentVal);
@@ -220,7 +243,13 @@ export class BatchPlannerService {
             };
             allowed = false;
             blockedReason = "EXISTING_VALUE_CONFLICT";
-            warnings.push(conflictCheck.description || "Ô Link Edit đã chứa dữ liệu cũ. Cần xác nhận trước khi ghi đè.");
+            warnings.push(
+              conflictCheck.description ||
+                trText(
+                  "Ô Link Edit đã chứa dữ liệu cũ. Cần xác nhận trước khi ghi đè.",
+                  "Link Edit cell already contains data. Confirmation required before overwriting."
+                )
+            );
           }
         } else if (linkMapping.writePolicy === "APPEND") {
           allowed = true;
@@ -330,25 +359,28 @@ export class BatchPlannerService {
 
     if (hasConflict) {
       jobStatus = "CONFLICT";
-      statusReason = `Ô ${detectedConflict?.field || "dữ liệu"} đã có sẵn nội dung cũ. Cần duyệt trước khi ghi đè.`;
+      statusReason = trText(
+        `Ô ${detectedConflict?.field || "dữ liệu"} đã có sẵn nội dung cũ. Cần duyệt trước khi ghi đè.`,
+        `Cell "${detectedConflict?.field || "Data"}" already has existing content. Review before overwriting.`
+      );
     } else if (hasHardError) {
       jobStatus = "ERROR";
       const hardWrite = plannedWrites.find(
         (w) => w.blockedReason === "FORMULA_CELL" || w.blockedReason === "OUTSIDE_ROW_SCOPE"
       );
-      if (hardWrite?.blockedReason === "FORMULA_CELL") statusReason = "Ô đích chứa công thức bảo vệ";
-      else if (hardWrite?.blockedReason === "OUTSIDE_ROW_SCOPE") statusReason = "Hàng nằm ngoài phạm vi cho phép";
-      else statusReason = "Bị chặn bởi quyền hạn";
+      if (hardWrite?.blockedReason === "FORMULA_CELL") statusReason = trText("Ô đích chứa công thức bảo vệ", "Target cell contains protected formula");
+      else if (hardWrite?.blockedReason === "OUTSIDE_ROW_SCOPE") statusReason = trText("Hàng nằm ngoài phạm vi cho phép", "Row is outside configured range");
+      else statusReason = trText("Bị chặn bởi quyền hạn", "Blocked by field permission");
     } else if (executableWrites.length > 0) {
       jobStatus = "READY";
       statusReason = undefined;
     } else if (!job.driveWebLink && linkMapping && linkMapping.permission === "READ_WRITE") {
       jobStatus = "NEEDS_REVIEW";
-      statusReason = "Chưa có đường dẫn Drive (kiểm tra đồng bộ Google Drive Desktop)";
+      statusReason = trText("Chưa có đường dẫn Drive (kiểm tra đồng bộ Google Drive Desktop)", "Missing Drive link (check Google Drive Desktop sync)");
     } else {
       // No changes needed (cells are either already set or protected by SET_IF_EMPTY)
       jobStatus = "COMPLETED";
-      statusReason = "Đã có đủ dữ liệu / Đã được bảo toàn theo chính sách";
+      statusReason = trText("Đã có đủ dữ liệu / Đã được bảo toàn theo chính sách", "Already populated / Preserved by write policy");
     }
 
     const updatedJob: DiscoveredJob = {

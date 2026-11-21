@@ -3,6 +3,8 @@
  * Centralized API key and model management for SuperApp AI capabilities.
  */
 
+import { trText, type Language } from "../lib/i18n.ts";
+
 const STORAGE_KEY_GEMINI_API_KEY = "mvd_gemini_api_key";
 const STORAGE_KEY_GEMINI_MODEL = "mvd_gemini_model";
 
@@ -16,6 +18,25 @@ export const AVAILABLE_GEMINI_MODELS = [
   { id: "gemini-3-flash-preview", name: "Gemini 3.0 Flash Preview" },
   { id: "gemini-3.5-flash-lite", name: "Gemini 3.5 Flash Lite" },
 ];
+
+export function getAvailableGeminiModels(lang?: Language) {
+  return [
+    {
+      id: "gemini-3.1-flash-lite",
+      name: trText(
+        "Gemini 3.1 Flash Lite (Nhanh & Ổn định nhất - Khuyên dùng)",
+        "Gemini 3.1 Flash Lite (Fastest & Most Reliable - Recommended)",
+        lang
+      ),
+    },
+    {
+      id: "gemini-3.6-flash",
+      name: trText("Gemini 3.6 Flash (Thông minh, có suy luận)", "Gemini 3.6 Flash (Reasoning)", lang),
+    },
+    { id: "gemini-3-flash-preview", name: "Gemini 3.0 Flash Preview" },
+    { id: "gemini-3.5-flash-lite", name: "Gemini 3.5 Flash Lite" },
+  ];
+}
 
 export interface GeminiResponse {
   text: string;
@@ -67,7 +88,7 @@ class AiSettingsService {
     const primaryModel = preferredModel || this.getModel();
 
     if (!apiKey) {
-      throw new Error("Chưa cấu hình API Key của Google Gemini.");
+      throw new Error(trText("Chưa cấu hình API Key của Google Gemini.", "Google Gemini API Key is not configured yet."));
     }
 
     // Models to try in order if the primary model is busy (503/429)
@@ -120,7 +141,10 @@ class AiSettingsService {
           const errJson = await response.json().catch(() => ({}));
           const errMsg =
             errJson?.error?.message ||
-            `Lỗi kết nối Gemini API (${response.status} ${response.statusText})`;
+            trText(
+              `Lỗi kết nối Gemini API (${response.status} ${response.statusText})`,
+              `Gemini API connection error (${response.status} ${response.statusText})`
+            );
           // If 503 high demand or 429 rate limit, continue to next model fallback
           if (response.status === 503 || response.status === 429) {
             console.warn(`Mô hình ${model} đang bận (${response.status}), thử mô hình dự phòng...`);
@@ -145,7 +169,7 @@ class AiSettingsService {
             : parts[0]?.text || "";
 
         if (!rawText || !rawText.trim()) {
-          throw new Error("Mô hình AI không trả về nội dung câu trả lời hợp lệ.");
+          throw new Error(trText("Mô hình AI không trả về nội dung câu trả lời hợp lệ.", "AI model did not return a valid response."));
         }
 
         return {
@@ -168,7 +192,7 @@ class AiSettingsService {
       }
     }
 
-    throw lastError || new Error("Không thể kết nối tới mô hình AI Google Gemini.");
+    throw lastError || new Error(trText("Không thể kết nối tới mô hình AI Google Gemini.", "Unable to connect to Google Gemini AI model."));
   }
 }
 

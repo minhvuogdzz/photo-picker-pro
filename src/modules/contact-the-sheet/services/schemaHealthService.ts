@@ -4,6 +4,7 @@ import type {
   WorkspaceHealthStatus,
   FieldMapping,
 } from "../types";
+import { trText } from "../../../core/lib/i18n.ts";
 
 export interface HealthCheckReport {
   status: WorkspaceHealthStatus;
@@ -44,7 +45,10 @@ export class SchemaHealthService {
         unhealthyFields.push({
           field: mapping.semanticField,
           columnLetter: mapping.columnLetter,
-          errorReason: `Không tìm thấy cột ${mapping.columnHeader} (${mapping.columnLetter}) trên Sheet`,
+          errorReason: trText(
+            `Không tìm thấy cột ${mapping.columnHeader} (${mapping.columnLetter}) trên Sheet`,
+            `Column ${mapping.columnHeader} (${mapping.columnLetter}) not found on Sheet`
+          ),
         });
         continue;
       }
@@ -57,7 +61,10 @@ export class SchemaHealthService {
           newLetter: matchingByName.letter,
         });
         warnings.push(
-          `Cột ${mapping.columnHeader} đã dời vị trí từ ${mapping.columnLetter} sang ${matchingByName.letter}`
+          trText(
+            `Cột ${mapping.columnHeader} đã dời vị trí từ ${mapping.columnLetter} sang ${matchingByName.letter}`,
+            `Column ${mapping.columnHeader} shifted from ${mapping.columnLetter} to ${matchingByName.letter}`
+          )
         );
       }
 
@@ -67,7 +74,10 @@ export class SchemaHealthService {
         unhealthyFields.push({
           field: mapping.semanticField,
           columnLetter: targetCol.letter,
-          errorReason: `Cột ${targetCol.headerName} đang chứa lỗi công thức (#REF! hoặc #N/A)`,
+          errorReason: trText(
+            `Cột ${targetCol.headerName} đang chứa lỗi công thức (#REF! hoặc #N/A)`,
+            `Column ${targetCol.headerName} contains formula errors (#REF! or #N/A)`
+          ),
         });
       }
     }

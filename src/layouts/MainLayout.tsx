@@ -11,6 +11,7 @@ import { EcosystemSidebar } from "./EcosystemSidebar";
 import { DonateModal } from "@/core/components/DonateModal";
 import { AnnouncementPopup } from "@/core/components/AnnouncementPopup";
 import { LicenseManager } from "@/core/license/LicenseManager";
+import { useTranslation } from "@/core/lib/i18n";
 
 const PhotoPickerModule = lazy(() => import("@/modules/photo-picker"));
 const MvdConvertApp = lazy(() => import("@/modules/mvd-convert/MvdConvertApp"));
@@ -24,6 +25,7 @@ export function AppLayout() {
   const hasSeenWelcome = useAppStore((s) => s.hasSeenWelcome);
   const subscriptionExpired = useAuthStore((s) => s.subscriptionExpired);
   const [showLicenseModal, setShowLicenseModal] = useState(false);
+  const { tr } = useTranslation();
 
   return (
     <div className="app-canvas h-screen w-screen flex flex-row overflow-hidden text-foreground select-none relative">
@@ -56,9 +58,14 @@ export function AppLayout() {
               <div className="w-11 h-11 rounded-2xl bg-destructive/10 flex items-center justify-center text-destructive mb-4">
                 <AlertCircle size={20} strokeWidth={1.75} />
               </div>
-              <h2 className="text-lg font-semibold tracking-tight text-foreground mb-1.5">Gói dịch vụ đã hết hạn</h2>
+              <h2 className="text-lg font-semibold tracking-tight text-foreground mb-1.5">
+                {tr("Gói dịch vụ đã hết hạn", "Subscription Expired")}
+              </h2>
               <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-                Các tính năng xử lý ảnh tạm thời bị vô hiệu hoá. Gia hạn gói hoặc nhập License Key để tiếp tục sử dụng.
+                {tr(
+                  "Các tính năng xử lý ảnh tạm thời bị vô hiệu hoá. Gia hạn gói hoặc nhập License Key để tiếp tục sử dụng.",
+                  "Photo processing features are temporarily disabled. Renew your plan or enter a License Key to continue."
+                )}
               </p>
               <button
                 type="button"
@@ -66,7 +73,7 @@ export function AppLayout() {
                 className="btn-base btn-primary px-5"
               >
                 <Key size={14} strokeWidth={2} />
-                Gia hạn hoặc kích hoạt Key
+                {tr("Gia hạn hoặc kích hoạt Key", "Renew Plan or Activate Key")}
               </button>
             </div>
           </div>

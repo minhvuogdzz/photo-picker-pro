@@ -1,14 +1,20 @@
 import { CheckCircle2, AlertTriangle, ShieldCheck } from "lucide-react";
 import { MemoryPressureMetrics } from "./types";
+import { localizeBackendMessage, useTranslation } from "@/core/lib/i18n";
 
 interface MemoryPressureCardProps {
   pressure: MemoryPressureMetrics | null;
 }
 
 export function MemoryPressureCard({ pressure }: MemoryPressureCardProps) {
+  const { tr, lang } = useTranslation();
   const isWarning = pressure?.status === "WARNING";
   const statusLabel = isWarning ? "WARNING" : "NORMAL";
-  const description = pressure?.description || (isWarning ? "Hệ thống đang nén trang bộ nhớ" : "Bộ nhớ hoạt động bình thường");
+  const description = pressure?.description
+    ? localizeBackendMessage(pressure.description, lang)
+    : isWarning
+      ? tr("Hệ thống đang nén trang bộ nhớ", "System is compressing memory pages")
+      : tr("Bộ nhớ hoạt động bình thường", "Memory is operating normally");
 
   return (
     <div
@@ -32,10 +38,10 @@ export function MemoryPressureCard({ pressure }: MemoryPressureCardProps) {
           </div>
           <div className="min-w-0">
             <h3 className="text-xs font-bold text-foreground tracking-tight leading-none truncate">
-              Áp Lực Bộ Nhớ
+              {tr("Áp Lực Bộ Nhớ", "Memory Pressure")}
             </h3>
             <span className="text-[9px] text-muted-foreground leading-none">
-              Memory Pressure
+              {tr("Tình trạng hệ thống", "System pressure")}
             </span>
           </div>
         </div>
@@ -60,7 +66,9 @@ export function MemoryPressureCard({ pressure }: MemoryPressureCardProps) {
         />
         <div className="min-w-0">
           <span className="text-xs font-bold text-foreground block truncate leading-tight">
-            {isWarning ? "Hệ thống chịu áp lực" : "Bộ nhớ hoạt động tối ưu"}
+            {isWarning
+              ? tr("Hệ thống chịu áp lực", "System under pressure")
+              : tr("Bộ nhớ hoạt động tối ưu", "Optimal memory health")}
           </span>
           <p className="text-[10px] text-muted-foreground truncate leading-tight mt-0.5">
             {description}
@@ -83,8 +91,8 @@ export function MemoryPressureCard({ pressure }: MemoryPressureCardProps) {
           />
         </div>
         <div className="flex items-center justify-between text-[8px] text-muted-foreground/60 mt-1 leading-none font-mono">
-          <span>TỐI ƯU</span>
-          <span>ÁP LỰC</span>
+          <span>{tr("TỐI ƯU", "OPTIMAL")}</span>
+          <span>{tr("ÁP LỰC", "PRESSURE")}</span>
         </div>
       </div>
     </div>

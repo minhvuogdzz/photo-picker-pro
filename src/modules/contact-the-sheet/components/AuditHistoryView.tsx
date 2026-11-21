@@ -2,8 +2,10 @@ import React from "react";
 import { History, Download, Trash2, CheckCircle2, AlertCircle } from "lucide-react";
 import { useContactSheetStore } from "../stores/useContactSheetStore";
 import { auditService } from "../services/auditService";
+import { useTranslation, getLocaleCode } from "@/core/lib/i18n";
 
 export function AuditHistoryView() {
+  const { tr, lang } = useTranslation();
   const auditRecords = useContactSheetStore((s) => s.auditRecords);
   const clearAuditRecords = useContactSheetStore((s) => s.clearAuditRecords);
 
@@ -27,10 +29,10 @@ export function AuditHistoryView() {
         <div>
           <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <History size={15} className="text-muted-foreground" />
-            <span>Nhật ký hoạt động</span>
+            <span>{tr("Nhật ký hoạt động", "Activity History")}</span>
           </h2>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            Lịch sử các thao tác cập nhật bảng tính Google Sheets để đối soát và tra cứu
+            {tr("Lịch sử các thao tác cập nhật bảng tính Google Sheets để đối soát và tra cứu", "History of Google Sheets update actions for auditing and lookup")}
           </p>
         </div>
 
@@ -41,7 +43,7 @@ export function AuditHistoryView() {
             className="px-3 py-1.5 bg-muted/30 hover:bg-muted/60 text-foreground font-medium rounded-lg text-[11px] border border-border/60 flex items-center gap-1.5 transition-colors disabled:opacity-40 cursor-pointer"
           >
             <Download size={13} />
-            <span>Xuất CSV</span>
+            <span>{tr("Xuất CSV", "Export CSV")}</span>
           </button>
           <button
             onClick={clearAuditRecords}
@@ -49,7 +51,7 @@ export function AuditHistoryView() {
             className="px-3 py-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive font-medium rounded-lg text-[11px] border border-border/60 flex items-center gap-1.5 transition-colors disabled:opacity-40 cursor-pointer"
           >
             <Trash2 size={13} />
-            <span>Xóa nhật ký</span>
+            <span>{tr("Xóa nhật ký", "Clear History")}</span>
           </button>
         </div>
       </div>
@@ -61,9 +63,9 @@ export function AuditHistoryView() {
             <div className="w-10 h-10 rounded-xl bg-muted/30 border border-border/50 flex items-center justify-center mb-2.5">
               <History size={18} className="text-muted-foreground/50" />
             </div>
-            <p className="text-xs font-medium text-foreground/80">Chưa có lịch sử cập nhật</p>
+            <p className="text-xs font-medium text-foreground/80">{tr("Chưa có lịch sử cập nhật", "No update history yet")}</p>
             <p className="text-[11px] text-muted-foreground mt-1">
-              Khi bạn thực thi cập nhật các job lên Sheet, lịch sử sẽ hiển thị tại đây.
+              {tr("Khi bạn thực thi cập nhật các job lên Sheet, lịch sử sẽ hiển thị tại đây.", "When you execute job updates to Sheet, history will appear here.")}
             </p>
           </div>
         ) : (
@@ -71,20 +73,20 @@ export function AuditHistoryView() {
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-border/60 bg-muted/20 text-muted-foreground font-medium text-[11px] sticky top-0 backdrop-blur-md">
-                  <th className="py-2.5 px-3.5">Thời gian</th>
+                  <th className="py-2.5 px-3.5">{tr("Thời gian", "Time")}</th>
                   <th className="py-2.5 px-3.5">Workspace & Tab</th>
                   <th className="py-2.5 px-3.5">Job Folder</th>
-                  <th className="py-2.5 px-3.5">Hàng</th>
-                  <th className="py-2.5 px-3.5">Thay đổi</th>
-                  <th className="py-2.5 px-3.5">Trạng thái</th>
-                  <th className="py-2.5 px-3.5">Tài khoản</th>
+                  <th className="py-2.5 px-3.5">{tr("Hàng", "Row")}</th>
+                  <th className="py-2.5 px-3.5">{tr("Thay đổi", "Changes")}</th>
+                  <th className="py-2.5 px-3.5">{tr("Trạng thái", "Status")}</th>
+                  <th className="py-2.5 px-3.5">{tr("Tài khoản", "Account")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40">
                 {auditRecords.map((r) => (
                   <tr key={r.id} className="hover:bg-muted/15 transition-colors">
                     <td className="py-2.5 px-3.5 text-muted-foreground whitespace-nowrap font-mono text-[11px]">
-                      {new Date(r.timestamp).toLocaleString("vi-VN")}
+                      {new Date(r.timestamp).toLocaleString(getLocaleCode(lang))}
                     </td>
                     <td className="py-2.5 px-3.5 whitespace-nowrap">
                       <span className="font-medium text-foreground">{r.workspaceTitle}</span>
@@ -111,11 +113,11 @@ export function AuditHistoryView() {
                     <td className="py-2.5 px-3.5 whitespace-nowrap">
                       {r.status === "SUCCESS" ? (
                         <span className="inline-flex items-center gap-1 text-foreground font-medium text-[11px]">
-                          <CheckCircle2 size={12} className="text-emerald-500" /> Thành công
+                          <CheckCircle2 size={12} className="text-emerald-500" /> {tr("Thành công", "Success")}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-destructive font-medium text-[11px]">
-                          <AlertCircle size={12} /> Thất bại
+                          <AlertCircle size={12} /> {tr("Thất bại", "Failed")}
                         </span>
                       )}
                     </td>

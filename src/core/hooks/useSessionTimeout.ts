@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { useEffect, useRef } from "react";
 import { useAuthStore } from "@/core/stores/useAuthStore";
+import { useSettingsStore } from "@/core/stores/useSettingsStore";
+import { trText } from "../lib/i18n.ts";
 import { logout } from "@/core/services/authApi";
 import { isUnlimitedSession } from "@/core/services/appEntitlementPolicy";
 import {
@@ -79,6 +81,7 @@ export const useSessionTimerStore = create<SessionTimerState>((set) => ({
  */
 export function useSessionTimeoutListener() {
   const session = useAuthStore((s) => s.session);
+  const lang = useSettingsStore((s) => s.settings.language);
   const authLogout = useAuthStore((s) => s.logout);
   const setSessionTimeoutExpired = useAuthStore((s) => s.setSessionTimeoutExpired);
   const setRemainingSeconds = useSessionTimerStore((s) => s.setRemainingSeconds);
@@ -105,7 +108,7 @@ export function useSessionTimeoutListener() {
         totalDurationMinutes: 0,
         isUnlimited: true,
         remainingSeconds: Infinity,
-        formattedTime: "Không giới hạn",
+        formattedTime: trText("Không giới hạn", "Unlimited", lang === "en" ? "en" : "vi"),
         isExpiringSoon: false,
         isWarning30s: false,
       });
@@ -148,6 +151,7 @@ export function useSessionTimeoutListener() {
   }, [
     session?.userId,
     isUnlimited,
+    lang,
     session?.sessionDurationMinutes,
     authLogout,
     setSessionTimeoutExpired,

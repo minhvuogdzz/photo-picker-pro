@@ -1,5 +1,6 @@
 import type { AuditRecord } from "../types/index.ts";
 import { useContactSheetStore } from "../stores/useContactSheetStore.ts";
+import { trText } from "../../../core/lib/i18n.ts";
 
 export class AuditService {
   public addRecord(record: AuditRecord): void {
@@ -16,16 +17,16 @@ export class AuditService {
 
   public exportAuditLogAsCsv(records: AuditRecord[]): string {
     const headers = [
-      "Thời gian",
+      trText("Thời gian", "Time"),
       "Workspace",
       "Tab",
-      "Tên Folder Job",
-      "Hàng Đích",
-      "Cột Đã Đổi",
-      "Giá Trị Cũ",
-      "Giá Trị Mới",
-      "Trạng Thái",
-      "Tài Khoản Google",
+      trText("Tên Folder Job", "Job Folder Name"),
+      trText("Hàng Đích", "Target Row"),
+      trText("Cột Đã Đổi", "Modified Columns"),
+      trText("Giá Trị Cũ", "Old Value"),
+      trText("Giá Trị Mới", "New Value"),
+      trText("Trạng Thái", "Status"),
+      trText("Tài Khoản Google", "Google Account"),
     ];
 
     const rows = records.flatMap((r) =>

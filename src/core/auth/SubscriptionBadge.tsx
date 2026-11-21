@@ -1,6 +1,7 @@
 import { useAuthStore } from "@/core/stores/useAuthStore";
 import { getUserPlanInfo } from "@/core/services/appEntitlementPolicy";
 import { Clock, ShieldCheck, FileImage, Layers, Infinity as InfinityIcon } from "lucide-react";
+import { useTranslation } from "@/core/lib/i18n";
 
 interface SubscriptionBadgeProps {
   onClick?: () => void;
@@ -13,6 +14,7 @@ interface SubscriptionBadgeProps {
 export function SubscriptionBadge({ onClick }: SubscriptionBadgeProps) {
   const session = useAuthStore((s) => s.session);
   const isOffline = useAuthStore((s) => s.isOffline);
+  const { tr } = useTranslation();
 
   if (!session) return null;
 
@@ -52,7 +54,7 @@ export function SubscriptionBadge({ onClick }: SubscriptionBadgeProps) {
       <button
         type="button"
         onClick={onClick}
-        title={`${planInfo.planName} - Nhấn để xem quyền lợi chi tiết`}
+        title={tr(`${planInfo.planName} - Nhấn để xem quyền lợi chi tiết`, `${planInfo.planName} - Click to view plan benefits`)}
         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all cursor-pointer select-none shadow-xs active:scale-95 ${badgeClass}`}
       >
         {icon}

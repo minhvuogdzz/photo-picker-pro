@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { AlertCircle, FileText, Link, Check, X } from "lucide-react";
 import type { DiscoveredJob } from "../types";
+import { useTranslation } from "@/core/lib/i18n";
 
 interface Props {
   job: DiscoveredJob;
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export function ConflictResolverDialog({ job, onResolve, onClose }: Props) {
+  const { tr } = useTranslation();
   const fieldName = job.conflictDetails?.field || "Link Edit";
   const allowedPolicies = job.conflictDetails?.allowedPolicies || ["APPEND", "OVERWRITE", "SKIP"];
   const [selectedPolicy, setSelectedPolicy] = useState<"OVERWRITE" | "APPEND" | "SKIP">(
@@ -30,11 +32,11 @@ export function ConflictResolverDialog({ job, onResolve, onClose }: Props) {
           <div className="flex items-center gap-2">
             <AlertCircle size={16} className="text-amber-500" />
             <h3 id="dlg-ConflictResolverDialog-1" className="font-semibold text-xs text-foreground">
-              Xử lý xung đột ô {fieldName}
+              {tr("Xử lý xung đột ô", "Resolve Cell Conflict:")} {fieldName}
             </h3>
           </div>
           <button
-            aria-label="Đóng"
+            aria-label={tr("Đóng", "Close")}
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted transition-colors cursor-pointer"
           >
@@ -47,27 +49,27 @@ export function ConflictResolverDialog({ job, onResolve, onClose }: Props) {
           <p className="text-muted-foreground leading-relaxed">
             Job <span className="font-semibold text-foreground">{job.jobFolderName}</span>
             {job.targetTabTitle ? (
-              <> (Tab <span className="font-medium text-foreground">{job.targetTabTitle}</span>, Hàng {job.targetSheetRow})</>
+              <> (Tab <span className="font-medium text-foreground">{job.targetTabTitle}</span>, {tr("Hàng", "Row")} {job.targetSheetRow})</>
             ) : (
-              <> (Hàng {job.targetSheetRow})</>
+              <> ({tr("Hàng", "Row")} {job.targetSheetRow})</>
             )}{" "}
-            đã có sẵn nội dung trong ô <span className="font-medium text-foreground">{fieldName}</span>. Chọn phương thức cập nhật:
+            {tr("đã có sẵn nội dung trong ô", "already has existing content in")} <span className="font-medium text-foreground">{fieldName}</span>. {tr("Chọn phương thức cập nhật:", "Choose update method:")}
           </p>
 
           {/* Current Cell Content Box */}
           <div className="bg-background/60 border border-border/60 rounded-lg p-3 flex flex-col gap-1.5">
             <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5">
-              <FileText size={12} /> Nội dung hiện tại trên Sheet:
+              <FileText size={12} /> {tr("Nội dung hiện tại trên Sheet:", "Current Sheet cell value:")}
             </span>
             <div className="p-2 bg-muted/20 rounded-md font-mono text-[11px] text-foreground max-h-24 overflow-y-auto whitespace-pre-wrap break-all custom-scrollbar">
-              {existingValue || "(Trống)"}
+              {existingValue || tr("(Trống)", "(Empty)")}
             </div>
           </div>
 
           {/* Proposed Value Box */}
           <div className="bg-background/60 border border-border/60 rounded-lg p-3 flex flex-col gap-1.5">
             <span className="text-[11px] font-medium text-foreground flex items-center gap-1.5">
-              <Link size={12} /> Giá trị mới cần cập nhật:
+              <Link size={12} /> {tr("Giá trị mới cần cập nhật:", "Proposed new value:")}
             </span>
             <div className="p-2 bg-muted/20 rounded-md font-mono text-[11px] text-foreground break-all whitespace-pre-wrap">
               {proposedValue}
@@ -87,10 +89,10 @@ export function ConflictResolverDialog({ job, onResolve, onClose }: Props) {
               >
                 <div className="flex flex-col gap-0.5">
                   <span className="font-medium text-xs text-foreground">
-                    Nối tiếp vào dòng mới (Khuyến nghị)
+                    {tr("Nối tiếp vào dòng mới (Khuyến nghị)", "Append on new line (Recommended)")}
                   </span>
                   <span className="text-[11px] text-muted-foreground">
-                    Bảo toàn ghi chú và link cũ, thêm giá trị mới xuống dòng dưới.
+                    {tr("Bảo toàn ghi chú và link cũ, thêm giá trị mới xuống dòng dưới.", "Preserve existing notes/links and append the new value below.")}
                   </span>
                 </div>
                 <input
@@ -114,10 +116,10 @@ export function ConflictResolverDialog({ job, onResolve, onClose }: Props) {
               >
                 <div className="flex flex-col gap-0.5">
                   <span className="font-medium text-xs text-foreground">
-                    Ghi đè hoàn toàn
+                    {tr("Ghi đè hoàn toàn", "Overwrite completely")}
                   </span>
                   <span className="text-[11px] text-muted-foreground">
-                    Xóa nội dung cũ trong ô và thay thế bằng giá trị mới.
+                    {tr("Xóa nội dung cũ trong ô và thay thế bằng giá trị mới.", "Clear existing cell content and replace with the new value.")}
                   </span>
                 </div>
                 <input
@@ -141,10 +143,10 @@ export function ConflictResolverDialog({ job, onResolve, onClose }: Props) {
               >
                 <div className="flex flex-col gap-0.5">
                   <span className="font-medium text-xs text-foreground">
-                    Bỏ qua ô này
+                    {tr("Bỏ qua ô này", "Skip this cell")}
                   </span>
                   <span className="text-[11px] text-muted-foreground">
-                    Giữ nguyên giá trị cũ trên Sheet, không cập nhật ô này.
+                    {tr("Giữ nguyên giá trị cũ trên Sheet, không cập nhật ô này.", "Keep existing Sheet cell untouched.")}
                   </span>
                 </div>
                 <input
@@ -165,14 +167,14 @@ export function ConflictResolverDialog({ job, onResolve, onClose }: Props) {
             onClick={onClose}
             className="px-3 py-1.5 rounded-lg border border-border/60 text-muted-foreground hover:text-foreground text-xs font-medium cursor-pointer"
           >
-            Hủy
+            {tr("Hủy", "Cancel")}
           </button>
           <button
             onClick={() => onResolve(selectedPolicy)}
             className="px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-95 transition-all cursor-pointer flex items-center gap-1.5"
           >
             <Check size={13} />
-            <span>Xác nhận</span>
+            <span>{tr("Xác nhận", "Confirm")}</span>
           </button>
         </div>
       </div>

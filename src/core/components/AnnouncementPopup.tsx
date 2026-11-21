@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { X, Megaphone, CheckCircle2, ExternalLink } from "lucide-react";
 import { useAppStore } from "@/core/stores/useAppStore";
 import { apiRequest } from "@/core/services/apiClient";
+import { useTranslation, trText } from "@/core/lib/i18n";
 
 interface AnnouncementConfig {
   enabled: boolean;
@@ -13,6 +14,7 @@ interface AnnouncementConfig {
 
 export function AnnouncementPopup() {
   const hasSeenWelcome = useAppStore((s) => s.hasSeenWelcome);
+  const { tr } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [config, setConfig] = useState<AnnouncementConfig | null>(null);
 
@@ -34,7 +36,7 @@ export function AnnouncementPopup() {
         if (ap.enabled && ap.htmlContent && ap.htmlContent.trim().length > 0) {
           setConfig({
             enabled: !!ap.enabled,
-            title: ap.title?.trim() || "Thông Báo Từ Nhà Phát Triển",
+            title: ap.title?.trim() || trText("Thông Báo Từ Nhà Phát Triển", "Developer Announcement"),
             htmlContent: ap.htmlContent.trim(),
             updatedAt: ap.updatedAt,
           });
@@ -122,11 +124,11 @@ export function AnnouncementPopup() {
                   {config.title}
                 </h3>
                 <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-700 dark:text-blue-400">
-                  Thông báo
+                  {tr("Thông báo", "Announcement")}
                 </span>
               </div>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                Cập nhật thông tin chính thức từ DH Studio Pro
+                {tr("Cập nhật thông tin chính thức từ DH Studio Pro", "Official updates from DH Studio Pro")}
               </p>
             </div>
           </div>
@@ -135,7 +137,7 @@ export function AnnouncementPopup() {
             type="button"
             onClick={handleClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer border border-transparent hover:border-border"
-            title="Đóng thông báo (ESC)" aria-label="Đóng thông báo (ESC)"
+            title={tr("Đóng thông báo (ESC)", "Close announcement (ESC)")} aria-label={tr("Đóng thông báo (ESC)", "Close announcement (ESC)")}
           >
             <X size={16} />
           </button>
@@ -153,7 +155,7 @@ export function AnnouncementPopup() {
         <div className="px-5 py-3.5 border-t border-border/70 bg-muted/20 shrink-0 flex items-center justify-between gap-3">
           <span className="text-[11px] text-muted-foreground flex items-center gap-1">
             <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
-            <span>Thông báo đã được xác thực từ nhà cung cấp</span>
+            <span>{tr("Thông báo đã được xác thực từ nhà cung cấp", "Verified official announcement")}</span>
           </span>
 
           <button
@@ -161,7 +163,7 @@ export function AnnouncementPopup() {
             onClick={handleClose}
             className="px-5 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-xs shadow-md transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
           >
-            Đã hiểu
+            {tr("Đã hiểu", "Got it")}
           </button>
         </div>
       </div>

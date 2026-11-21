@@ -2,8 +2,10 @@ import React, { useState } from "react";
 import { CheckCircle2, Trash2, ArrowRight, X } from "lucide-react";
 import { useAppStore } from "@/core/stores/useAppStore";
 import { autoFindService } from "../services/autoFindService";
+import { useTranslation } from "@/core/lib/i18n";
 
 export function RemoveCompletedCustomerDialog() {
+  const { tr } = useTranslation();
   const completedCustomer = useAppStore((s) => s.completedCustomerPendingRemoval);
   const setCompletedCustomerPendingRemoval = useAppStore(
     (s) => s.setCompletedCustomerPendingRemoval
@@ -84,13 +86,13 @@ export function RemoveCompletedCustomerDialog() {
           </div>
 
           <div className="flex-1 min-w-0">
-            <h3 id="dlg-RemoveCompletedCustomerDialog-1" className="text-sm font-bold text-foreground">Hoàn tất lọc thư mục khách!</h3>
+            <h3 id="dlg-RemoveCompletedCustomerDialog-1" className="text-sm font-bold text-foreground">{tr("Hoàn tất lọc thư mục khách!", "Customer Folder Filtered!")}</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Đã lọc file thành công & cập nhật trạng thái Sheet thành <span className="font-semibold text-emerald-600 dark:text-emerald-400">"Đã lọc"</span>.
+              {tr("Đã lọc file thành công & cập nhật trạng thái Sheet thành", "Photos filtered & Sheet status updated to")} <span className="font-semibold text-emerald-600 dark:text-emerald-400">"{"Đã lọc"}"</span>.
             </p>
           </div>
 
-          <button aria-label="Đóng"
+          <button aria-label={tr("Đóng", "Close")}
             type="button"
             onClick={handleKeep}
             className="p-1 text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer"
@@ -102,13 +104,13 @@ export function RemoveCompletedCustomerDialog() {
         {/* Target Folder Box */}
         <div className="p-3 rounded-xl bg-muted/40 border border-border/80 text-xs">
           <span className="text-[10px] text-muted-foreground block font-medium uppercase tracking-wider">
-            Thư mục vừa hoàn tất
+            {tr("Thư mục vừa hoàn tất", "Completed folder")}
           </span>
           <p className="font-bold text-foreground truncate mt-0.5 text-xs">
             {completedCustomer.folderName}
           </p>
           <span className="text-[11px] text-muted-foreground mt-1 block">
-            Bạn có muốn đá thư mục này ra khỏi danh sách chờ để chuyển sang khách tiếp theo không?
+            {tr("Bạn có muốn đá thư mục này ra khỏi danh sách chờ để chuyển sang khách tiếp theo không?", "Move this customer out of the active queue and advance to the next one?")}
           </span>
         </div>
 
@@ -120,7 +122,7 @@ export function RemoveCompletedCustomerDialog() {
             onChange={(e) => setDontAskAgain(e.target.checked)}
             className="rounded border-border text-primary focus:ring-primary/40 cursor-pointer w-3.5 h-3.5"
           />
-          <span>Không hỏi lại cho những lần sau (tự động loại bỏ)</span>
+          <span>{tr("Không hỏi lại cho những lần sau (tự động loại bỏ)", "Don't ask again (auto-eject completed folders)")}</span>
         </label>
 
         {/* Action Buttons */}
@@ -130,7 +132,7 @@ export function RemoveCompletedCustomerDialog() {
             onClick={handleKeep}
             className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-card hover:bg-muted border border-border text-foreground transition-colors cursor-pointer"
           >
-            Giữ lại
+            {tr("Giữ lại", "Keep")}
           </button>
 
           <button
@@ -139,7 +141,7 @@ export function RemoveCompletedCustomerDialog() {
             className="px-4 py-1.5 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-colors cursor-pointer shadow-sm flex items-center gap-1.5"
           >
             <Trash2 size={13} />
-            <span>Đồng ý loại bỏ & Tiếp tục</span>
+            <span>{tr("Đồng ý loại bỏ & Tiếp tục", "Eject & Continue")}</span>
           </button>
         </div>
       </div>

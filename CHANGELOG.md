@@ -2,6 +2,24 @@
 
 Tất cả các bản phát hành của **DH Studio Pro** (phát triển & thuộc sở hữu bản quyền của **Devhouse Software**) đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
 
+## [v3.5.2] - 2026-11-21
+
+**Đồng bộ song ngữ Việt ↔ Anh (`vi` ↔ `en`) toàn diện trên toàn bộ ứng dụng & thiết lập quy tắc phát triển song ngữ**
+
+#### Đồng bộ hoàn toàn song ngữ Việt ↔ Anh trên mọi module (`vi` ↔ `en`)
+- Đồng bộ hóa 100% giao diện, hộp thoại, thông báo, lỗi người dùng và định dạng số/thời gian trên mọi module: **Launcher**, **Đăng nhập/Bản quyền/Cập nhật**, **Lọc ảnh Pro**, **Contact the Sheet**, **Chuyển đổi file (`mvd-convert`)**, **Thống kê & Tính lương (`photo-counter`)**, **Kho Tài Nguyên**, **Trung tâm Thông báo**, **Hiệu năng hệ thống** và **Control Hub khay hệ thống (`tray-panel`)**.
+- Đồng bộ tức thì menu Native Tray (`Hiện DH Studio Pro` / `Show DH Studio Pro`, `Thoát ứng dụng` / `Quit App`), cửa sổ phụ Tray Popover qua sự kiện `app-language-changed`, và thông điệp trả về từ Rust backend qua `localizeBackendMessage`.
+- Hỗ trợ xuất bảng tính Google Sheets/CSV/TSV, báo cáo Zalo và **Trợ lý AI Dự đoán Lương** phản hồi theo đúng ngôn ngữ đang chọn trong Cài đặt.
+- Giữ nguyên tuyệt đối các token dữ liệu nghiệp vụ so khớp Google Sheet (`"Chưa lọc"`, `"Đã lọc"`, `"DS Khách"`, v.v.), heuristic phân tích tên thư mục và hợp đồng DHbox Bridge v1.
+
+#### Chuẩn hóa kiểm thử tự động & Quy tắc phát triển song ngữ
+- Bổ sung bộ kiểm thử AST tự động `tests/i18n/i18n-sync.test.ts` đảm bảo 100% key từ điển khớp nhau và 0 chuỗi UI tiếng Việt bị bỏ sót trong `src/**/*.tsx`.
+- Bổ sung tài liệu nguyên tắc phát triển song ngữ song song trong `AGENTS.md` và `CLAUDE.md`.
+
+*(EN Highlights: Full Vietnamese ↔ English UI, dialog, toast, Native Tray menu, Tray Popover, spreadsheet export, and AI Coach localization across all modules while keeping studio Google Sheet matching tokens & DHbox Bridge v1 intact, backed by automated TSX AST checks and bilingual guidelines in `AGENTS.md` / `CLAUDE.md`.)*
+
+---
+
 ## [v3.5.1] - 2026-11-20
 
 **Bản vá chạy ngầm Contact the Sheet (hết treo/timeout) & sửa lỗi không mở lại được cửa sổ sau khi ấn `X` / `Cmd+W`**

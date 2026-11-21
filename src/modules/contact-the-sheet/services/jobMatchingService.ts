@@ -4,6 +4,7 @@ import type {
   FieldMapping,
 } from "../types/index.ts";
 import { folderParserService } from "./folderParserService.ts";
+import { trText } from "../../../core/lib/i18n.ts";
 
 export interface SheetRowRecord {
   row: number; // 1-indexed
@@ -95,10 +96,10 @@ export class JobMatchingService {
           const normFile = folderParserService.normalizeForComparison(fileVal);
           if (normFile && (normFile === normFolderName || normFile === normFinalName)) {
             score += 3.0; // Absolute exact match
-            matchedFields.push("Khớp chính xác Tên file");
+            matchedFields.push(trText("Khớp chính xác Tên file", "Exact File Name match"));
           } else if (normFile && normFile.length >= 6 && (normFolderName.includes(normFile) || normFile.includes(normFolderName))) {
             score += 1.5;
-            matchedFields.push("Tên file (chứa)");
+            matchedFields.push(trText("Tên file (chứa)", "File Name (partial)"));
           }
         }
       }
@@ -118,7 +119,7 @@ export class JobMatchingService {
             const cVal = folderParserService.normalizeForComparison(record.values[customerCol]);
             if (!this.isErrorValue(cVal) && normSocial.length >= 5 && (cVal.includes(normSocial) || normSocial.includes(cVal))) {
               score += 0.9;
-              matchedFields.push("Tên khách (khớp mã)");
+              matchedFields.push(trText("Tên khách (khớp mã)", "Customer Name (ID match)"));
             }
           }
         }
@@ -137,17 +138,17 @@ export class JobMatchingService {
             if (normC === normCand) {
               score += 1.8;
               customerMatched = true;
-              matchedFields.push("Khớp Tên khách");
+              matchedFields.push(trText("Khớp Tên khách", "Exact Customer Name"));
               break;
             } else if (normCand.length >= 4 && normC.includes(normCand)) {
               score += 1.2;
               customerMatched = true;
-              matchedFields.push("Tên khách (chứa)");
+              matchedFields.push(trText("Tên khách (chứa)", "Customer Name (partial)"));
               break;
             } else if (normC.length >= 4 && normCand.includes(normC) && normC.length >= normCand.length - 3) {
               score += 1.0;
               customerMatched = true;
-              matchedFields.push("Tên khách (gần đúng)");
+              matchedFields.push(trText("Tên khách (gần đúng)", "Customer Name (fuzzy)"));
               break;
             }
           }
@@ -167,12 +168,12 @@ export class JobMatchingService {
 
             if (normCell === normCand) {
               score = Math.max(score, 1.4);
-              matchedFields.push(`Ô ${colLetter}: "${cellRaw}"`);
+              matchedFields.push(`${trText("Ô", "Cell")} ${colLetter}: "${cellRaw}"`);
               customerMatched = true;
               break;
             } else if (normCand.length >= 5 && normCell.includes(normCand)) {
               score = Math.max(score, 1.0);
-              matchedFields.push(`Ô ${colLetter}: "${cellRaw}"`);
+              matchedFields.push(`${trText("Ô", "Cell")} ${colLetter}: "${cellRaw}"`);
               customerMatched = true;
               break;
             }
@@ -198,7 +199,7 @@ export class JobMatchingService {
 
         if (dateFound) {
           score += 0.2;
-          matchedFields.push("Ngày");
+          matchedFields.push(trText("Ngày", "Date"));
         }
       }
 
@@ -218,7 +219,7 @@ export class JobMatchingService {
 
         if (timeFound) {
           score += 0.1;
-          matchedFields.push("Giờ");
+          matchedFields.push(trText("Giờ", "Time"));
         }
       }
 
@@ -241,7 +242,10 @@ export class JobMatchingService {
     if (scoredCandidates.length === 0) {
       return {
         status: "NO_MATCH",
-        reason: `Không tìm thấy khách hàng "${job.metadata.customerName || job.finalFolderName}" trong các tab đã chọn`,
+        reason: trText(
+          `Không tìm thấy khách hàng "${job.metadata.customerName || job.finalFolderName}" trong các tab đã chọn`,
+          `Customer "${job.metadata.customerName || job.finalFolderName}" not found in selected tab(s)`
+        ),
       };
     }
 
@@ -256,7 +260,10 @@ export class JobMatchingService {
         targetTabTitle: top.tabTitle || profile.selectedTabTitle,
         targetSnapshot: top.values,
         confidence: 1.0,
-        reason: `Khớp chính xác tuyệt đối (${top.matchedFields.join(", ")})`,
+        reason: trText(
+          `Khớp chính xác tuyệt đối (${top.matchedFields.join(", ")})`,
+          `Exact match (${top.matchedFields.join(", ")})`
+        ),
       };
     }
 
@@ -267,7 +274,10 @@ export class JobMatchingService {
         targetTabTitle: top.tabTitle || profile.selectedTabTitle,
         targetSnapshot: top.values,
         confidence: top.score,
-        reason: `Đã dóng đúng hàng ${top.row}${top.tabTitle ? ` (Tab ${top.tabTitle})` : ""} theo (${top.matchedFields.join(", ")})`,
+        reason: trText(
+          `Đã dóng đúng hàng ${top.row}${top.tabTitle ? ` (Tab ${top.tabTitle})` : ""} theo (${top.matchedFields.join(", ")})`,
+          `Matched row ${top.row}${top.tabTitle ? ` (Tab ${top.tabTitle})` : ""} via (${top.matchedFields.join(", ")})`
+        ),
       };
     }
 
@@ -277,7 +287,10 @@ export class JobMatchingService {
       status: "NEEDS_REVIEW",
       confidence: top.score,
       candidateRows: topCandidates,
-      reason: `Tìm thấy ${scoredCandidates.length} hàng tiềm năng (${topCandidates.map((c) => `${c.tabTitle ? `[${c.tabTitle}] ` : ""}Hàng ${c.row}`).join(", ")}), vui lòng xác nhận`,
+      reason: trText(
+        `Tìm thấy ${scoredCandidates.length} hàng tiềm năng (${topCandidates.map((c) => `${c.tabTitle ? `[${c.tabTitle}] ` : ""}Hàng ${c.row}`).join(", ")}), vui lòng xác nhận`,
+        `Found ${scoredCandidates.length} candidate row(s) (${topCandidates.map((c) => `${c.tabTitle ? `[${c.tabTitle}] ` : ""}Row ${c.row}`).join(", ")}), please confirm`
+      ),
     };
   }
 
