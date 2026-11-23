@@ -19,6 +19,8 @@ pub struct CustomerCode {
     pub normalized: String,
     #[serde(default)]
     pub prefix: Option<String>,
+    #[serde(default)]
+    pub extension: Option<String>,
 }
 
 /// Options for scanning folders

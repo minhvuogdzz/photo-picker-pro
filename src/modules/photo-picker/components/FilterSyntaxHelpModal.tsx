@@ -238,6 +238,39 @@ export function FilterSyntaxHelpModal({ isOpen, onClose }: FilterSyntaxHelpModal
                 </div>
               </div>
 
+              {/* Cascading Extension Hint (.CR2 vs .CR3) */}
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 space-y-1.5 text-[11px] text-emerald-700 dark:text-emerald-300">
+                <div className="font-semibold flex items-center gap-1.5">
+                  <CheckCircle2 size={13} />
+                  <span>{tr("Kế thừa hậu tố đuôi file khi trùng tên khác đuôi (.CR2 vs .CR3):", "Cascading file extension inheritance (.CR2 vs .CR3):")}</span>
+                </div>
+                <p className="leading-relaxed">
+                  {tr(
+                    "Khi thư mục có cả 2 file trùng mã nhưng khác đuôi (ví dụ ",
+                    "When a folder contains two files with the same code but different extensions (e.g., "
+                  )}
+                  <code className="bg-emerald-500/15 px-1 py-0.2 rounded font-mono font-bold">IMG_1234.CR2</code>
+                  {tr(" và ", " and ")}
+                  <code className="bg-emerald-500/15 px-1 py-0.2 rounded font-mono font-bold">IMG_1234.CR3</code>
+                  {tr(
+                    "), bạn chỉ cần gắn đuôi file (ví dụ ",
+                    "), simply append the extension (e.g., "
+                  )}
+                  <code className="bg-emerald-500/15 px-1 py-0.2 rounded font-mono font-bold">IMG_1234.CR3</code>
+                  {tr(
+                    ") vào mã đầu tiên — toàn bộ các mã bên dưới sẽ tự động ăn theo đuôi ",
+                    ") to the first code — all subsequent codes automatically inherit "
+                  )}
+                  <code className="font-mono font-bold">.CR3</code>
+                  {tr(
+                    " cho tới khi gặp một mã có gắn đuôi mới (như ",
+                    " until a new extension appears (such as "
+                  )}
+                  <code className="bg-emerald-500/15 px-1 py-0.2 rounded font-mono font-bold">.CR2</code>
+                  {tr(").", ").")}
+                </p>
+              </div>
+
               {/* Reset Prefix Hint */}
               <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-1.5 text-[11px] text-amber-700 dark:text-amber-300">
                 <div className="font-semibold flex items-center gap-1.5">

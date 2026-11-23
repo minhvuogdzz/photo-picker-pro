@@ -18,11 +18,60 @@ export interface VersionReleaseNote {
 
 export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
   {
+    version: "v3.6.0",
+    date: "2026-11-23",
+    title: "Lọc ảnh Pro: Tô sáng & nháy dòng mã lỗi trực tiếp, kế thừa hậu tố đuôi file (.CR2/.CR3), kéo chỉnh độ rộng 3 cột & giao diện Liquid Glass",
+    titleEn: "Photo Picker Pro: Inline error line highlighting & jump navigation, cascading file extension inheritance (.CR2/.CR3), resizable 3-column layout & Liquid Glass toolbar",
+    isCurrent: true,
+    sections: [
+      {
+        title: "Lọc ảnh Pro — Tô màu, nháy sáng dòng mã lỗi & Nhảy thẳng tới vị trí lỗi",
+        titleEn: "Photo Picker Pro — Inline Error Line Highlighting & Click-to-Jump Navigation",
+        type: "feature",
+        items: [
+          "Tô sáng & nháy dòng lỗi trực tiếp ngay trong ô nhập mã kèm cột số thứ tự dòng: dòng bị Sai mã (Missing) nháy đỏ kèm nhãn cảnh báo, dòng bị Trùng mã (Duplicate) nháy đồng thời tất cả các dòng trùng màu cam/vàng và chỉ chéo số dòng bị trùng.",
+          "Nhận diện thông minh phần chữ đi kèm mã số ảnh (ví dụ HIN1234 gõ nhầm thành HNI1234 sẽ báo đỏ Sai mã ngay tại dòng đó mà không làm báo sai lây xuống các dòng chỉ ghi số bên dưới); chữ đứng riêng một mình trên 1 dòng không kèm số sẽ không báo sai mã.",
+          "Bấm trực tiếp vào bất kỳ mã lỗi nào ở bảng \"Các file lỗi\" bên cột trái (hoặc nút đếm dòng lỗi trên thanh tiêu đề) để tự động cuộn tới đúng dòng đó, nháy sáng thu hút mắt và bôi đen mã để sửa hoặc xoá ngay.",
+        ],
+        itemsEn: [
+          "Added synchronized backdrop line highlighting and line numbers inside the customer code editor: Missing lines pulse red with inline badges, while Duplicate lines highlight all matching duplicate lines in amber and cross-reference their peer line numbers.",
+          "Smart prefix-plus-number validation flags mistyped prefixes attached to photo numbers (e.g., HNI1234 instead of HIN1234) without cascading false errors onto subsequent number-only lines, while ignoring standalone text-only lines.",
+          "Click any error item in the left \"Errors\" panel (or the header error pills) to automatically scroll to, flash, and select the exact faulty line in the code editor.",
+        ],
+      },
+      {
+        title: "Kế thừa hậu tố đuôi file (.CR2 / .CR3 / .JPG / .ARW) & Tự động quét lại khi đổi bộ lọc",
+        titleEn: "Cascading File Extension Inheritance (.CR2 / .CR3 / .JPG / .ARW) & Auto Re-Scan on Filter Toggle",
+        type: "feature",
+        items: [
+          "Khi thư mục có 2 file trùng mã nhưng khác đuôi (ví dụ IMG_1234.CR2 và IMG_1234.CR3), chỉ cần gắn đuôi file vào mã đầu tiên (ví dụ IMG_1234.CR3) — toàn bộ các mã bên dưới sẽ tự động ăn theo hậu tố đó cho tới khi gặp vị trí gắn hậu tố mới.",
+          "Tự động quét và đối chiếu lại ngay lập tức khi tích/bỏ tích 4 tuỳ chọn lọc (Lọc Raw, Lọc JPG, Chỉ thư mục chọn, Lọc tất cả thư mục con) mà không cần bấm lại nút Quét file.",
+        ],
+        itemsEn: [
+          "When a folder contains files sharing the same code with different extensions (e.g., IMG_1234.CR2 and IMG_1234.CR3), appending an extension to the first code automatically cascades that extension to all subsequent codes until a new extension is specified.",
+          "Toggling any of the 4 scan option checkboxes (Filter RAW, Filter JPG, Selected folder only, All subfolders) now automatically re-scans and re-matches immediately.",
+        ],
+      },
+      {
+        title: "Kéo chỉnh độ rộng 3 cột linh hoạt & Đồng bộ thanh công cụ Liquid Glass",
+        titleEn: "Resizable 3-Column Splitters & Unified Liquid Glass Toolbar",
+        type: "design",
+        items: [
+          "Bổ sung rãnh kéo ngang (con trỏ mũi tên 2 chiều) giữa 3 cột Trái ↔ Giữa ↔ Phải trong Lọc ảnh Pro, tự động lưu kích thước tuỳ chỉnh và hỗ trợ nhấp đúp để đặt lại độ rộng mặc định.",
+          "Thiết kế lại thanh công cụ đầu trang ô mã lọc theo chuẩn Liquid Glass đồng bộ với Contact the Sheet, nút Truy xuất trang tính dạng fill xanh liền khối và tinh gọn thanh trạng thái dưới cùng.",
+        ],
+        itemsEn: [
+          "Added interactive horizontal resize splitters (with two-way resize cursor and double-click reset) between the Left, Center, and Right panels in Photo Picker Pro with persistent width storage.",
+          "Redesigned the code editor header toolbar with responsive Liquid Glass pills matching Contact the Sheet, a solid filled green Sheet Extract button, and a cleaner bottom status bar.",
+        ],
+      },
+    ],
+  },
+  {
     version: "v3.5.2",
     date: "2026-11-21",
     title: "Đồng bộ song ngữ Việt ↔ Anh toàn diện trên toàn bộ ứng dụng & thiết lập quy tắc phát triển song ngữ",
     titleEn: "Full Vietnamese ↔ English bilingual synchronization across all modules & automated i18n guard",
-    isCurrent: true,
     sections: [
       {
         title: "Đồng bộ hoàn toàn song ngữ Việt ↔ Anh (vi ↔ en) trên toàn bộ ứng dụng",

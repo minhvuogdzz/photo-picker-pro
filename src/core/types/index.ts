@@ -13,6 +13,7 @@ export interface CustomerCode {
   readonly raw: string;
   readonly normalized: string;
   readonly prefix?: string;
+  readonly extension?: string;
 }
 
 /** The matching mode */

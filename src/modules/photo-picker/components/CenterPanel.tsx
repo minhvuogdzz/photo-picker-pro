@@ -1,7 +1,7 @@
 import { useAppStore } from "@/core/stores/useAppStore";
 import { useAuthStore } from "@/core/stores/useAuthStore";
 import { invoke } from "@tauri-apps/api/core";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Code2,
   Hash,
@@ -15,6 +15,7 @@ import {
   Loader2,
   CheckCircle2,
   AlertTriangle,
+  XCircle,
   RotateCcw,
   SkipForward,
   X,
@@ -27,7 +28,8 @@ import { CheckFilterStatusModal } from "./CheckFilterStatusModal";
 import { FilterSyntaxHelpModal } from "./FilterSyntaxHelpModal";
 import { AutoFindToggle } from "./AutoFindToggle";
 import { autoFindService } from "../services/autoFindService";
-import { buildScanSignature } from "../features/scanner/hooks/useScanAndMatch";
+import { buildScanSignature, useScanAndMatch } from "../features/scanner/hooks/useScanAndMatch";
+import { analyzeCodeInputLines } from "../utils/codeLineHighlighter";
 
 export {
   isCommandToken,
@@ -35,6 +37,12 @@ export {
   formatPastedCodes,
 } from "../utils/codeFormatter";
 import { formatPastedCodes } from "../utils/codeFormatter";
+
+const CODE_LINE_HEIGHT_PX = 24;
+const CODE_PAD_VERTICAL_PX = 12;
+const CODE_GUTTER_WIDTH_PX = 38;
+const CODE_TEXT_PAD_LEFT_PX = 10;
+const CODE_TEXTAREA_PAD_LEFT_PX = CODE_GUTTER_WIDTH_PX + CODE_TEXT_PAD_LEFT_PX;
 
 export function CenterPanel() {
   const rawCodeInput = useAppStore((s) => s.rawCodeInput);
@@ -56,11 +64,136 @@ export function CenterPanel() {
   const setAutoFindStatus = useAppStore((s) => s.setAutoFindStatus);
   const selectedInputFolders = useAppStore((s) => s.selectedInputFolders);
   const inputFolders = useAppStore((s) => s.inputFolders);
+  const codeLineFocusRequest = useAppStore((s) => s.codeLineFocusRequest);
+  const clearCodeLineFocusRequest = useAppStore((s) => s.clearCodeLineFocusRequest);
   const [isParsingDebounced, setIsParsingDebounced] = useState(false);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [flashingLine, setFlashingLine] = useState<{ lineIndices: number[]; key: number } | null>(null);
+  const [errorCycleIndex, setErrorCycleIndex] = useState(0);
   const { t, tr } = useTranslation();
+  const { handleScanAndMatch } = useScanAndMatch();
+
+  const handleToggleScanOption = useCallback(
+    (patch: Partial<import("@/core/types").ScanOptions>) => {
+      setScanOptions(patch);
+      const st = useAppStore.getState();
+      const effectiveFolders =
+        st.selectedInputFolders.length > 0 ? st.selectedInputFolders : st.inputFolders;
+      if (
+        effectiveFolders.length > 0 &&
+        (st.scannedFiles.length > 0 || st.matchResult !== null || st.rawCodeInput.trim().length > 0) &&
+        st.phase !== "scanning" &&
+        st.phase !== "copying"
+      ) {
+        void handleScanAndMatch();
+      }
+    },
+    [setScanOptions, handleScanAndMatch]
+  );
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const backdropTrackRef = useRef<HTMLDivElement>(null);
+  const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastHandledFocusIdRef = useRef<number | null>(null);
   const activeCustomerFolder = selectedInputFolders[0] || inputFolders[0] || "";
+
+  const lineAnalysis = useMemo(
+    () => analyzeCodeInputLines(rawCodeInput, matchResult),
+    [rawCodeInput, matchResult]
+  );
+
+  // Clear any temporary flash animation whenever codes or matchResult change
+  useEffect(() => {
+    setFlashingLine(null);
+  }, [rawCodeInput, matchResult]);
+
+  const syncBackdropScroll = useCallback(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    if (backdropTrackRef.current) {
+      backdropTrackRef.current.style.transform = `translate3d(0, -${textarea.scrollTop}px, 0)`;
+    }
+    setScrollLeft((prev) => (prev !== textarea.scrollLeft ? textarea.scrollLeft : prev));
+  }, []);
+
+  useEffect(() => {
+    syncBackdropScroll();
+  }, [rawCodeInput, syncBackdropScroll]);
+
+  const jumpToCodeLine = useCallback(
+    (lineIndex: number) => {
+      const targetLine = lineAnalysis.lines[lineIndex];
+      const textarea = textareaRef.current;
+      if (!targetLine || !textarea) return;
+
+      const lineTop = CODE_PAD_VERTICAL_PX + lineIndex * CODE_LINE_HEIGHT_PX;
+      const viewportHeight = textarea.clientHeight;
+      const targetScrollTop = Math.max(
+        0,
+        lineTop - viewportHeight / 2 + CODE_LINE_HEIGHT_PX / 2
+      );
+
+      textarea.scrollTop = targetScrollTop;
+      syncBackdropScroll();
+
+      textarea.focus({ preventScroll: true });
+      try {
+        textarea.setSelectionRange(targetLine.charStart, targetLine.charEnd);
+      } catch {
+        // Ignore selection errors if disabled
+      }
+
+      // Flash the target line AND any peer duplicate lines together so both duplicate lines flash in unison
+      const peerIndices = (targetLine.peerDuplicateLineNumbers ?? []).map((ln) => ln - 1);
+      const flashIndices = Array.from(new Set([lineIndex, ...peerIndices]));
+
+      if (flashTimeoutRef.current) {
+        clearTimeout(flashTimeoutRef.current);
+      }
+      setFlashingLine({ lineIndices: flashIndices, key: Date.now() });
+      flashTimeoutRef.current = setTimeout(() => {
+        setFlashingLine(null);
+      }, 2200);
+    },
+    [lineAnalysis.lines, syncBackdropScroll]
+  );
+
+  useEffect(() => {
+    if (!codeLineFocusRequest) return;
+    if (lastHandledFocusIdRef.current === codeLineFocusRequest.id) return;
+    lastHandledFocusIdRef.current = codeLineFocusRequest.id;
+    const targetIdx = codeLineFocusRequest.lineIndex;
+    clearCodeLineFocusRequest();
+    if (targetIdx >= 0) {
+      jumpToCodeLine(targetIdx);
+    }
+  }, [codeLineFocusRequest, clearCodeLineFocusRequest, jumpToCodeLine]);
+
+  useEffect(() => {
+    return () => {
+      if (flashTimeoutRef.current) {
+        clearTimeout(flashTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleCycleMissingLines = useCallback(() => {
+    const missingLines = lineAnalysis.errorLines.filter((l) => l.primaryStatus === "Missing");
+    if (missingLines.length === 0) return;
+    const nextIdx = errorCycleIndex % missingLines.length;
+    setErrorCycleIndex((prev) => prev + 1);
+    jumpToCodeLine(missingLines[nextIdx].lineIndex);
+  }, [lineAnalysis.errorLines, errorCycleIndex, jumpToCodeLine]);
+
+  const handleCycleDuplicateLines = useCallback(() => {
+    const dupLines = lineAnalysis.errorLines.filter(
+      (l) => l.primaryStatus === "InputDuplicate" || l.primaryStatus === "Duplicate"
+    );
+    if (dupLines.length === 0) return;
+    const nextIdx = errorCycleIndex % dupLines.length;
+    setErrorCycleIndex((prev) => prev + 1);
+    jumpToCodeLine(dupLines[nextIdx].lineIndex);
+  }, [lineAnalysis.errorLines, errorCycleIndex, jumpToCodeLine]);
 
   // Always keep Auto Find synchronized whenever the active customer changes in multi-customer mode
   // (e.g. clicking another customer/checkbox, manually deleting the active customer so the queue jumps
@@ -309,90 +442,131 @@ export function CenterPanel() {
   ];
 
   return (
-    <div className="panel flex-1 flex flex-col min-h-0 animate-fade-in">
+    <div className="panel flex-1 min-w-[300px] flex flex-col min-h-0 animate-fade-in">
       {/* === TOP HALF: Customer Codes === */}
       <div className="flex-1 flex flex-col min-h-0">
-        <div className="panel-header py-3 px-4 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <span className="panel-title flex items-center gap-2 text-xs">
-              <Code2 size={13} className="text-muted-foreground" />
-              {t("customer_codes")}
+        <div
+          className="panel-header py-2.5 px-3.5 flex flex-wrap items-center justify-start gap-1.5 min-w-0"
+          style={{ justifyContent: "flex-start" }}
+        >
+          <span className="panel-title flex items-center gap-1.5 text-xs whitespace-nowrap shrink-0 mr-0.5">
+            <Code2 size={13} className="text-muted-foreground shrink-0" />
+            <span>{t("customer_codes")}</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setSheetModalInitialTab("extract");
+              setIsSheetModalOpen(true);
+            }}
+            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11px] font-medium transition-all select-none bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs cursor-pointer whitespace-nowrap shrink-0"
+            title={tr("Truy xuất mã chọn của khách từ Google Sheet", "Extract customer selection codes from Google Sheet")}
+          >
+            <FileSpreadsheet
+              size={12}
+              strokeWidth={1.75}
+              className="text-white shrink-0"
+            />
+            <span>{tr("Truy xuất trang tính", "Sheet Extract")}</span>
+          </button>
+
+          {/* Check TT Button: Only shown in multi-folder mode as requested */}
+          {pickerMode === "multi" && (
+            <button
+              type="button"
+              onClick={() => {
+                setIsCheckStatusModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11px] font-medium transition-colors select-none glass-pill hover:bg-foreground/[0.08] text-foreground cursor-pointer whitespace-nowrap shrink-0"
+              title={tr("Kiểm tra đối soát trạng thái Chưa lọc trên Google Sheet để giữ lại khách cần lọc", "Check Google Sheet filter status to keep customers pending culling")}
+            >
+              <Filter
+                size={12}
+                strokeWidth={1.75}
+                className="text-muted-foreground shrink-0"
+              />
+              <span>{tr("Check TT", "Status Check")}</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => {
+              setSheetModalInitialTab("config");
+              setIsSheetModalOpen(true);
+            }}
+            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11px] font-medium transition-colors select-none glass-pill hover:bg-foreground/[0.08] text-foreground cursor-pointer whitespace-nowrap shrink-0"
+            title={tr("Cấu hình cột và Tab Google Sheet cho ứng dụng Lọc ảnh", "Configure Google Sheet tabs and columns for Photo Picker")}
+          >
+            <Settings2
+              size={12}
+              strokeWidth={1.75}
+              className="text-muted-foreground shrink-0"
+            />
+            <span>{tr("Cấu hình Sheet", "Sheet Config")}</span>
+          </button>
+
+          {isParsingDebounced && (
+            <span className="text-[10px] text-muted-foreground animate-pulse whitespace-nowrap shrink-0">
+              {tr("Đang tách mã...", "Parsing...")}
             </span>
+          )}
+          {lineAnalysis.missingLineCount > 0 && (
             <button
               type="button"
-              onClick={() => {
-                setSheetModalInitialTab("extract");
-                setIsSheetModalOpen(true);
-              }}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all group shadow-2xs select-none bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:border-emerald-500/50 cursor-pointer"
-              title={tr("Truy xuất mã chọn của khách từ Google Sheet", "Extract customer selection codes from Google Sheet")}
+              onClick={handleCycleMissingLines}
+              className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11px] font-medium glass-pill hover:bg-foreground/[0.08] text-foreground tabular-nums cursor-pointer transition-colors whitespace-nowrap shrink-0"
+              title={tr(
+                "Bấm để nhảy lần lượt tới từng dòng bị sai mã trong khung nhập",
+                "Click to jump through missing code lines in the editor"
+              )}
             >
-              <FileSpreadsheet
-                size={12}
-                className="text-emerald-500 group-hover:scale-110 transition-transform"
-              />
-              <span>{tr("Truy xuất trang tính", "Sheet Extract")}</span>
-            </button>
-
-            {/* Check TT Button: Only shown in multi-folder mode as requested */}
-            {pickerMode === "multi" && (
-              <button
-                type="button"
-                onClick={() => {
-                  setIsCheckStatusModalOpen(true);
-                }}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-all group shadow-2xs animate-fade-in select-none bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border-amber-500/35 hover:border-amber-500/60 cursor-pointer"
-                title={tr("Kiểm tra đối soát trạng thái Chưa lọc trên Google Sheet để giữ lại khách cần lọc", "Check Google Sheet filter status to keep customers pending culling")}
-              >
-                <Filter
-                  size={12}
-                  className="text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform"
-                />
-                <span>{tr("Check TT", "Status Check")}</span>
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={() => {
-                setSheetModalInitialTab("config");
-                setIsSheetModalOpen(true);
-              }}
-              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium border transition-all group shadow-2xs select-none bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground border-border/60 hover:border-border cursor-pointer"
-              title={tr("Cấu hình cột và Tab Google Sheet cho ứng dụng Lọc ảnh", "Configure Google Sheet tabs and columns for Photo Picker")}
-            >
-              <Settings2
-                size={12}
-                className="text-muted-foreground group-hover:rotate-45 transition-transform"
-              />
-              <span>{tr("Cấu hình Sheet", "Sheet Config")}</span>
-            </button>
-          </div>
-          <div className="flex items-center gap-1.5">
-            {isParsingDebounced && (
-              <span className="text-[10px] text-muted-foreground animate-pulse">
-                {tr("Đang tách mã...", "Parsing...")}
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+              <span>
+                {tr(
+                  `${lineAnalysis.missingLineCount} dòng sai`,
+                  `${lineAnalysis.missingLineCount} missing`
+                )}
               </span>
-            )}
-            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-muted/60 text-muted-foreground border border-border/50 tabular-nums">
-              {parsedCodes.length} {t("codes_count")}
-            </span>
+            </button>
+          )}
+          {lineAnalysis.duplicateLineCount > 0 && (
             <button
               type="button"
-              onClick={() => setIsHelpModalOpen(true)}
-              className="inline-flex items-center justify-center w-6 h-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all border border-border/60 hover:border-primary/50 cursor-pointer shadow-2xs group"
-              title={tr("Hướng dẫn cú pháp & xử lý trùng tiền tố", "Syntax guide & prefix conflict resolution")} aria-label={tr("Hướng dẫn cú pháp & xử lý trùng tiền tố", "Syntax guide & prefix conflict resolution")}
+              onClick={handleCycleDuplicateLines}
+              className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11px] font-medium glass-pill hover:bg-foreground/[0.08] text-foreground tabular-nums cursor-pointer transition-colors whitespace-nowrap shrink-0"
+              title={tr(
+                "Bấm để nhảy lần lượt tới từng dòng bị trùng mã trong khung nhập",
+                "Click to jump through duplicate code lines in the editor"
+              )}
             >
-              <HelpCircle size={13} className="text-muted-foreground group-hover:text-primary transition-colors" />
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+              <span>
+                {tr(
+                  `${lineAnalysis.duplicateLineCount} dòng trùng`,
+                  `${lineAnalysis.duplicateLineCount} duplicate`
+                )}
+              </span>
             </button>
-          </div>
+          )}
+          <span className="inline-flex items-center h-7 px-2.5 rounded-lg text-[11px] font-medium glass-pill text-muted-foreground tabular-nums whitespace-nowrap shrink-0">
+            {parsedCodes.length} {t("codes_count")}
+          </span>
+          <button
+            type="button"
+            onClick={() => setIsHelpModalOpen(true)}
+            className="inline-flex items-center justify-center w-7 h-7 rounded-lg glass-pill text-muted-foreground hover:text-foreground hover:bg-foreground/[0.08] transition-colors cursor-pointer shrink-0"
+            title={tr("Hướng dẫn cú pháp & xử lý trùng tiền tố", "Syntax guide & prefix conflict resolution")} aria-label={tr("Hướng dẫn cú pháp & xử lý trùng tiền tố", "Syntax guide & prefix conflict resolution")}
+          >
+            <HelpCircle size={13} strokeWidth={1.75} />
+          </button>
         </div>
 
         {/* Match Mode Selector & Auto Find Toggle */}
-        <div className="px-4 pt-2.5 flex items-center justify-between gap-2.5">
-          <div className="flex items-center gap-2.5">
-            <span id="match-mode-label" className="text-[11px] font-medium text-muted-foreground">{t("mode")}:</span>
-            <div role="radiogroup" aria-labelledby="match-mode-label" className="flex gap-0.5 bg-muted/50 rounded-lg p-0.5 border border-border/50">
+        <div className="px-4 pt-2.5 flex flex-wrap items-center justify-between gap-2 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <span id="match-mode-label" className="text-[11px] font-medium text-muted-foreground whitespace-nowrap shrink-0">{t("mode")}:</span>
+            <div role="radiogroup" aria-labelledby="match-mode-label" className="flex items-center gap-0.5 bg-foreground/[0.04] rounded-[10px] p-0.5 border border-border">
               {modes.map((mode) => (
                 <button
                   key={mode.id}
@@ -400,14 +574,14 @@ export function CenterPanel() {
                   role="radio"
                   aria-checked={matchMode === mode.id}
                   onClick={() => setMatchMode(mode.id)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] transition-colors cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-2.5 h-6.5 rounded-[8px] text-[11.5px] transition-colors cursor-pointer whitespace-nowrap shrink-0 border ${
                     matchMode === mode.id
-                      ? "bg-primary text-primary-foreground shadow-sm font-semibold"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
+                      ? "glass-pill text-foreground font-medium"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  {mode.icon}
-                  {mode.id === "ExactNumber" ? t("exact") : mode.id === "Contains" ? t("contains") : t("regex")}
+                  <span className={matchMode === mode.id ? "text-primary" : ""}>{mode.icon}</span>
+                  <span>{mode.id === "ExactNumber" ? t("exact") : mode.id === "Contains" ? t("contains") : t("regex")}</span>
                 </button>
               ))}
             </div>
@@ -513,20 +687,206 @@ export function CenterPanel() {
           </div>
         )}
 
-        {/* Code Input Textarea */}
+        {/* Code Input Textarea with Synchronized Line-Level Error Highlighting */}
         <div className="flex-1 px-4 py-3 min-h-0 flex flex-col relative">
-          <textarea
-            ref={textareaRef}
-            aria-label={t("customer_codes")}
-            className="w-full h-full resize-none font-mono text-[13px] leading-relaxed p-3.5 bg-muted/20 border border-border/60 text-foreground rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus:border-primary/50 transition-colors placeholder:text-muted-foreground/80 disabled:opacity-60"
-            style={{ fontFeatureSettings: '"zero" 1, "ss01" 1', scrollbarWidth: 'thin' }}
-            placeholder={t("paste_codes_here")}
-            value={rawCodeInput}
-            onChange={(e) => setRawCodeInput(e.target.value)}
-            onPaste={handlePaste}
-            spellCheck={false}
-            disabled={phase === "scanning" || phase === "copying" || isAutoFinding}
-          />
+          <div
+            className={`relative w-full h-full rounded-lg bg-muted/20 border transition-colors overflow-hidden ${
+              lineAnalysis.missingLineCount > 0
+                ? "border-red-500/45 focus-within:border-red-500/70 focus-within:ring-2 focus-within:ring-red-500/25"
+                : lineAnalysis.duplicateLineCount > 0
+                  ? "border-amber-500/45 focus-within:border-amber-500/70 focus-within:ring-2 focus-within:ring-amber-500/25"
+                  : "border-border/60 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/40"
+            }`}
+          >
+            {/* Left Line-Number Gutter Background Strip */}
+            <div
+              className="absolute top-0 bottom-0 left-0 bg-muted/25 border-r border-border/40 pointer-events-none select-none z-0"
+              style={{ width: `${CODE_GUTTER_WIDTH_PX}px` }}
+            />
+
+            {/* Synchronized Backdrop Overlay for Line Numbers, Pulsing Error Highlights & Inline Diagnostic Badges */}
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 overflow-hidden pointer-events-none select-none z-10"
+            >
+              <div
+                ref={backdropTrackRef}
+                className="w-full will-change-transform"
+                style={{
+                  paddingTop: `${CODE_PAD_VERTICAL_PX}px`,
+                  paddingBottom: `${CODE_PAD_VERTICAL_PX}px`,
+                }}
+              >
+                {lineAnalysis.lines.map((line) => {
+                  const isMissing = line.primaryStatus === "Missing";
+                  const isInputDup = line.primaryStatus === "InputDuplicate";
+                  const isFileDup = line.primaryStatus === "Duplicate";
+                  const isDup = isInputDup || isFileDup;
+                  const isFound = line.primaryStatus === "Found";
+                  const isCommand = line.primaryStatus === "Command";
+                  const isFlashing = Boolean(
+                    (isMissing || isDup) &&
+                      flashingLine?.lineIndices.includes(line.lineIndex)
+                  );
+                  const peerLinesLabel =
+                    line.peerDuplicateLineNumbers && line.peerDuplicateLineNumbers.length > 0
+                      ? line.peerDuplicateLineNumbers.join(", ")
+                      : line.duplicateOfLineNumber
+                        ? String(line.duplicateOfLineNumber)
+                        : "";
+
+                  return (
+                    <div
+                      key={isFlashing && flashingLine ? `${line.lineIndex}-flash-${flashingLine.key}` : line.lineIndex}
+                      data-code-line={line.lineNumber}
+                      data-line-status={line.primaryStatus}
+                      className={`relative flex items-center w-full transition-colors ${
+                        isMissing
+                          ? "code-line-missing-glow"
+                          : isDup
+                            ? "code-line-duplicate-glow"
+                            : ""
+                      } ${isFlashing ? "code-line-target-flash" : ""}`}
+                      style={{
+                        height: `${CODE_LINE_HEIGHT_PX}px`,
+                        lineHeight: `${CODE_LINE_HEIGHT_PX}px`,
+                      }}
+                    >
+                      {/* Line Number Gutter */}
+                      <div
+                        className={`shrink-0 pr-2 text-right font-mono text-[10px] tabular-nums select-none ${
+                          isMissing
+                            ? "text-red-600 dark:text-red-400 font-bold"
+                            : isDup
+                              ? "text-amber-600 dark:text-amber-400 font-bold"
+                              : isFound
+                                ? "text-emerald-600/80 dark:text-emerald-400/80 font-medium"
+                                : "text-muted-foreground/45"
+                        }`}
+                        style={{
+                          width: `${CODE_GUTTER_WIDTH_PX}px`,
+                          lineHeight: `${CODE_LINE_HEIGHT_PX}px`,
+                        }}
+                      >
+                        {line.lineNumber}
+                      </div>
+
+                      {/* Code Mirror Text (100% pixel-aligned with textarea) */}
+                      {rawCodeInput.length > 0 && (
+                        <div
+                          className="flex-1 min-w-0 overflow-hidden"
+                          style={{
+                            paddingLeft: `${CODE_TEXT_PAD_LEFT_PX}px`,
+                            paddingRight: "14px",
+                          }}
+                        >
+                          <div
+                            className="whitespace-pre font-mono font-normal tracking-normal"
+                            style={{
+                              fontSize: "13px",
+                              lineHeight: `${CODE_LINE_HEIGHT_PX}px`,
+                              fontFeatureSettings: '"zero" 1, "ss01" 1',
+                              tabSize: 4,
+                              transform:
+                                scrollLeft > 0 ? `translate3d(-${scrollLeft}px, 0, 0)` : undefined,
+                            }}
+                          >
+                            <span
+                              className={
+                                isMissing
+                                  ? "text-red-600 dark:text-red-300 underline decoration-wavy decoration-red-500/80 underline-offset-4"
+                                  : isDup
+                                    ? "text-amber-700 dark:text-amber-300 underline decoration-dashed decoration-amber-500/80 underline-offset-4"
+                                    : isCommand
+                                      ? "text-cyan-600 dark:text-cyan-400"
+                                      : "text-foreground"
+                              }
+                            >
+                              {line.rawText || " "}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Right-Side Inline Error / Duplicate Diagnostic Badge */}
+                      {isMissing && (
+                        <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] leading-none font-semibold bg-red-500/20 text-red-700 dark:text-red-200 border border-red-500/45 shadow-2xs backdrop-blur-xs">
+                            <XCircle size={10} className="text-red-500 shrink-0" />
+                            <span>
+                              {line.missingCountOnLine > 1
+                                ? tr(`Sai ${line.missingCountOnLine} mã`, `${line.missingCountOnLine} missing`)
+                                : tr("Sai mã", "Missing")}
+                            </span>
+                          </span>
+                        </div>
+                      )}
+
+                      {isInputDup && (
+                        <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] leading-none font-semibold bg-amber-500/20 text-amber-800 dark:text-amber-200 border border-amber-500/45 shadow-2xs backdrop-blur-xs">
+                            <AlertTriangle size={10} className="text-amber-500 shrink-0" />
+                            <span>
+                              {peerLinesLabel
+                                ? tr(
+                                    `Trùng mã (dòng ${peerLinesLabel})`,
+                                    `Duplicate (line ${peerLinesLabel})`
+                                  )
+                                : tr("Trùng mã", "Duplicate")}
+                            </span>
+                          </span>
+                        </div>
+                      )}
+
+                      {isFileDup && (
+                        <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] leading-none font-semibold bg-amber-500/20 text-amber-800 dark:text-amber-200 border border-amber-500/45 shadow-2xs backdrop-blur-xs">
+                            <AlertTriangle size={10} className="text-amber-500 shrink-0" />
+                            <span>
+                              {tr(
+                                `Trùng (${line.fileMatchCount ?? 2} file)`,
+                                `Multi (${line.fileMatchCount ?? 2} files)`
+                              )}
+                            </span>
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Interactive Native Textarea */}
+            <textarea
+              ref={textareaRef}
+              aria-label={t("customer_codes")}
+              wrap="off"
+              className={`relative z-20 w-full h-full resize-none font-mono font-normal tracking-normal bg-transparent border-0 rounded-lg focus:outline-none placeholder:text-muted-foreground/80 disabled:opacity-60 ${
+                rawCodeInput.length > 0
+                  ? "text-transparent caret-foreground selection:bg-primary/25 selection:text-transparent"
+                  : "text-foreground"
+              }`}
+              style={{
+                fontSize: "13px",
+                lineHeight: `${CODE_LINE_HEIGHT_PX}px`,
+                paddingTop: `${CODE_PAD_VERTICAL_PX}px`,
+                paddingBottom: `${CODE_PAD_VERTICAL_PX}px`,
+                paddingLeft: `${CODE_TEXTAREA_PAD_LEFT_PX}px`,
+                paddingRight: "14px",
+                fontFeatureSettings: '"zero" 1, "ss01" 1',
+                tabSize: 4,
+                scrollbarWidth: "thin",
+              }}
+              placeholder={t("paste_codes_here")}
+              value={rawCodeInput}
+              onChange={(e) => setRawCodeInput(e.target.value)}
+              onScroll={syncBackdropScroll}
+              onPaste={handlePaste}
+              spellCheck={false}
+              disabled={phase === "scanning" || phase === "copying" || isAutoFinding}
+            />
+          </div>
 
           {/* Hiệu ứng loading chờ quét giữa chừng */}
           {isAutoFinding && (
@@ -562,7 +922,7 @@ export function CenterPanel() {
             <input
               type="checkbox"
               checked={scanOptions.filter_raw}
-              onChange={(e) => setScanOptions({ filter_raw: e.target.checked })}
+              onChange={(e) => handleToggleScanOption({ filter_raw: e.target.checked })}
               disabled={phase === "scanning" || phase === "copying"}
               className="rounded border-border accent-primary cursor-pointer disabled:opacity-50 w-3.5 h-3.5"
             />
@@ -573,7 +933,7 @@ export function CenterPanel() {
             <input
               type="checkbox"
               checked={scanOptions.filter_jpg}
-              onChange={(e) => setScanOptions({ filter_jpg: e.target.checked })}
+              onChange={(e) => handleToggleScanOption({ filter_jpg: e.target.checked })}
               disabled={phase === "scanning" || phase === "copying"}
               className="rounded border-border accent-primary cursor-pointer disabled:opacity-50 w-3.5 h-3.5"
             />
@@ -584,7 +944,7 @@ export function CenterPanel() {
             <input
               type="checkbox"
               checked={!scanOptions.recursive}
-              onChange={(e) => setScanOptions({ recursive: !e.target.checked })}
+              onChange={(e) => handleToggleScanOption({ recursive: !e.target.checked })}
               disabled={phase === "scanning" || phase === "copying"}
               className="rounded border-border accent-primary cursor-pointer disabled:opacity-50 w-3.5 h-3.5"
             />
@@ -595,7 +955,7 @@ export function CenterPanel() {
             <input
               type="checkbox"
               checked={scanOptions.recursive}
-              onChange={(e) => setScanOptions({ recursive: e.target.checked })}
+              onChange={(e) => handleToggleScanOption({ recursive: e.target.checked })}
               disabled={phase === "scanning" || phase === "copying"}
               className="rounded border-border accent-primary cursor-pointer disabled:opacity-50 w-3.5 h-3.5"
             />

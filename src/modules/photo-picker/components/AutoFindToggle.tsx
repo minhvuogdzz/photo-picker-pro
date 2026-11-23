@@ -59,10 +59,8 @@ export function AutoFindToggle() {
         role="switch"
         aria-checked={autoFindEnabled}
         onClick={handleToggle}
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-all cursor-pointer shadow-2xs group ${
-          autoFindEnabled
-            ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/25 hover:border-emerald-500/60 shadow-[0_0_12px_rgba(16,185,129,0.15)]"
-            : "bg-muted/40 border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/70"
+        className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11.5px] font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 glass-pill hover:bg-foreground/[0.08] ${
+          autoFindEnabled ? "text-foreground" : "text-muted-foreground hover:text-foreground"
         }`}
         title={tr(
           "Bật/Tắt Auto Find: Tự động nạp mã khách từ Google Sheet và chuyển khách tiếp theo khi lọc xong",
@@ -70,14 +68,15 @@ export function AutoFindToggle() {
         )}
       >
         {isAutoFinding ? (
-          <Loader2 size={12} className="text-emerald-600 dark:text-emerald-400 animate-spin shrink-0" />
+          <Loader2 size={12} className="text-emerald-500 animate-spin shrink-0" />
         ) : (
           <Zap
             size={12}
-            className={`transition-transform shrink-0 ${
+            strokeWidth={1.75}
+            className={`transition-colors shrink-0 ${
               autoFindEnabled
-                ? "text-emerald-600 dark:text-emerald-400 fill-emerald-500/40 scale-110 animate-pulse"
-                : "text-muted-foreground group-hover:scale-105"
+                ? "text-emerald-500 fill-emerald-500/30"
+                : "text-muted-foreground"
             }`}
           />
         )}

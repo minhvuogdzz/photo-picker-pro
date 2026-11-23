@@ -188,6 +188,42 @@ pub fn remove_extension(s: &str) -> String {
     s.to_string()
 }
 
+/// Extracts a valid image file extension (lowercase, without leading dot) if present at the end of a token
+pub fn extract_extension(s: &str) -> Option<String> {
+    let lower = s.to_lowercase();
+    for ext in VALID_EXTENSIONS_LIST {
+        let ext_with_dot = format!(".{}", ext);
+        if lower.ends_with(&ext_with_dot) && lower.len() > ext_with_dot.len() {
+            return Some((*ext).to_string());
+        }
+    }
+    None
+}
+
+/// Helper to detect if a line or token sets an explicit file extension (e.g. `.CR3`, `CR3`, `@ext CR2`, `#ext .jpg`)
+pub fn extract_extension_command(s: &str) -> Option<String> {
+    let trimmed = s.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    let lower = trimmed.to_lowercase();
+    for kw in &["@ext", "#ext", "@suffix", "#suffix"] {
+        if lower.starts_with(kw) {
+            let rest = lower[kw.len()..]
+                .trim()
+                .trim_matches(|c: char| c == ':' || c == '=' || c == '.' || c == ' ');
+            if VALID_EXTENSIONS_LIST.contains(&rest) {
+                return Some(rest.to_string());
+            }
+        }
+    }
+    let stripped = lower.trim_matches(|c: char| c == '.' || c == ':' || c == '-' || c == ' ');
+    if VALID_EXTENSIONS_LIST.contains(&stripped) {
+        return Some(stripped.to_string());
+    }
+    None
+}
+
 /// Helper to detect if a string token or line is a command to clear/strip prefixes
 pub fn is_clear_token(s: &str) -> bool {
     let trimmed = s.trim();
@@ -301,6 +337,7 @@ pub fn parse_customer_codes(input: String) -> Result<Vec<CustomerCode>, String> 
     let mut strip_prefix_mode = has_clear_at_start || (has_clear_at_end && !has_any_prefix_cmd);
     let mut codes: Vec<CustomerCode> = Vec::new();
     let mut current_prefix: Option<String> = None;
+    let mut current_extension: Option<String> = None;
 
     // Split input by common delimiters: newlines, commas, semicolons, tabs, pipes, slashes, pluses, spaces
     for line in dash_separated.lines() {
@@ -309,9 +346,10 @@ pub fn parse_customer_codes(input: String) -> Result<Vec<CustomerCode>, String> 
             continue;
         }
 
-        // Allow explicit reset of active prefix if user types @clear, @none, #none, or #all
+        // Allow explicit reset of active prefix and extension if user types @clear, @none, #none, or #all
         if is_clear_token(trimmed) {
             current_prefix = None;
+            current_extension = None;
             strip_prefix_mode = true;
             continue;
         }
@@ -319,6 +357,11 @@ pub fn parse_customer_codes(input: String) -> Result<Vec<CustomerCode>, String> 
         if let Some(p) = extract_prefix_command(trimmed) {
             current_prefix = Some(p);
             strip_prefix_mode = false;
+            continue;
+        }
+
+        if let Some(ext) = extract_extension_command(trimmed) {
+            current_extension = Some(ext);
             continue;
         }
 
@@ -334,6 +377,7 @@ pub fn parse_customer_codes(input: String) -> Result<Vec<CustomerCode>, String> 
 
             if is_clear_token(part_trimmed) {
                 current_prefix = None;
+                current_extension = None;
                 strip_prefix_mode = true;
                 continue;
             }
@@ -344,9 +388,21 @@ pub fn parse_customer_codes(input: String) -> Result<Vec<CustomerCode>, String> 
                 continue;
             }
 
+            if let Some(ext) = extract_extension_command(part_trimmed) {
+                current_extension = Some(ext);
+                continue;
+            }
+
             let cleaned = clean_token(part_trimmed);
             if cleaned.is_empty() {
                 continue;
+            }
+
+            // Detect explicit file extension on this token (e.g. IMG_1234.CR3 or 1234.CR2)
+            // and cascade it to subsequent tokens until a new extension is specified.
+            let explicit_ext = extract_extension(&cleaned);
+            if let Some(ref ext) = explicit_ext {
+                current_extension = Some(ext.clone());
             }
 
             // Remove file extension if present
@@ -379,10 +435,17 @@ pub fn parse_customer_codes(input: String) -> Result<Vec<CustomerCode>, String> 
                     (current_prefix.clone(), cleaned.clone())
                 };
 
+                let extension = if strip_prefix_mode && explicit_ext.is_none() {
+                    current_extension.clone()
+                } else {
+                    explicit_ext.clone().or_else(|| current_extension.clone())
+                };
+
                 codes.push(CustomerCode {
                     raw,
                     normalized,
                     prefix,
+                    extension,
                 });
             }
         }
@@ -686,5 +749,17 @@ mod tests {
         assert_eq!(result[1].prefix.as_deref(), Some("DEF"));
         assert_eq!(result[2].raw, "1235");
         assert_eq!(result[2].prefix.as_deref(), Some("DEF"));
+    }
+
+    #[test]
+    fn test_cascading_extension_inheritance() {
+        let input = "IMG_1234.CR3\n1235\n1236\nIMG_1234.CR2\n1235";
+        let result = parse_customer_codes(input.to_string()).unwrap();
+        assert_eq!(result.len(), 5);
+        assert_eq!(result[0].extension.as_deref(), Some("cr3"));
+        assert_eq!(result[1].extension.as_deref(), Some("cr3"));
+        assert_eq!(result[2].extension.as_deref(), Some("cr3"));
+        assert_eq!(result[3].extension.as_deref(), Some("cr2"));
+        assert_eq!(result[4].extension.as_deref(), Some("cr2"));
     }
 }

@@ -33,8 +33,21 @@ import { batchFolderService } from "../services/batchFolderService";
 import { autoFindService } from "../services/autoFindService";
 import { FolderPreviewModal } from "./FolderPreviewModal";
 import { FoundPhotosPreviewModal } from "./FoundPhotosPreviewModal";
+import { analyzeCodeInputLines } from "../utils/codeLineHighlighter";
 
-export function LeftPanel() {
+interface LeftPanelProps {
+  readonly width?: number;
+  readonly isResizing?: boolean;
+  readonly isCollapsed?: boolean;
+  readonly onCollapsedChange?: (collapsed: boolean) => void;
+}
+
+export function LeftPanel({
+  width = 300,
+  isResizing = false,
+  isCollapsed: controlledCollapsed,
+  onCollapsedChange,
+}: LeftPanelProps = {}) {
   const inputFolders = useAppStore((s) => s.inputFolders);
   const selectedInputFolders = useAppStore((s) => s.selectedInputFolders);
   const addInputFolder = useAppStore((s) => s.addInputFolder);
@@ -47,6 +60,8 @@ export function LeftPanel() {
   const setActiveDropZone = useAppStore((s) => s.setActiveDropZone);
   const phase = useAppStore((s) => s.phase);
   const matchResult = useAppStore((s) => s.matchResult);
+  const rawCodeInput = useAppStore((s) => s.rawCodeInput);
+  const requestCodeLineFocus = useAppStore((s) => s.requestCodeLineFocus);
   const favoriteFolders = useSettingsStore((s) => s.settings.favorite_folders);
   const addFavoriteFolder = useSettingsStore((s) => s.addFavoriteFolder);
   const removeFavoriteFolder = useSettingsStore((s) => s.removeFavoriteFolder);
@@ -54,7 +69,12 @@ export function LeftPanel() {
 
   const [isDragging, setIsDragging] = useState(false);
   const [isExpandingBatch, setIsExpandingBatch] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isCollapsedState, setIsCollapsedState] = useState(true);
+  const isCollapsed = controlledCollapsed ?? isCollapsedState;
+  const setIsCollapsed = (val: boolean) => {
+    setIsCollapsedState(val);
+    onCollapsedChange?.(val);
+  };
   const [searchQuery, setSearchQuery] = useState("");
   const [copiedDuplicates, setCopiedDuplicates] = useState(false);
   const [copiedMissing, setCopiedMissing] = useState(false);
@@ -68,6 +88,11 @@ export function LeftPanel() {
     if (!matchResult) return [];
     return matchResult.matches.filter((m) => m.status === "Found" && m.photo);
   }, [matchResult]);
+
+  const lineAnalysis = useMemo(
+    () => analyzeCodeInputLines(rawCodeInput, matchResult),
+    [rawCodeInput, matchResult]
+  );
 
   const handleOpenFoundPreview = (index: number) => {
     setFoundPreviewIndex(index);
@@ -377,7 +402,12 @@ export function LeftPanel() {
   }
 
   return (
-    <div className="w-[300px] shrink-0 flex flex-col min-h-0 animate-fade-in gap-3 transition-all duration-300">
+    <div
+      style={{ width: `${width}px` }}
+      className={`shrink-0 flex flex-col min-h-0 animate-fade-in gap-3 ${
+        isResizing ? "" : "transition-all duration-300"
+      }`}
+    >
 
       {/* SECTION 1: Input Folders & Batch Customer Queue */}
       <div
@@ -805,28 +835,112 @@ export function LeftPanel() {
                 </div>
               )}
 
-              {/* Individual error items */}
-              {matchResult.matches.filter(m => m.status === "Missing" || m.status === "Duplicate" || m.status === "InputDuplicate").map((match, idx) => (
-                <div key={idx} className={`flex flex-col gap-0.5 p-2 rounded-lg border bg-background/50 transition-colors ${match.status === "Missing" ? "border-red-500/20 hover:bg-red-500/5" : "border-amber-500/20 hover:bg-amber-500/5"}`}>
-                  <div className="flex justify-between items-center">
-                    <span className={`font-mono text-[11px] font-medium ${match.status === "Missing" ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}`}>
-                      {match.code}
-                    </span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${match.status === "Missing" ? "bg-red-500/10 text-red-500" : "bg-amber-500/10 text-amber-500"}`}>
-                      {match.status === "Missing"
-                        ? tr("Sai mã", "Missing")
-                        : match.status === "InputDuplicate"
-                          ? tr("Trùng mã", "Duplicate input")
-                          : tr(`Trùng (${match.all_matches.length})`, `Match (${match.all_matches.length})`)}
-                    </span>
+              {/* Individual error items — click any item to scroll & flash its exact line in CenterPanel */}
+              {lineAnalysis.matchErrorLocations.map((loc, idx) => {
+                const {
+                  match,
+                  lineIndex,
+                  lineNumber,
+                  duplicateOfLineNumber,
+                  allDuplicateLineNumbers,
+                } = loc;
+                const isMissing = match.status === "Missing";
+                const canJump = lineIndex >= 0;
+                const dupLinesDisplay =
+                  allDuplicateLineNumbers && allDuplicateLineNumbers.length > 1
+                    ? allDuplicateLineNumbers.join(" & ")
+                    : duplicateOfLineNumber
+                      ? `${duplicateOfLineNumber} & ${lineNumber}`
+                      : "";
+
+                return (
+                  <div
+                    key={idx}
+                    role={canJump ? "button" : undefined}
+                    tabIndex={canJump ? 0 : undefined}
+                    onClick={() => {
+                      if (canJump) {
+                        requestCodeLineFocus(lineIndex, match.code);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (canJump && (e.key === "Enter" || e.key === " ")) {
+                        e.preventDefault();
+                        requestCodeLineFocus(lineIndex, match.code);
+                      }
+                    }}
+                    title={
+                      canJump
+                        ? tr(
+                            `Bấm để nhảy tới dòng ${lineNumber} và sửa mã ${match.code}`,
+                            `Click to jump to line ${lineNumber} and edit code ${match.code}`
+                          )
+                        : undefined
+                    }
+                    className={`flex flex-col gap-0.5 p-2 rounded-lg border bg-background/50 transition-all ${
+                      canJump ? "cursor-pointer active:scale-[0.99]" : ""
+                    } ${
+                      isMissing
+                        ? "border-red-500/25 hover:border-red-500/50 hover:bg-red-500/10"
+                        : "border-amber-500/25 hover:border-amber-500/50 hover:bg-amber-500/10"
+                    }`}
+                  >
+                    <div className="flex justify-between items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span
+                          className={`font-mono text-[11px] font-semibold truncate ${
+                            isMissing
+                              ? "text-red-600 dark:text-red-400"
+                              : "text-amber-600 dark:text-amber-400"
+                          }`}
+                        >
+                          {match.code}
+                        </span>
+                        {lineNumber > 0 && (
+                          <span
+                            className={`text-[9px] font-mono px-1.5 py-0.2 rounded border shrink-0 ${
+                              isMissing
+                                ? "bg-red-500/10 text-red-600 dark:text-red-300 border-red-500/30"
+                                : "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30"
+                            }`}
+                          >
+                            {dupLinesDisplay
+                              ? tr(
+                                  `Dòng ${dupLinesDisplay}`,
+                                  `Line ${dupLinesDisplay}`
+                                )
+                              : tr(`Dòng ${lineNumber}`, `Line ${lineNumber}`)}
+                          </span>
+                        )}
+                      </div>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${
+                          isMissing
+                            ? "bg-red-500/10 text-red-500"
+                            : "bg-amber-500/10 text-amber-500"
+                        }`}
+                      >
+                        {isMissing
+                          ? tr("Sai mã", "Missing")
+                          : match.status === "InputDuplicate"
+                            ? tr("Trùng mã", "Duplicate input")
+                            : tr(
+                                `Trùng (${match.all_matches.length})`,
+                                `Match (${match.all_matches.length})`
+                              )}
+                      </span>
+                    </div>
+                    {match.status === "Duplicate" && match.photo && (
+                      <span
+                        className="text-[10px] text-muted-foreground truncate"
+                        title={match.photo.filename}
+                      >
+                        {match.photo.filename}
+                      </span>
+                    )}
                   </div>
-                  {match.status === "Duplicate" && match.photo && (
-                    <span className="text-[10px] text-muted-foreground truncate" title={match.photo.filename}>
-                      {match.photo.filename}
-                    </span>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </>
           )}
         </div>

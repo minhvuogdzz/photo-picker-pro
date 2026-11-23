@@ -27,7 +27,11 @@ import { useExport } from "@/modules/photo-picker/features/export/hooks/useExpor
 import { sheetFilterAutomationService } from "@/modules/contact-the-sheet/services/sheetFilterAutomationService";
 import { MiniTrashBin } from "./MiniTrashBin";
 
-export function RightPanel() {
+interface RightPanelProps {
+  readonly width?: number;
+}
+
+export function RightPanel({ width = 288 }: RightPanelProps = {}) {
   const matchResult = useAppStore((s) => s.matchResult);
   const scannedFiles = useAppStore((s) => s.scannedFiles);
   const progress = useAppStore((s) => s.progress);
@@ -167,7 +171,10 @@ export function RightPanel() {
     !isActive;
 
   return (
-    <div className="panel w-72 flex flex-col min-h-0 animate-fade-in">
+    <div
+      style={{ width: `${width}px` }}
+      className="panel shrink-0 flex flex-col min-h-0 animate-fade-in"
+    >
       <div className="panel-header py-3 px-4">
         <span className="panel-title flex items-center gap-2 text-xs">
           <HardDrive size={13} className="text-muted-foreground" />

@@ -1071,9 +1071,58 @@ html .fixed.inset-0 :is([class*="bg-card"], [class*="bg-popover"]) :is([class*="
   will-change: transform, opacity;
 }
 
+@keyframes code-error-missing-pulse {
+  0%, 100% {
+    background-color: rgba(239, 68, 68, 0.16);
+    box-shadow: inset 3px 0 0 #ef4444, inset 0 0 12px rgba(239, 68, 68, 0.12);
+  }
+  50% {
+    background-color: rgba(239, 68, 68, 0.30);
+    box-shadow: inset 3px 0 0 #f87171, inset 0 0 18px rgba(239, 68, 68, 0.28);
+  }
+}
+
+@keyframes code-error-duplicate-pulse {
+  0%, 100% {
+    background-color: rgba(245, 158, 11, 0.15);
+    box-shadow: inset 3px 0 0 #f59e0b, inset 0 0 12px rgba(245, 158, 11, 0.10);
+  }
+  50% {
+    background-color: rgba(245, 158, 11, 0.28);
+    box-shadow: inset 3px 0 0 #fbbf24, inset 0 0 18px rgba(245, 158, 11, 0.25);
+  }
+}
+
+@keyframes code-line-target-flash {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  20%, 60% {
+    background-color: rgba(239, 68, 68, 0.45);
+    box-shadow: inset 4px 0 0 #ef4444, inset 0 0 24px rgba(239, 68, 68, 0.45);
+    filter: brightness(1.25);
+  }
+  40%, 80% {
+    background-color: rgba(239, 68, 68, 0.18);
+    filter: brightness(1);
+  }
+}
+
+.code-line-missing-glow {
+  animation: code-error-missing-pulse 1.8s ease-in-out infinite;
+}
+
+.code-line-duplicate-glow {
+  animation: code-error-duplicate-pulse 2.1s ease-in-out infinite;
+}
+
+.code-line-target-flash {
+  animation: code-line-target-flash 1.1s ease-in-out 2;
+}
+
 /* Power saving — see src/core/lib/motionPower.ts.
    Only looping animations are listed: pausing a one-shot entrance could freeze it half-shown. */
-html.motion-idle :is(.animate-pulse, .animate-ping, .animate-bounce, .animate-pulse-soft, .coffee-steam-wisp, .studio-title-text, .motion-decor),
-html.motion-background :is(.animate-pulse, .animate-ping, .animate-bounce, .animate-pulse-soft, .coffee-steam-wisp, .studio-title-text, .motion-decor, .animate-spin) {
+html.motion-idle :is(.animate-pulse, .animate-ping, .animate-bounce, .animate-pulse-soft, .coffee-steam-wisp, .studio-title-text, .motion-decor, .code-line-missing-glow, .code-line-duplicate-glow),
+html.motion-background :is(.animate-pulse, .animate-ping, .animate-bounce, .animate-pulse-soft, .coffee-steam-wisp, .studio-title-text, .motion-decor, .animate-spin, .code-line-missing-glow, .code-line-duplicate-glow) {
   animation-play-state: paused !important;
 }

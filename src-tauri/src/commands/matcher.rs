@@ -50,6 +50,22 @@ fn strip_leading_zeros(s: &str) -> &str {
     }
 }
 
+fn file_matches_extension(file: &PhotoFile, target_ext: &str) -> bool {
+    let actual_ext = std::path::Path::new(&file.filename)
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or(&file.extension);
+    if actual_ext.eq_ignore_ascii_case(target_ext) || file.extension.eq_ignore_ascii_case(target_ext) {
+        return true;
+    }
+    let a = actual_ext.to_lowercase();
+    let t = target_ext.to_lowercase();
+    matches!(
+        (a.as_str(), t.as_str()),
+        ("jpg", "jpeg") | ("jpeg", "jpg") | ("tif", "tiff") | ("tiff", "tif")
+    )
+}
+
 struct IndexedPhoto<'a> {
     file: &'a PhotoFile,
     stem_lower: String,
@@ -157,6 +173,7 @@ where
     let mut duplicate_count: usize = 0;
     let total_codes = codes.len();
     let mut seen_input_codes = std::collections::HashSet::new();
+    let mut failed_explicit_prefix: Option<String> = None;
 
     // Initial progress event
     progress_callback(ProgressEvent {
@@ -192,18 +209,45 @@ where
             });
         }
 
-        // Deduplication key respects prefix so identical numbers under different cameras are preserved
-        let dedup_key = match &code.prefix {
+        let base_display = match &code.prefix {
+            Some(prefix)
+                if !prefix.is_empty()
+                    && super::parser::remove_extension(code.raw.trim())
+                        .chars()
+                        .all(|c| !c.is_ascii_alphabetic()) =>
+            {
+                format!("{}{}", prefix, super::parser::remove_extension(code.raw.trim()))
+            }
+            _ => code.raw.trim().to_string(),
+        };
+
+        let display_code = match &code.extension {
+            Some(ext)
+                if !ext.is_empty()
+                    && super::parser::extract_extension(&base_display).is_none() =>
+            {
+                format!("{}.{}", base_display, ext.to_uppercase())
+            }
+            _ => base_display,
+        };
+
+        // Deduplication key respects prefix and extension so identical numbers under different cameras
+        // or different extensions (e.g. IMG_1234.CR2 vs IMG_1234.CR3) are preserved.
+        let base_dedup_key = match &code.prefix {
             Some(prefix) if !prefix.is_empty() => {
                 format!("{}:{}", canonicalize(prefix), code.normalized)
             }
-            _ => code.raw.trim().to_lowercase(),
+            _ => super::parser::remove_extension(code.raw.trim()).to_lowercase(),
+        };
+        let dedup_key = match &code.extension {
+            Some(ext) if !ext.is_empty() => format!("{}.{}", base_dedup_key, ext.to_lowercase()),
+            _ => base_dedup_key,
         };
 
         if !seen_input_codes.insert(dedup_key) {
             duplicate_count += 1;
             matches.push(MatchedPhoto {
-                code: code.raw.trim().to_string(),
+                code: display_code,
                 photo: None,
                 status: MatchStatus::InputDuplicate,
                 all_matches: Vec::new(),
@@ -211,15 +255,16 @@ where
             continue;
         }
 
-        let matched_files: Vec<PhotoFile> = match match_mode {
+        let mut matched_files: Vec<PhotoFile> = match match_mode {
             MatchMode::ExactNumber => {
                 let cleaned_raw = super::parser::clean_token(&code.raw);
                 let raw_stem = {
-                    let without_ext = std::path::Path::new(&cleaned_raw)
+                    let without_ext = super::parser::remove_extension(&cleaned_raw);
+                    let stem = std::path::Path::new(&without_ext)
                         .file_stem()
                         .and_then(|s| s.to_str())
-                        .unwrap_or(&cleaned_raw);
-                    without_ext.to_lowercase()
+                        .unwrap_or(&without_ext);
+                    stem.to_lowercase()
                 };
 
                 // 1. Try exact stem match first
@@ -249,11 +294,24 @@ where
                     }
                 }
 
+                let has_letters = raw_stem != code.normalized;
+
                 if !full_matches.is_empty() {
+                    if has_letters {
+                        failed_explicit_prefix = None;
+                    }
                     full_matches
                 } else {
-                    let has_letters = cleaned_raw.to_lowercase() != code.normalized;
-                    let has_prefix = code.prefix.as_ref().map(|p| !p.is_empty()).unwrap_or(false);
+                    if has_letters {
+                        failed_explicit_prefix = code.prefix.as_ref().map(|p| canonicalize(p));
+                    }
+                    let inherited_from_failed_typo = !has_letters
+                        && match (&code.prefix, &failed_explicit_prefix) {
+                            (Some(p), Some(fp)) if !p.is_empty() => &canonicalize(p) == fp,
+                            _ => false,
+                        };
+                    let has_prefix = !inherited_from_failed_typo
+                        && code.prefix.as_ref().map(|p| !p.is_empty()).unwrap_or(false);
                     if has_letters || has_prefix {
                         // Strict prefix match failed. Do not fallback to arbitrary other cameras!
                         Vec::new()
@@ -356,6 +414,13 @@ where
             }
         };
 
+        // Filter by file extension if an explicit or inherited extension is active (e.g. .CR2 vs .CR3)
+        if let Some(ref target_ext) = code.extension {
+            if !target_ext.is_empty() {
+                matched_files.retain(|f| file_matches_extension(f, target_ext));
+            }
+        }
+
         let status = if matched_files.is_empty() {
             missing_count += 1;
             MatchStatus::Missing
@@ -369,13 +434,6 @@ where
         };
 
         let primary_photo = matched_files.first().cloned();
-
-        let display_code = match &code.prefix {
-            Some(prefix) if !prefix.is_empty() && code.raw.trim().chars().all(|c| !c.is_ascii_alphabetic()) => {
-                format!("{}{}", prefix, code.raw.trim())
-            }
-            _ => code.raw.trim().to_string(),
-        };
 
         matches.push(MatchedPhoto {
             code: display_code,
@@ -424,6 +482,7 @@ mod tests {
             raw: normalized.to_string(),
             normalized: normalized.to_string(),
             prefix: None,
+            extension: None,
         }
     }
 
@@ -432,6 +491,7 @@ mod tests {
             raw: raw.to_string(),
             normalized: normalized.to_string(),
             prefix: None,
+            extension: None,
         }
     }
 
@@ -440,6 +500,7 @@ mod tests {
             raw: raw.to_string(),
             normalized: normalized.to_string(),
             prefix: prefix.map(|s| s.to_string()),
+            extension: None,
         }
     }
 
@@ -730,5 +791,30 @@ mod tests {
         assert_eq!(result.found_count, 1);
         assert_eq!(result.missing_count, 0);
         assert_eq!(result.matches[0].photo.as_ref().unwrap().filename, "ABC_123.jpg");
+    }
+
+    #[test]
+    fn test_cascading_extension_disambiguates_cr2_and_cr3() {
+        let files = vec![
+            make_photo("IMG_1234.CR2", "1234"),
+            make_photo("IMG_1234.CR3", "1234"),
+            make_photo("IMG_1235.CR2", "1235"),
+            make_photo("IMG_1235.CR3", "1235"),
+        ];
+
+        // First group inherits .CR3, second group switches to .CR2
+        let parsed = super::super::parser::parse_customer_codes(
+            "IMG_1234.CR3\n1235\nIMG_1234.CR2\n1235".to_string(),
+        )
+        .unwrap();
+
+        let result = match_photos_impl(parsed, files, "ExactNumber".to_string(), None, None, |_| {}).unwrap();
+        assert_eq!(result.found_count, 4);
+        assert_eq!(result.missing_count, 0);
+        assert_eq!(result.duplicate_count, 0);
+        assert_eq!(result.matches[0].photo.as_ref().unwrap().filename, "IMG_1234.CR3");
+        assert_eq!(result.matches[1].photo.as_ref().unwrap().filename, "IMG_1235.CR3");
+        assert_eq!(result.matches[2].photo.as_ref().unwrap().filename, "IMG_1234.CR2");
+        assert_eq!(result.matches[3].photo.as_ref().unwrap().filename, "IMG_1235.CR2");
     }
 }

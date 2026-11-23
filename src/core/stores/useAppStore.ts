@@ -90,6 +90,9 @@ interface AppState {
   readonly parsedCodes: CustomerCode[];
   setRawCodeInput: (input: string) => void;
   setParsedCodes: (codes: CustomerCode[]) => void;
+  readonly codeLineFocusRequest: CodeLineFocusRequest | null;
+  requestCodeLineFocus: (lineIndex: number, code?: string) => void;
+  clearCodeLineFocusRequest: () => void;
 
   // Scan results
   readonly scannedFiles: PhotoFile[];
@@ -182,6 +185,12 @@ export interface AutoFindProcessStatus {
   updatedAt?: string;
 }
 
+export interface CodeLineFocusRequest {
+  readonly id: number;
+  readonly lineIndex: number;
+  readonly code?: string;
+}
+
 const loadStoredAutoFind = (): boolean => {
   try {
     return localStorage.getItem("mvd_picker_auto_find") === "true";
@@ -233,6 +242,7 @@ const initialState = {
   completedCustomerPendingRemoval: null as { folderPath: string; folderName: string } | null,
   rawCodeInput: "",
   parsedCodes: [] as CustomerCode[],
+  codeLineFocusRequest: null as CodeLineFocusRequest | null,
   scannedFiles: [] as PhotoFile[],
   lastScanSignature: null as string | null,
   matchResult: null as MatchResult | null,
@@ -531,11 +541,20 @@ export const useAppStore = create<AppState>((set) => ({
   setCompletedCustomerPendingRemoval: (item) =>
     set({ completedCustomerPendingRemoval: item }),
 
-  setRawCodeInput: (input) => set({ rawCodeInput: input }),
+  setRawCodeInput: (input) => set({ rawCodeInput: input, codeLineFocusRequest: null }),
   setParsedCodes: (codes) => set({ parsedCodes: codes }),
+  requestCodeLineFocus: (lineIndex, code) =>
+    set({
+      codeLineFocusRequest: {
+        id: Date.now() + Math.random(),
+        lineIndex,
+        code,
+      },
+    }),
+  clearCodeLineFocusRequest: () => set({ codeLineFocusRequest: null }),
   setScannedFiles: (files) => set({ scannedFiles: files }),
   setLastScanSignature: (sig) => set({ lastScanSignature: sig }),
-  setMatchResult: (result) => set({ matchResult: result }),
+  setMatchResult: (result) => set({ matchResult: result, codeLineFocusRequest: null }),
   setCopyResult: (result) => set({ copyResult: result }),
   setOutputFolder: (folder) => set({ outputFolder: folder }),
   setStudioOutputFolder: (folder) => set({ studioOutputFolder: folder }),

@@ -2,6 +2,27 @@
 
 Tất cả các bản phát hành của **DH Studio Pro** (phát triển & thuộc sở hữu bản quyền của **Devhouse Software**) đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
 
+## [v3.6.0] - 2026-11-23
+
+**Lọc ảnh Pro: Tô sáng & nháy dòng mã lỗi trực tiếp, kế thừa hậu tố đuôi file (`.CR2`/`.CR3`), kéo chỉnh độ rộng 3 cột & giao diện Liquid Glass**
+
+#### Lọc ảnh Pro — Tô màu, nháy sáng dòng mã lỗi & Nhảy thẳng tới vị trí lỗi
+- Tô sáng & nháy dòng lỗi trực tiếp ngay trong ô nhập mã kèm cột số thứ tự dòng (`1, 2, 3...`): dòng bị **Sai mã (`Missing`)** nháy đỏ kèm nhãn `⊗ Sai mã`, dòng bị **Trùng mã (`Duplicate`)** nháy đồng thời tất cả các dòng trùng màu cam/vàng và chỉ chéo số dòng bị trùng (`⚠ Trùng mã (dòng X)`).
+- Nhận diện thông minh phần chữ đi kèm mã số ảnh: nếu gõ sai phần chữ đi cùng mã số (ví dụ ảnh đúng là `HIN1234` nhưng khách ghi `HNI1234`), hệ thống báo đỏ `Sai mã` đúng tại dòng đó mà không làm báo sai lây xuống các dòng chỉ ghi số bên dưới; chữ đứng riêng một mình trên 1 dòng không kèm số sẽ không báo sai mã.
+- Bấm trực tiếp vào bất kỳ mã lỗi nào ở bảng **"Các file lỗi"** bên cột trái (hoặc nút đếm dòng lỗi trên thanh tiêu đề) để tự động cuộn tới đúng dòng đó, nháy sáng và bôi đen mã để sửa hoặc xoá ngay trong 1 thao tác.
+
+#### Kế thừa hậu tố đuôi file (`.CR2` / `.CR3` / `.JPG` / `.ARW`) & Tự động quét lại khi đổi bộ lọc
+- Khi thư mục có 2 file trùng mã nhưng khác đuôi (ví dụ `IMG_1234.CR2` và `IMG_1234.CR3`), chỉ cần gắn đuôi file vào mã đầu tiên (ví dụ `IMG_1234.CR3`) — toàn bộ các mã bên dưới sẽ tự động ăn theo hậu tố đó cho tới khi gặp vị trí gắn hậu tố mới (ví dụ `IMG_1234.CR2`), giúp phân biệt chính xác mà không báo trùng.
+- Tự động quét lại thư mục và đối chiếu lại mã ngay lập tức khi tích/bỏ tích 4 tuỳ chọn lọc (**Lọc Raw**, **Lọc JPG**, **Chỉ thư mục chọn**, **Lọc tất cả thư mục con**).
+
+#### Kéo chỉnh độ rộng 3 cột linh hoạt & Đồng bộ thanh công cụ Liquid Glass
+- Bổ sung rãnh kéo ngang (hiện con trỏ mũi tên 2 chiều `↔` khi hover) giữa 3 cột **Trái ↔ Giữa ↔ Phải** trong Lọc ảnh Pro, tự động ghi nhớ độ rộng và hỗ trợ nhấp đúp để đặt lại kích thước mặc định.
+- Thiết kế lại thanh công cụ đầu trang ô mã lọc theo chuẩn **Liquid Glass** đồng bộ với **Contact the Sheet**, nút **Truy xuất trang tính** dạng fill xanh liền khối và tinh gọn thanh trạng thái dưới cùng.
+
+*(EN Highlights: Synchronized line-level error highlighting & click-to-jump line navigation in Photo Picker Pro, cascading file extension inheritance (`.CR2`/`.CR3`) to resolve same-name multi-extension conflicts, automatic re-scan on filter checkbox toggles, interactive horizontal 3-column resize splitters, and a unified Liquid Glass toolbar.)*
+
+---
+
 ## [v3.5.2] - 2026-11-21
 
 **Đồng bộ song ngữ Việt ↔ Anh (`vi` ↔ `en`) toàn diện trên toàn bộ ứng dụng & thiết lập quy tắc phát triển song ngữ**

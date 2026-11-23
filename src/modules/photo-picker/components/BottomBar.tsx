@@ -19,15 +19,6 @@ export function BottomBar() {
         </span>
       </div>
 
-      {/* Center: Clean & Balanced Branding / Encouragement Badge */}
-      <div className="flex-1 flex items-center justify-center min-w-0 px-2">
-        <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-muted/40 border border-border/50 text-[11px] text-muted-foreground font-medium shadow-2xs max-w-full truncate">
-          <span className="truncate font-semibold text-foreground/80">{tr("Minh Vương Dev", "Minh Vuong Dev")}</span>
-          <span className="text-border shrink-0">·</span>
-          <span className="truncate text-muted-foreground/90">{tr("Nếu thấy hay hãy ủng hộ tác giả nhé", "Enjoying the app? Buy the creator a coffee")}</span>
-        </div>
-      </div>
-
       {/* Right: Animated Coffee Button */}
       <div className="flex items-center shrink-0">
         <button
