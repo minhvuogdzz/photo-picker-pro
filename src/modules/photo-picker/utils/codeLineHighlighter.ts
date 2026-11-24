@@ -329,9 +329,17 @@ interface RawExtractedToken {
  */
 export function analyzeCodeInputLines(
   rawCodeInput: string,
-  matchResult: MatchResult | null
+  matchResult: MatchResult | null,
+  allowedExtensions?: readonly string[] | null
 ): CodeInputAnalysisResult {
   const rawLines = rawCodeInput.split("\n");
+  const allowedExtSet = new Set(
+    (allowedExtensions ?? [])
+      .map((e) => e.trim().replace(/^\.+/, "").toLowerCase())
+      .filter((e) => e.length > 0)
+  );
+  const isExtAllowed = (ext: string | null): ext is string =>
+    Boolean(ext && allowedExtSet.size > 0 && allowedExtSet.has(ext.toLowerCase()));
 
   // Pre-scan non-empty sub-lines for global @clear at start/end parity with parser.rs
   const allSubLines: { lineIndex: number; text: string }[] = [];
@@ -425,7 +433,7 @@ export function analyzeCodeInputLines(
       }
 
       const extCmd = extractExtensionCommand(sub);
-      if (extCmd !== null) {
+      if (isExtAllowed(extCmd)) {
         currentExtension = extCmd;
         commandByLine[lineIdx] = true;
         continue;
@@ -453,7 +461,7 @@ export function analyzeCodeInputLines(
         }
 
         const partExtCmd = extractExtensionCommand(partTrimmed);
-        if (partExtCmd !== null) {
+        if (isExtAllowed(partExtCmd)) {
           currentExtension = partExtCmd;
           commandByLine[lineIdx] = true;
           continue;
@@ -462,7 +470,8 @@ export function analyzeCodeInputLines(
         const cleaned = cleanTokenRustParity(partTrimmed);
         if (!cleaned) continue;
 
-        const explicitExt = extractExtension(cleaned);
+        const rawExplicitExt = extractExtension(cleaned);
+        const explicitExt = isExtAllowed(rawExplicitExt) ? rawExplicitExt : null;
         if (explicitExt !== null) {
           currentExtension = explicitExt;
         }

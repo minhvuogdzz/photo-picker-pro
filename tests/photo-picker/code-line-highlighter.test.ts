@@ -150,7 +150,7 @@ describe("analyzeCodeInputLines", () => {
     assert.equal(editedResult.missingLineCount, 0);
   });
 
-  it("supports cascading file extension inheritance (.CR3 -> .CR2) without false duplicate warnings", () => {
+  it("supports opt-in cascading file extension inheritance (.CR3 -> .CR2) when enabled, and standard matching when disabled", () => {
     const rawCodeInput = ["IMG_1234.CR3", "1235", "IMG_1234.CR2", "1235"].join("\n");
     const matchResult: MatchResult = {
       total_codes: 4,
@@ -165,7 +165,8 @@ describe("analyzeCodeInputLines", () => {
       ],
     };
 
-    const result = analyzeCodeInputLines(rawCodeInput, matchResult);
+    // When enabled with ["cr2", "cr3"]
+    const result = analyzeCodeInputLines(rawCodeInput, matchResult, ["cr2", "cr3"]);
     assert.equal(result.duplicateLineCount, 0);
     assert.equal(result.missingLineCount, 0);
     assert.equal(result.lines[0].primaryStatus, "Found");

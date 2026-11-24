@@ -23,11 +23,20 @@ pub async fn match_photos(
     mode: String,
     regex_pattern: Option<String>,
     folder_count: Option<usize>,
+    allowed_extensions: Option<Vec<String>>,
 ) -> Result<MatchResult, String> {
     tauri::async_runtime::spawn_blocking(move || {
-        match_photos_impl(codes, files, mode, regex_pattern, folder_count, move |event| {
-            let _ = app.emit("match-progress", event);
-        })
+        match_photos_with_extensions(
+            codes,
+            files,
+            mode,
+            regex_pattern,
+            folder_count,
+            allowed_extensions,
+            move |event| {
+                let _ = app.emit("match-progress", event);
+            },
+        )
     })
     .await
     .map_err(|e| format!("Match task failed: {}", e))?
@@ -54,8 +63,9 @@ fn file_matches_extension(file: &PhotoFile, target_ext: &str) -> bool {
     let actual_ext = std::path::Path::new(&file.filename)
         .extension()
         .and_then(|e| e.to_str())
+        .filter(|e| !e.is_empty())
         .unwrap_or(&file.extension);
-    if actual_ext.eq_ignore_ascii_case(target_ext) || file.extension.eq_ignore_ascii_case(target_ext) {
+    if actual_ext.eq_ignore_ascii_case(target_ext) {
         return true;
     }
     let a = actual_ext.to_lowercase();
@@ -75,17 +85,47 @@ struct IndexedPhoto<'a> {
     unpadded_number: String,
 }
 
+#[allow(dead_code)]
 pub fn match_photos_impl<F>(
     codes: Vec<CustomerCode>,
     files: Vec<PhotoFile>,
     mode: String,
     regex_pattern: Option<String>,
     folder_count: Option<usize>,
+    progress_callback: F,
+) -> Result<MatchResult, String>
+where
+    F: FnMut(ProgressEvent),
+{
+    match_photos_with_extensions(
+        codes,
+        files,
+        mode,
+        regex_pattern,
+        folder_count,
+        None,
+        progress_callback,
+    )
+}
+
+pub fn match_photos_with_extensions<F>(
+    codes: Vec<CustomerCode>,
+    files: Vec<PhotoFile>,
+    mode: String,
+    regex_pattern: Option<String>,
+    folder_count: Option<usize>,
+    allowed_extensions: Option<Vec<String>>,
     mut progress_callback: F,
 ) -> Result<MatchResult, String>
 where
     F: FnMut(ProgressEvent),
 {
+    let normalized_allowed_exts: Option<Vec<String>> = allowed_extensions.map(|exts| {
+        exts.into_iter()
+            .map(|e| e.trim().trim_start_matches('.').to_lowercase())
+            .filter(|e| !e.is_empty())
+            .collect()
+    });
     let match_mode = match mode.as_str() {
         "ExactNumber" => MatchMode::ExactNumber,
         "Contains" => MatchMode::Contains,
@@ -414,11 +454,16 @@ where
             }
         };
 
-        // Filter by file extension if an explicit or inherited extension is active (e.g. .CR2 vs .CR3)
+        // Filter by file extension:
+        // 1. If an explicit/cascaded extension is active on this code (e.g. IMG_1234.CR3 -> 1235), match only that extension.
+        // 2. Otherwise, if the user enabled "Kế thừa hậu tố đuôi file" and checked specific branch extensions
+        //    (e.g. only .CR3 checked), strictly filter matched files to those checked extensions so unchecked ones (like .CR2) are excluded!
         if let Some(ref target_ext) = code.extension {
             if !target_ext.is_empty() {
                 matched_files.retain(|f| file_matches_extension(f, target_ext));
             }
+        } else if let Some(ref allowed) = normalized_allowed_exts {
+            matched_files.retain(|f| allowed.iter().any(|ext| file_matches_extension(f, ext)));
         }
 
         let status = if matched_files.is_empty() {
@@ -751,7 +796,7 @@ mod tests {
         ];
 
         // Customer input was @clear followed by IGM0088, IMG0138
-        let parsed = super::super::parser::parse_customer_codes("@clear\nIGM0088\nIMG0138".to_string()).unwrap();
+        let parsed = super::super::parser::parse_customer_codes("@clear\nIGM0088\nIMG0138".to_string(), None).unwrap();
         let result = match_photos_impl(parsed, files, "ExactNumber".to_string(), None, None, |_| {}).unwrap();
 
         assert_eq!(result.found_count, 2);
@@ -770,7 +815,7 @@ mod tests {
             make_photo("DSC_0138_final.CR2", "0138"),
         ];
 
-        let parsed = super::super::parser::parse_customer_codes("@clear\nIGM0088\nIMG0138".to_string()).unwrap();
+        let parsed = super::super::parser::parse_customer_codes("@clear\nIGM0088\nIMG0138".to_string(), None).unwrap();
         let result = match_photos_impl(parsed, files, "Contains".to_string(), None, None, |_| {}).unwrap();
 
         assert_eq!(result.found_count, 2);
@@ -794,6 +839,25 @@ mod tests {
     }
 
     #[test]
+    fn test_jpg_customer_code_matches_raw_when_extension_inheritance_disabled() {
+        // Customer sends IMG_1234.JPG while studio filters RAW (.CR3) with extension inheritance disabled (default)
+        let files = vec![
+            make_photo("IMG_1234.CR3", "1234"),
+            make_photo("IMG_1235.CR3", "1235"),
+        ];
+        let parsed = super::super::parser::parse_customer_codes(
+            "IMG_1234.JPG\nIMG_1235.JPG".to_string(),
+            None,
+        )
+        .unwrap();
+        let result = match_photos_impl(parsed, files, "ExactNumber".to_string(), None, None, |_| {}).unwrap();
+        assert_eq!(result.found_count, 2);
+        assert_eq!(result.missing_count, 0);
+        assert_eq!(result.matches[0].photo.as_ref().unwrap().filename, "IMG_1234.CR3");
+        assert_eq!(result.matches[1].photo.as_ref().unwrap().filename, "IMG_1235.CR3");
+    }
+
+    #[test]
     fn test_cascading_extension_disambiguates_cr2_and_cr3() {
         let files = vec![
             make_photo("IMG_1234.CR2", "1234"),
@@ -802,9 +866,10 @@ mod tests {
             make_photo("IMG_1235.CR3", "1235"),
         ];
 
-        // First group inherits .CR3, second group switches to .CR2
+        // First group inherits .CR3, second group switches to .CR2 when CR2 & CR3 are enabled
         let parsed = super::super::parser::parse_customer_codes(
             "IMG_1234.CR3\n1235\nIMG_1234.CR2\n1235".to_string(),
+            Some(vec!["cr2".to_string(), "cr3".to_string()]),
         )
         .unwrap();
 
@@ -816,5 +881,39 @@ mod tests {
         assert_eq!(result.matches[1].photo.as_ref().unwrap().filename, "IMG_1235.CR3");
         assert_eq!(result.matches[2].photo.as_ref().unwrap().filename, "IMG_1234.CR2");
         assert_eq!(result.matches[3].photo.as_ref().unwrap().filename, "IMG_1235.CR2");
+    }
+
+    #[test]
+    fn test_branch_extension_filter_excludes_unchecked_extensions() {
+        let files = vec![
+            make_photo("IMG_1383.CR2", "1383"),
+            make_photo("IMG_1395.CR2", "1395"),
+            make_photo("IMG_1383.CR3", "1383"),
+        ];
+
+        // User typed bare codes without typing .CR3 in the editor, and checked ONLY .CR3 in the branch options
+        let parsed = super::super::parser::parse_customer_codes(
+            "IMG1383\n1395".to_string(),
+            Some(vec!["cr3".to_string()]),
+        )
+        .unwrap();
+
+        let result = match_photos_with_extensions(
+            parsed,
+            files,
+            "ExactNumber".to_string(),
+            None,
+            None,
+            Some(vec!["cr3".to_string()]),
+            |_| {},
+        )
+        .unwrap();
+
+        // IMG1383 must match ONLY IMG_1383.CR3 (not CR2), and 1395 (only exists as CR2) must be Missing!
+        assert_eq!(result.found_count, 1);
+        assert_eq!(result.missing_count, 1);
+        assert_eq!(result.duplicate_count, 0);
+        assert_eq!(result.matches[0].photo.as_ref().unwrap().filename, "IMG_1383.CR3");
+        assert_eq!(result.matches[1].status, MatchStatus::Missing);
     }
 }

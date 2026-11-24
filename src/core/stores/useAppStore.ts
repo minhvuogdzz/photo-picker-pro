@@ -128,6 +128,13 @@ interface AppState {
   readonly scanOptions: import("@/core/types").ScanOptions;
   setScanOptions: (options: Partial<import("@/core/types").ScanOptions>) => void;
 
+  // Opt-in Cascading File Extension Inheritance (.CR2, .CR3, .ARW, .NEF, etc.)
+  readonly inheritExtensionEnabled: boolean;
+  setInheritExtensionEnabled: (enabled: boolean) => void;
+  readonly inheritedExtensions: string[];
+  setInheritedExtensions: (exts: string[]) => void;
+  toggleInheritedExtension: (ext: string) => void;
+
   // Match mode
   readonly matchMode: string;
   setMatchMode: (mode: string) => void;
@@ -259,6 +266,8 @@ const initialState = {
     filter_jpg: false,
     recursive: true,
   },
+  inheritExtensionEnabled: false,
+  inheritedExtensions: ["cr2", "cr3", "arw", "nef", "raf", "dng", "orf", "rw2"],
   sheetFilterContext: null as SheetFilterContext | null,
   sheetUpdateStatus: null as SheetUpdateStatus | null,
   isDonateModalOpen: false,
@@ -566,6 +575,18 @@ export const useAppStore = create<AppState>((set) => ({
       scanOptions: { ...state.scanOptions, ...options },
       lastScanSignature: null,
     })),
+  setInheritExtensionEnabled: (enabled) => set({ inheritExtensionEnabled: enabled }),
+  setInheritedExtensions: (exts) =>
+    set({ inheritedExtensions: exts.map((e) => e.toLowerCase()) }),
+  toggleInheritedExtension: (ext) =>
+    set((state) => {
+      const norm = ext.toLowerCase();
+      const exists = state.inheritedExtensions.includes(norm);
+      const next = exists
+        ? state.inheritedExtensions.filter((e) => e !== norm)
+        : [...state.inheritedExtensions, norm];
+      return { inheritedExtensions: next };
+    }),
   setMatchMode: (mode) => set({ matchMode: mode }),
   setRegexPattern: (pattern) => set({ regexPattern: pattern }),
   setSheetFilterContext: (ctx) => set({ sheetFilterContext: ctx }),

@@ -36,11 +36,16 @@ export function useScanAndMatch() {
 
       // 1. Always parse the live rawCodeInput immediately so editing a code and clicking "Quét file"
       // never suffers from debounce lag or stale closure state.
-      const currentRawInput = useAppStore.getState().rawCodeInput;
+      const initState = useAppStore.getState();
+      const currentRawInput = initState.rawCodeInput;
+      const allowedExtensions = initState.inheritExtensionEnabled
+        ? initState.inheritedExtensions
+        : null;
       let activeCodes: CustomerCode[] = [];
       if (currentRawInput.trim()) {
         activeCodes = await invoke<CustomerCode[]>("parse_customer_codes", {
           input: currentRawInput,
+          allowedExtensions,
         });
         setParsedCodes(activeCodes);
       } else {
@@ -84,11 +89,15 @@ export function useScanAndMatch() {
       }
 
       // Re-check live rawCodeInput in case the user edited codes while the folder was scanning
-      const latestRawInput = useAppStore.getState().rawCodeInput;
+      const latestState = useAppStore.getState();
+      const latestRawInput = latestState.rawCodeInput;
       if (latestRawInput !== currentRawInput) {
         if (latestRawInput.trim()) {
           activeCodes = await invoke<CustomerCode[]>("parse_customer_codes", {
             input: latestRawInput,
+            allowedExtensions: latestState.inheritExtensionEnabled
+              ? latestState.inheritedExtensions
+              : null,
           });
           setParsedCodes(activeCodes);
         } else {
@@ -104,12 +113,18 @@ export function useScanAndMatch() {
           setProgress(event.payload);
         });
 
+        const matchState = useAppStore.getState();
+        const activeAllowedExtensions = matchState.inheritExtensionEnabled
+          ? matchState.inheritedExtensions
+          : null;
+
         let result = await invoke<MatchResult>("match_photos", {
           codes: activeCodes,
           files: filesToMatch,
           mode: matchMode,
           regexPattern: matchMode === "Regex" ? regexPattern : null,
           folderCount: effectiveFolders.length,
+          allowedExtensions: activeAllowedExtensions,
         });
 
         unlistenMatch();
@@ -132,6 +147,7 @@ export function useScanAndMatch() {
               mode: matchMode,
               regexPattern: matchMode === "Regex" ? regexPattern : null,
               folderCount: effectiveFolders.length,
+              allowedExtensions: activeAllowedExtensions,
             });
           }
         }

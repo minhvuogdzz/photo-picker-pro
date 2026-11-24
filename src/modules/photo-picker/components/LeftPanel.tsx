@@ -61,6 +61,8 @@ export function LeftPanel({
   const phase = useAppStore((s) => s.phase);
   const matchResult = useAppStore((s) => s.matchResult);
   const rawCodeInput = useAppStore((s) => s.rawCodeInput);
+  const inheritExtensionEnabled = useAppStore((s) => s.inheritExtensionEnabled);
+  const inheritedExtensions = useAppStore((s) => s.inheritedExtensions);
   const requestCodeLineFocus = useAppStore((s) => s.requestCodeLineFocus);
   const favoriteFolders = useSettingsStore((s) => s.settings.favorite_folders);
   const addFavoriteFolder = useSettingsStore((s) => s.addFavoriteFolder);
@@ -90,8 +92,13 @@ export function LeftPanel({
   }, [matchResult]);
 
   const lineAnalysis = useMemo(
-    () => analyzeCodeInputLines(rawCodeInput, matchResult),
-    [rawCodeInput, matchResult]
+    () =>
+      analyzeCodeInputLines(
+        rawCodeInput,
+        matchResult,
+        inheritExtensionEnabled ? inheritedExtensions : null
+      ),
+    [rawCodeInput, matchResult, inheritExtensionEnabled, inheritedExtensions]
   );
 
   const handleOpenFoundPreview = (index: number) => {

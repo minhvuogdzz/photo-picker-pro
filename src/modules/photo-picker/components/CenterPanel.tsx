@@ -44,6 +44,18 @@ const CODE_GUTTER_WIDTH_PX = 38;
 const CODE_TEXT_PAD_LEFT_PX = 10;
 const CODE_TEXTAREA_PAD_LEFT_PX = CODE_GUTTER_WIDTH_PX + CODE_TEXT_PAD_LEFT_PX;
 
+const EXTENSION_BRANCH_OPTIONS = [
+  { id: "cr2", label: "CR2" },
+  { id: "cr3", label: "CR3" },
+  { id: "arw", label: "ARW" },
+  { id: "nef", label: "NEF" },
+  { id: "raf", label: "RAF" },
+  { id: "dng", label: "DNG" },
+  { id: "orf", label: "ORF" },
+  { id: "rw2", label: "RW2" },
+  { id: "jpg", label: "JPG" },
+] as const;
+
 export function CenterPanel() {
   const rawCodeInput = useAppStore((s) => s.rawCodeInput);
   const setRawCodeInput = useAppStore((s) => s.setRawCodeInput);
@@ -57,6 +69,10 @@ export function CenterPanel() {
   const phase = useAppStore((s) => s.phase);
   const scanOptions = useAppStore((s) => s.scanOptions);
   const setScanOptions = useAppStore((s) => s.setScanOptions);
+  const inheritExtensionEnabled = useAppStore((s) => s.inheritExtensionEnabled);
+  const setInheritExtensionEnabled = useAppStore((s) => s.setInheritExtensionEnabled);
+  const inheritedExtensions = useAppStore((s) => s.inheritedExtensions);
+  const toggleInheritedExtension = useAppStore((s) => s.toggleInheritedExtension);
   const pickerMode = useAppStore((s) => s.pickerMode);
   const autoFindEnabled = useAppStore((s) => s.autoFindEnabled);
   const isAutoFinding = useAppStore((s) => s.isAutoFinding);
@@ -98,8 +114,13 @@ export function CenterPanel() {
   const activeCustomerFolder = selectedInputFolders[0] || inputFolders[0] || "";
 
   const lineAnalysis = useMemo(
-    () => analyzeCodeInputLines(rawCodeInput, matchResult),
-    [rawCodeInput, matchResult]
+    () =>
+      analyzeCodeInputLines(
+        rawCodeInput,
+        matchResult,
+        inheritExtensionEnabled ? inheritedExtensions : null
+      ),
+    [rawCodeInput, matchResult, inheritExtensionEnabled, inheritedExtensions]
   );
 
   // Clear any temporary flash animation whenever codes or matchResult change
@@ -273,12 +294,13 @@ export function CenterPanel() {
   // Debounced parsing + automatic in-memory re-matching when folder is already scanned
   const lastParsedInputRef = useRef<string | null>(null);
   const parseInput = useCallback(
-    async (input: string) => {
-      if (lastParsedInputRef.current === input) {
+    async (input: string, extEnabled: boolean, extList: string[]) => {
+      const parseSig = `${input}::${extEnabled ? extList.join(",") : "off"}`;
+      if (lastParsedInputRef.current === parseSig) {
         return;
       }
       if (!input.trim()) {
-        lastParsedInputRef.current = "";
+        lastParsedInputRef.current = parseSig;
         setParsedCodes([]);
         const st = useAppStore.getState();
         if (st.matchResult && st.phase !== "scanning" && st.phase !== "copying") {
@@ -293,12 +315,17 @@ export function CenterPanel() {
       try {
         const codes = await invoke<CustomerCode[]>("parse_customer_codes", {
           input,
+          allowedExtensions: extEnabled ? extList : null,
         });
         // Ignore if user already typed newer text while IPC was in flight
-        if (useAppStore.getState().rawCodeInput !== input) {
+        const curSt = useAppStore.getState();
+        const curSig = `${curSt.rawCodeInput}::${
+          curSt.inheritExtensionEnabled ? curSt.inheritedExtensions.join(",") : "off"
+        }`;
+        if (curSig !== parseSig) {
           return;
         }
-        lastParsedInputRef.current = input;
+        lastParsedInputRef.current = parseSig;
         setParsedCodes(codes);
 
         // If current folder has already been scanned with current options, re-match in RAM immediately (<1ms)
@@ -320,6 +347,7 @@ export function CenterPanel() {
               mode: st.matchMode,
               regexPattern: st.matchMode === "Regex" ? st.regexPattern : null,
               folderCount: effectiveFolders.length,
+              allowedExtensions: extEnabled ? extList : null,
             });
             if (useAppStore.getState().rawCodeInput === input) {
               st.setMatchResult(result);
@@ -341,10 +369,10 @@ export function CenterPanel() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      parseInput(rawCodeInput);
+      void parseInput(rawCodeInput, inheritExtensionEnabled, inheritedExtensions);
     }, 120);
     return () => clearTimeout(timer);
-  }, [rawCodeInput, parseInput]);
+  }, [rawCodeInput, inheritExtensionEnabled, inheritedExtensions, parseInput]);
 
   // Re-match in RAM immediately if user switches matchMode or regexPattern while folder is already scanned
   useEffect(() => {
@@ -366,6 +394,7 @@ export function CenterPanel() {
         mode: matchMode,
         regexPattern: matchMode === "Regex" ? regexPattern : null,
         folderCount: effectiveFolders.length,
+        allowedExtensions: st.inheritExtensionEnabled ? st.inheritedExtensions : null,
       })
         .then((result) => {
           const cur = useAppStore.getState();
@@ -917,50 +946,106 @@ export function CenterPanel() {
         </div>
 
         {/* Scan Options */}
-        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs pb-3 px-4">
-          <label className="flex items-center gap-1.5 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={scanOptions.filter_raw}
-              onChange={(e) => handleToggleScanOption({ filter_raw: e.target.checked })}
-              disabled={phase === "scanning" || phase === "copying"}
-              className="rounded border-border accent-primary cursor-pointer disabled:opacity-50 w-3.5 h-3.5"
-            />
-            <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>{tr("Lọc Raw", "Filter RAW")}</span>
-          </label>
-          
-          <label className="flex items-center gap-1.5 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={scanOptions.filter_jpg}
-              onChange={(e) => handleToggleScanOption({ filter_jpg: e.target.checked })}
-              disabled={phase === "scanning" || phase === "copying"}
-              className="rounded border-border accent-primary cursor-pointer disabled:opacity-50 w-3.5 h-3.5"
-            />
-            <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>{tr("Lọc JPG", "Filter JPG")}</span>
-          </label>
+        <div className="flex flex-col items-center gap-2 pb-3 px-4">
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs">
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={scanOptions.filter_raw}
+                onChange={(e) => handleToggleScanOption({ filter_raw: e.target.checked })}
+                disabled={phase === "scanning" || phase === "copying"}
+                className="rounded border-border accent-primary cursor-pointer disabled:opacity-50 w-3.5 h-3.5"
+              />
+              <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>{tr("Lọc Raw", "Filter RAW")}</span>
+            </label>
+            
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={scanOptions.filter_jpg}
+                onChange={(e) => handleToggleScanOption({ filter_jpg: e.target.checked })}
+                disabled={phase === "scanning" || phase === "copying"}
+                className="rounded border-border accent-primary cursor-pointer disabled:opacity-50 w-3.5 h-3.5"
+              />
+              <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>{tr("Lọc JPG", "Filter JPG")}</span>
+            </label>
 
-          <label className="flex items-center gap-1.5 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={!scanOptions.recursive}
-              onChange={(e) => handleToggleScanOption({ recursive: !e.target.checked })}
-              disabled={phase === "scanning" || phase === "copying"}
-              className="rounded border-border accent-primary cursor-pointer disabled:opacity-50 w-3.5 h-3.5"
-            />
-            <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>{tr("Chỉ thư mục chọn", "Selected folder only")}</span>
-          </label>
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={!scanOptions.recursive}
+                onChange={(e) => handleToggleScanOption({ recursive: !e.target.checked })}
+                disabled={phase === "scanning" || phase === "copying"}
+                className="rounded border-border accent-primary cursor-pointer disabled:opacity-50 w-3.5 h-3.5"
+              />
+              <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>{tr("Chỉ thư mục chọn", "Selected folder only")}</span>
+            </label>
 
-          <label className="flex items-center gap-1.5 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={scanOptions.recursive}
-              onChange={(e) => handleToggleScanOption({ recursive: e.target.checked })}
-              disabled={phase === "scanning" || phase === "copying"}
-              className="rounded border-border accent-primary cursor-pointer disabled:opacity-50 w-3.5 h-3.5"
-            />
-            <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>{tr("Lọc tất cả thư mục con", "All subfolders")}</span>
-          </label>
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={scanOptions.recursive}
+                onChange={(e) => handleToggleScanOption({ recursive: e.target.checked })}
+                disabled={phase === "scanning" || phase === "copying"}
+                className="rounded border-border accent-primary cursor-pointer disabled:opacity-50 w-3.5 h-3.5"
+              />
+              <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>{tr("Lọc tất cả thư mục con", "All subfolders")}</span>
+            </label>
+
+            <label
+              className="flex items-center gap-1.5 cursor-pointer"
+              title={tr(
+                "Khi bật: nếu gắn đuôi file (ví dụ .CR2, .CR3) vào mã đầu tiên thì các mã bên dưới sẽ ăn theo đuôi đó để phân biệt trùng mã khác đuôi. Khi tắt: lọc theo mã số như bình thường (khách gửi .JPG vẫn lọc được file RAW).",
+                "When enabled: appending an extension (e.g. .CR2, .CR3) to the first code cascades it to subsequent codes. When disabled: standard matching ignores input extensions so .JPG codes still match RAW files."
+              )}
+            >
+              <input
+                type="checkbox"
+                checked={inheritExtensionEnabled}
+                onChange={(e) => setInheritExtensionEnabled(e.target.checked)}
+                disabled={phase === "scanning" || phase === "copying"}
+                className="rounded border-border accent-primary cursor-pointer disabled:opacity-50 w-3.5 h-3.5"
+              />
+              <span
+                className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} ${
+                  inheritExtensionEnabled ? "text-foreground font-medium" : "text-muted-foreground"
+                }`}
+              >
+                {tr("Kế thừa hậu tố đuôi file", "Inherit file extension")}
+              </span>
+            </label>
+          </div>
+
+          {/* Branch Extension Choices — only shown when "Kế thừa hậu tố đuôi file" is checked */}
+          {inheritExtensionEnabled && (
+            <div className="flex flex-wrap items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-foreground/[0.03] border border-border/60 animate-fade-in">
+              <span className="text-[10.5px] text-muted-foreground mr-1 whitespace-nowrap">
+                {tr("Đuôi kế thừa:", "Extensions:")}
+              </span>
+              {EXTENSION_BRANCH_OPTIONS.map((opt) => {
+                const isChecked = inheritedExtensions.includes(opt.id);
+                return (
+                  <label
+                    key={opt.id}
+                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10.5px] font-mono cursor-pointer select-none border transition-colors whitespace-nowrap ${
+                      isChecked
+                        ? "glass-pill text-foreground font-semibold border-primary/40"
+                        : "border-transparent text-muted-foreground hover:text-foreground bg-foreground/[0.03]"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => toggleInheritedExtension(opt.id)}
+                      disabled={phase === "scanning" || phase === "copying"}
+                      className="rounded border-border accent-primary cursor-pointer w-3 h-3"
+                    />
+                    <span>.{opt.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
         </div>
 
 

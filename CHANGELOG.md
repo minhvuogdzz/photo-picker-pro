@@ -2,6 +2,19 @@
 
 Tất cả các bản phát hành của **DH Studio Pro** (phát triển & thuộc sở hữu bản quyền của **Devhouse Software**) đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
 
+## [v3.6.1] - 2026-11-24
+
+**Lọc ảnh Pro: Tuỳ chọn bật/tắt Kế thừa hậu tố đuôi file & bộ lọc nhánh định dạng (`.CR2`, `.CR3`, `.ARW`, `.NEF`...)**
+
+#### Cải thiện luồng lọc mặc định & Bộ chọn nhánh hậu tố đuôi file
+- **Mặc định (không tích chọn):** Khôi phục hoàn toàn cơ chế lọc gốc — hệ thống tự động bỏ qua đuôi file trong danh sách khách gửi (ví dụ khách gửi mã `.JPG` vẫn lọc chính xác sang file RAW `.CR2`/`.CR3`/`.ARW`/`.NEF`).
+- **Tuỳ chọn `Kế thừa hậu tố đuôi file`:** Bổ sung checkbox mới ở hàng tuỳ chọn bên dưới ô nhập mã; khi tích chọn sẽ mở ra dải nhánh định dạng (`.CR2`, `.CR3`, `.ARW`, `.NEF`, `.RAF`, `.DNG`, `.ORF`, `.RW2`, `.JPG`).
+- **Lọc chuẩn theo nhánh định dạng:** Chỉ cho phép khớp các đuôi file đang được tích chọn trong dải nhánh (ví dụ chỉ tích `.CR3` sẽ loại trừ `.CR2` ngay cả khi không gõ đuôi trong ô mã), đồng thời vẫn hỗ trợ gắn hậu tố lên mã đầu cụm để kế thừa xuống dưới khi bật nhiều nhánh cùng lúc.
+
+*(EN Highlights: Restored default extension-agnostic matching so customer `.JPG` lists filter RAW files seamlessly when "Inherit file extension" is unchecked, and added an opt-in "Inherit file extension" toggle with `.CR2`, `.CR3`, `.ARW`, `.NEF`, `.RAF`, `.DNG`, `.ORF`, `.RW2`, `.JPG` branch filters that strictly restrict matches to checked extensions.)*
+
+---
+
 ## [v3.6.0] - 2026-11-23
 
 **Lọc ảnh Pro: Tô sáng & nháy dòng mã lỗi trực tiếp, kế thừa hậu tố đuôi file (`.CR2`/`.CR3`), kéo chỉnh độ rộng 3 cột & giao diện Liquid Glass**

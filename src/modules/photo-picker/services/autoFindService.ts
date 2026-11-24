@@ -737,8 +737,12 @@ class AutoFindService {
 
       // Parse codes immediately
       try {
+        const curState = useAppStore.getState();
         const parsed = await invoke<CustomerCode[]>("parse_customer_codes", {
           input: formattedCodes,
+          allowedExtensions: curState.inheritExtensionEnabled
+            ? curState.inheritedExtensions
+            : null,
         });
         if (requestId === this.currentRequestId) {
           store.setParsedCodes(parsed);

@@ -275,9 +275,25 @@ pub fn extract_prefix_command(s: &str) -> Option<String> {
 }
 
 /// Parses raw customer code input into normalized numeric codes.
+/// When `allowed_extensions` is `None` or empty (default), file extensions on input codes are stripped
+/// and ignored so customer `.JPG` codes still match `.CR2`/`.CR3`/`.ARW` RAW files as before.
+/// When `allowed_extensions` is provided (e.g. `["cr2", "cr3", "arw", "nef"]`), any token with one of
+/// those extensions cascades that extension to subsequent tokens until a new allowed extension appears.
 #[tauri::command]
-pub fn parse_customer_codes(input: String) -> Result<Vec<CustomerCode>, String> {
+pub fn parse_customer_codes(
+    input: String,
+    allowed_extensions: Option<Vec<String>>,
+) -> Result<Vec<CustomerCode>, String> {
     let re = Regex::new(r"\d{3,}").map_err(|e| e.to_string())?;
+    let allowed_exts: Vec<String> = allowed_extensions
+        .unwrap_or_default()
+        .into_iter()
+        .map(|e| e.trim().trim_start_matches('.').to_lowercase())
+        .filter(|e| !e.is_empty())
+        .collect();
+    let is_ext_allowed = |ext: &str| -> bool {
+        !allowed_exts.is_empty() && allowed_exts.iter().any(|a| a.eq_ignore_ascii_case(ext))
+    };
 
     // 1. Normalize weird unicode zeros to standard ASCII '0'
     let normalized_input = input
@@ -360,7 +376,7 @@ pub fn parse_customer_codes(input: String) -> Result<Vec<CustomerCode>, String> 
             continue;
         }
 
-        if let Some(ext) = extract_extension_command(trimmed) {
+        if let Some(ext) = extract_extension_command(trimmed).filter(|e| is_ext_allowed(e)) {
             current_extension = Some(ext);
             continue;
         }
@@ -388,7 +404,7 @@ pub fn parse_customer_codes(input: String) -> Result<Vec<CustomerCode>, String> 
                 continue;
             }
 
-            if let Some(ext) = extract_extension_command(part_trimmed) {
+            if let Some(ext) = extract_extension_command(part_trimmed).filter(|e| is_ext_allowed(e)) {
                 current_extension = Some(ext);
                 continue;
             }
@@ -399,8 +415,8 @@ pub fn parse_customer_codes(input: String) -> Result<Vec<CustomerCode>, String> 
             }
 
             // Detect explicit file extension on this token (e.g. IMG_1234.CR3 or 1234.CR2)
-            // and cascade it to subsequent tokens until a new extension is specified.
-            let explicit_ext = extract_extension(&cleaned);
+            // ONLY if extension inheritance is enabled and this extension is in allowed_extensions.
+            let explicit_ext = extract_extension(&cleaned).filter(|e| is_ext_allowed(e));
             if let Some(ref ext) = explicit_ext {
                 current_extension = Some(ext.clone());
             }
@@ -457,6 +473,10 @@ pub fn parse_customer_codes(input: String) -> Result<Vec<CustomerCode>, String> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn parse_customer_codes(input: String) -> Result<Vec<CustomerCode>, String> {
+        super::parse_customer_codes(input, None)
+    }
 
     #[test]
     fn test_simple_codes() {
@@ -754,7 +774,16 @@ mod tests {
     #[test]
     fn test_cascading_extension_inheritance() {
         let input = "IMG_1234.CR3\n1235\n1236\nIMG_1234.CR2\n1235";
-        let result = parse_customer_codes(input.to_string()).unwrap();
+        // When extension inheritance is disabled (None), extensions are not attached
+        let default_res = super::parse_customer_codes(input.to_string(), None).unwrap();
+        assert!(default_res.iter().all(|c| c.extension.is_none()));
+
+        // When enabled with allowed branch extensions (CR2, CR3), extensions cascade
+        let result = super::parse_customer_codes(
+            input.to_string(),
+            Some(vec!["cr2".to_string(), "cr3".to_string()]),
+        )
+        .unwrap();
         assert_eq!(result.len(), 5);
         assert_eq!(result[0].extension.as_deref(), Some("cr3"));
         assert_eq!(result[1].extension.as_deref(), Some("cr3"));

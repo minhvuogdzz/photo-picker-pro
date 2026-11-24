@@ -18,11 +18,34 @@ export interface VersionReleaseNote {
 
 export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
   {
+    version: "v3.6.1",
+    date: "2026-11-24",
+    title: "Lọc ảnh Pro: Tuỳ chọn bật/tắt Kế thừa hậu tố đuôi file & bộ lọc nhánh định dạng (.CR2, .CR3, .ARW, .NEF...)",
+    titleEn: "Photo Picker Pro: Opt-in file extension inheritance toggle & per-extension branch filter (.CR2, .CR3, .ARW, .NEF...)",
+    isCurrent: true,
+    sections: [
+      {
+        title: "Khôi phục lọc mặc định linh hoạt & Thêm tuỳ chọn Kế thừa hậu tố đuôi file theo nhánh",
+        titleEn: "Restored Flexible Default Matching & Opt-In Extension Branch Filter",
+        type: "improvement",
+        items: [
+          "Đưa cơ chế lọc mặc định về đúng quy trình Studio: khi không tích \"Kế thừa hậu tố đuôi file\", hệ thống tự động bỏ qua đuôi file trong danh sách mã khách gửi (ví dụ khách gửi danh sách .JPG vẫn lọc sang file RAW .CR2/.CR3/.ARW/.NEF bình thường).",
+          "Bổ sung checkbox \"Kế thừa hậu tố đuôi file\" ngay cạnh các tuỳ chọn lọc bên dưới ô nhập mã; khi tích chọn sẽ mở ra dải nhánh định dạng (.CR2, .CR3, .ARW, .NEF, .RAF, .DNG, .ORF, .RW2, .JPG).",
+          "Lọc cứng chính xác theo các nhánh đuôi file đang được tích chọn (ví dụ chỉ tích .CR3 sẽ loại bỏ toàn bộ .CR2 kể cả khi không gõ đuôi trong ô mã) đồng thời giữ nguyên cơ chế kế thừa hậu tố khi gắn đuôi mới trên mã đầu từng cụm.",
+        ],
+        itemsEn: [
+          "Restored flexible default studio matching: when \"Inherit file extension\" is unchecked (default), input extensions are stripped so customer .JPG lists match RAW files (.CR2/.CR3/.ARW/.NEF) seamlessly.",
+          "Added an \"Inherit file extension\" checkbox alongside the bottom scan options that reveals per-extension branch chips (.CR2, .CR3, .ARW, .NEF, .RAF, .DNG, .ORF, .RW2, .JPG) when enabled.",
+          "Strictly filters matched photos to checked branch extensions (e.g., checking only .CR3 excludes .CR2 even for bare code lists) while supporting cascading extension inheritance when multiple branches are checked.",
+        ],
+      },
+    ],
+  },
+  {
     version: "v3.6.0",
     date: "2026-11-23",
     title: "Lọc ảnh Pro: Tô sáng & nháy dòng mã lỗi trực tiếp, kế thừa hậu tố đuôi file (.CR2/.CR3), kéo chỉnh độ rộng 3 cột & giao diện Liquid Glass",
     titleEn: "Photo Picker Pro: Inline error line highlighting & jump navigation, cascading file extension inheritance (.CR2/.CR3), resizable 3-column layout & Liquid Glass toolbar",
-    isCurrent: true,
     sections: [
       {
         title: "Lọc ảnh Pro — Tô màu, nháy sáng dòng mã lỗi & Nhảy thẳng tới vị trí lỗi",
