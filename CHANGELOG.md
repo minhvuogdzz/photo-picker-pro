@@ -2,6 +2,31 @@
 
 Tất cả các bản phát hành của **DH Studio Pro** (phát triển & thuộc sở hữu bản quyền của **Devhouse Software**) đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
 
+## [v4.0.0] - 2026-11-25
+
+**Lọc ảnh Pro: Giao diện mới gọn & trung tính, quét thư mục nhanh hơn và chép file tự thích ứng theo loại ổ**
+
+#### Tăng tốc quét file khi bật "Gồm thư mục con"
+
+- Bỏ qua thư mục ẩn (`.Trashes`, `.Spotlight-V100`, `.fseventsd`...) và thư mục cache/catalog (`*.lrdata`, `*.photoslibrary`, `*.cocatalog`...) khi quét đệ quy.
+- Bỏ qua file rác AppleDouble `._IMG_xxxx.CR2` do macOS tạo trên ổ exFAT/FAT/SMB (trước đây bị tính là ảnh và gây báo trùng file giả).
+- Không quét lại thư mục đầu ra khi nó nằm bên trong thư mục khách, tránh khớp lại ảnh đã lọc trước đó.
+- Khi bấm "Quét file" lần nữa mà còn mã thiếu, bước làm mới thư mục giờ hiện trạng thái "Đang quét" kèm tiến độ thay vì đứng im ở "Đang lọc".
+- **Chép file tự thích ứng theo loại ổ:** tự nhận biết ổ nguồn/đích là SSD, ổ cứng cơ (HDD), ổ mạng hay thư mục Google Drive. Nếu một trong hai bên là HDD, app chép lần lượt từng file theo thứ tự thư mục để đầu đọc không phải nhảy qua lại. SSD, ổ mạng và Google Drive vẫn chép 4 file song song. Kết quả nhận diện được lưu theo từng ổ trong phiên chạy.
+
+#### Giao diện Lọc ảnh Pro gọn và trung tính hơn
+
+- Theme tối chuyển từ nền xanh navy có ánh xanh ngọc sang tông xám than trung tính; theme sáng bỏ các vệt màu nền. Màu xanh dương chỉ còn dùng làm màu nhấn.
+- Gom chế độ so khớp, loại file (RAW/JPG), phạm vi quét và kế thừa đuôi file vào nút **"Tùy chọn lọc"** thu/bung, kèm dòng tóm tắt lựa chọn hiện tại. Trạng thái thu/bung được nhớ giữa các lần mở app.
+- Bảng điều khiển: thống kê dạng lưới gọn; "Mã lỗi" và "Thư mục đầu ra" thành các nhóm thu/bung; bỏ cảnh báo lặp lại.
+- Danh sách "Đã tìm thấy" / "Các file lỗi" ở cột trái bỏ các ô sao chép trùng với bảng điều khiển, dùng chấm màu nhỏ thay cho viền và chữ nhiều màu.
+- Dòng mã lỗi trong khung nhập dùng nền tô nhạt cố định với vạch màu ở mép trái, thay cho hiệu ứng nhấp nháy liên tục.
+- Đồng bộ cỡ chữ và icon (nét mảnh, cùng kích thước), thay font tiêu đề trang chào bằng font hệ thống.
+
+*(EN Highlights: Faster recursive scans by skipping hidden folders, catalog/cache bundles, macOS `._` AppleDouble files and the output folder; the cached re-scan now shows scan progress instead of a silent "matching" state. File copying now adapts to the storage type: sequential, folder-ordered copies when a spinning HDD is involved, 4 parallel copies on SSD, network shares and cloud folders. Cleaner Photo Picker UI: neutral graphite dark theme, a collapsible "Filter options" button with a live summary, collapsible dashboard sections, calmer status colours, static error-line markers and consistent icon and type sizes.)*
+
+---
+
 ## [v3.6.1] - 2026-11-24
 
 **Lọc ảnh Pro: Tuỳ chọn bật/tắt Kế thừa hậu tố đuôi file & bộ lọc nhánh định dạng (`.CR2`, `.CR3`, `.ARW`, `.NEF`...)**

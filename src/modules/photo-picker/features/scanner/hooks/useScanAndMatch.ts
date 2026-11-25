@@ -2,11 +2,43 @@ import { useCallback } from "react";
 import { useAppStore } from "@/core/stores/useAppStore";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import type { CustomerCode, ScanResult, MatchResult, ProgressEvent, PhotoFile } from "@/core/types";
+import type {
+  CustomerCode,
+  ScanResult,
+  MatchResult,
+  ProgressEvent,
+  PhotoFile,
+  ScanOptions,
+  OutputMode,
+} from "@/core/types";
 import { trText } from "../../../../../core/lib/i18n.ts";
 
 export function buildScanSignature(paths: string[], options: unknown): string {
   return JSON.stringify({ paths, options });
+}
+
+export interface ScanRequestState {
+  readonly selectedInputFolders: string[];
+  readonly inputFolders: string[];
+  readonly scanOptions: ScanOptions;
+  readonly outputMode: OutputMode;
+  readonly outputFolder: string;
+}
+
+/**
+ * Builds the folders + options sent to `scan_folders` and the matching cache signature.
+ * The output folder is excluded from the scan so photos already copied out (when the output
+ * folder sits inside a customer folder and "scan subfolders" is on) are not walked and matched again.
+ */
+export function buildScanRequest(state: ScanRequestState) {
+  const folders =
+    state.selectedInputFolders.length > 0 ? state.selectedInputFolders : state.inputFolders;
+  const outputFolder = state.outputMode === "Folder" ? state.outputFolder.trim() : "";
+  const options = {
+    ...state.scanOptions,
+    exclude_paths: outputFolder ? [outputFolder] : [],
+  };
+  return { folders, options, signature: buildScanSignature(folders, options) };
 }
 
 export function useScanAndMatch() {
@@ -19,9 +51,7 @@ export function useScanAndMatch() {
   const setProgress = useAppStore((s) => s.setProgress);
 
   const handleScanAndMatch = useCallback(async () => {
-    const state = useAppStore.getState();
-    const effectiveFolders =
-      state.selectedInputFolders.length > 0 ? state.selectedInputFolders : state.inputFolders;
+    const { folders: effectiveFolders } = buildScanRequest(useAppStore.getState());
 
     if (effectiveFolders.length === 0) {
       alert(trText("Vui lòng chọn ít nhất 1 thư mục đầu vào!", "Please select at least 1 input folder!"));
@@ -53,10 +83,9 @@ export function useScanAndMatch() {
       }
 
       const currentState = useAppStore.getState();
-      const scanOptions = currentState.scanOptions;
+      const { options: scanOptions, signature: currentSignature } = buildScanRequest(currentState);
       const matchMode = currentState.matchMode;
       const regexPattern = currentState.regexPattern;
-      const currentSignature = buildScanSignature(effectiveFolders, scanOptions);
 
       let filesToMatch: PhotoFile[] = currentState.scannedFiles;
       const canReuseCachedScan =
@@ -133,10 +162,18 @@ export function useScanAndMatch() {
         // If we reused a cached scan and some codes are still missing, do a fast directory refresh
         // in case new files were added to the folder on disk since the first scan.
         if (canReuseCachedScan && result.missing_count > 0) {
+          setPhase("scanning");
+          setProgress(null);
+          unlistenScan = await listen<ProgressEvent>("scan-progress", (event) => {
+            setProgress(event.payload);
+          });
           const refreshedScan = await invoke<ScanResult>("scan_folders", {
             paths: effectiveFolders,
             options: scanOptions,
           });
+          unlistenScan();
+          unlistenScan = null;
+          setPhase("matching");
           if (refreshedScan.files.length !== filesToMatch.length) {
             filesToMatch = [...refreshedScan.files];
             setScannedFiles(filesToMatch);

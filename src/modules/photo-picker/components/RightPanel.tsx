@@ -4,12 +4,8 @@ import { useSettingsStore } from "@/core/stores/useSettingsStore";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import {
-  CheckCircle,
-  XCircle,
   Copy,
-  AlertTriangle,
   FolderOutput,
-  HardDrive,
   Timer,
   ScanSearch,
   Ban,
@@ -26,6 +22,7 @@ import { useCopyOperation } from "@/modules/photo-picker/features/copy/hooks/use
 import { useExport } from "@/modules/photo-picker/features/export/hooks/useExport";
 import { sheetFilterAutomationService } from "@/modules/contact-the-sheet/services/sheetFilterAutomationService";
 import { MiniTrashBin } from "./MiniTrashBin";
+import { CollapsibleSection } from "./CollapsibleSection";
 
 interface RightPanelProps {
   readonly width?: number;
@@ -170,132 +167,77 @@ export function RightPanel({ width = 288 }: RightPanelProps = {}) {
     (outputMode === "SameAsOriginal" || outputFolder) &&
     !isActive;
 
+  const errorCount = missingCodes.length + duplicateCodes.length;
+  const outputSummary =
+    outputMode === "Folder"
+      ? outputFolder
+        ? getFolderName(outputFolder)
+        : t("select_output_folder")
+      : t("same_as_original");
+
   return (
     <div
       style={{ width: `${width}px` }}
       className="panel shrink-0 flex flex-col min-h-0 animate-fade-in"
     >
-      <div className="panel-header py-3 px-4">
-        <span className="panel-title flex items-center gap-2 text-xs">
-          <HardDrive size={13} className="text-muted-foreground" />
-          {t("dashboard")}
-        </span>
+      <div className="panel-header h-11 px-3">
+        <span className="panel-title">{t("dashboard")}</span>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-3">
-        {/* Stats Cards — compact, professional */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/30 border border-border/40">
-            <CheckCircle size={13} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold tabular-nums text-foreground">
-                {matchResult?.found_count ?? 0}
-              </span>
-              <span className="text-[10px] text-muted-foreground leading-none">{t("found")}</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/30 border border-border/40">
-            <XCircle size={13} className="text-red-500 dark:text-red-400 shrink-0" />
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold tabular-nums text-foreground">
-                {matchResult?.missing_count ?? 0}
-              </span>
-              <span className="text-[10px] text-muted-foreground leading-none">{t("missing")}</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/30 border border-border/40">
-            <Copy size={13} className="text-amber-500 dark:text-amber-400 shrink-0" />
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold tabular-nums text-foreground">
-                {matchResult?.duplicate_count ?? 0}
-              </span>
-              <span className="text-[10px] text-muted-foreground leading-none">{t("duplicate")}</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/30 border border-border/40">
-            <HardDrive size={13} className="text-blue-500 dark:text-blue-400 shrink-0" />
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold tabular-nums text-foreground">
-                {scannedFiles.length.toLocaleString()}
-              </span>
-              <span className="text-[10px] text-muted-foreground leading-none">{t("scanned")}</span>
-            </div>
-          </div>
+      <div className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-2.5">
+        {/* Stats */}
+        <div className="grid grid-cols-2 rounded-lg border border-border overflow-hidden">
+          <StatCell value={matchResult?.found_count ?? 0} label={t("found")} dotClass="bg-success" />
+          <StatCell value={matchResult?.missing_count ?? 0} label={t("missing")} dotClass="bg-destructive" border="left" />
+          <StatCell value={matchResult?.duplicate_count ?? 0} label={t("duplicate")} dotClass="bg-warning" border="top" />
+          <StatCell value={scannedFiles.length} label={t("scanned")} dotClass="bg-muted-foreground/60" border="both" />
         </div>
 
-        {/* Combined error summary if both missing & duplicates exist */}
-        {duplicateCodes.length > 0 && missingCodes.length > 0 && (
-          <div className="rounded-lg border border-primary/30 bg-primary/5 p-2.5 space-y-1.5 animate-fade-in">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-medium text-primary flex items-center gap-1">
-                <Copy size={11} />
-                {tr(`Gộp tất cả lỗi (${missingCodes.length + duplicateCodes.length})`, `All errors (${missingCodes.length + duplicateCodes.length})`)}
-              </span>
-              <button
-                onClick={handleCopyAllErrors}
-                className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer font-medium"
-              >
-                {copiedAll ? <ClipboardCheck size={10} /> : <Clipboard size={10} />}
-                {copiedAll ? tr("Đã sao chép", "Copied") : tr("Sao chép tất cả", "Copy all")}
-              </button>
+        {/* Code issues (collapsible) */}
+        {errorCount > 0 && (
+          <CollapsibleSection
+            id="code_issues"
+            title={tr("Mã lỗi", "Code issues")}
+            summary={String(errorCount)}
+            actions={
+              missingCodes.length > 0 && duplicateCodes.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={handleCopyAllErrors}
+                  className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-foreground/[0.07] transition-colors"
+                  title={tr("Sao chép tất cả mã lỗi", "Copy all issues")}
+                >
+                  {copiedAll ? <ClipboardCheck size={12} /> : <Clipboard size={12} />}
+                  {copiedAll ? tr("Đã sao chép", "Copied") : tr("Sao chép tất cả", "Copy all")}
+                </button>
+              ) : undefined
+            }
+          >
+            <div className="flex flex-col gap-2">
+              {missingCodes.length > 0 && (
+                <IssueGroup
+                  label={tr(`Sai mã (${missingCodes.length})`, `Missing (${missingCodes.length})`)}
+                  dotClass="bg-destructive"
+                  codes={missingCodes}
+                  copied={copiedMissing}
+                  onCopy={handleCopyMissing}
+                  copyLabel={tr("Sao chép", "Copy")}
+                  copiedLabel={tr("Đã sao chép", "Copied")}
+                />
+              )}
+              {duplicateCodes.length > 0 && (
+                <IssueGroup
+                  label={tr(`Mã trùng (${duplicateCodes.length})`, `Duplicates (${duplicateCodes.length})`)}
+                  dotClass="bg-warning"
+                  codes={duplicateCodes}
+                  copied={copiedDuplicates}
+                  onCopy={handleCopyDuplicates}
+                  copyLabel={tr("Sao chép", "Copy")}
+                  copiedLabel={tr("Đã sao chép", "Copied")}
+                />
+              )}
             </div>
-            <div className="max-h-20 overflow-y-auto" style={{ scrollbarWidth: "thin" }}>
-              <p className="text-[10px] text-foreground/85 font-mono leading-relaxed break-all bg-background/50 p-1.5 rounded border border-border/30">
-                {formatErrorText({ includeMissing: true, includeDuplicates: true })}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Duplicate codes section */}
-        {duplicateCodes.length > 0 && (
-          <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2.5 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                <Copy size={11} />
-                {tr(`Mã trùng (${duplicateCodes.length})`, `Duplicates (${duplicateCodes.length})`)}
-              </span>
-              <button
-                onClick={handleCopyDuplicates}
-                className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 transition-colors cursor-pointer"
-              >
-                {copiedDuplicates ? <ClipboardCheck size={10} /> : <Clipboard size={10} />}
-                {copiedDuplicates ? tr("Đã sao chép", "Copied") : tr("Sao chép", "Copy")}
-              </button>
-            </div>
-            <div className="max-h-20 overflow-y-auto" style={{ scrollbarWidth: "thin" }}>
-              <p className="text-[10px] text-amber-700/80 dark:text-amber-300/70 font-mono leading-relaxed break-all">
-                {formatErrorText({ includeMissing: false, includeDuplicates: true })}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Missing codes section */}
-        {missingCodes.length > 0 && (
-          <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-2.5 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-medium text-red-600 dark:text-red-400 flex items-center gap-1">
-                <XCircle size={11} />
-                {tr(`Sai mã (${missingCodes.length})`, `Missing (${missingCodes.length})`)}
-              </span>
-              <button
-                onClick={handleCopyMissing}
-                className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 transition-colors cursor-pointer"
-              >
-                {copiedMissing ? <ClipboardCheck size={10} /> : <Clipboard size={10} />}
-                {copiedMissing ? tr("Đã sao chép", "Copied") : tr("Sao chép", "Copy")}
-              </button>
-            </div>
-            <div className="max-h-20 overflow-y-auto" style={{ scrollbarWidth: "thin" }}>
-              <p className="text-[10px] text-red-700/80 dark:text-red-300/70 font-mono leading-relaxed break-all">
-                {formatErrorText({ includeMissing: true, includeDuplicates: false })}
-              </p>
-            </div>
-          </div>
+          </CollapsibleSection>
         )}
 
         {/* Progress Section */}
@@ -435,105 +377,82 @@ export function RightPanel({ width = 288 }: RightPanelProps = {}) {
           </div>
         )}
 
-        {/* Output Options */}
-        <div className="space-y-2">
-          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-            <FolderOutput size={12} />
-            {t("output_destination")}
-          </span>
+        {/* Output destination (collapsible) */}
+        <CollapsibleSection
+          id="output_destination"
+          title={t("output_destination")}
+          summary={outputSummary}
+        >
+          <div className="flex flex-col gap-2">
+            <div role="radiogroup" aria-label={t("output_destination")} className="grid grid-cols-2 gap-0.5 p-0.5 rounded-md bg-foreground/[0.05] border border-border">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={outputMode === "Folder"}
+                onClick={() => setOutputMode("Folder")}
+                className={outputSegmentClass(outputMode === "Folder")}
+              >
+                {t("choose_folder")}
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={outputMode === "SameAsOriginal"}
+                onClick={() => setOutputMode("SameAsOriginal")}
+                className={outputSegmentClass(outputMode === "SameAsOriginal")}
+              >
+                {t("same_as_original")}
+              </button>
+            </div>
 
-          <div className="flex flex-col gap-1.5">
-            <div className={`flex flex-col gap-1.5 p-2 rounded-lg border transition-all ${outputMode === "Folder" ? "bg-primary/5 border-primary/40" : "bg-card border-border/40 hover:border-muted-foreground/30"}`}>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={outputMode === "Folder"}
-                  onChange={() => setOutputMode("Folder")}
-                  className="rounded border-border text-primary focus:ring-primary/50 cursor-pointer w-3.5 h-3.5"
-                />
-                <span className={`text-[11px] font-medium ${outputMode === "Folder" ? "text-foreground" : "text-muted-foreground"}`}>{t("choose_folder")}</span>
-              </label>
-
-              {outputMode === "Folder" && (
-                <div className="pl-5 space-y-1.5 pb-0.5">
-                  <button
-                    onClick={handleSelectOutput}
-                    className="btn-outline w-full text-[11px] py-2 px-2.5 justify-start cursor-pointer flex items-center gap-2 bg-background hover:bg-accent rounded-md"
-                  >
-                    <FolderOutput size={14} className="text-muted-foreground shrink-0" />
-                    {outputFolder ? (
-                      <span className="truncate flex-1 text-left font-medium">{getFolderName(outputFolder)}</span>
-                    ) : (
-                      <span className="text-muted-foreground flex-1 text-left">{t("select_output_folder")}</span>
-                    )}
-                  </button>
-                  {outputFolder && (
-                    <p className="text-[10px] text-muted-foreground truncate px-0.5" title={outputFolder}>
-                      {outputFolder}
-                    </p>
+            {outputMode === "Folder" ? (
+              <button
+                type="button"
+                onClick={handleSelectOutput}
+                className="w-full flex items-center gap-2 h-9 px-2.5 rounded-md border border-border bg-foreground/[0.03] hover:bg-foreground/[0.07] transition-colors text-left"
+                title={outputFolder || t("select_output_folder")}
+              >
+                <FolderOutput size={14} strokeWidth={1.75} className="text-muted-foreground shrink-0" />
+                <span className="flex-1 min-w-0 flex flex-col">
+                  {outputFolder ? (
+                    <>
+                      <span className="text-xs font-medium text-foreground truncate">{getFolderName(outputFolder)}</span>
+                      <span className="text-[10.5px] text-muted-foreground truncate">{outputFolder}</span>
+                    </>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">{t("select_output_folder")}</span>
                   )}
-                </div>
-              )}
-            </div>
-
-            <div className={`flex flex-col gap-1.5 p-2 rounded-lg border transition-all ${outputMode === "SameAsOriginal" ? "bg-primary/5 border-primary/40" : "bg-card border-border/40 hover:border-muted-foreground/30"}`}>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={outputMode === "SameAsOriginal"}
-                  onChange={() => setOutputMode("SameAsOriginal")}
-                  className="rounded border-border text-primary focus:ring-primary/50 cursor-pointer w-3.5 h-3.5"
-                />
-                <span className={`text-[11px] font-medium ${outputMode === "SameAsOriginal" ? "text-foreground" : "text-muted-foreground"}`}>{t("same_as_original")}</span>
-              </label>
-
-              {outputMode === "SameAsOriginal" && (
-                <div className="pl-5 pb-0.5">
-                  <div className="p-2 bg-blue-500/5 border border-blue-500/15 rounded-md">
-                    <p className="text-[10px] text-blue-600 dark:text-blue-400 leading-relaxed">
-                      {t("same_as_original_hint")}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
+                </span>
+              </button>
+            ) : (
+              <p className="text-xs text-muted-foreground leading-relaxed">{t("same_as_original_hint")}</p>
+            )}
           </div>
-        </div>
-
-        {/* Warnings — refined */}
-        {matchResult && matchResult.missing_count > 0 && (
-          <div className="flex items-start gap-2 p-2 bg-amber-500/5 border border-amber-500/20 rounded-lg">
-            <AlertTriangle size={12} className="text-amber-500 shrink-0 mt-0.5" />
-            <p className="text-[10px] text-amber-600/80 dark:text-amber-400/80 leading-relaxed">
-              {tr(
-                `${matchResult.missing_count} mã không tìm thấy trong thư mục đã quét. Có thể export báo cáo.`,
-                `${matchResult.missing_count} code(s) were not found in the scanned folders. You can export a report.`
-              )}
-            </p>
-          </div>
-        )}
+        </CollapsibleSection>
 
         {/* Mini Trash Bin Anchor (Ejected Customers) */}
         <MiniTrashBin />
 
         {/* Action Buttons */}
-        <div className="flex flex-col gap-2 mt-auto pb-1">
+        <div className="flex flex-col gap-2 mt-auto pt-1">
           {isActive ? (
             <button
+              type="button"
               onClick={handleCancel}
-              className="btn-destructive w-full py-2.5 rounded-lg text-xs font-semibold flex justify-center items-center gap-2"
+              className="btn-destructive w-full h-9 rounded-md text-xs font-medium flex justify-center items-center gap-2"
             >
-              <Ban size={14} />
+              <Ban size={14} strokeWidth={1.75} />
               {t("cancel")}
             </button>
           ) : (
             <div className="grid grid-cols-2 gap-2">
               <button
+                type="button"
                 onClick={handleScanAndMatch}
                 disabled={!canScan}
-                className={`btn-primary py-2.5 rounded-lg text-xs font-semibold flex justify-center items-center gap-1.5 transition-all ${
+                className={`btn-primary h-9 rounded-md text-xs font-medium flex justify-center items-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                   autoFindStatus?.state === "success" && !matchResult
-                    ? "ring-2 ring-emerald-500 ring-offset-2 ring-offset-background animate-pulse"
+                    ? "ring-2 ring-primary/60 ring-offset-2 ring-offset-background"
                     : ""
                 }`}
               >
@@ -544,35 +463,39 @@ export function RightPanel({ width = 288 }: RightPanelProps = {}) {
                   </>
                 ) : (
                   <>
-                    <ScanSearch size={14} />
+                    <ScanSearch size={14} strokeWidth={1.75} />
                     {t("scan_match")}
                   </>
                 )}
               </button>
 
               <button
+                type="button"
                 onClick={() => handleCopy("Copy")}
                 disabled={!canCopy}
-                className="btn-secondary py-2.5 rounded-lg text-xs font-semibold flex justify-center items-center gap-1.5 transition-all border border-border"
+                className="btn-secondary h-9 rounded-md text-xs font-medium flex justify-center items-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Copy size={14} />
+                <Copy size={14} strokeWidth={1.75} />
                 {t("copy")}
               </button>
             </div>
           )}
 
           {matchResult && (
-            <div className="flex items-center justify-center gap-2 mt-0.5">
-              <span className="text-[10px] text-muted-foreground">Export:</span>
+            <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
+              <span>{tr("Xuất báo cáo", "Export report")}</span>
               <button
+                type="button"
                 onClick={() => handleExport("txt")}
-                className="text-[10px] font-medium px-2.5 py-1 rounded-md hover:bg-accent/50 text-foreground/70 transition-colors"
+                className="px-1.5 py-0.5 rounded text-foreground/80 hover:text-foreground hover:bg-foreground/[0.07] transition-colors"
               >
                 TXT
               </button>
+              <span aria-hidden="true">·</span>
               <button
+                type="button"
                 onClick={() => handleExport("csv")}
-                className="text-[10px] font-medium px-2.5 py-1 rounded-md hover:bg-accent/50 text-foreground/70 transition-colors"
+                className="px-1.5 py-0.5 rounded text-foreground/80 hover:text-foreground hover:bg-foreground/[0.07] transition-colors"
               >
                 CSV
               </button>
@@ -580,6 +503,89 @@ export function RightPanel({ width = 288 }: RightPanelProps = {}) {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function outputSegmentClass(active: boolean): string {
+  return `h-7 px-2 rounded-[5px] text-xs truncate transition-colors ${
+    active
+      ? "bg-background text-foreground font-medium shadow-xs dark:bg-white/[0.11]"
+      : "text-muted-foreground hover:text-foreground"
+  }`;
+}
+
+function StatCell({
+  value,
+  label,
+  dotClass,
+  border,
+}: {
+  readonly value: number;
+  readonly label: string;
+  readonly dotClass: string;
+  readonly border?: "left" | "top" | "both";
+}) {
+  const borderClass =
+    border === "left"
+      ? "border-l border-border"
+      : border === "top"
+        ? "border-t border-border"
+        : border === "both"
+          ? "border-l border-t border-border"
+          : "";
+  return (
+    <div className={`flex flex-col gap-0.5 px-3 py-2 ${borderClass}`}>
+      <span className="text-base font-semibold tabular-nums text-foreground leading-tight">
+        {value.toLocaleString()}
+      </span>
+      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass}`} />
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function IssueGroup({
+  label,
+  dotClass,
+  codes,
+  copied,
+  onCopy,
+  copyLabel,
+  copiedLabel,
+}: {
+  readonly label: string;
+  readonly dotClass: string;
+  readonly codes: readonly string[];
+  readonly copied: boolean;
+  readonly onCopy: () => void;
+  readonly copyLabel: string;
+  readonly copiedLabel: string;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex items-center gap-1.5 text-xs font-medium text-foreground/90">
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass}`} />
+          {label}
+        </span>
+        <button
+          type="button"
+          onClick={onCopy}
+          className="inline-flex items-center gap-1 h-6 px-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-foreground/[0.07] transition-colors"
+        >
+          {copied ? <ClipboardCheck size={12} /> : <Clipboard size={12} />}
+          {copied ? copiedLabel : copyLabel}
+        </button>
+      </div>
+      <p
+        className="text-xs font-mono text-muted-foreground leading-relaxed break-all max-h-20 overflow-y-auto"
+        style={{ scrollbarWidth: "thin" }}
+      >
+        {codes.join(", ")}
+      </p>
     </div>
   );
 }

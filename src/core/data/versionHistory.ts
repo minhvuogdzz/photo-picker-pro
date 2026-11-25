@@ -18,11 +18,70 @@ export interface VersionReleaseNote {
 
 export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
   {
+    version: "v4.0.0",
+    date: "2026-11-25",
+    title: "Lọc ảnh Pro: Giao diện mới gọn & trung tính, quét thư mục nhanh hơn và chép file tự thích ứng theo loại ổ",
+    titleEn: "Photo Picker Pro: Cleaner neutral interface, faster folder scans and storage-aware file copying",
+    isCurrent: true,
+    sections: [
+      {
+        title: "Giao diện mới gọn gàng & chuyên nghiệp",
+        titleEn: "Cleaner, More Professional Interface",
+        type: "design",
+        items: [
+          "Theme tối chuyển sang tông xám than trung tính, bỏ nền xanh navy và các vệt màu; theme sáng cũng chuyển sang nền xám nhạt trung tính. Màu xanh dương chỉ còn dùng làm màu nhấn.",
+          "Gom chế độ so khớp, loại file (RAW/JPG), phạm vi quét và kế thừa đuôi file vào nút \"Tùy chọn lọc\" thu/bung, kèm dòng tóm tắt lựa chọn hiện tại. App nhớ trạng thái thu/bung cho lần mở sau.",
+          "Bảng điều khiển: thống kê dạng lưới gọn; \"Mã lỗi\" và \"Thư mục đầu ra\" thành các nhóm thu/bung; chọn kiểu đầu ra bằng nút gạt thay cho 2 ô tích.",
+          "Cột trái bỏ các ô sao chép lỗi trùng với bảng điều khiển; danh sách mã dùng chấm màu nhỏ thay cho viền và chữ nhiều màu.",
+          "Dòng mã lỗi trong khung nhập dùng nền tô nhạt cố định với vạch màu ở mép trái, thay cho hiệu ứng nhấp nháy liên tục.",
+          "Đồng bộ cỡ chữ và icon (nét mảnh, cùng kích thước); tiêu đề dùng font hệ thống.",
+        ],
+        itemsEn: [
+          "The dark theme moves to a neutral graphite palette without the navy background and colour washes; the light theme moves to a plain neutral grey canvas. Blue is now used only as the accent colour.",
+          "Match mode, file types (RAW/JPG), scan scope and extension inheritance are grouped under a collapsible \"Filter options\" button with a live summary of the current choices. The open/closed state is remembered.",
+          "Dashboard: compact stats grid, collapsible \"Code issues\" and \"Output destination\" sections, and a segmented switch instead of two checkboxes for the output mode.",
+          "The left column drops the copy boxes that duplicated the dashboard; code lists use small status dots instead of coloured borders and text.",
+          "Error lines in the code editor use a calm static tint with a left marker instead of a looping pulse.",
+          "Consistent type and icon sizes (thin strokes, one size); headings use the system font.",
+        ],
+      },
+      {
+        title: "Quét thư mục nhanh hơn khi bật \"Gồm thư mục con\"",
+        titleEn: "Faster Scans With \"Include Subfolders\"",
+        type: "improvement",
+        items: [
+          "Bỏ qua thư mục ẩn (.Trashes, .Spotlight-V100...) và thư mục cache/catalog của Lightroom, Photos, Capture One khi quét đệ quy.",
+          "Bỏ qua file rác ._IMG_xxxx do macOS tạo trên ổ exFAT/FAT/ổ mạng (trước đây bị tính là ảnh và gây báo trùng file giả).",
+          "Không quét lại thư mục đầu ra khi nó nằm bên trong thư mục khách.",
+          "Khi bấm \"Quét file\" lần nữa mà còn mã thiếu, bước làm mới thư mục hiện trạng thái \"Đang quét\" kèm tiến độ.",
+        ],
+        itemsEn: [
+          "Recursive scans skip hidden folders (.Trashes, .Spotlight-V100...) and Lightroom, Photos and Capture One cache/catalog bundles.",
+          "macOS ._IMG_xxxx AppleDouble files on exFAT/FAT/network drives are skipped (they used to count as photos and cause false duplicates).",
+          "The output folder is no longer rescanned when it sits inside a customer folder.",
+          "Re-running \"Scan & Match\" with missing codes now shows a \"Scanning\" state with progress while the folder is refreshed.",
+        ],
+      },
+      {
+        title: "Chép file tự thích ứng theo loại ổ",
+        titleEn: "Storage-Aware File Copying",
+        type: "improvement",
+        items: [
+          "Tự nhận biết ổ nguồn/đích là SSD, ổ cứng cơ (HDD), ổ mạng hay thư mục Google Drive.",
+          "Có ổ HDD ở một trong hai bên thì chép lần lượt từng file theo thứ tự thư mục để đầu đọc không phải nhảy qua lại; SSD, ổ mạng và Google Drive vẫn chép 4 file song song.",
+        ],
+        itemsEn: [
+          "Detects whether the source and destination are an SSD, a spinning hard disk (HDD), a network share or a Google Drive folder.",
+          "When a HDD is on either side, files are copied one at a time in folder order to avoid disk-head thrashing; SSD, network and Google Drive keep 4 parallel copies.",
+        ],
+      },
+    ],
+  },
+  {
     version: "v3.6.1",
     date: "2026-11-24",
     title: "Lọc ảnh Pro: Tuỳ chọn bật/tắt Kế thừa hậu tố đuôi file & bộ lọc nhánh định dạng (.CR2, .CR3, .ARW, .NEF...)",
     titleEn: "Photo Picker Pro: Opt-in file extension inheritance toggle & per-extension branch filter (.CR2, .CR3, .ARW, .NEF...)",
-    isCurrent: true,
     sections: [
       {
         title: "Khôi phục lọc mặc định linh hoạt & Thêm tuỳ chọn Kế thừa hậu tố đuôi file theo nhánh",

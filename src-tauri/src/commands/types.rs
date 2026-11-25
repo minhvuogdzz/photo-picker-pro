@@ -29,6 +29,10 @@ pub struct ScanOptions {
     pub filter_raw: bool,
     pub filter_jpg: bool,
     pub recursive: bool,
+    /// Optional folders to skip while scanning (e.g. the output folder when it lives inside an input folder),
+    /// so photos that were already copied out are not walked and matched again.
+    #[serde(default)]
+    pub exclude_paths: Vec<String>,
 }
 
 /// The matching mode to use when comparing codes to filenames

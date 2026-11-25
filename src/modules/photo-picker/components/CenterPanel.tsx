@@ -3,15 +3,9 @@ import { useAuthStore } from "@/core/stores/useAuthStore";
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Code2,
-  Hash,
-  Regex,
-  Search,
   FileSpreadsheet,
   Settings2,
-  Filter,
   HelpCircle,
-  Zap,
   Loader2,
   CheckCircle2,
   AlertTriangle,
@@ -19,6 +13,9 @@ import {
   RotateCcw,
   SkipForward,
   X,
+  SlidersHorizontal,
+  ChevronDown,
+  ListChecks,
 } from "lucide-react";
 import type { CustomerCode, MatchResult } from "@/core/types";
 import { useTranslation } from "@/core/lib/i18n";
@@ -27,8 +24,9 @@ import { SheetCodeExtractorModal } from "./SheetCodeExtractorModal";
 import { CheckFilterStatusModal } from "./CheckFilterStatusModal";
 import { FilterSyntaxHelpModal } from "./FilterSyntaxHelpModal";
 import { AutoFindToggle } from "./AutoFindToggle";
+import { usePersistentOpen } from "./CollapsibleSection";
 import { autoFindService } from "../services/autoFindService";
-import { buildScanSignature, useScanAndMatch } from "../features/scanner/hooks/useScanAndMatch";
+import { buildScanRequest, useScanAndMatch } from "../features/scanner/hooks/useScanAndMatch";
 import { analyzeCodeInputLines } from "../utils/codeLineHighlighter";
 
 export {
@@ -55,6 +53,50 @@ const EXTENSION_BRANCH_OPTIONS = [
   { id: "rw2", label: "RW2" },
   { id: "jpg", label: "JPG" },
 ] as const;
+
+const TOOLBAR_BUTTON_CLASS =
+  "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-xs font-medium text-foreground/90 border border-border bg-foreground/[0.03] hover:bg-foreground/[0.07] transition-colors whitespace-nowrap shrink-0";
+const ICON_BUTTON_CLASS =
+  "inline-flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-foreground/[0.07] transition-colors shrink-0";
+const STATUS_CHIP_CLASS =
+  "inline-flex items-center gap-1.5 h-7 px-2 rounded-md text-xs text-foreground/80 hover:text-foreground hover:bg-foreground/[0.06] tabular-nums transition-colors whitespace-nowrap shrink-0";
+const SEGMENTED_CLASS =
+  "inline-flex items-center gap-0.5 p-0.5 rounded-md bg-foreground/[0.05] border border-border";
+
+function segmentClass(active: boolean): string {
+  return `h-6 px-2.5 rounded-[5px] text-xs whitespace-nowrap transition-colors disabled:opacity-50 ${
+    active
+      ? "bg-background text-foreground font-medium shadow-xs dark:bg-white/[0.11]"
+      : "text-muted-foreground hover:text-foreground"
+  }`;
+}
+
+function toggleChipClass(active: boolean): string {
+  return `h-6 px-2 rounded-md text-xs border transition-colors whitespace-nowrap disabled:opacity-50 ${
+    active
+      ? "border-primary/50 bg-primary/10 text-foreground font-medium"
+      : "border-border text-muted-foreground hover:text-foreground hover:bg-foreground/[0.04]"
+  }`;
+}
+
+function OptionRow({
+  label,
+  labelId,
+  children,
+}: {
+  readonly label: string;
+  readonly labelId: string;
+  readonly children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-3 min-w-0">
+      <span id={labelId} className="w-24 shrink-0 pt-1 text-xs text-muted-foreground">
+        {label}
+      </span>
+      <div className="flex-1 min-w-0">{children}</div>
+    </div>
+  );
+}
 
 export function CenterPanel() {
   const rawCodeInput = useAppStore((s) => s.rawCodeInput);
@@ -86,6 +128,7 @@ export function CenterPanel() {
   const [scrollLeft, setScrollLeft] = useState(0);
   const [flashingLine, setFlashingLine] = useState<{ lineIndices: number[]; key: number } | null>(null);
   const [errorCycleIndex, setErrorCycleIndex] = useState(0);
+  const [optionsOpen, setOptionsOpen] = usePersistentOpen("filter_options", false);
   const { t, tr } = useTranslation();
   const { handleScanAndMatch } = useScanAndMatch();
 
@@ -330,9 +373,7 @@ export function CenterPanel() {
 
         // If current folder has already been scanned with current options, re-match in RAM immediately (<1ms)
         const st = useAppStore.getState();
-        const effectiveFolders =
-          st.selectedInputFolders.length > 0 ? st.selectedInputFolders : st.inputFolders;
-        const currentSig = buildScanSignature(effectiveFolders, st.scanOptions);
+        const { folders: effectiveFolders, signature: currentSig } = buildScanRequest(st);
 
         if (
           st.scannedFiles.length > 0 &&
@@ -377,9 +418,7 @@ export function CenterPanel() {
   // Re-match in RAM immediately if user switches matchMode or regexPattern while folder is already scanned
   useEffect(() => {
     const st = useAppStore.getState();
-    const effectiveFolders =
-      st.selectedInputFolders.length > 0 ? st.selectedInputFolders : st.inputFolders;
-    const currentSig = buildScanSignature(effectiveFolders, st.scanOptions);
+    const { folders: effectiveFolders, signature: currentSig } = buildScanRequest(st);
 
     if (
       st.scannedFiles.length > 0 &&
@@ -465,174 +504,308 @@ export function CenterPanel() {
 
 
   const modes = [
-    { id: "ExactNumber", label: "Exact", icon: <Hash size={11} /> },
-    { id: "Contains", label: "Contains", icon: <Search size={11} /> },
-    { id: "Regex", label: "Regex", icon: <Regex size={11} /> },
-  ];
+    { id: "ExactNumber", label: t("exact") },
+    { id: "Contains", label: t("contains") },
+    { id: "Regex", label: t("regex") },
+  ] as const;
+
+  const optionsDisabled = phase === "scanning" || phase === "copying";
+  const fileTypeSummary =
+    scanOptions.filter_raw && scanOptions.filter_jpg
+      ? "RAW + JPG"
+      : scanOptions.filter_raw
+        ? "RAW"
+        : scanOptions.filter_jpg
+          ? "JPG"
+          : tr("Mọi ảnh", "All images");
+  const optionsSummary = [
+    modes.find((m) => m.id === matchMode)?.label ?? t("exact"),
+    fileTypeSummary,
+    scanOptions.recursive ? tr("Gồm thư mục con", "Include subfolders") : tr("Chỉ thư mục chọn", "Selected folder only"),
+    inheritExtensionEnabled ? tr("Kế thừa đuôi", "Inherit ext.") : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <div className="panel flex-1 min-w-[300px] flex flex-col min-h-0 animate-fade-in">
       {/* === TOP HALF: Customer Codes === */}
       <div className="flex-1 flex flex-col min-h-0">
-        <div
-          className="panel-header py-2.5 px-3.5 flex flex-wrap items-center justify-start gap-1.5 min-w-0"
-          style={{ justifyContent: "flex-start" }}
-        >
-          <span className="panel-title flex items-center gap-1.5 text-xs whitespace-nowrap shrink-0 mr-0.5">
-            <Code2 size={13} className="text-muted-foreground shrink-0" />
-            <span>{t("customer_codes")}</span>
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              setSheetModalInitialTab("extract");
-              setIsSheetModalOpen(true);
-            }}
-            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11px] font-medium transition-all select-none bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs cursor-pointer whitespace-nowrap shrink-0"
-            title={tr("Truy xuất mã chọn của khách từ Google Sheet", "Extract customer selection codes from Google Sheet")}
-          >
-            <FileSpreadsheet
-              size={12}
-              strokeWidth={1.75}
-              className="text-white shrink-0"
-            />
-            <span>{tr("Truy xuất trang tính", "Sheet Extract")}</span>
-          </button>
+        <div className="panel-header h-11 px-3 gap-3 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="panel-title whitespace-nowrap">{t("customer_codes")}</span>
+            <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
+              {parsedCodes.length} {t("codes_count")}
+            </span>
+            {isParsingDebounced && (
+              <Loader2
+                size={12}
+                className="animate-spin text-muted-foreground shrink-0"
+                aria-label={tr("Đang tách mã...", "Parsing...")}
+              />
+            )}
+          </div>
 
-          {/* Check TT Button: Only shown in multi-folder mode as requested */}
-          {pickerMode === "multi" && (
+          <div className="flex items-center justify-end gap-1 min-w-0 flex-wrap">
+            {lineAnalysis.missingLineCount > 0 && (
+              <button
+                type="button"
+                onClick={handleCycleMissingLines}
+                className={STATUS_CHIP_CLASS}
+                title={tr(
+                  "Bấm để nhảy lần lượt tới từng dòng bị sai mã trong khung nhập",
+                  "Click to jump through missing code lines in the editor"
+                )}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" />
+                <span>
+                  {tr(
+                    `${lineAnalysis.missingLineCount} dòng sai`,
+                    `${lineAnalysis.missingLineCount} missing`
+                  )}
+                </span>
+              </button>
+            )}
+            {lineAnalysis.duplicateLineCount > 0 && (
+              <button
+                type="button"
+                onClick={handleCycleDuplicateLines}
+                className={STATUS_CHIP_CLASS}
+                title={tr(
+                  "Bấm để nhảy lần lượt tới từng dòng bị trùng mã trong khung nhập",
+                  "Click to jump through duplicate code lines in the editor"
+                )}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-warning shrink-0" />
+                <span>
+                  {tr(
+                    `${lineAnalysis.duplicateLineCount} dòng trùng`,
+                    `${lineAnalysis.duplicateLineCount} duplicate`
+                  )}
+                </span>
+              </button>
+            )}
+            {(lineAnalysis.missingLineCount > 0 || lineAnalysis.duplicateLineCount > 0) && (
+              <span className="w-px h-4 bg-border mx-1 shrink-0" aria-hidden="true" />
+            )}
+
             <button
               type="button"
               onClick={() => {
-                setIsCheckStatusModalOpen(true);
+                setSheetModalInitialTab("extract");
+                setIsSheetModalOpen(true);
               }}
-              className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11px] font-medium transition-colors select-none glass-pill hover:bg-foreground/[0.08] text-foreground cursor-pointer whitespace-nowrap shrink-0"
-              title={tr("Kiểm tra đối soát trạng thái Chưa lọc trên Google Sheet để giữ lại khách cần lọc", "Check Google Sheet filter status to keep customers pending culling")}
+              className={TOOLBAR_BUTTON_CLASS}
+              title={tr("Truy xuất mã chọn của khách từ Google Sheet", "Extract customer selection codes from Google Sheet")}
             >
-              <Filter
-                size={12}
-                strokeWidth={1.75}
-                className="text-muted-foreground shrink-0"
-              />
-              <span>{tr("Check TT", "Status Check")}</span>
+              <FileSpreadsheet size={13} strokeWidth={1.75} className="text-muted-foreground shrink-0" />
+              <span>{tr("Truy xuất trang tính", "Sheet Extract")}</span>
             </button>
-          )}
 
-          <button
-            type="button"
-            onClick={() => {
-              setSheetModalInitialTab("config");
-              setIsSheetModalOpen(true);
-            }}
-            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11px] font-medium transition-colors select-none glass-pill hover:bg-foreground/[0.08] text-foreground cursor-pointer whitespace-nowrap shrink-0"
-            title={tr("Cấu hình cột và Tab Google Sheet cho ứng dụng Lọc ảnh", "Configure Google Sheet tabs and columns for Photo Picker")}
-          >
-            <Settings2
-              size={12}
-              strokeWidth={1.75}
-              className="text-muted-foreground shrink-0"
-            />
-            <span>{tr("Cấu hình Sheet", "Sheet Config")}</span>
-          </button>
+            {/* Check TT Button: Only shown in multi-folder mode */}
+            {pickerMode === "multi" && (
+              <button
+                type="button"
+                onClick={() => setIsCheckStatusModalOpen(true)}
+                className={TOOLBAR_BUTTON_CLASS}
+                title={tr("Kiểm tra đối soát trạng thái Chưa lọc trên Google Sheet để giữ lại khách cần lọc", "Check Google Sheet filter status to keep customers pending culling")}
+              >
+                <ListChecks size={13} strokeWidth={1.75} className="text-muted-foreground shrink-0" />
+                <span>{tr("Check TT", "Status Check")}</span>
+              </button>
+            )}
 
-          {isParsingDebounced && (
-            <span className="text-[10px] text-muted-foreground animate-pulse whitespace-nowrap shrink-0">
-              {tr("Đang tách mã...", "Parsing...")}
-            </span>
-          )}
-          {lineAnalysis.missingLineCount > 0 && (
             <button
               type="button"
-              onClick={handleCycleMissingLines}
-              className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11px] font-medium glass-pill hover:bg-foreground/[0.08] text-foreground tabular-nums cursor-pointer transition-colors whitespace-nowrap shrink-0"
-              title={tr(
-                "Bấm để nhảy lần lượt tới từng dòng bị sai mã trong khung nhập",
-                "Click to jump through missing code lines in the editor"
-              )}
+              onClick={() => {
+                setSheetModalInitialTab("config");
+                setIsSheetModalOpen(true);
+              }}
+              className={ICON_BUTTON_CLASS}
+              title={tr("Cấu hình cột và Tab Google Sheet cho ứng dụng Lọc ảnh", "Configure Google Sheet tabs and columns for Photo Picker")}
+              aria-label={tr("Cấu hình Sheet", "Sheet Config")}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
-              <span>
-                {tr(
-                  `${lineAnalysis.missingLineCount} dòng sai`,
-                  `${lineAnalysis.missingLineCount} missing`
-                )}
-              </span>
+              <Settings2 size={14} strokeWidth={1.75} />
             </button>
-          )}
-          {lineAnalysis.duplicateLineCount > 0 && (
             <button
               type="button"
-              onClick={handleCycleDuplicateLines}
-              className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11px] font-medium glass-pill hover:bg-foreground/[0.08] text-foreground tabular-nums cursor-pointer transition-colors whitespace-nowrap shrink-0"
-              title={tr(
-                "Bấm để nhảy lần lượt tới từng dòng bị trùng mã trong khung nhập",
-                "Click to jump through duplicate code lines in the editor"
-              )}
+              onClick={() => setIsHelpModalOpen(true)}
+              className={ICON_BUTTON_CLASS}
+              title={tr("Hướng dẫn cú pháp & xử lý trùng tiền tố", "Syntax guide & prefix conflict resolution")}
+              aria-label={tr("Hướng dẫn cú pháp & xử lý trùng tiền tố", "Syntax guide & prefix conflict resolution")}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-              <span>
-                {tr(
-                  `${lineAnalysis.duplicateLineCount} dòng trùng`,
-                  `${lineAnalysis.duplicateLineCount} duplicate`
-                )}
-              </span>
+              <HelpCircle size={14} strokeWidth={1.75} />
             </button>
-          )}
-          <span className="inline-flex items-center h-7 px-2.5 rounded-lg text-[11px] font-medium glass-pill text-muted-foreground tabular-nums whitespace-nowrap shrink-0">
-            {parsedCodes.length} {t("codes_count")}
-          </span>
-          <button
-            type="button"
-            onClick={() => setIsHelpModalOpen(true)}
-            className="inline-flex items-center justify-center w-7 h-7 rounded-lg glass-pill text-muted-foreground hover:text-foreground hover:bg-foreground/[0.08] transition-colors cursor-pointer shrink-0"
-            title={tr("Hướng dẫn cú pháp & xử lý trùng tiền tố", "Syntax guide & prefix conflict resolution")} aria-label={tr("Hướng dẫn cú pháp & xử lý trùng tiền tố", "Syntax guide & prefix conflict resolution")}
-          >
-            <HelpCircle size={13} strokeWidth={1.75} />
-          </button>
+          </div>
         </div>
 
-        {/* Match Mode Selector & Auto Find Toggle */}
-        <div className="px-4 pt-2.5 flex flex-wrap items-center justify-between gap-2 min-w-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <span id="match-mode-label" className="text-[11px] font-medium text-muted-foreground whitespace-nowrap shrink-0">{t("mode")}:</span>
-            <div role="radiogroup" aria-labelledby="match-mode-label" className="flex items-center gap-0.5 bg-foreground/[0.04] rounded-[10px] p-0.5 border border-border">
-              {modes.map((mode) => (
-                <button
-                  key={mode.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={matchMode === mode.id}
-                  onClick={() => setMatchMode(mode.id)}
-                  className={`flex items-center gap-1.5 px-2.5 h-6.5 rounded-[8px] text-[11.5px] transition-colors cursor-pointer whitespace-nowrap shrink-0 border ${
-                    matchMode === mode.id
-                      ? "glass-pill text-foreground font-medium"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <span className={matchMode === mode.id ? "text-primary" : ""}>{mode.icon}</span>
-                  <span>{mode.id === "ExactNumber" ? t("exact") : mode.id === "Contains" ? t("contains") : t("regex")}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+        {/* Filter options (collapsible) & Auto Find */}
+        <div className="px-3 pt-2.5 flex items-center justify-between gap-2 min-w-0">
+          <button
+            type="button"
+            aria-expanded={optionsOpen}
+            aria-controls="photo-picker-filter-options"
+            onClick={() => setOptionsOpen((v) => !v)}
+            className={`inline-flex items-center gap-2 h-7 pl-2 pr-2 rounded-md text-xs border transition-colors min-w-0 ${
+              optionsOpen
+                ? "border-border-strong bg-foreground/[0.06] text-foreground"
+                : "border-border bg-foreground/[0.03] text-foreground/90 hover:bg-foreground/[0.06]"
+            }`}
+          >
+            <SlidersHorizontal size={13} strokeWidth={1.75} className="text-muted-foreground shrink-0" />
+            <span className="font-medium whitespace-nowrap">{tr("Tùy chọn lọc", "Filter options")}</span>
+            <span className="text-muted-foreground truncate min-w-0">{optionsSummary}</span>
+            <ChevronDown
+              size={13}
+              strokeWidth={2}
+              className={`text-muted-foreground shrink-0 transition-transform duration-150 ${optionsOpen ? "rotate-180" : ""}`}
+            />
+          </button>
 
-          {/* Right side: Auto Find Toggle */}
           <AutoFindToggle />
         </div>
 
-        {/* Regex Pattern Input */}
-        {matchMode === "Regex" && (
-          <div className="px-4 pt-2">
-            <input
-              type="text"
-              className="input-field text-[11px] font-mono py-1.5"
-              placeholder={t("regex_placeholder")}
-              value={regexPattern}
-              onChange={(e) => setRegexPattern(e.target.value)}
-            />
-            <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
-              {t("regex_hint")}
-            </p>
+        {optionsOpen && (
+          <div
+            id="photo-picker-filter-options"
+            className="mx-3 mt-2 rounded-lg border border-border bg-foreground/[0.02] px-3 py-2.5 flex flex-col gap-2.5 animate-fade-in"
+          >
+            <OptionRow label={t("mode")} labelId="match-mode-label">
+              <div role="radiogroup" aria-labelledby="match-mode-label" className={SEGMENTED_CLASS}>
+                {modes.map((mode) => (
+                  <button
+                    key={mode.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={matchMode === mode.id}
+                    onClick={() => setMatchMode(mode.id)}
+                    className={segmentClass(matchMode === mode.id)}
+                  >
+                    {mode.label}
+                  </button>
+                ))}
+              </div>
+            </OptionRow>
+
+            {matchMode === "Regex" && (
+              <OptionRow label="" labelId="regex-pattern-label">
+                <div className="flex flex-col gap-1 w-full">
+                  <input
+                    type="text"
+                    aria-label={t("regex")}
+                    className="input-field text-xs font-mono py-1.5"
+                    placeholder={t("regex_placeholder")}
+                    value={regexPattern}
+                    onChange={(e) => setRegexPattern(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground leading-relaxed">{t("regex_hint")}</p>
+                </div>
+              </OptionRow>
+            )}
+
+            <OptionRow label={tr("Loại file", "File types")} labelId="file-types-label">
+              <div role="group" aria-labelledby="file-types-label" className="flex items-center gap-1">
+                <button
+                  type="button"
+                  aria-pressed={scanOptions.filter_raw}
+                  disabled={optionsDisabled}
+                  onClick={() => handleToggleScanOption({ filter_raw: !scanOptions.filter_raw })}
+                  className={toggleChipClass(scanOptions.filter_raw)}
+                >
+                  RAW
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={scanOptions.filter_jpg}
+                  disabled={optionsDisabled}
+                  onClick={() => handleToggleScanOption({ filter_jpg: !scanOptions.filter_jpg })}
+                  className={toggleChipClass(scanOptions.filter_jpg)}
+                >
+                  JPG
+                </button>
+                {!scanOptions.filter_raw && !scanOptions.filter_jpg && (
+                  <span className="text-xs text-muted-foreground ml-1">
+                    {tr("Không chọn = mọi loại ảnh", "None selected = all image types")}
+                  </span>
+                )}
+              </div>
+            </OptionRow>
+
+            <OptionRow label={tr("Phạm vi quét", "Scan scope")} labelId="scan-scope-label">
+              <div role="radiogroup" aria-labelledby="scan-scope-label" className={SEGMENTED_CLASS}>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={!scanOptions.recursive}
+                  disabled={optionsDisabled}
+                  onClick={() => handleToggleScanOption({ recursive: false })}
+                  className={segmentClass(!scanOptions.recursive)}
+                >
+                  {tr("Chỉ thư mục chọn", "Selected folder only")}
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={scanOptions.recursive}
+                  disabled={optionsDisabled}
+                  onClick={() => handleToggleScanOption({ recursive: true })}
+                  className={segmentClass(scanOptions.recursive)}
+                >
+                  {tr("Gồm thư mục con", "Include subfolders")}
+                </button>
+              </div>
+            </OptionRow>
+
+            <OptionRow label={tr("Đuôi file", "Extensions")} labelId="inherit-ext-label">
+              <div className="flex flex-col gap-2 min-w-0">
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={inheritExtensionEnabled}
+                  aria-labelledby="inherit-ext-label"
+                  disabled={optionsDisabled}
+                  onClick={() => setInheritExtensionEnabled(!inheritExtensionEnabled)}
+                  className="inline-flex items-center gap-2 text-xs text-foreground/90 disabled:opacity-50 w-fit"
+                  title={tr(
+                    "Khi bật: nếu gắn đuôi file (ví dụ .CR2, .CR3) vào mã đầu tiên thì các mã bên dưới sẽ ăn theo đuôi đó để phân biệt trùng mã khác đuôi. Khi tắt: lọc theo mã số như bình thường (khách gửi .JPG vẫn lọc được file RAW).",
+                    "When enabled: appending an extension (e.g. .CR2, .CR3) to the first code cascades it to subsequent codes. When disabled: standard matching ignores input extensions so .JPG codes still match RAW files."
+                  )}
+                >
+                  <span
+                    className={`relative inline-flex w-7 h-4 rounded-full transition-colors shrink-0 ${
+                      inheritExtensionEnabled ? "bg-primary" : "bg-foreground/20"
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow-xs transition-transform ${
+                        inheritExtensionEnabled ? "translate-x-3.5" : "translate-x-0.5"
+                      }`}
+                    />
+                  </span>
+                  <span>{tr("Kế thừa hậu tố đuôi file", "Inherit file extension")}</span>
+                </button>
+
+                {inheritExtensionEnabled && (
+                  <div className="flex flex-wrap items-center gap-1 animate-fade-in">
+                    {EXTENSION_BRANCH_OPTIONS.map((opt) => {
+                      const isChecked = inheritedExtensions.includes(opt.id);
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          aria-pressed={isChecked}
+                          disabled={optionsDisabled}
+                          onClick={() => toggleInheritedExtension(opt.id)}
+                          className={`${toggleChipClass(isChecked)} font-mono`}
+                        >
+                          .{opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </OptionRow>
           </div>
         )}
 
@@ -717,16 +890,8 @@ export function CenterPanel() {
         )}
 
         {/* Code Input Textarea with Synchronized Line-Level Error Highlighting */}
-        <div className="flex-1 px-4 py-3 min-h-0 flex flex-col relative">
-          <div
-            className={`relative w-full h-full rounded-lg bg-muted/20 border transition-colors overflow-hidden ${
-              lineAnalysis.missingLineCount > 0
-                ? "border-red-500/45 focus-within:border-red-500/70 focus-within:ring-2 focus-within:ring-red-500/25"
-                : lineAnalysis.duplicateLineCount > 0
-                  ? "border-amber-500/45 focus-within:border-amber-500/70 focus-within:ring-2 focus-within:ring-amber-500/25"
-                  : "border-border/60 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/40"
-            }`}
-          >
+        <div className="flex-1 px-3 py-3 min-h-0 flex flex-col relative">
+          <div className="relative w-full h-full rounded-lg bg-foreground/[0.02] border border-border transition-colors overflow-hidden focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/25">
             {/* Left Line-Number Gutter Background Strip */}
             <div
               className="absolute top-0 bottom-0 left-0 bg-muted/25 border-r border-border/40 pointer-events-none select-none z-0"
@@ -840,8 +1005,8 @@ export function CenterPanel() {
                       {/* Right-Side Inline Error / Duplicate Diagnostic Badge */}
                       {isMissing && (
                         <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] leading-none font-semibold bg-red-500/20 text-red-700 dark:text-red-200 border border-red-500/45 shadow-2xs backdrop-blur-xs">
-                            <XCircle size={10} className="text-red-500 shrink-0" />
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] leading-none font-medium bg-destructive/15 text-red-700 dark:text-red-200">
+                            <XCircle size={10} className="text-destructive shrink-0" />
                             <span>
                               {line.missingCountOnLine > 1
                                 ? tr(`Sai ${line.missingCountOnLine} mã`, `${line.missingCountOnLine} missing`)
@@ -853,8 +1018,8 @@ export function CenterPanel() {
 
                       {isInputDup && (
                         <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] leading-none font-semibold bg-amber-500/20 text-amber-800 dark:text-amber-200 border border-amber-500/45 shadow-2xs backdrop-blur-xs">
-                            <AlertTriangle size={10} className="text-amber-500 shrink-0" />
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] leading-none font-medium bg-warning/15 text-amber-800 dark:text-amber-200">
+                            <AlertTriangle size={10} className="text-warning shrink-0" />
                             <span>
                               {peerLinesLabel
                                 ? tr(
@@ -869,8 +1034,8 @@ export function CenterPanel() {
 
                       {isFileDup && (
                         <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] leading-none font-semibold bg-amber-500/20 text-amber-800 dark:text-amber-200 border border-amber-500/45 shadow-2xs backdrop-blur-xs">
-                            <AlertTriangle size={10} className="text-amber-500 shrink-0" />
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] leading-none font-medium bg-warning/15 text-amber-800 dark:text-amber-200">
+                            <AlertTriangle size={10} className="text-warning shrink-0" />
                             <span>
                               {tr(
                                 `Trùng (${line.fileMatchCount ?? 2} file)`,
@@ -919,139 +1084,24 @@ export function CenterPanel() {
 
           {/* Hiệu ứng loading chờ quét giữa chừng */}
           {isAutoFinding && (
-            <div className="absolute inset-x-4 inset-y-3 z-30 rounded-lg bg-card/90 backdrop-blur-xs border-2 border-emerald-500/40 shadow-xl flex flex-col items-center justify-center p-5 animate-fade-in text-center overflow-hidden">
-              {/* Animated top shimmer bar */}
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500 animate-[srgb-text-flow_2s_linear_infinite]" />
-
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center mb-3 shadow-[0_0_20px_rgba(16,185,129,0.25)] animate-pulse">
-                <Zap size={22} className="fill-emerald-500/40" />
-              </div>
-
-              <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
-                <Loader2 size={15} className="animate-spin text-emerald-500" />
-                <span>{tr("Đang tự động nạp mã từ Google Sheet...", "Auto-loading customer codes from Google Sheet...")}</span>
+            <div className="absolute inset-x-3 inset-y-3 z-30 rounded-lg bg-card/95 backdrop-blur-xs border border-border shadow-md flex flex-col items-center justify-center gap-2 p-5 animate-fade-in text-center">
+              <Loader2 size={20} className="animate-spin text-muted-foreground" />
+              <h4 className="text-sm font-medium text-foreground">
+                {tr("Đang tự động nạp mã từ Google Sheet...", "Auto-loading customer codes from Google Sheet...")}
               </h4>
-
-              <p className="text-xs text-muted-foreground mt-1 max-w-sm font-mono">
+              <p className="text-xs text-muted-foreground max-w-sm">
                 {autoFindStatus?.targetCustomerName
                   ? tr(`Khách: ${autoFindStatus.targetCustomerName}`, `Customer: ${autoFindStatus.targetCustomerName}`)
                   : tr("Đang đối chiếu dữ liệu bảng tính...", "Matching spreadsheet rows...")}
               </p>
-
-              <span className="text-[10px] text-muted-foreground/80 mt-2 px-2.5 py-0.5 rounded-full bg-muted/60 border border-border/50">
+              <span className="text-xs text-muted-foreground/80">
                 {tr("Chờ nạp xong để bấm Quét file", "Wait for codes to load, then click Scan & Match")}
               </span>
             </div>
           )}
         </div>
 
-        {/* Scan Options */}
-        <div className="flex flex-col items-center gap-2 pb-3 px-4">
-          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs">
-            <label className="flex items-center gap-1.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={scanOptions.filter_raw}
-                onChange={(e) => handleToggleScanOption({ filter_raw: e.target.checked })}
-                disabled={phase === "scanning" || phase === "copying"}
-                className="rounded border-border accent-primary cursor-pointer disabled:opacity-50 w-3.5 h-3.5"
-              />
-              <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>{tr("Lọc Raw", "Filter RAW")}</span>
-            </label>
-            
-            <label className="flex items-center gap-1.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={scanOptions.filter_jpg}
-                onChange={(e) => handleToggleScanOption({ filter_jpg: e.target.checked })}
-                disabled={phase === "scanning" || phase === "copying"}
-                className="rounded border-border accent-primary cursor-pointer disabled:opacity-50 w-3.5 h-3.5"
-              />
-              <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>{tr("Lọc JPG", "Filter JPG")}</span>
-            </label>
-
-            <label className="flex items-center gap-1.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={!scanOptions.recursive}
-                onChange={(e) => handleToggleScanOption({ recursive: !e.target.checked })}
-                disabled={phase === "scanning" || phase === "copying"}
-                className="rounded border-border accent-primary cursor-pointer disabled:opacity-50 w-3.5 h-3.5"
-              />
-              <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>{tr("Chỉ thư mục chọn", "Selected folder only")}</span>
-            </label>
-
-            <label className="flex items-center gap-1.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={scanOptions.recursive}
-                onChange={(e) => handleToggleScanOption({ recursive: e.target.checked })}
-                disabled={phase === "scanning" || phase === "copying"}
-                className="rounded border-border accent-primary cursor-pointer disabled:opacity-50 w-3.5 h-3.5"
-              />
-              <span className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} text-muted-foreground`}>{tr("Lọc tất cả thư mục con", "All subfolders")}</span>
-            </label>
-
-            <label
-              className="flex items-center gap-1.5 cursor-pointer"
-              title={tr(
-                "Khi bật: nếu gắn đuôi file (ví dụ .CR2, .CR3) vào mã đầu tiên thì các mã bên dưới sẽ ăn theo đuôi đó để phân biệt trùng mã khác đuôi. Khi tắt: lọc theo mã số như bình thường (khách gửi .JPG vẫn lọc được file RAW).",
-                "When enabled: appending an extension (e.g. .CR2, .CR3) to the first code cascades it to subsequent codes. When disabled: standard matching ignores input extensions so .JPG codes still match RAW files."
-              )}
-            >
-              <input
-                type="checkbox"
-                checked={inheritExtensionEnabled}
-                onChange={(e) => setInheritExtensionEnabled(e.target.checked)}
-                disabled={phase === "scanning" || phase === "copying"}
-                className="rounded border-border accent-primary cursor-pointer disabled:opacity-50 w-3.5 h-3.5"
-              />
-              <span
-                className={`${phase === "scanning" || phase === "copying" ? "opacity-50" : ""} ${
-                  inheritExtensionEnabled ? "text-foreground font-medium" : "text-muted-foreground"
-                }`}
-              >
-                {tr("Kế thừa hậu tố đuôi file", "Inherit file extension")}
-              </span>
-            </label>
-          </div>
-
-          {/* Branch Extension Choices — only shown when "Kế thừa hậu tố đuôi file" is checked */}
-          {inheritExtensionEnabled && (
-            <div className="flex flex-wrap items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-foreground/[0.03] border border-border/60 animate-fade-in">
-              <span className="text-[10.5px] text-muted-foreground mr-1 whitespace-nowrap">
-                {tr("Đuôi kế thừa:", "Extensions:")}
-              </span>
-              {EXTENSION_BRANCH_OPTIONS.map((opt) => {
-                const isChecked = inheritedExtensions.includes(opt.id);
-                return (
-                  <label
-                    key={opt.id}
-                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10.5px] font-mono cursor-pointer select-none border transition-colors whitespace-nowrap ${
-                      isChecked
-                        ? "glass-pill text-foreground font-semibold border-primary/40"
-                        : "border-transparent text-muted-foreground hover:text-foreground bg-foreground/[0.03]"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => toggleInheritedExtension(opt.id)}
-                      disabled={phase === "scanning" || phase === "copying"}
-                      className="rounded border-border accent-primary cursor-pointer w-3 h-3"
-                    />
-                    <span>.{opt.label}</span>
-                  </label>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-
       </div>
-
-
       {/* Sheet Code Extractor Modal */}
       <SheetCodeExtractorModal
         isOpen={isSheetModalOpen}

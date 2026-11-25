@@ -59,7 +59,7 @@ export function AutoFindToggle() {
         role="switch"
         aria-checked={autoFindEnabled}
         onClick={handleToggle}
-        className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11.5px] font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 glass-pill hover:bg-foreground/[0.08] ${
+        className={`inline-flex items-center gap-2 h-7 px-2.5 rounded-md text-xs font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 border border-border bg-foreground/[0.03] hover:bg-foreground/[0.07] ${
           autoFindEnabled ? "text-foreground" : "text-muted-foreground hover:text-foreground"
         }`}
         title={tr(
@@ -68,15 +68,13 @@ export function AutoFindToggle() {
         )}
       >
         {isAutoFinding ? (
-          <Loader2 size={12} className="text-emerald-500 animate-spin shrink-0" />
+          <Loader2 size={13} className="text-muted-foreground animate-spin shrink-0" />
         ) : (
           <Zap
-            size={12}
+            size={13}
             strokeWidth={1.75}
             className={`transition-colors shrink-0 ${
-              autoFindEnabled
-                ? "text-emerald-500 fill-emerald-500/30"
-                : "text-muted-foreground"
+              autoFindEnabled ? "text-primary" : "text-muted-foreground"
             }`}
           />
         )}
@@ -84,13 +82,13 @@ export function AutoFindToggle() {
 
         {/* Small Modern Switch Indicator */}
         <div
-          className={`w-5 h-2.5 rounded-full transition-colors relative flex items-center shrink-0 ${
-            autoFindEnabled ? "bg-emerald-500" : "bg-muted-foreground/30"
+          className={`w-7 h-4 rounded-full transition-colors relative flex items-center shrink-0 ${
+            autoFindEnabled ? "bg-primary" : "bg-foreground/20"
           }`}
         >
           <div
-            className={`w-2 h-2 rounded-full bg-white shadow-xs transition-transform ${
-              autoFindEnabled ? "translate-x-2.5" : "translate-x-0.5"
+            className={`w-3 h-3 rounded-full bg-white shadow-xs transition-transform ${
+              autoFindEnabled ? "translate-x-3.5" : "translate-x-0.5"
             }`}
           />
         </div>

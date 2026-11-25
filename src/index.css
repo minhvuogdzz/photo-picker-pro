@@ -52,14 +52,13 @@
   --text-sm: 0.9231rem;
   --text-sm--line-height: 1.45;
 
-  /* Elevation scale shared by cards, popovers and modals: wide, navy-tinted and soft,
-     so translucent surfaces float over the canvas instead of sitting on it. */
-  --shadow-xs: 0 1px 2px rgb(11 19 36 / 0.04), 0 1px 1px rgb(11 19 36 / 0.02);
-  --shadow-sm: 0 2px 8px -2px rgb(11 19 36 / 0.08), 0 1px 2px rgb(11 19 36 / 0.04);
-  --shadow-md: 0 10px 28px -10px rgb(11 19 36 / 0.16), 0 2px 6px -2px rgb(11 19 36 / 0.06);
-  --shadow-lg: 0 24px 56px -18px rgb(11 19 36 / 0.28), 0 8px 18px -8px rgb(11 19 36 / 0.1);
-  --shadow-xl: 0 32px 72px -20px rgb(11 19 36 / 0.34), 0 12px 24px -10px rgb(11 19 36 / 0.12);
-  --shadow-2xl: 0 40px 96px -24px rgb(11 19 36 / 0.42);
+  /* Elevation scale shared by cards, popovers and modals: soft, neutral shadows. */
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.04), 0 1px 1px rgb(0 0 0 / 0.02);
+  --shadow-sm: 0 2px 8px -2px rgb(0 0 0 / 0.08), 0 1px 2px rgb(0 0 0 / 0.04);
+  --shadow-md: 0 10px 28px -10px rgb(0 0 0 / 0.16), 0 2px 6px -2px rgb(0 0 0 / 0.06);
+  --shadow-lg: 0 24px 56px -18px rgb(0 0 0 / 0.28), 0 8px 18px -8px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 32px 72px -20px rgb(0 0 0 / 0.34), 0 12px 24px -10px rgb(0 0 0 / 0.12);
+  --shadow-2xl: 0 40px 96px -24px rgb(0 0 0 / 0.42);
 }
 
 @theme static {
@@ -272,46 +271,46 @@
   --color-stone-500: var(--color-slate-500);
   --color-stone-600: var(--color-slate-600);
   --color-stone-700: var(--color-slate-700);
-  --color-stone-800: var(--color-slate-800);
-  --color-stone-900: var(--color-slate-900);
-  --color-stone-950: var(--color-slate-950);
+  --color-stone-800: var(--color-zinc-800);
+  --color-stone-900: var(--color-zinc-900);
+  --color-stone-950: var(--color-zinc-950);
 }
 
 @layer base {
   :root {
-    /* Light theme — Devhouse liquid glass.
-       Frosted white surfaces over a pale canvas washed with the logo's teal -> cyan -> blue. */
-    --color-background: #eef2f8;
+    /* Light theme — neutral.
+       White surfaces over a plain light-grey canvas; the blue accent is the only colour. */
+    --color-background: #f3f3f5;
     --color-sidebar: rgb(255 255 255 / 0.5);
-    --color-sidebar-foreground: #46556c;
-    --color-foreground: #0b1324;
-    --color-card: rgb(255 255 255 / 0.68);
-    --color-card-foreground: #0b1324;
+    --color-sidebar-foreground: #52525b;
+    --color-foreground: #18181b;
+    --color-card: rgb(255 255 255 / 0.9);
+    --color-card-foreground: #18181b;
     --color-popover: rgb(255 255 255 / 0.92);
-    --color-popover-foreground: #0b1324;
+    --color-popover-foreground: #18181b;
 
-    --color-primary: #1f5fe0;
+    --color-primary: #2f6ae0;
     --color-primary-foreground: #ffffff;
 
-    --color-secondary: rgb(11 19 36 / 0.045);
-    --color-secondary-foreground: #1b2638;
+    --color-secondary: rgb(0 0 0 / 0.045);
+    --color-secondary-foreground: #27272a;
 
-    --color-muted: rgb(11 19 36 / 0.045);
-    --color-muted-foreground: #586880;
+    --color-muted: rgb(0 0 0 / 0.045);
+    --color-muted-foreground: #6b6b75;
 
     --color-accent: rgb(31 95 224 / 0.08);
-    --color-accent-foreground: #0b1324;
+    --color-accent-foreground: #18181b;
 
     --color-destructive: #e5484d;
     --color-destructive-foreground: #ffffff;
-    --color-success: #0e8873;
+    --color-success: #1d8a5c;
     --color-warning: #c27a06;
     --color-info: #0e84a6;
 
-    --color-border: rgb(11 19 36 / 0.08);
-    --color-border-strong: rgb(11 19 36 / 0.14);
+    --color-border: rgb(0 0 0 / 0.08);
+    --color-border-strong: rgb(0 0 0 / 0.14);
     --color-input: rgb(255 255 255 / 0.72);
-    --color-ring: #1f5fe0;
+    --color-ring: #2f6ae0;
 
     /* Glass material */
     --glass-fill: rgb(255 255 255 / 0.56);
@@ -319,66 +318,66 @@
     --glass-edge: rgb(255 255 255 / 0.75);
     --glass-rim-hi: rgb(255 255 255 / 0.95);
     --glass-rim-lo: rgb(255 255 255 / 0.25);
-    --glass-hairline: rgb(11 19 36 / 0.07);
+    --glass-hairline: rgb(0 0 0 / 0.07);
     --glass-highlight: rgb(255 255 255 / 0.7);
     --glass-blur: 28px;
 
     /* Canvas washes */
-    --canvas-base: #eef2f8;
-    --canvas-teal: rgb(46 197 166 / 0.2);
-    --canvas-cyan: rgb(39 188 221 / 0.16);
-    --canvas-blue: rgb(58 119 255 / 0.18);
+    --canvas-base: #f3f3f5;
+    --canvas-teal: transparent;
+    --canvas-cyan: transparent;
+    --canvas-blue: transparent;
 
     --brand-gradient: linear-gradient(135deg, #2ec5a6 0%, #12a5c6 42%, #1f5fe0 100%);
   }
 
   .dark {
-    /* Dark theme — Devhouse liquid glass.
-       Smoked glass over a deep navy canvas lit by the same teal -> blue glow as the logo. */
-    --color-background: #070b14;
-    --color-sidebar: rgb(14 21 38 / 0.5);
-    --color-sidebar-foreground: #93a1b8;
-    --color-foreground: #e8edf6;
-    --color-card: rgb(22 31 52 / 0.58);
-    --color-card-foreground: #e8edf6;
-    --color-popover: rgb(15 22 39 / 0.94);
-    --color-popover-foreground: #e8edf6;
+    /* Dark theme — neutral graphite.
+       Charcoal surfaces with no colour cast, so photos, status colours and the single blue accent read clearly. */
+    --color-background: #131315;
+    --color-sidebar: rgb(255 255 255 / 0.025);
+    --color-sidebar-foreground: #a1a1a9;
+    --color-foreground: #ececef;
+    --color-card: rgb(29 29 32 / 0.94);
+    --color-card-foreground: #ececef;
+    --color-popover: #212124;
+    --color-popover-foreground: #ececef;
 
-    --color-primary: #3a77ff;
+    --color-primary: #4a7df0;
     --color-primary-foreground: #ffffff;
 
-    --color-secondary: rgb(255 255 255 / 0.06);
-    --color-secondary-foreground: #dbe3f0;
+    --color-secondary: rgb(255 255 255 / 0.055);
+    --color-secondary-foreground: #e2e2e6;
 
     --color-muted: rgb(255 255 255 / 0.05);
-    --color-muted-foreground: #8e9cb4;
+    --color-muted-foreground: #9b9ba4;
 
-    --color-accent: rgb(255 255 255 / 0.08);
+    --color-accent: rgb(255 255 255 / 0.07);
     --color-accent-foreground: #ffffff;
 
-    --color-destructive: #ff6369;
-    --color-destructive-foreground: #1c0707;
-    --color-success: #2ec5a6;
-    --color-warning: #f5b544;
-    --color-info: #27bcdd;
+    --color-destructive: #ef5b5f;
+    --color-destructive-foreground: #ffffff;
+    --color-success: #3fb07f;
+    --color-warning: #e2a640;
+    --color-info: #5b9fe0;
 
-    --color-border: rgb(255 255 255 / 0.08);
-    --color-border-strong: rgb(255 255 255 / 0.15);
-    --color-input: rgb(255 255 255 / 0.04);
-    --color-ring: #6494ff;
+    --color-border: rgb(255 255 255 / 0.075);
+    --color-border-strong: rgb(255 255 255 / 0.13);
+    --color-input: rgb(255 255 255 / 0.035);
+    --color-ring: #6b95f5;
 
-    --glass-fill: rgb(18 26 45 / 0.5);
-    --glass-fill-strong: rgb(16 23 40 / 0.82);
-    --glass-edge: rgb(255 255 255 / 0.09);
-    --glass-rim-hi: rgb(255 255 255 / 0.22);
+    --glass-fill: rgb(30 30 33 / 0.72);
+    --glass-fill-strong: rgb(40 40 44 / 0.92);
+    --glass-edge: rgb(255 255 255 / 0.08);
+    --glass-rim-hi: rgb(255 255 255 / 0.1);
     --glass-rim-lo: rgb(255 255 255 / 0.02);
-    --glass-hairline: rgb(255 255 255 / 0.06);
-    --glass-highlight: rgb(255 255 255 / 0.07);
+    --glass-hairline: rgb(255 255 255 / 0.07);
+    --glass-highlight: rgb(255 255 255 / 0.04);
 
-    --canvas-base: #070b14;
-    --canvas-teal: rgb(22 169 140 / 0.16);
-    --canvas-cyan: rgb(18 165 198 / 0.12);
-    --canvas-blue: rgb(31 95 224 / 0.24);
+    --canvas-base: #111113;
+    --canvas-teal: transparent;
+    --canvas-cyan: transparent;
+    --canvas-blue: transparent;
   }
 
   /* Keyboard focus: one consistent, visible ring for every interactive control (utilities can still override). */
@@ -523,7 +522,7 @@ html.theme-transitioning *::after {
   /* Selected state for nav rows and segmented controls: a small raised lens. */
   .glass-pill {
     background: var(--glass-fill-strong);
-    box-shadow: 0 1px 2px rgb(11 19 36 / 0.06), 0 4px 12px -4px rgb(11 19 36 / 0.12), inset 0 1px 0 var(--glass-highlight);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.06), 0 4px 12px -4px rgb(0 0 0 / 0.12), inset 0 1px 0 var(--glass-highlight);
     border: 1px solid var(--glass-hairline);
   }
 
@@ -625,7 +624,7 @@ html .fixed.inset-0 :is([class*="bg-card"], [class*="bg-popover"]) :is([class*="
 .btn-primary {
   background: var(--color-primary);
   color: var(--color-primary-foreground);
-  box-shadow: 0 6px 16px -6px color-mix(in oklab, var(--color-primary) 70%, transparent), inset 0 1px 0 rgb(255 255 255 / 0.22);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.18), inset 0 1px 0 rgb(255 255 255 / 0.14);
   border: 1px solid transparent;
 }
 
@@ -950,7 +949,7 @@ html .fixed.inset-0 :is([class*="bg-card"], [class*="bg-popover"]) :is([class*="
 
 /* Welcome Screen — High-End Studio Typography & Frost Glass */
 .studio-title-text {
-  font-family: "Outfit", "Plus Jakarta Sans", var(--font-sans);
+  font-family: var(--font-sans);
   font-weight: 600;
   letter-spacing: -0.015em;
   background: linear-gradient(
@@ -1108,12 +1107,15 @@ html .fixed.inset-0 :is([class*="bg-card"], [class*="bg-popover"]) :is([class*="
   }
 }
 
+/* Error lines: a calm static tint plus a left marker. No looping pulse, so long code lists stay readable. */
 .code-line-missing-glow {
-  animation: code-error-missing-pulse 1.8s ease-in-out infinite;
+  background-color: color-mix(in oklab, var(--color-destructive) 13%, transparent);
+  box-shadow: inset 2px 0 0 var(--color-destructive);
 }
 
 .code-line-duplicate-glow {
-  animation: code-error-duplicate-pulse 2.1s ease-in-out infinite;
+  background-color: color-mix(in oklab, var(--color-warning) 12%, transparent);
+  box-shadow: inset 2px 0 0 var(--color-warning);
 }
 
 .code-line-target-flash {

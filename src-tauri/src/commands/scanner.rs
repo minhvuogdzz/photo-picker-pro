@@ -30,6 +30,43 @@ fn accepts_extension(ext_lower: &str, filter_raw: bool, filter_jpg: bool) -> boo
     }
 }
 
+/// Folder bundles created by catalog / editing apps. They hold thousands of cache files and never
+/// contain the customer's original photos, so walking them only slows the scan down.
+const SKIPPED_DIR_SUFFIXES: &[&str] = &[
+    ".lrdata",
+    ".photoslibrary",
+    ".cocatalog",
+    ".cocatalogdb",
+    ".cosessiondb",
+    ".app",
+];
+
+/// Returns true for sub-directories the recursive scan should not descend into:
+/// hidden folders (`.Trashes`, `.Spotlight-V100`, `.fseventsd`…), catalog/cache bundles,
+/// and any folder listed in `exclude_paths`.
+fn should_skip_dir(dir_path: &Path, depth: usize, exclude_paths: &[std::path::PathBuf]) -> bool {
+    if depth == 0 {
+        return false;
+    }
+    if exclude_paths.iter().any(|ex| dir_path == ex.as_path()) {
+        return true;
+    }
+    let Some(name) = dir_path.file_name().and_then(|n| n.to_str()) else {
+        return false;
+    };
+    if name.starts_with('.') {
+        return true;
+    }
+    let lower = name.to_ascii_lowercase();
+    SKIPPED_DIR_SUFFIXES.iter().any(|suffix| lower.ends_with(suffix))
+}
+
+/// macOS writes AppleDouble companions (`._IMG_1234.CR2`) next to every file on exFAT/FAT/SMB volumes.
+/// They carry an image extension but are not photos, and would otherwise show up as duplicate matches.
+fn is_junk_file(filename: &str) -> bool {
+    filename.starts_with("._")
+}
+
 /// Extracts the numeric portion from a filename for matching purposes.
 /// Example: "IMG01234.JPG" -> "01234", "MVD000123.CR2" -> "000123"
 fn extract_number_from_filename(filename: &str) -> String {
@@ -89,6 +126,13 @@ pub async fn scan_folders(
         let mut total_folders: usize = 0;
         let mut photos: Vec<PhotoFile> = Vec::with_capacity(512);
         let mut last_emit = Instant::now();
+        let exclude_paths: Vec<std::path::PathBuf> = options
+            .exclude_paths
+            .iter()
+            .map(|p| p.trim())
+            .filter(|p| !p.is_empty())
+            .map(|p| Path::new(p).to_path_buf())
+            .collect();
 
         let _ = app.emit(
             "scan-progress",
@@ -112,7 +156,11 @@ pub async fn scan_folders(
                 });
             }
 
-            let mut walker = WalkDir::new(path).into_iter();
+            let mut walker = WalkDir::new(path)
+                .into_iter()
+                .filter_entry(|e| {
+                    !(e.file_type().is_dir() && should_skip_dir(e.path(), e.depth(), &exclude_paths))
+                });
 
             while let Some(entry_result) = walker.next() {
                 if cancelled_flag.load(Ordering::Relaxed) {
@@ -142,6 +190,14 @@ pub async fn scan_folders(
                     };
                     let ext_lower = ext.to_ascii_lowercase();
                     if !accepts_extension(&ext_lower, options.filter_raw, options.filter_jpg) {
+                        continue;
+                    }
+                    if entry
+                        .file_name()
+                        .to_str()
+                        .map(is_junk_file)
+                        .unwrap_or(false)
+                    {
                         continue;
                     }
 
@@ -528,5 +584,23 @@ mod tests {
         assert!(names.contains(&"2-9 10h Linh Thùy 1cc".to_string()));
 
         let _ = std::fs::remove_dir_all(temp_dir);
+    }
+    #[test]
+    fn test_should_skip_dir_hidden_cache_and_excluded() {
+        let excluded = vec![std::path::PathBuf::from("/data/khach/Output")];
+        // Root input folder is never skipped, even if hidden
+        assert!(!should_skip_dir(Path::new("/data/.khach"), 0, &excluded));
+        assert!(should_skip_dir(Path::new("/data/khach/.Trashes"), 1, &excluded));
+        assert!(should_skip_dir(Path::new("/data/khach/Catalog Previews.lrdata"), 1, &excluded));
+        assert!(should_skip_dir(Path::new("/data/khach/Output"), 1, &excluded));
+        assert!(!should_skip_dir(Path::new("/data/khach/Máy 1"), 1, &excluded));
+        assert!(!should_skip_dir(Path::new("/data/khach/Output 2"), 1, &excluded));
+    }
+
+    #[test]
+    fn test_is_junk_file_appledouble() {
+        assert!(is_junk_file("._IMG_1234.CR2"));
+        assert!(!is_junk_file("IMG_1234.CR2"));
+        assert!(!is_junk_file("_MG_1234.CR2"));
     }
 }

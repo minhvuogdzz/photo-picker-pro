@@ -33,6 +33,122 @@ fn fast_copy_file(src: &str, dest: &Path) -> std::io::Result<()> {
     fs::copy(src, dest).map(|_| ())
 }
 
+/// What kind of storage a path lives on, used to pick how many files to copy at once.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum StorageKind {
+    /// Internal or external SSD: parallel copies overlap well.
+    SolidState,
+    /// Spinning hard disk: parallel reads/writes make the head seek back and forth, so copy one at a time.
+    Rotational,
+    /// Network share or cloud sync folder (SMB, NFS, Google Drive...): latency-bound, parallel copies help.
+    Network,
+    /// Could not tell (e.g. non-macOS): keep the previous default.
+    Unknown,
+}
+
+/// Number of files copied at the same time. One spinning disk on either side forces sequential copying,
+/// because interleaving several large RAW files on a HDD is slower than copying them back to back.
+fn copy_parallelism(kinds: &[StorageKind]) -> usize {
+    if kinds.contains(&StorageKind::Rotational) {
+        1
+    } else {
+        4
+    }
+}
+
+/// Reads the `SolidState` key from `diskutil info -plist` output. `None` when the key is missing.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+fn parse_solid_state_from_plist(plist: &str) -> Option<bool> {
+    let idx = plist.find("<key>SolidState</key>")?;
+    let rest = plist[idx + "<key>SolidState</key>".len()..].trim_start();
+    if rest.starts_with("<true/>") {
+        Some(true)
+    } else if rest.starts_with("<false/>") {
+        Some(false)
+    } else {
+        None
+    }
+}
+
+/// Filesystems that live on a local block device; anything else (smbfs, nfs, afpfs, webdav, macFUSE
+/// cloud drives...) is treated as network storage.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+fn is_local_fs_type(fs_type: &str) -> bool {
+    matches!(
+        fs_type,
+        "apfs" | "hfs" | "exfat" | "msdos" | "ntfs" | "ufsd_ntfs" | "tuxera_ntfs" | "ufsd_exfat"
+    )
+}
+
+/// Returns (filesystem type, mount point) for the volume holding `path`.
+#[cfg(target_os = "macos")]
+fn volume_of(path: &Path) -> Option<(String, String)> {
+    use std::ffi::{CStr, CString};
+    use std::os::unix::ffi::OsStrExt;
+
+    let c_path = CString::new(path.as_os_str().as_bytes()).ok()?;
+    let mut stat: libc::statfs = unsafe { std::mem::zeroed() };
+    if unsafe { libc::statfs(c_path.as_ptr(), &mut stat) } != 0 {
+        return None;
+    }
+    let fs_type = unsafe { CStr::from_ptr(stat.f_fstypename.as_ptr()) }
+        .to_string_lossy()
+        .to_string();
+    let mount = unsafe { CStr::from_ptr(stat.f_mntonname.as_ptr()) }
+        .to_string_lossy()
+        .to_string();
+    Some((fs_type, mount))
+}
+
+/// Storage kind per mount point, kept for the whole app session so `diskutil` (~0.25s) runs once per volume.
+#[cfg(target_os = "macos")]
+static STORAGE_KIND_CACHE: std::sync::OnceLock<Mutex<std::collections::HashMap<String, StorageKind>>> =
+    std::sync::OnceLock::new();
+
+/// Detects the storage kind of every distinct volume among `dirs`, asking `diskutil` once per volume.
+#[cfg(target_os = "macos")]
+fn detect_storage_kinds<'a>(dirs: impl Iterator<Item = &'a Path>) -> Vec<StorageKind> {
+    use std::collections::HashMap;
+
+    let cache = STORAGE_KIND_CACHE.get_or_init(|| Mutex::new(HashMap::new()));
+    let mut by_mount: HashMap<String, StorageKind> = HashMap::new();
+    for dir in dirs {
+        let Some((fs_type, mount)) = volume_of(dir) else {
+            continue;
+        };
+        if by_mount.contains_key(&mount) {
+            continue;
+        }
+        if let Some(kind) = cache.lock().ok().and_then(|c| c.get(&mount).copied()) {
+            by_mount.insert(mount, kind);
+            continue;
+        }
+        let cloud_folder = dir.to_string_lossy().contains("/Library/CloudStorage/");
+        let kind = if cloud_folder || !is_local_fs_type(&fs_type) {
+            StorageKind::Network
+        } else {
+            std::process::Command::new("/usr/sbin/diskutil")
+                .args(["info", "-plist", &mount])
+                .output()
+                .ok()
+                .filter(|out| out.status.success())
+                .and_then(|out| parse_solid_state_from_plist(&String::from_utf8_lossy(&out.stdout)))
+                .map(|ssd| if ssd { StorageKind::SolidState } else { StorageKind::Rotational })
+                .unwrap_or(StorageKind::Unknown)
+        };
+        if let Ok(mut c) = cache.lock() {
+            c.insert(mount.clone(), kind);
+        }
+        by_mount.insert(mount, kind);
+    }
+    by_mount.into_values().collect()
+}
+
+#[cfg(not(target_os = "macos"))]
+fn detect_storage_kinds<'a>(_dirs: impl Iterator<Item = &'a Path>) -> Vec<StorageKind> {
+    vec![StorageKind::Unknown]
+}
+
 /// Copies or moves matched photos to the output folder.
 ///
 /// Supports multiple operations (Copy, Move, HardLink, SymbolicLink),
@@ -208,9 +324,25 @@ pub async fn copy_files(
             }
         };
 
-        // Use a bounded 4-thread pool for parallel file copying: overlaps CloudStorage / disk latency
-        // (3-4x faster than sequential loop) without overwhelming virtual filesystem daemons.
-        if let Ok(pool) = rayon::ThreadPoolBuilder::new().num_threads(4).build() {
+        // Pick the copy concurrency from the source and destination volumes: 4 parallel copies overlap
+        // SSD / CloudStorage / network latency, but a spinning HDD on either side is copied one file at a
+        // time in folder order so the disk head is not thrashed between several large RAW files.
+        let source_dirs: HashSet<PathBuf> = tasks
+            .iter()
+            .filter_map(|(src, _)| Path::new(src).parent().map(|p| p.to_path_buf()))
+            .collect();
+        let storage_kinds = detect_storage_kinds(
+            source_dirs
+                .iter()
+                .map(|p| p.as_path())
+                .chain(unique_parents.iter().map(|p| p.as_path())),
+        );
+        let parallelism = copy_parallelism(&storage_kinds);
+
+        if parallelism <= 1 {
+            tasks.sort_by(|a, b| a.0.cmp(&b.0));
+            tasks.iter().for_each(process_task);
+        } else if let Ok(pool) = rayon::ThreadPoolBuilder::new().num_threads(parallelism).build() {
             pool.install(|| {
                 tasks.par_iter().for_each(process_task);
             });
@@ -357,4 +489,44 @@ pub async fn cancel_copy(
 ) -> Result<(), String> {
     cancelled.store(true, Ordering::SeqCst);
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_copy_parallelism_by_storage_kind() {
+        assert_eq!(copy_parallelism(&[StorageKind::SolidState]), 4);
+        assert_eq!(copy_parallelism(&[StorageKind::Network, StorageKind::SolidState]), 4);
+        assert_eq!(copy_parallelism(&[StorageKind::Unknown]), 4);
+        assert_eq!(copy_parallelism(&[StorageKind::Rotational, StorageKind::SolidState]), 1);
+        assert_eq!(copy_parallelism(&[StorageKind::Network, StorageKind::Rotational]), 1);
+    }
+
+    #[test]
+    fn test_parse_solid_state_from_plist() {
+        let ssd = "<dict>\n\t<key>SolidState</key>\n\t<true/>\n</dict>";
+        let hdd = "<dict>\n\t<key>SolidState</key>\n\t<false/>\n</dict>";
+        assert_eq!(parse_solid_state_from_plist(ssd), Some(true));
+        assert_eq!(parse_solid_state_from_plist(hdd), Some(false));
+        assert_eq!(parse_solid_state_from_plist("<dict></dict>"), None);
+    }
+
+    #[test]
+    fn test_is_local_fs_type() {
+        assert!(is_local_fs_type("apfs"));
+        assert!(is_local_fs_type("exfat"));
+        assert!(!is_local_fs_type("smbfs"));
+        assert!(!is_local_fs_type("macfuse"));
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn test_detect_storage_kinds_on_this_mac() {
+        let tmp = std::env::temp_dir();
+        let kinds = detect_storage_kinds(std::iter::once(tmp.as_path()));
+        assert_eq!(kinds.len(), 1);
+        println!("temp dir storage kind: {:?}", kinds[0]);
+    }
 }
