@@ -2,6 +2,16 @@
 
 Tất cả các bản phát hành của **DH Studio Pro** (phát triển & thuộc sở hữu bản quyền của **Devhouse Software**) đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
 
+## [v4.0.1] - 2026-11-25
+
+**Lọc ảnh Pro: Sửa lỗi "Illegal byte sequence (os error 92)" khi lọc file**
+
+- Khi tên thư mục khách chứa ký tự mà macOS không cho dùng trong tên thư mục (ký tự Unicode quá mới/chưa được gán, ký tự đặc biệt như U+FFFF), app không còn dừng với lỗi "Failed to create destination folder". App tự bỏ các ký tự đó khỏi tên thư mục đích (ví dụ `ngon quả□1cc` → `ngon quả 1cc`) rồi chép tiếp. Chữ tiếng Việt, chữ CJK và emoji thông dụng được giữ nguyên.
+
+*(EN Highlights: Fixed "Illegal byte sequence (os error 92)" when filtering: if the OS rejects a destination folder name because of an unknown or invalid Unicode character, the offending characters are removed and copying continues; Vietnamese, CJK and common emoji are kept.)*
+
+---
+
 ## [v4.0.0] - 2026-11-25
 
 **Lọc ảnh Pro: Giao diện mới gọn & trung tính, quét thư mục nhanh hơn và chép file tự thích ứng theo loại ổ**

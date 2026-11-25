@@ -18,11 +18,32 @@ export interface VersionReleaseNote {
 
 export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
   {
+    version: "v4.0.1",
+    date: "2026-11-25",
+    title: "Lọc ảnh Pro: Sửa lỗi \"Illegal byte sequence\" khi tên thư mục khách chứa ký tự đặc biệt",
+    titleEn: "Photo Picker Pro: Fixed \"Illegal byte sequence\" when a customer folder name contains special characters",
+    isCurrent: true,
+    sections: [
+      {
+        title: "Sửa lỗi không tạo được thư mục đích khi lọc file",
+        titleEn: "Fixed Destination Folder Creation When Filtering",
+        type: "fix",
+        items: [
+          "Khi tên thư mục khách chứa ký tự mà macOS không cho dùng trong tên thư mục (ký tự Unicode quá mới hoặc ký tự đặc biệt), app không còn dừng với lỗi \"Illegal byte sequence (os error 92)\".",
+          "App tự bỏ các ký tự đó khỏi tên thư mục đích rồi chép tiếp; chữ tiếng Việt, chữ Trung/Nhật và emoji thông dụng được giữ nguyên.",
+        ],
+        itemsEn: [
+          "When a customer folder name contains a character macOS does not allow in folder names (a very new Unicode character or a special character), the app no longer stops with \"Illegal byte sequence (os error 92)\".",
+          "The offending characters are removed from the destination folder name and copying continues; Vietnamese, Chinese/Japanese characters and common emoji are kept.",
+        ],
+      },
+    ],
+  },
+  {
     version: "v4.0.0",
     date: "2026-11-25",
     title: "Lọc ảnh Pro: Giao diện mới gọn & trung tính, quét thư mục nhanh hơn và chép file tự thích ứng theo loại ổ",
     titleEn: "Photo Picker Pro: Cleaner neutral interface, faster folder scans and storage-aware file copying",
-    isCurrent: true,
     sections: [
       {
         title: "Giao diện mới gọn gàng & chuyên nghiệp",

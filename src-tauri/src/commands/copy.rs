@@ -149,6 +149,150 @@ fn detect_storage_kinds<'a>(_dirs: impl Iterator<Item = &'a Path>) -> Vec<Storag
     vec![StorageKind::Unknown]
 }
 
+/// True when the OS refused a path because of the characters in its name: `EILSEQ`
+/// ("Illegal byte sequence", os error 92 on macOS) on Unix, `ERROR_INVALID_NAME` on Windows.
+fn is_illegal_name_error(err: &std::io::Error) -> bool {
+    #[cfg(unix)]
+    {
+        err.raw_os_error() == Some(libc::EILSEQ)
+    }
+    #[cfg(windows)]
+    {
+        err.raw_os_error() == Some(123)
+    }
+    #[cfg(not(any(unix, windows)))]
+    {
+        let _ = err;
+        false
+    }
+}
+
+/// Characters kept when a folder name has to be cleaned: letters and digits of any script
+/// (Vietnamese, CJK...), combining accents, printable ASCII except path separators, assigned BMP
+/// symbols, and long-established emoji blocks. Control characters, Unicode noncharacters, private-use
+/// characters and very new / unassigned astral code points are dropped, since those are what
+/// macOS rejects with "Illegal byte sequence".
+fn is_safe_name_char(c: char) -> bool {
+    let cp = c as u32;
+    if c.is_control() || c == '/' || c == '\\' || c == ':' {
+        return false;
+    }
+    if c.is_ascii() || c.is_alphanumeric() || c.is_whitespace() {
+        return true;
+    }
+    let noncharacter = (0xFDD0..=0xFDEF).contains(&cp) || (cp & 0xFFFE) == 0xFFFE;
+    let private_use = (0xE000..=0xF8FF).contains(&cp) || cp >= 0xF0000;
+    if noncharacter || private_use {
+        return false;
+    }
+    if cp <= 0xFFFF {
+        return true;
+    }
+    matches!(
+        cp,
+        0x1F1E6..=0x1F1FF // regional indicators (flags)
+            | 0x1F300..=0x1F5FF // symbols & pictographs
+            | 0x1F600..=0x1F64F // emoticons
+            | 0x1F680..=0x1F6FF // transport & map
+            | 0x1F900..=0x1F9FF // supplemental symbols & pictographs
+    )
+}
+
+/// Cleans one folder name: unsafe characters become a space, runs of spaces collapse,
+/// and leading/trailing spaces and dots are trimmed. Never returns an empty name.
+fn sanitize_folder_name(name: &str) -> String {
+    let mut out = String::with_capacity(name.len());
+    let mut last_was_space = false;
+    for c in name.chars() {
+        let c = if is_safe_name_char(c) { c } else { ' ' };
+        if c.is_whitespace() {
+            if !last_was_space {
+                out.push(' ');
+            }
+            last_was_space = true;
+        } else {
+            out.push(c);
+            last_was_space = false;
+        }
+    }
+    let trimmed = out.trim_matches(|c: char| c.is_whitespace() || c == '.');
+    if trimmed.is_empty() {
+        "Folder".to_string()
+    } else {
+        trimmed.to_string()
+    }
+}
+
+/// Rebuilds `path` with every not-yet-existing component cleaned by [`sanitize_folder_name`].
+/// Components that already exist on disk are kept as they are.
+fn sanitize_missing_components(path: &Path) -> PathBuf {
+    let mut base = path.to_path_buf();
+    let mut missing: Vec<String> = Vec::new();
+    while !base.exists() {
+        match (base.file_name(), base.parent()) {
+            (Some(name), Some(parent)) => {
+                missing.push(name.to_string_lossy().to_string());
+                base = parent.to_path_buf();
+            }
+            _ => break,
+        }
+    }
+    for name in missing.iter().rev() {
+        base.push(sanitize_folder_name(name));
+    }
+    base
+}
+
+/// Creates every destination folder once. If the OS rejects a folder name, the missing part of the
+/// path is cleaned, created, and all tasks pointing into it are redirected there.
+/// Returns the final set of destination folders.
+fn create_destination_dirs(tasks: &mut [(String, PathBuf)]) -> Result<HashSet<PathBuf>, String> {
+    let mut unique_parents: HashSet<PathBuf> = HashSet::new();
+    for (_, dest) in tasks.iter() {
+        if let Some(parent) = dest.parent() {
+            unique_parents.insert(parent.to_path_buf());
+        }
+    }
+
+    let mut remap: std::collections::HashMap<PathBuf, PathBuf> = std::collections::HashMap::new();
+    for parent in &unique_parents {
+        match fs::create_dir_all(parent) {
+            Ok(()) => {}
+            Err(e) if is_illegal_name_error(&e) => {
+                let fixed = sanitize_missing_components(parent);
+                if fixed == *parent {
+                    return Err(format!("Failed to create destination folder {}: {}", parent.display(), e));
+                }
+                fs::create_dir_all(&fixed).map_err(|e2| {
+                    format!("Failed to create destination folder {}: {}", fixed.display(), e2)
+                })?;
+                remap.insert(parent.clone(), fixed);
+            }
+            Err(e) => {
+                return Err(format!("Failed to create destination folder {}: {}", parent.display(), e));
+            }
+        }
+    }
+
+    if remap.is_empty() {
+        return Ok(unique_parents);
+    }
+
+    for (_, dest) in tasks.iter_mut() {
+        let new_dest = match (dest.parent(), dest.file_name()) {
+            (Some(parent), Some(file_name)) => remap.get(parent).map(|np| np.join(file_name)),
+            _ => None,
+        };
+        if let Some(nd) = new_dest {
+            *dest = nd;
+        }
+    }
+    Ok(unique_parents
+        .into_iter()
+        .map(|p| remap.get(&p).cloned().unwrap_or(p))
+        .collect())
+}
+
 /// Copies or moves matched photos to the output folder.
 ///
 /// Supports multiple operations (Copy, Move, HardLink, SymbolicLink),
@@ -245,18 +389,9 @@ pub async fn copy_files(
         );
 
         // Pre-create all unique destination parent directories once to avoid redundant
-        // CloudStorage / filesystem syscalls on every file iteration.
-        let mut unique_parents: HashSet<PathBuf> = HashSet::new();
-        for (_, dest) in &tasks {
-            if let Some(parent) = dest.parent() {
-                unique_parents.insert(parent.to_path_buf());
-            }
-        }
-        for parent in &unique_parents {
-            if let Err(e) = fs::create_dir_all(parent) {
-                return Err(format!("Failed to create destination folder {}: {}", parent.display(), e));
-            }
-        }
+        // CloudStorage / filesystem syscalls on every file iteration. Folder names the OS refuses
+        // (e.g. a customer folder whose name holds a character macOS does not know) are cleaned up.
+        let unique_parents = create_destination_dirs(&mut tasks)?;
 
         let completed_count = AtomicUsize::new(0);
         let success_count = AtomicUsize::new(0);
@@ -528,5 +663,56 @@ mod tests {
         let kinds = detect_storage_kinds(std::iter::once(tmp.as_path()));
         assert_eq!(kinds.len(), 1);
         println!("temp dir storage kind: {:?}", kinds[0]);
+    }
+    #[test]
+    fn test_sanitize_folder_name_keeps_vietnamese_and_common_emoji() {
+        assert_eq!(
+            sanitize_folder_name("22-11 16h Nguyễn Thị Mỹ Linh 2cc"),
+            "22-11 16h Nguyễn Thị Mỹ Linh 2cc"
+        );
+        assert_eq!(sanitize_folder_name("24-11 16h Quả bom 💣 2cc"), "24-11 16h Quả bom 💣 2cc");
+        assert_eq!(sanitize_folder_name("22-11 8h phgihnl - 芳玲. 2cc"), "22-11 8h phgihnl - 芳玲. 2cc");
+    }
+
+    #[test]
+    fn test_sanitize_folder_name_drops_rejected_characters() {
+        assert_eq!(sanitize_folder_name("ngon quả\u{FFFF}1cc"), "ngon quả 1cc");
+        assert_eq!(sanitize_folder_name("ngon quả\u{1FAFF}\u{1FAFF}1cc"), "ngon quả 1cc");
+        assert_eq!(sanitize_folder_name("a/b:c"), "a b c");
+        assert_eq!(sanitize_folder_name("\u{FFFF}"), "Folder");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_create_destination_dirs_recovers_from_illegal_folder_name() {
+        let root = std::env::temp_dir().join(format!(
+            "dh_copy_eilseq_{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir_all(&root).unwrap();
+        let bad_dir = root.join("22-11 16h chiyokeys - ngon quả\u{FFFF}1cc");
+        let mut tasks = vec![
+            ("/src/IMG_0001.JPG".to_string(), bad_dir.join("IMG_0001.JPG")),
+            ("/src/IMG_0002.JPG".to_string(), bad_dir.join("IMG_0002.JPG")),
+            ("/src/IMG_0003.JPG".to_string(), root.join("ok").join("IMG_0003.JPG")),
+        ];
+
+        let parents = create_destination_dirs(&mut tasks).unwrap();
+
+        let fixed_dir = root.join("22-11 16h chiyokeys - ngon quả 1cc");
+        // On filesystems that accept the name nothing is remapped; on macOS it is cleaned.
+        let expected_dir = if bad_dir.exists() { bad_dir.clone() } else { fixed_dir.clone() };
+        assert!(expected_dir.is_dir());
+        assert_eq!(tasks[0].1, expected_dir.join("IMG_0001.JPG"));
+        assert_eq!(tasks[1].1, expected_dir.join("IMG_0002.JPG"));
+        assert_eq!(tasks[2].1, root.join("ok").join("IMG_0003.JPG"));
+        assert!(parents.contains(&expected_dir));
+        #[cfg(target_os = "macos")]
+        assert_eq!(expected_dir, fixed_dir);
+
+        let _ = fs::remove_dir_all(&root);
     }
 }
