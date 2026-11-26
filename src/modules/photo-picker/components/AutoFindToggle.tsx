@@ -97,16 +97,16 @@ export function AutoFindToggle() {
       {/* Floating Status Notification Pill */}
       {notification && (
         <div
-          className={`absolute left-0 top-full mt-1.5 z-40 whitespace-nowrap px-2.5 py-1 rounded-md text-[10px] font-medium shadow-md border animate-fade-in flex items-center gap-1.5 backdrop-blur-md ${
+          className={`absolute right-0 top-full mt-1.5 z-40 whitespace-nowrap px-2.5 py-1 rounded-md text-xs font-medium shadow-md border animate-fade-in flex items-center gap-1.5 backdrop-blur-md ${
             notification.type === "success"
-              ? "bg-card/95 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-              : "bg-card/95 text-amber-600 dark:text-amber-400 border-amber-500/30"
+              ? "bg-card/95 text-success border-success/30"
+              : "bg-card/95 text-warning border-warning/30"
           }`}
         >
           {notification.type === "success" ? (
-            <CheckCircle2 size={11} className="shrink-0 text-emerald-500" />
+            <CheckCircle2 size={12} className="shrink-0 text-success" />
           ) : (
-            <AlertCircle size={11} className="shrink-0 text-amber-500" />
+            <AlertCircle size={12} className="shrink-0 text-warning" />
           )}
           <span>{notification.message}</span>
         </div>

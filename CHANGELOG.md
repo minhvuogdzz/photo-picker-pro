@@ -2,6 +2,18 @@
 
 Tất cả các bản phát hành của **DH Studio Pro** (phát triển & thuộc sở hữu bản quyền của **Devhouse Software**) đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
 
+## [v4.1.0] - 2026-11-26
+
+**Giao diện tối đen sâu (Obsidian Black) & Đồng bộ hoàn thiện Lọc ảnh Pro**
+
+- **Theme tối đen sâu:** Chuyển nền tối toàn ứng dụng (canvas, sidebar, thẻ nội dung, popover và bảng điều khiển khay hệ thống) sang tông đen obsidian sâu, tách lớp sắc nét bằng viền hairline mảnh, giúp xem và lọc ảnh chính xác màu hơn. Chuẩn hóa dải màu trung tính tối (`zinc`/`neutral`/`stone`) bỏ hẳn ám xanh `slate`.
+- **Đồng bộ giao diện Lọc ảnh Pro:** Thống nhất bo góc và kiểu tiêu đề của khối **Thư mục đầu vào / Hàng đợi khách** cùng bộ chuyển chế độ 1 khách / nhiều khách ở cột trái theo cùng ngôn ngữ tối giản của cột giữa và bảng điều khiển.
+- **Giảm nhiễu thị giác & sửa lỗi tràn bố cục:** Làm dịu các thẻ tiến trình, kết quả sao chép, trạng thái Google Sheets, thùng rác đã lọc và thanh trạng thái dưới cùng (bỏ hiệu ứng nhấp nháy thừa); tiêu đề khung mã tự giãn chiều cao khi cửa sổ hẹp, thông báo nổi của `Auto Find` mở vào trong tránh tràn mép phải, và nhãn lỗi trên dòng mã có nền chắn rõ nét khi dòng mã dài.
+
+*(EN Highlights: Deep obsidian black dark theme across canvas, panels, sidebar, popovers and tray hub with crisp hairline borders and neutral dark grays; unified Photo Picker left-panel header, segmented mode switcher, progress/copy/Sheets status cards, trash widget and bottom bar into the same calm visual system; fixed narrow-window header wrapping, inward-anchored Auto Find toast notifications, and opaque backing on inline error badges.)*
+
+---
+
 ## [v4.0.2] - 2026-11-26
 
 **Thời gian phiên đăng nhập áp dụng đúng cho mọi tài khoản dùng thử, gỡ hẳn tàn dư gói VIP/Premium**

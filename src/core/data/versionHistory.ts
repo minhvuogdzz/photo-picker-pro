@@ -18,11 +18,47 @@ export interface VersionReleaseNote {
 
 export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
   {
+    version: "v4.1.0",
+    date: "2026-11-26",
+    title: "Giao diện tối đen sâu & Đồng bộ hoàn thiện Lọc ảnh Pro",
+    titleEn: "Deep obsidian black dark theme & unified Photo Picker Pro UI",
+    isCurrent: true,
+    sections: [
+      {
+        title: "Chế độ tối đen sâu (Obsidian Black)",
+        titleEn: "Deep Obsidian Black Dark Theme",
+        type: "design",
+        items: [
+          "Chuyển nền tối toàn ứng dụng (nền chính, thanh bên, thẻ nội dung, popover và bảng điều khiển khay hệ thống) sang tông đen obsidian sâu, tách lớp rõ ràng bằng viền mảnh.",
+          "Chuẩn hóa các sắc độ xám tối trung tính để loại bỏ hoàn toàn ánh xanh, giúp màu ảnh hiển thị trung thực hơn khi làm việc lâu.",
+        ],
+        itemsEn: [
+          "Deepened the dark theme across the canvas, sidebar, cards, popovers and tray control hub to an obsidian black palette with crisp hairline borders.",
+          "Normalized dark neutral shades to remove any remaining blue cast, keeping photo previews colour-accurate during long sessions.",
+        ],
+      },
+      {
+        title: "Đồng bộ giao diện & Khắc phục lỗi bố cục Lọc ảnh Pro",
+        titleEn: "Unified Photo Picker UI & Layout Fixes",
+        type: "improvement",
+        items: [
+          "Đồng bộ bo góc, tiêu đề và bộ chuyển chế độ 1 khách / nhiều khách ở cột trái theo cùng phong cách tối giản của cột giữa và bảng điều khiển.",
+          "Làm dịu các thẻ tiến trình, kết quả sao chép, trạng thái Google Sheets, thùng rác đã lọc và thanh trạng thái dưới cùng, loại bỏ hiệu ứng nhấp nháy thừa.",
+          "Khắc phục tiêu đề khung mã bị cắt khi thu hẹp cửa sổ, neo thông báo nổi Auto Find vào trong tránh tràn mép phải, và thêm nền chắn rõ nét cho nhãn lỗi trên dòng mã.",
+        ],
+        itemsEn: [
+          "Aligned corner radii, header typography and the Single / Batch Queue switcher in the left panel with the center editor and dashboard.",
+          "Calmed the progress, copy result, Google Sheets status, completed trash widget and bottom status bar by removing distracting pulse animations.",
+          "Fixed narrow-window header wrapping in the code editor, anchored Auto Find toast notifications inward, and added opaque backing to inline error badges.",
+        ],
+      },
+    ],
+  },
+  {
     version: "v4.0.2",
     date: "2026-11-26",
     title: "Thời gian phiên đăng nhập áp dụng đúng cho mọi tài khoản dùng thử, app gọn nhẹ hơn",
     titleEn: "Session duration now applies correctly to every trial account, leaner app",
-    isCurrent: true,
     sections: [
       {
         title: "Sửa lỗi thời gian phiên đăng nhập",

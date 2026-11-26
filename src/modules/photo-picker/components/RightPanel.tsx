@@ -242,25 +242,25 @@ export function RightPanel({ width = 288 }: RightPanelProps = {}) {
 
         {/* Progress Section */}
         {progress && isActive && (
-          <div className="rounded-lg border border-border/40 bg-muted/20 p-2.5 space-y-2 animate-slide-up">
+          <div className="rounded-lg border border-border bg-foreground/[0.02] p-2.5 space-y-2 animate-slide-up">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-medium text-foreground/80">
+              <span className="text-xs font-medium text-foreground">
                 {phase === "scanning" ? t("scanning") : t("copying")}
               </span>
-              <span className="text-[11px] font-mono text-muted-foreground">
+              <span className="text-xs font-mono tabular-nums text-muted-foreground">
                 {progress.percentage.toFixed(1)}%
               </span>
             </div>
 
             {/* Progress bar */}
-            <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
+            <div className="w-full h-1 bg-foreground/[0.08] rounded-full overflow-hidden">
               <div
                 className="h-full bg-primary rounded-full transition-all duration-300"
                 style={{ width: `${Math.min(progress.percentage, 100)}%` }}
               />
             </div>
 
-            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground tabular-nums">
               <span>
                 {progress.current.toLocaleString()}/{progress.total.toLocaleString()}
               </span>
@@ -273,14 +273,14 @@ export function RightPanel({ width = 288 }: RightPanelProps = {}) {
                 )}
                 {progress.eta_seconds != null && progress.eta_seconds > 0 && (
                   <span className="flex items-center gap-1">
-                    <Timer size={9} />
+                    <Timer size={10} />
                     {formatDuration(progress.eta_seconds)}
                   </span>
                 )}
               </div>
             </div>
 
-            <p className="text-[10px] text-muted-foreground truncate">
+            <p className="text-[11px] text-muted-foreground truncate">
               {progress.message ? localizeBackendMessage(progress.message, lang) : ""}
             </p>
           </div>
@@ -288,38 +288,38 @@ export function RightPanel({ width = 288 }: RightPanelProps = {}) {
 
         {/* Copy Result */}
         {copyResult && phase === "done" && (
-          <div className="rounded-lg border border-border/40 bg-muted/20 p-2.5 space-y-1.5 animate-slide-up">
-            <span className="text-[11px] font-medium text-foreground/80">
+          <div className="rounded-lg border border-border bg-foreground/[0.02] p-2.5 space-y-1.5 animate-slide-up">
+            <span className="text-xs font-medium text-foreground">
               {t("operation_complete")}
             </span>
             <div className="space-y-1">
-              <div className="flex justify-between text-[11px]">
+              <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">{t("success")}</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[11px]">
+                <span className="text-success font-mono tabular-nums">
                   {copyResult.success_count}
                 </span>
               </div>
-              <div className="flex justify-between text-[11px]">
+              <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">{t("skipped")}</span>
-                <span className="text-amber-500 font-mono text-[11px]">
+                <span className="text-warning font-mono tabular-nums">
                   {copyResult.skipped_count}
                 </span>
               </div>
               {copyResult.error_count > 0 && (
-                <div className="flex justify-between text-[11px]">
+                <div className="flex justify-between text-xs">
                   <span className="text-muted-foreground">{t("errors")}</span>
-                  <span className="text-red-500 font-mono text-[11px]">
+                  <span className="text-destructive font-mono tabular-nums">
                     {copyResult.error_count}
                   </span>
                 </div>
               )}
             </div>
             {copyResult.errors.length > 0 && (
-              <div className="mt-1.5 p-2 bg-red-500/5 border border-red-500/20 rounded-md max-h-28 overflow-y-auto">
+              <div className="mt-1.5 p-2 bg-destructive/5 border border-destructive/20 rounded-md max-h-28 overflow-y-auto">
                 {copyResult.errors.map((err, i) => (
                   <p
                     key={i}
-                    className="text-[10px] text-red-500/80 truncate"
+                    className="text-[11px] text-destructive truncate"
                     title={err}
                   >
                     {err}
@@ -335,41 +335,52 @@ export function RightPanel({ width = 288 }: RightPanelProps = {}) {
           <div
             className={`rounded-lg border p-2.5 space-y-1.5 animate-slide-up ${
               sheetUpdateStatus.state === "success"
-                ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400"
+                ? "border-success/25 bg-success/[0.06] text-foreground"
                 : sheetUpdateStatus.state === "updating"
-                ? "border-primary/30 bg-primary/5 text-primary"
-                : "border-amber-500/30 bg-amber-500/5 text-amber-600 dark:text-amber-400"
+                ? "border-primary/25 bg-primary/[0.06] text-foreground"
+                : "border-warning/25 bg-warning/[0.06] text-foreground"
             }`}
           >
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold flex items-center gap-1.5">
-                <FileSpreadsheet size={13} />
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-medium flex items-center gap-1.5">
+                <FileSpreadsheet
+                  size={13}
+                  strokeWidth={1.75}
+                  className={
+                    sheetUpdateStatus.state === "success"
+                      ? "text-success"
+                      : sheetUpdateStatus.state === "updating"
+                      ? "text-primary"
+                      : "text-warning"
+                  }
+                />
                 <span>{tr("Google Sheets Trạng Thái", "Google Sheets Status")}</span>
               </span>
               {sheetUpdateStatus.state === "updating" && (
-                <span className="flex items-center gap-1 text-[10px] text-muted-foreground animate-pulse">
-                  <Loader2 size={10} className="animate-spin" />
+                <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                  <Loader2 size={11} className="animate-spin" />
                   {tr("Đang đồng bộ...", "Syncing...")}
                 </span>
               )}
               {sheetUpdateStatus.state === "success" && (
-                <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/15 border border-emerald-500/30 font-mono">
+                <span className="text-[11px] px-1.5 py-0.5 rounded bg-success/12 text-success font-medium">
                   {tr("Đã đổi trạng thái", "Status updated")}
                 </span>
               )}
             </div>
 
-            <p className="text-[10px] leading-relaxed break-words font-medium">
+            <p className="text-[11px] text-muted-foreground leading-relaxed break-words">
               {sheetUpdateStatus.message}
             </p>
 
             {sheetUpdateStatus.state === "error" && (
               <button
+                type="button"
                 onClick={() => {
                   const effectiveFolders = selectedInputFolders.length > 0 ? selectedInputFolders : inputFolders;
                   sheetFilterAutomationService.updateStatusOnFilterComplete(effectiveFolders, copyResult);
                 }}
-                className="mt-1 text-[10px] px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 font-medium transition-colors cursor-pointer"
+                className="mt-1 h-6 px-2 rounded-md bg-warning/15 hover:bg-warning/25 text-warning text-[11px] font-medium transition-colors cursor-pointer"
               >
                 {tr("Thử lại cập nhật Google Sheet", "Retry Google Sheet update")}
               </button>

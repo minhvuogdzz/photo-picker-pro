@@ -328,7 +328,7 @@ export function LeftPanel({
 
   if (isCollapsed) {
     return (
-      <div id="left-panel-collapsed-strip" className="w-12 flex flex-col items-center py-4 bg-card border border-border shadow-sm rounded-xl transition-all duration-300">
+      <div id="left-panel-collapsed-strip" className="w-12 flex flex-col items-center py-4 bg-card border border-border shadow-sm rounded-2xl transition-all duration-300">
         <button 
           onClick={() => setIsCollapsed(false)}
           className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-all mb-4 cursor-pointer"
@@ -387,16 +387,16 @@ export function LeftPanel({
 
       {/* SECTION 1: Input Folders & Batch Customer Queue */}
       <div
-        className={`flex flex-col flex-shrink-0 transition-all duration-300 bg-card border border-border shadow-sm rounded-xl overflow-hidden ${
+        className={`flex flex-col flex-shrink-0 transition-all duration-300 bg-card border border-border shadow-sm rounded-2xl overflow-hidden ${
           pickerMode === "multi" ? "max-h-[50%]" : "max-h-[35%]"
         }`}
       >
         {/* Header */}
-        <div className="py-2.5 px-3 flex justify-between items-center border-b border-border bg-muted/10">
-          <span className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-foreground uppercase">
-            <FolderOpen size={13} className="text-muted-foreground" />
+        <div className="h-10 px-3 flex justify-between items-center border-b border-border">
+          <span className="flex items-center gap-2 text-xs font-medium text-foreground">
+            <FolderOpen size={13} strokeWidth={1.75} className="text-muted-foreground shrink-0" />
             <span>{pickerMode === "multi" ? tr("Hàng đợi khách", "Customer Queue") : t("input_folders")}</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted/60 text-muted-foreground border border-border/30 font-mono font-bold">
+            <span className="text-muted-foreground tabular-nums font-normal">
               {inputFolders.length}
             </span>
           </span>
@@ -406,59 +406,59 @@ export function LeftPanel({
               <button
                 type="button"
                 onClick={clearInputFolders}
-                className="text-muted-foreground hover:text-destructive transition-colors p-1.5 rounded-md hover:bg-destructive/10 cursor-pointer"
+                className="w-7 h-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
                 title={tr("Xoá tất cả khách khỏi hàng đợi", "Clear all customers from queue")} aria-label={tr("Xoá tất cả khách khỏi hàng đợi", "Clear all customers from queue")}
               >
-                <Trash2 size={13} />
+                <Trash2 size={14} strokeWidth={1.75} />
               </button>
             )}
 
             <button
               type="button"
               onClick={handleAddFolder}
-              className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-muted/60 cursor-pointer"
+              className="w-7 h-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-foreground/[0.07] transition-colors cursor-pointer"
               title={pickerMode === "multi" ? tr("Thêm thư mục Tháng, Ngày hoặc Khách", "Add Month, Day, or Customer folder") : t("add_folder")} aria-label={pickerMode === "multi" ? tr("Thêm thư mục Tháng, Ngày hoặc Khách", "Add Month, Day, or Customer folder") : t("add_folder")}
             >
-              <FolderPlus size={14} />
+              <FolderPlus size={14} strokeWidth={1.75} />
             </button>
 
             <button
               type="button"
               onClick={() => setIsCollapsed(true)}
-              className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-muted/60 cursor-pointer"
+              className="w-7 h-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-foreground/[0.07] transition-colors cursor-pointer"
               title={tr("Thu gọn", "Collapse")} aria-label={tr("Thu gọn", "Collapse")}
             >
-              <ChevronLeft size={14} />
+              <ChevronLeft size={14} strokeWidth={1.75} />
             </button>
           </div>
         </div>
 
         {/* Mode Switcher: Lọc 1 khách vs Lọc nhiều khách */}
-        <div className="p-2 border-b border-border bg-muted/20">
-          <div className="p-0.5 bg-muted/60 rounded-lg grid grid-cols-2 gap-1 text-[11px] font-medium border border-border/40">
+        <div className="px-2.5 py-2 border-b border-border">
+          <div className="p-0.5 rounded-md bg-foreground/[0.05] border border-border grid grid-cols-2 gap-0.5">
             <button
               type="button"
               onClick={() => setPickerMode("single")}
-              className={`py-1 rounded-md text-center transition-all cursor-pointer flex items-center justify-center gap-1 ${
+              className={`h-7 rounded-[5px] text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                 pickerMode === "single"
-                  ? "bg-card text-foreground font-bold shadow-xs border border-border/60"
+                  ? "bg-background text-foreground font-medium shadow-xs dark:bg-white/[0.11]"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <User size={11} />
+              <User size={12} strokeWidth={1.75} />
               <span>{tr("Lọc 1 khách", "Single")}</span>
             </button>
             <button
               type="button"
               onClick={() => setPickerMode("multi")}
-              className={`py-1 px-1 rounded-md text-center transition-all flex items-center justify-center gap-1 select-none cursor-pointer ${
+              className={`h-7 px-1 rounded-[5px] text-xs flex items-center justify-center gap-1.5 transition-colors select-none cursor-pointer ${
                 pickerMode === "multi"
-                  ? "bg-card text-foreground font-bold shadow-xs border border-border/60"
+                  ? "bg-background text-foreground font-medium shadow-xs dark:bg-white/[0.11]"
                   : "text-muted-foreground hover:text-foreground"
               }`}
               title={tr("Lọc nhiều khách cùng lúc", "Batch filter multiple customers")}
             >
-              <Users size={11} />
+              <Users size={12} strokeWidth={1.75} />
               <span>{tr("Lọc nhiều khách", "Batch Queue")}</span>
             </button>
           </div>
@@ -475,7 +475,7 @@ export function LeftPanel({
                 placeholder={tr("Tìm tên khách cần lọc trước...", "Search customer name...")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-7 pr-7 py-1 text-[11px] rounded-md bg-background border border-border/60 text-foreground placeholder:text-muted-foreground/80 focus:outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/30"
+                className="w-full h-7 pl-7 pr-7 text-xs rounded-md bg-foreground/[0.03] border border-border text-foreground placeholder:text-muted-foreground/80 focus:outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/30"
               />
               {searchQuery && (
                 <button aria-label={tr("Xoá", "Clear")}
@@ -497,7 +497,7 @@ export function LeftPanel({
             setActiveDropZone("input");
           }}
           onDragLeave={() => setActiveDropZone(null)}
-          className={`flex-1 overflow-y-auto p-2.5 space-y-1.5 transition-all ${
+          className={`flex-1 overflow-y-auto p-2 space-y-1 transition-all ${
             isDragging ? "bg-primary/5 ring-1 ring-primary/30 ring-inset" : ""
           }`}
           style={{
@@ -505,17 +505,17 @@ export function LeftPanel({
           }}
         >
           {isExpandingBatch && (
-            <div className="p-3 flex items-center justify-center gap-2 text-xs text-primary animate-pulse bg-primary/5 rounded-lg border border-primary/20">
+            <div className="p-2.5 flex items-center justify-center gap-2 text-xs text-primary bg-primary/5 rounded-lg border border-primary/20">
               <Loader2 size={14} className="animate-spin shrink-0" />
               <span>{tr("Đang quét và bóc tách thư mục khách...", "Scanning and expanding customer folders...")}</span>
             </div>
           )}
 
           {inputFolders.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-5 px-3 text-center border border-dashed border-border/40 rounded-lg">
-              <FolderPlus size={18} className="text-muted-foreground/70 mb-2" />
-              <p className="text-[11px] text-foreground/60">{t("no_folders_added")}</p>
-              <p className="text-[10px] mt-1 text-muted-foreground max-w-[200px] leading-relaxed">
+            <div className="flex flex-col items-center justify-center py-5 px-3 text-center border border-dashed border-border rounded-lg">
+              <FolderPlus size={18} strokeWidth={1.75} className="text-muted-foreground/70 mb-2" />
+              <p className="text-xs text-muted-foreground">{t("no_folders_added")}</p>
+              <p className="text-[11px] mt-1 text-muted-foreground/80 max-w-[200px] leading-relaxed">
                 {pickerMode === "multi"
                   ? tr("Kéo thả thư mục Tháng, Ngày hoặc nhiều thư mục khách vào đây", "Drag & drop Month, Day, or customer folders here")
                   : tr("Bấm nút thêm ở góc trên hoặc kéo thả thư mục vào đây", "Click Add above or drag & drop a folder here")}
@@ -534,12 +534,12 @@ export function LeftPanel({
                   data-folder-name={folderName}
                   data-active-customer={isSelected ? "true" : "false"}
                   onClick={() => handleOpenPreview(folder)}
-                  className="flex items-center gap-2 p-2 rounded-lg border bg-background/50 border-border/30 hover:border-border/60 hover:bg-muted/30 transition-colors group cursor-pointer select-none"
+                  className="flex items-center gap-2 px-2 py-1.5 rounded-lg border border-border/50 bg-foreground/[0.02] hover:border-border-strong hover:bg-foreground/[0.05] transition-colors group cursor-pointer select-none"
                   title={tr("Bấm để mở kho ảnh xem trước", "Click to open photo gallery")}
                 >
-                  <FolderOpen size={13} className="text-muted-foreground group-hover:text-primary shrink-0 transition-colors" />
+                  <FolderOpen size={13} strokeWidth={1.75} className="text-muted-foreground group-hover:text-primary shrink-0 transition-colors" />
                   <div
-                    className="flex-1 truncate text-[11px] text-foreground/80 font-medium group-hover:text-foreground"
+                    className="flex-1 truncate text-xs text-foreground/85 font-medium group-hover:text-foreground"
                     title={folder}
                     dir="rtl"
                   >
@@ -551,10 +551,10 @@ export function LeftPanel({
                       e.stopPropagation();
                       handleOpenPreview(folder);
                     }}
-                    className="p-1 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer shrink-0"
+                    className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-foreground/[0.07] transition-colors cursor-pointer shrink-0"
                     title={tr("Xem toàn bộ ảnh trong thư mục này", "Preview all photos in this folder")} aria-label={tr("Xem toàn bộ ảnh trong thư mục này", "Preview all photos in this folder")}
                   >
-                    <Eye size={13} />
+                    <Eye size={13} strokeWidth={1.75} />
                   </button>
                 </div>
               );
@@ -574,10 +574,10 @@ export function LeftPanel({
                   data-folder-name={folderName}
                   data-active-customer={isSelected ? "true" : "false"}
                   onClick={() => handleSelectCustomer(folder)}
-                  className={`flex items-center gap-2 p-2 rounded-lg border transition-all cursor-pointer group select-none ${
+                  className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border transition-colors cursor-pointer group select-none ${
                     isSelected
-                      ? "bg-primary/10 border-primary/50 shadow-2xs"
-                      : "bg-background/50 border-border/30 hover:border-border/60 hover:bg-muted/30"
+                      ? "bg-primary/10 border-primary/40"
+                      : "bg-foreground/[0.02] border-border/50 hover:border-border-strong hover:bg-foreground/[0.05]"
                   }`}
                 >
                   {/* Single Active Checkbox */}
@@ -592,7 +592,7 @@ export function LeftPanel({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span
-                        className={`truncate text-[11px] font-semibold ${
+                        className={`truncate text-xs font-medium ${
                           isSelected ? "text-primary" : "text-foreground/90"
                         }`}
                         title={folder}
@@ -602,7 +602,7 @@ export function LeftPanel({
                     </div>
 
                     {batchMeta?.day_name && (
-                      <span className="text-[10px] text-muted-foreground font-mono">
+                      <span className="text-[11px] text-muted-foreground font-mono">
                         {batchMeta.day_name}
                       </span>
                     )}
@@ -615,10 +615,10 @@ export function LeftPanel({
                       e.stopPropagation();
                       handleOpenPreview(folder);
                     }}
-                    className="p-1 rounded hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all cursor-pointer shrink-0"
+                    className="p-1 rounded-md hover:bg-foreground/[0.07] text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0"
                     title={tr("Xem trước ảnh của khách này", "Preview this customer's photos")} aria-label={tr("Xem trước ảnh của khách này", "Preview this customer's photos")}
                   >
-                    <Eye size={12} />
+                    <Eye size={13} strokeWidth={1.75} />
                   </button>
 
                   {/* Delete from queue */}
@@ -628,10 +628,10 @@ export function LeftPanel({
                       e.stopPropagation();
                       removeInputFolder(folder);
                     }}
-                    className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer shrink-0"
+                    className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer shrink-0"
                     title={tr("Xoá khách này khỏi hàng đợi", "Remove customer from queue")} aria-label={tr("Xoá khách này khỏi hàng đợi", "Remove customer from queue")}
                   >
-                    <Trash2 size={12} />
+                    <Trash2 size={13} strokeWidth={1.75} />
                   </button>
                 </div>
               );
@@ -641,9 +641,9 @@ export function LeftPanel({
           {/* Favorite folders section */}
           {favoriteFolders.length > 0 && (
             <>
-              <div className="pt-2 pb-1">
-                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
-                  <Star size={9} className="text-amber-400" />
+              <div className="pt-2 pb-1 px-0.5">
+                <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                  <Star size={11} className="text-warning shrink-0" />
                   {t("favorites")}
                 </span>
               </div>
@@ -654,11 +654,11 @@ export function LeftPanel({
                     <button
                       key={folder}
                       onClick={() => addInputFolder(folder)}
-                      className="w-full text-left opacity-60 hover:opacity-100 cursor-pointer border border-transparent hover:border-border/40 hover:bg-muted/30 rounded-lg p-2 flex items-center gap-2 transition-all group"
+                      className="w-full text-left opacity-70 hover:opacity-100 cursor-pointer border border-transparent hover:border-border hover:bg-foreground/[0.04] rounded-lg px-2 py-1.5 flex items-center gap-2 transition-all group"
                       title={`Click to add: ${folder}`}
                     >
-                      <Star size={12} className="text-amber-400 shrink-0" />
-                      <span className="flex-1 text-[11px] truncate">
+                      <Star size={12} className="text-warning shrink-0" />
+                      <span className="flex-1 text-xs truncate">
                         {getFolderName(folder)}
                       </span>
                     </button>
@@ -670,7 +670,7 @@ export function LeftPanel({
       </div>
 
       {/* SECTION 2: Found Files */}
-      <div className="flex flex-col flex-1 min-h-[140px] bg-card border border-border shadow-sm rounded-xl overflow-hidden">
+      <div className="flex flex-col flex-1 min-h-[140px] bg-card border border-border shadow-sm rounded-2xl overflow-hidden">
         <div className="h-10 px-3 flex justify-between items-center border-b border-border">
           <span className="flex items-center gap-2 text-xs font-medium text-foreground">
             <span className="w-1.5 h-1.5 rounded-full bg-success shrink-0" />
@@ -727,7 +727,7 @@ export function LeftPanel({
       </div>
 
       {/* SECTION 3: Error Files — click a row to jump to its line (copy actions live in the dashboard) */}
-      <div className="flex flex-col flex-1 min-h-[140px] bg-card border border-border shadow-sm rounded-xl overflow-hidden">
+      <div className="flex flex-col flex-1 min-h-[140px] bg-card border border-border shadow-sm rounded-2xl overflow-hidden">
         <div className="h-10 px-3 flex justify-between items-center border-b border-border">
           <span className="flex items-center gap-2 text-xs font-medium text-foreground">
             <span className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" />

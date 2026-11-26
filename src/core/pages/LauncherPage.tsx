@@ -31,7 +31,7 @@ export function LauncherPage() {
   const session = useAuthStore((s) => s.session);
   const { tr, lang } = useTranslation();
 
-  const [version, setVersion] = useState("4.0.2");
+  const [version, setVersion] = useState("4.1.0");
   const [companyUrl, setCompanyUrl] = useState("");
   const [showLicenseManager, setShowLicenseManager] = useState(false);
 

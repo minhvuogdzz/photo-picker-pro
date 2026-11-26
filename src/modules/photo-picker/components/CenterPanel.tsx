@@ -531,7 +531,7 @@ export function CenterPanel() {
     <div className="panel flex-1 min-w-[300px] flex flex-col min-h-0 animate-fade-in">
       {/* === TOP HALF: Customer Codes === */}
       <div className="flex-1 flex flex-col min-h-0">
-        <div className="panel-header h-11 px-3 gap-3 min-w-0">
+        <div className="panel-header min-h-11 py-1.5 px-3 gap-3 min-w-0">
           <div className="flex items-center gap-2 min-w-0">
             <span className="panel-title whitespace-nowrap">{t("customer_codes")}</span>
             <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
@@ -811,17 +811,17 @@ export function CenterPanel() {
 
         {/* Auto Find Status Feedback Banners */}
         {autoFindStatus?.state === "error" && (
-          <div className="mx-4 mt-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-800 dark:text-amber-200 animate-fade-in flex flex-col gap-1.5 shadow-2xs">
+          <div className="mx-3 mt-2 p-2.5 rounded-lg bg-warning/10 border border-warning/30 text-xs text-foreground animate-fade-in flex flex-col gap-2">
             <div className="flex items-start gap-2">
-              <AlertTriangle size={15} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <AlertTriangle size={14} strokeWidth={1.75} className="text-warning shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-foreground">
+                <p className="font-medium text-foreground">
                   {tr(
                     `Auto Find: Chưa thể nạp mã cho ${autoFindStatus.targetCustomerName || "khách này"}`,
                     `Auto Find: Unable to load codes for ${autoFindStatus.targetCustomerName || "this customer"}`
                   )}
                 </p>
-                <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
                   {autoFindStatus.message}
                 </p>
               </div>
@@ -829,29 +829,29 @@ export function CenterPanel() {
                 type="button"
                 aria-label={tr("Đóng thông báo", "Dismiss")}
                 onClick={() => setAutoFindStatus(null)}
-                className="text-muted-foreground hover:text-foreground p-0.5 rounded cursor-pointer"
+                className="text-muted-foreground hover:text-foreground p-0.5 rounded-md hover:bg-foreground/[0.07] transition-colors cursor-pointer"
               >
                 <X size={13} />
               </button>
             </div>
-            <div className="flex flex-wrap items-center gap-2 justify-end pt-1">
+            <div className="flex flex-wrap items-center gap-1.5 justify-end">
               {pickerMode === "multi" && inputFolders.length > 1 && (
                 <button
                   type="button"
                   onClick={handleSkipAutoFind}
-                  className="px-2.5 py-1 rounded-md bg-muted hover:bg-muted/80 text-foreground font-medium text-[11px] flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+                  className="h-7 px-2.5 rounded-md border border-border bg-foreground/[0.03] hover:bg-foreground/[0.07] text-foreground font-medium text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
                   title={tr("Bỏ qua khách này và chuyển ngay sang khách tiếp theo", "Skip this customer and advance to the next one")}
                 >
-                  <SkipForward size={11} />
+                  <SkipForward size={12} strokeWidth={1.75} />
                   <span>{tr("Bỏ qua sang khách tiếp", "Skip to next customer")}</span>
                 </button>
               )}
               <button
                 type="button"
                 onClick={handleRetryAutoFind}
-                className="px-2.5 py-1 rounded-md bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 font-semibold text-[11px] flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+                className="h-7 px-2.5 rounded-md border border-warning/30 bg-warning/15 hover:bg-warning/25 text-warning font-medium text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
               >
-                <RotateCcw size={11} />
+                <RotateCcw size={12} strokeWidth={1.75} />
                 <span>{tr("Thử lại", "Retry")}</span>
               </button>
               <button
@@ -860,9 +860,9 @@ export function CenterPanel() {
                   setSheetModalInitialTab("extract");
                   setIsSheetModalOpen(true);
                 }}
-                className="px-2.5 py-1 rounded-md bg-card hover:bg-muted border border-border text-foreground font-medium text-[11px] flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+                className="h-7 px-2.5 rounded-md border border-border bg-card hover:bg-foreground/[0.07] text-foreground font-medium text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
               >
-                <FileSpreadsheet size={11} />
+                <FileSpreadsheet size={12} strokeWidth={1.75} />
                 <span>{tr("Mở Truy xuất trang tính", "Open Sheet Extractor")}</span>
               </button>
             </div>
@@ -870,19 +870,19 @@ export function CenterPanel() {
         )}
 
         {autoFindStatus?.state === "success" && (
-          <div className="mx-4 mt-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 flex items-center justify-between text-xs animate-fade-in shadow-2xs">
+          <div className="mx-3 mt-2 px-3 py-1.5 rounded-lg bg-success/10 border border-success/30 text-foreground flex items-center justify-between text-xs animate-fade-in">
             <div className="flex items-center gap-1.5 min-w-0">
-              <CheckCircle2 size={13} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <CheckCircle2 size={13} strokeWidth={1.75} className="text-success shrink-0" />
               <span className="truncate">
-                {tr("Đã nạp", "Loaded")} <strong>{tr(`${autoFindStatus.codeCount} mã`, `${autoFindStatus.codeCount} code(s)`)}</strong>{" "}
-                {tr("cho", "for")} <strong>{autoFindStatus.targetCustomerName}</strong>. {tr("Hãy bấm", "Click")} <strong>{t("scan_match")}</strong>!
+                {tr("Đã nạp", "Loaded")} <strong className="font-semibold">{tr(`${autoFindStatus.codeCount} mã`, `${autoFindStatus.codeCount} code(s)`)}</strong>{" "}
+                {tr("cho", "for")} <strong className="font-semibold">{autoFindStatus.targetCustomerName}</strong>. {tr("Hãy bấm", "Click")} <strong className="font-semibold">{t("scan_match")}</strong>!
               </span>
             </div>
             <button
               type="button"
               aria-label={tr("Đóng", "Close")}
               onClick={() => setAutoFindStatus(null)}
-              className="text-muted-foreground hover:text-foreground p-0.5 rounded cursor-pointer shrink-0 ml-2"
+              className="text-muted-foreground hover:text-foreground p-0.5 rounded-md hover:bg-foreground/[0.07] transition-colors cursor-pointer shrink-0 ml-2"
             >
               <X size={12} />
             </button>
@@ -1005,7 +1005,7 @@ export function CenterPanel() {
                       {/* Right-Side Inline Error / Duplicate Diagnostic Badge */}
                       {isMissing && (
                         <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] leading-none font-medium bg-destructive/15 text-red-700 dark:text-red-200">
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] leading-none font-medium bg-card/95 border border-destructive/30 text-destructive">
                             <XCircle size={10} className="text-destructive shrink-0" />
                             <span>
                               {line.missingCountOnLine > 1
@@ -1018,7 +1018,7 @@ export function CenterPanel() {
 
                       {isInputDup && (
                         <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] leading-none font-medium bg-warning/15 text-amber-800 dark:text-amber-200">
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] leading-none font-medium bg-card/95 border border-warning/30 text-warning">
                             <AlertTriangle size={10} className="text-warning shrink-0" />
                             <span>
                               {peerLinesLabel
@@ -1034,7 +1034,7 @@ export function CenterPanel() {
 
                       {isFileDup && (
                         <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] leading-none font-medium bg-warning/15 text-amber-800 dark:text-amber-200">
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] leading-none font-medium bg-card/95 border border-warning/30 text-warning">
                             <AlertTriangle size={10} className="text-warning shrink-0" />
                             <span>
                               {tr(

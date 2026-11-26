@@ -272,7 +272,7 @@ export function TrayControlPanel() {
       <div
         className={`flex-1 rounded-[22px] border shadow-2xl overflow-hidden flex flex-col ${
           isDark
-            ? "bg-[#1c1c1f]/95 text-zinc-100 border-white/12 backdrop-blur-2xl shadow-black/40"
+            ? "bg-[#0a0a0c]/95 text-zinc-100 border-white/12 backdrop-blur-2xl shadow-black/50"
             : "bg-white/95 text-zinc-900 border-black/10 backdrop-blur-2xl shadow-black/15"
         }`}
       >

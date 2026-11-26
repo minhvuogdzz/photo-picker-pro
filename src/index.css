@@ -249,9 +249,9 @@
   --color-zinc-500: var(--color-slate-500);
   --color-zinc-600: var(--color-slate-600);
   --color-zinc-700: var(--color-slate-700);
-  --color-zinc-800: var(--color-slate-800);
-  --color-zinc-900: var(--color-slate-900);
-  --color-zinc-950: var(--color-slate-950);
+  --color-zinc-800: #1f1f23;
+  --color-zinc-900: #121215;
+  --color-zinc-950: #060608;
   --color-neutral-50: var(--color-slate-50);
   --color-neutral-100: var(--color-slate-100);
   --color-neutral-200: var(--color-slate-200);
@@ -260,9 +260,9 @@
   --color-neutral-500: var(--color-slate-500);
   --color-neutral-600: var(--color-slate-600);
   --color-neutral-700: var(--color-slate-700);
-  --color-neutral-800: var(--color-slate-800);
-  --color-neutral-900: var(--color-slate-900);
-  --color-neutral-950: var(--color-slate-950);
+  --color-neutral-800: var(--color-zinc-800);
+  --color-neutral-900: var(--color-zinc-900);
+  --color-neutral-950: var(--color-zinc-950);
   --color-stone-50: var(--color-slate-50);
   --color-stone-100: var(--color-slate-100);
   --color-stone-200: var(--color-slate-200);
@@ -332,25 +332,25 @@
   }
 
   .dark {
-    /* Dark theme — neutral graphite.
-       Charcoal surfaces with no colour cast, so photos, status colours and the single blue accent read clearly. */
-    --color-background: #131315;
-    --color-sidebar: rgb(255 255 255 / 0.025);
-    --color-sidebar-foreground: #a1a1a9;
-    --color-foreground: #ececef;
-    --color-card: rgb(29 29 32 / 0.94);
-    --color-card-foreground: #ececef;
-    --color-popover: #212124;
-    --color-popover-foreground: #ececef;
+    /* Dark theme — deep obsidian black (Antigravity style).
+       Near-black surfaces separated by crisp hairline borders, keeping photos and status colours accurate. */
+    --color-background: #070708;
+    --color-sidebar: rgb(11 11 13 / 0.94);
+    --color-sidebar-foreground: #a1a1aa;
+    --color-foreground: #f1f1f4;
+    --color-card: rgb(15 15 17 / 0.96);
+    --color-card-foreground: #f1f1f4;
+    --color-popover: #141417;
+    --color-popover-foreground: #f1f1f4;
 
     --color-primary: #4a7df0;
     --color-primary-foreground: #ffffff;
 
     --color-secondary: rgb(255 255 255 / 0.055);
-    --color-secondary-foreground: #e2e2e6;
+    --color-secondary-foreground: #e4e4e8;
 
-    --color-muted: rgb(255 255 255 / 0.05);
-    --color-muted-foreground: #9b9ba4;
+    --color-muted: rgb(255 255 255 / 0.045);
+    --color-muted-foreground: #93939d;
 
     --color-accent: rgb(255 255 255 / 0.07);
     --color-accent-foreground: #ffffff;
@@ -361,20 +361,20 @@
     --color-warning: #e2a640;
     --color-info: #5b9fe0;
 
-    --color-border: rgb(255 255 255 / 0.075);
-    --color-border-strong: rgb(255 255 255 / 0.13);
-    --color-input: rgb(255 255 255 / 0.035);
+    --color-border: rgb(255 255 255 / 0.085);
+    --color-border-strong: rgb(255 255 255 / 0.15);
+    --color-input: rgb(255 255 255 / 0.03);
     --color-ring: #6b95f5;
 
-    --glass-fill: rgb(30 30 33 / 0.72);
-    --glass-fill-strong: rgb(40 40 44 / 0.92);
-    --glass-edge: rgb(255 255 255 / 0.08);
-    --glass-rim-hi: rgb(255 255 255 / 0.1);
+    --glass-fill: rgb(12 12 14 / 0.88);
+    --glass-fill-strong: rgb(20 20 23 / 0.96);
+    --glass-edge: rgb(255 255 255 / 0.09);
+    --glass-rim-hi: rgb(255 255 255 / 0.11);
     --glass-rim-lo: rgb(255 255 255 / 0.02);
-    --glass-hairline: rgb(255 255 255 / 0.07);
+    --glass-hairline: rgb(255 255 255 / 0.085);
     --glass-highlight: rgb(255 255 255 / 0.04);
 
-    --canvas-base: #111113;
+    --canvas-base: #050506;
     --canvas-teal: transparent;
     --canvas-cyan: transparent;
     --canvas-blue: transparent;
@@ -527,8 +527,9 @@ html.theme-transitioning *::after {
   }
 
   .dark .glass-pill {
-    background: rgb(255 255 255 / 0.09);
-    box-shadow: 0 4px 14px -6px rgb(0 0 0 / 0.5), inset 0 1px 0 rgb(255 255 255 / 0.08);
+    background: rgb(255 255 255 / 0.08);
+    border-color: rgb(255 255 255 / 0.09);
+    box-shadow: 0 4px 14px -6px rgb(0 0 0 / 0.65), inset 0 1px 0 rgb(255 255 255 / 0.07);
   }
 
   .brand-gradient {
@@ -1070,28 +1071,6 @@ html .fixed.inset-0 :is([class*="bg-card"], [class*="bg-popover"]) :is([class*="
   will-change: transform, opacity;
 }
 
-@keyframes code-error-missing-pulse {
-  0%, 100% {
-    background-color: rgba(239, 68, 68, 0.16);
-    box-shadow: inset 3px 0 0 #ef4444, inset 0 0 12px rgba(239, 68, 68, 0.12);
-  }
-  50% {
-    background-color: rgba(239, 68, 68, 0.30);
-    box-shadow: inset 3px 0 0 #f87171, inset 0 0 18px rgba(239, 68, 68, 0.28);
-  }
-}
-
-@keyframes code-error-duplicate-pulse {
-  0%, 100% {
-    background-color: rgba(245, 158, 11, 0.15);
-    box-shadow: inset 3px 0 0 #f59e0b, inset 0 0 12px rgba(245, 158, 11, 0.10);
-  }
-  50% {
-    background-color: rgba(245, 158, 11, 0.28);
-    box-shadow: inset 3px 0 0 #fbbf24, inset 0 0 18px rgba(245, 158, 11, 0.25);
-  }
-}
-
 @keyframes code-line-target-flash {
   0%, 100% {
     filter: brightness(1);
@@ -1124,7 +1103,7 @@ html .fixed.inset-0 :is([class*="bg-card"], [class*="bg-popover"]) :is([class*="
 
 /* Power saving — see src/core/lib/motionPower.ts.
    Only looping animations are listed: pausing a one-shot entrance could freeze it half-shown. */
-html.motion-idle :is(.animate-pulse, .animate-ping, .animate-bounce, .animate-pulse-soft, .coffee-steam-wisp, .studio-title-text, .motion-decor, .code-line-missing-glow, .code-line-duplicate-glow),
-html.motion-background :is(.animate-pulse, .animate-ping, .animate-bounce, .animate-pulse-soft, .coffee-steam-wisp, .studio-title-text, .motion-decor, .animate-spin, .code-line-missing-glow, .code-line-duplicate-glow) {
+html.motion-idle :is(.animate-pulse, .animate-ping, .animate-bounce, .animate-pulse-soft, .coffee-steam-wisp, .studio-title-text, .motion-decor),
+html.motion-background :is(.animate-pulse, .animate-ping, .animate-bounce, .animate-pulse-soft, .coffee-steam-wisp, .studio-title-text, .motion-decor, .animate-spin) {
   animation-play-state: paused !important;
 }
