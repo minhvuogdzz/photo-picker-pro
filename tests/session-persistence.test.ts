@@ -12,7 +12,6 @@ const paidSession: AuthSession = {
   subscription: {
     status: "ACTIVE",
     plan: "STUDIO",
-    isPremium: true,
     expiresAt: "2099-01-01T00:00:00.000Z",
     daysRemaining: 100,
     entitlements: [{ app: "ALL", expiresAt: "2099-01-01T00:00:00.000Z", isTrial: false }],
@@ -24,7 +23,7 @@ const paidSession: AuthSession = {
 };
 
 test("mergeSession: a refresh response keeps fields the endpoint omits", () => {
-  // Shape of /auth/refresh: no isPremium, no top-level entitlements, no sessionDurationMinutes
+  // Shape of /auth/refresh: no top-level entitlements, no sessionDurationMinutes
   const merged = mergeSession(paidSession, {
     accessToken: "new_access",
     refreshToken: "new_refresh",
@@ -39,7 +38,6 @@ test("mergeSession: a refresh response keeps fields the endpoint omits", () => {
 
   assert.strictEqual(merged.accessToken, "new_access");
   assert.strictEqual(merged.refreshToken, "new_refresh");
-  assert.strictEqual(merged.subscription.isPremium, true);
   assert.strictEqual(merged.subscription.daysRemaining, 99);
   assert.strictEqual(merged.sessionDurationMinutes, 0);
   assert.strictEqual(merged.entitlements?.length, 1);
@@ -55,6 +53,5 @@ test("toLocalSession: persists entitlements so offline launches keep the paid pl
   const local = toLocalSession(paidSession);
   assert.strictEqual(local.entitlements?.length, 1);
   assert.strictEqual(local.entitlements?.[0].app, "ALL");
-  assert.strictEqual(local.is_premium, true);
   assert.strictEqual(local.device_id, "dvf_abc_userexamplecom");
 });

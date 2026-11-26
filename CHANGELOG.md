@@ -2,6 +2,17 @@
 
 Tất cả các bản phát hành của **DH Studio Pro** (phát triển & thuộc sở hữu bản quyền của **Devhouse Software**) đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
 
+## [v4.0.2] - 2026-11-26
+
+**Thời gian phiên đăng nhập áp dụng đúng cho mọi tài khoản dùng thử, gỡ hẳn tàn dư gói VIP/Premium**
+
+- Gỡ cờ `isPremium` khỏi phiên đăng nhập, socket và phiên lưu trên máy. Mọi tài khoản (dùng thử hoặc có bản quyền) giờ đều theo thời gian phiên do quản trị viên cấu hình. Trước đây, tài khoản còn lưu cờ Premium từ bản cũ được miễn giới hạn thời gian phiên vĩnh viễn. Phiên cũ trên máy vẫn đọc bình thường, không bị đăng xuất.
+- Xóa module chính sách Premium không còn dùng, các test VIP cũ, các file rác trong repo (bộ cài GitHub CLI, file test nháp) cùng icon, âm thanh và component không còn được tham chiếu.
+
+*(EN Highlights: Removed the leftover `isPremium` flag from login, socket and on-disk sessions; every account now follows the admin-configured session duration (legacy Premium sessions were previously exempt forever). Old saved sessions still load without logging users out. Removed the unused Premium policy module, stale VIP tests, stray repo files and unreferenced assets/components.)*
+
+---
+
 ## [v4.0.1] - 2026-11-25
 
 **Lọc ảnh Pro: Sửa lỗi "Illegal byte sequence (os error 92)" khi lọc file**

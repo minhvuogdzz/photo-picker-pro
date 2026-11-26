@@ -19,7 +19,6 @@ export function toLocalSession(session: AuthSession): LocalSession {
     role: session.role,
     subscription_status: session.subscription.status,
     subscription_plan: session.subscription.plan,
-    is_premium: session.subscription.isPremium ?? false,
     expires_at: session.subscription.expiresAt,
     device_id: session.deviceId,
     last_sync_at: session.lastSyncAt,
@@ -33,7 +32,7 @@ export function toLocalSession(session: AuthSession): LocalSession {
 
 /**
  * Applies a server response on top of the current session. Endpoints such as /auth/refresh
- * omit fields (isPremium, top-level entitlements, sessionDurationMinutes), so a plain spread
+ * omit fields (top-level entitlements, sessionDurationMinutes), so a plain spread
  * would silently drop them.
  */
 export function mergeSession(current: AuthSession, update: Partial<AuthSession>): AuthSession {

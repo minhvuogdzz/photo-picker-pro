@@ -58,7 +58,6 @@ test("Acceptance Test J: Google Access Removed — reports no access, modifies n
     subscription: {
       plan: "LIFETIME" as const,
       status: "ACTIVE" as const,
-      isPremium: true,
       daysRemaining: 99999,
       expiresAt: "2099-12-31T23:59:59.000Z",
     },

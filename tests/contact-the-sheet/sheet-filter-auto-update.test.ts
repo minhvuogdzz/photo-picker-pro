@@ -133,47 +133,8 @@ test("Sheet Filter Auto-Update: Dynamic row matching fallback using input folder
   assert.equal(status?.state, "success");
 });
 
-test("Photo Picker Sheet Premium Gate: Verifies non-premium user requires license key", async () => {
-  const { useAuthStore } = await import("../../src/core/stores/useAuthStore.ts");
-
-  // Non-premium session
-  useAuthStore.getState().setSession({
-    user: { id: "u1", email: "free@mvd.vn", name: "Free User" },
-    token: "tok123",
-    subscription: {
-      status: "ACTIVE",
-      plan: "Standard",
-      isPremium: false,
-      daysRemaining: 30,
-      startDate: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 86400000 * 30).toISOString(),
-    },
-  });
-
-  const freeSession = useAuthStore.getState().session;
-  assert.equal(freeSession?.subscription?.isPremium, false);
-
-  // Upgrade to Premium session
-  useAuthStore.getState().setSession({
-    user: { id: "u1", email: "vip@mvd.vn", name: "VIP User" },
-    token: "tok456",
-    subscription: {
-      status: "ACTIVE",
-      plan: "Studio VIP",
-      isPremium: true,
-      daysRemaining: 365,
-      startDate: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 86400000 * 365).toISOString(),
-    },
-  });
-
-  const vipSession = useAuthStore.getState().session;
-  assert.equal(vipSession?.subscription?.isPremium, true);
-});
-
 test("Sheet Filter Auto-Update: Disconnects Google and blocks status update when 7-day trial has expired", async () => {
   const { useAuthStore } = await import("../../src/core/stores/useAuthStore.ts");
-  const { TRIAL_END_TIMESTAMP } = await import("../../src/core/services/premiumFeaturePolicy.ts");
 
   // Create an expired non-premium session
   useAuthStore.getState().setSession({
@@ -186,7 +147,6 @@ test("Sheet Filter Auto-Update: Disconnects Google and blocks status update when
     subscription: {
       status: "EXPIRED",
       plan: "PROFESSIONAL",
-      isPremium: false,
       daysRemaining: 0,
       expiresAt: new Date(Date.now() - 86400000).toISOString(),
     },

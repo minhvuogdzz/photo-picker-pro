@@ -26,7 +26,6 @@ export interface AuthSession {
 export interface SubscriptionInfo {
   readonly status: SubscriptionStatus;
   readonly plan: SubscriptionPlan;
-  readonly isPremium?: boolean;
   readonly expiresAt: string | null;
   readonly daysRemaining: number | null;
   readonly entitlements?: Entitlement[];
@@ -88,7 +87,6 @@ export interface LocalSession {
   readonly role?: string;
   readonly subscription_status: string;
   readonly subscription_plan: string;
-  readonly is_premium?: boolean;
   readonly expires_at: string | null;
   readonly device_id: string;
   readonly last_sync_at: string;

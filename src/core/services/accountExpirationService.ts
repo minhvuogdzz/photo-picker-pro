@@ -25,7 +25,6 @@ export interface ExpiringNoticeInfo {
   readonly title: string;
   readonly headline: string;
   readonly message: string;
-  readonly isVip: boolean;
   readonly suggestedMode: "activate" | "request";
   readonly affectedFeatures: readonly string[];
 }
@@ -94,7 +93,6 @@ export function checkAccountExpiringNotice(
             days === 0 ? "today" : `${days} ${days === 1 ? "day" : "days"} left`
           }). Please renew or activate a license key to keep working.`
         ),
-        isVip: false,
         suggestedMode: "request",
         affectedFeatures: [
           trText("Toàn bộ tính năng lọc ảnh và xuất file", "All photo culling and export features"),
@@ -125,7 +123,6 @@ export function checkAccountExpiringNotice(
             days === 0 ? "today" : `${days} ${days === 1 ? "day" : "days"} left`
           }). Please renew or extend your plan to avoid interruptions.`
         ),
-        isVip: false,
         suggestedMode: "request",
         affectedFeatures: [
           trText("Các tính năng thuộc gói đã đăng ký", "Subscribed plan features"),

@@ -18,11 +18,45 @@ export interface VersionReleaseNote {
 
 export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
   {
+    version: "v4.0.2",
+    date: "2026-11-26",
+    title: "Thời gian phiên đăng nhập áp dụng đúng cho mọi tài khoản dùng thử, app gọn nhẹ hơn",
+    titleEn: "Session duration now applies correctly to every trial account, leaner app",
+    isCurrent: true,
+    sections: [
+      {
+        title: "Sửa lỗi thời gian phiên đăng nhập",
+        titleEn: "Fixed Login Session Duration",
+        type: "fix",
+        items: [
+          "Tài khoản dùng thử còn lưu dữ liệu gói VIP/Premium cũ trên máy không còn được dùng không giới hạn thời gian mỗi phiên; thời gian phiên giờ áp dụng đúng theo cấu hình của quản trị viên.",
+          "Phiên đăng nhập đã lưu từ bản cũ vẫn đọc bình thường, người dùng không bị đăng xuất sau khi cập nhật.",
+        ],
+        itemsEn: [
+          "Trial accounts that still had old VIP/Premium data saved on the device no longer get unlimited session time; the session duration now follows the administrator's setting.",
+          "Login sessions saved by older versions still load normally, so users are not signed out after updating.",
+        ],
+      },
+      {
+        title: "Gọn nhẹ hơn",
+        titleEn: "Leaner App",
+        type: "improvement",
+        items: [
+          "Gỡ hẳn phần còn sót lại của gói VIP/Premium đã ngừng; bản quyền giờ chỉ gồm tài khoản dùng thử và gia hạn bản quyền.",
+          "Bỏ các hình ảnh, âm thanh và thành phần giao diện không còn dùng, giúp gói cài đặt nhẹ hơn.",
+        ],
+        itemsEn: [
+          "Fully removed the leftovers of the discontinued VIP/Premium plan; licensing now consists of trial accounts and license renewals only.",
+          "Removed unused images, sounds and UI components for a smaller install.",
+        ],
+      },
+    ],
+  },
+  {
     version: "v4.0.1",
     date: "2026-11-25",
     title: "Lọc ảnh Pro: Sửa lỗi \"Illegal byte sequence\" khi tên thư mục khách chứa ký tự đặc biệt",
     titleEn: "Photo Picker Pro: Fixed \"Illegal byte sequence\" when a customer folder name contains special characters",
-    isCurrent: true,
     sections: [
       {
         title: "Sửa lỗi không tạo được thư mục đích khi lọc file",

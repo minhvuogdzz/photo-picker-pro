@@ -33,3 +33,6 @@ test-builds/
 *.dmg
 *.asar.original.bak
 
+
+# TypeScript incremental build cache
+*.tsbuildinfo

@@ -120,7 +120,6 @@ class SocketService {
             ...currentSession.subscription,
             status: data.status ?? currentSession.subscription.status,
             plan: data.plan ?? currentSession.subscription.plan,
-            isPremium: data.isPremium !== undefined ? data.isPremium : currentSession.subscription.isPremium,
             expiresAt: data.expiresAt ?? currentSession.subscription.expiresAt,
           },
         });
@@ -133,7 +132,7 @@ class SocketService {
           localStorage.setItem("session_duration_minutes", String(data.sessionDurationMinutes));
         } catch {}
         const currentSession = useAuthStore.getState().session;
-        if (currentSession && !currentSession.subscription?.isPremium) {
+        if (currentSession) {
           useAuthStore.getState().setSession({
             ...currentSession,
             sessionDurationMinutes: data.sessionDurationMinutes,

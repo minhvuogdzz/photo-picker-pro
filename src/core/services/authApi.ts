@@ -88,7 +88,6 @@ function fromLocalSession(local: LocalSession): AuthSession {
     subscription: {
       status: local.subscription_status as AuthSession["subscription"]["status"],
       plan: local.subscription_plan as AuthSession["subscription"]["plan"],
-      isPremium: local.is_premium ?? false,
       expiresAt: local.expires_at,
       daysRemaining,
       entitlements: ents,
@@ -253,7 +252,6 @@ export async function loadSession(): Promise<AuthSession | null> {
       subscription: {
         plan: "LIFETIME",
         status: "ACTIVE",
-        isPremium: true,
         daysRemaining: 99999,
         expiresAt: "2099-12-31T23:59:59.000Z",
       },
@@ -324,8 +322,6 @@ export async function validateSubscription(
     accessToken: session.accessToken,
   });
 
-  const isUpdatedPrem = (partialSession.subscription?.isPremium ?? session.subscription?.isPremium) === true;
-
   const newEntitlements =
     (partialSession as any).subscription?.entitlements ||
     (partialSession as any).entitlements ||
@@ -345,14 +341,12 @@ export async function validateSubscription(
       entitlements: newEntitlements,
     },
     entitlements: newEntitlements,
-    sessionDurationMinutes: isUpdatedPrem
-      ? 0
-      : (partialSession.sessionDurationMinutes ?? base.sessionDurationMinutes),
+    sessionDurationMinutes: partialSession.sessionDurationMinutes ?? base.sessionDurationMinutes,
   };
 
   await persistSession(updatedSession);
 
-  if (!isUpdatedPrem && updatedSession.sessionDurationMinutes && updatedSession.sessionDurationMinutes > 0) {
+  if (updatedSession.sessionDurationMinutes && updatedSession.sessionDurationMinutes > 0) {
     try {
       localStorage.setItem("session_duration_minutes", String(updatedSession.sessionDurationMinutes));
     } catch {}

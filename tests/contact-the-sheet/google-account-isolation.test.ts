@@ -16,7 +16,6 @@ const createMockSession = (userId: string, email: string): AuthSession => ({
   subscription: {
     status: "ACTIVE",
     plan: "PROFESSIONAL",
-    isPremium: true,
     expiresAt: new Date(Date.now() + 86400000 * 30).toISOString(),
     daysRemaining: 30,
   },

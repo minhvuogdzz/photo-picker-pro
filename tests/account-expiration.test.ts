@@ -5,7 +5,6 @@ import {
   calculateDaysRemaining,
 } from "../src/core/services/accountExpirationService.ts";
 import type { AuthSession } from "../src/core/types/auth.ts";
-import { APP_UPDATE_RELEASE_TIMESTAMP } from "../src/core/services/premiumFeaturePolicy.ts";
 
 function createMockSession(overrides: Partial<AuthSession> = {}): AuthSession {
   return {
@@ -19,7 +18,6 @@ function createMockSession(overrides: Partial<AuthSession> = {}): AuthSession {
     subscription: {
       status: "TRIAL",
       plan: "STARTER",
-      isPremium: false,
       expiresAt: null,
       daysRemaining: null,
     },
@@ -51,7 +49,6 @@ test("Requirement 3 (A): Standard Free Trial with <= 3 days remaining triggers w
     subscription: {
       status: "TRIAL",
       plan: "STARTER",
-      isPremium: false,
       expiresAt,
       daysRemaining: 2,
     },
@@ -63,7 +60,6 @@ test("Requirement 3 (A): Standard Free Trial with <= 3 days remaining triggers w
   assert.equal(notice.isExpiringSoon, true);
   assert.equal(notice.category, "TRIAL");
   assert.equal(notice.daysRemaining, 2);
-  assert.equal(notice.isVip, false);
   assert.equal(notice.title, "Tài Khoản Dùng Thử Sắp Hết Hạn");
   assert.match(notice.message, /sắp hết thời gian dùng thử/);
   assert.match(notice.message, /còn 2 ngày/);
@@ -77,7 +73,6 @@ test("Requirement 3 (A): Standard Free Trial with > 3 days remaining does NOT tr
     subscription: {
       status: "TRIAL",
       plan: "STARTER",
-      isPremium: false,
       expiresAt,
       daysRemaining: 7,
     },
@@ -85,50 +80,6 @@ test("Requirement 3 (A): Standard Free Trial with > 3 days remaining does NOT tr
 
   const notice = checkAccountExpiringNotice(session, baseTime);
   assert.equal(notice, null, "Should not trigger notice when > 3 days remain");
-});
-
-test("Requirement 3 (B): VIP Premium account with <= 3 days remaining triggers VIP expiration notice", () => {
-  const baseTime = new Date("2026-09-27T12:00:00Z").getTime();
-  const expiresAt = new Date("2026-09-30T10:00:00Z").toISOString(); // 3 days
-
-  const session = createMockSession({
-    subscription: {
-      status: "ACTIVE",
-      plan: "STUDIO",
-      isPremium: true,
-      expiresAt,
-      daysRemaining: 3,
-    },
-  });
-
-  const notice = checkAccountExpiringNotice(session, baseTime);
-
-  assert.ok(notice, "VIP Notice must be triggered");
-  assert.equal(notice.isExpiringSoon, true);
-  assert.equal(notice.category, "VIP_PREMIUM");
-  assert.equal(notice.daysRemaining, 3);
-  assert.equal(notice.isVip, true);
-  assert.equal(notice.title, "Gói VIP Premium Sắp Hết Hạn");
-  assert.match(notice.message, /Gói VIP Premium của bạn sắp hết hạn/);
-  assert.ok(notice.affectedFeatures.some(f => f.includes("Google Sheet")));
-});
-
-test("Requirement 3 (B): VIP Premium account with > 3 days remaining does NOT trigger notice", () => {
-  const baseTime = new Date("2026-09-27T12:00:00Z").getTime();
-  const expiresAt = new Date("2026-10-15T12:00:00Z").toISOString(); // 18 days
-
-  const session = createMockSession({
-    subscription: {
-      status: "ACTIVE",
-      plan: "STUDIO",
-      isPremium: true,
-      expiresAt,
-      daysRemaining: 18,
-    },
-  });
-
-  const notice = checkAccountExpiringNotice(session, baseTime);
-  assert.equal(notice, null);
 });
 
 test("Requirement 3 (C): Standard Active license with <= 3 days remaining triggers standard active notice", () => {
@@ -139,7 +90,6 @@ test("Requirement 3 (C): Standard Active license with <= 3 days remaining trigge
     subscription: {
       status: "ACTIVE",
       plan: "STARTER",
-      isPremium: false,
       expiresAt,
       daysRemaining: 1,
     },
@@ -151,36 +101,8 @@ test("Requirement 3 (C): Standard Active license with <= 3 days remaining trigge
   assert.equal(notice.isExpiringSoon, true);
   assert.equal(notice.category, "ACTIVE_BASIC");
   assert.equal(notice.daysRemaining, 1);
-  assert.equal(notice.isVip, false);
   assert.equal(notice.title, "Bản Quyền Sắp Hết Hạn");
   assert.match(notice.message, /sắp hết hạn sử dụng/);
-});
-
-test("Requirement 3 (D): Lifetime account on 7-Day VIP grace trial with <= 3 days triggers VIP Trial notice", () => {
-  // Release was 2026-09-24T00:00:00+07:00 (timestamp 1790211600000)
-  // End of 7-day trial is +7 days (2026-10-01T00:00:00+07:00)
-  // At 2026-09-28T12:00:00+07:00 (approx 2.5 days left -> <= 3 days)
-  const simulatedTime = APP_UPDATE_RELEASE_TIMESTAMP + (4.5 * 24 * 60 * 60 * 1000);
-
-  const session = createMockSession({
-    subscription: {
-      status: "LIFETIME",
-      plan: "LIFETIME",
-      isPremium: false,
-      expiresAt: null,
-      daysRemaining: null,
-    },
-  });
-
-  const notice = checkAccountExpiringNotice(session, simulatedTime);
-
-  assert.ok(notice, "VIP Trial Notice must trigger for Lifetime account");
-  assert.equal(notice.isExpiringSoon, true);
-  assert.equal(notice.category, "VIP_TRIAL");
-  assert.equal(notice.isVip, true);
-  assert.ok(notice.daysRemaining <= 3);
-  assert.equal(notice.title, "Dùng Thử VIP Premium Sắp Hết Hạn");
-  assert.match(notice.message, /thời gian dùng thử tính năng VIP Premium/i);
 });
 
 test("Requirement 3: Permanently expired or locked account returns null (AuthGuard blocks these)", () => {
@@ -188,7 +110,6 @@ test("Requirement 3: Permanently expired or locked account returns null (AuthGua
     subscription: {
       status: "EXPIRED",
       plan: "STARTER",
-      isPremium: false,
       expiresAt: "2026-09-20T00:00:00Z",
       daysRemaining: 0,
     },
@@ -200,7 +121,6 @@ test("Requirement 3: Permanently expired or locked account returns null (AuthGua
     subscription: {
       status: "SUSPENDED",
       plan: "STARTER",
-      isPremium: false,
       expiresAt: null,
       daysRemaining: null,
     },

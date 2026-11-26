@@ -36,8 +36,6 @@ pub struct LocalSession {
     pub role: Option<String>,
     #[serde(default)]
     pub entitlements: Vec<LocalEntitlement>,
-    #[serde(default)]
-    pub is_premium: Option<bool>,
 }
 
 /// Returns the app config directory path (platform-specific)
@@ -342,6 +340,22 @@ fn get_hostname() -> String {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn legacy_session_with_is_premium_still_loads() {
+        // Phiên lưu từ bản cũ còn trường `is_premium` (đã bỏ khái niệm VIP/Premium)
+        // vẫn phải đọc được để người dùng không bị đăng xuất sau khi cập nhật.
+        let json = r#"{
+            "access_token": "a", "refresh_token": "r", "user_id": "u",
+            "email": "e@example.com", "name": "N",
+            "subscription_status": "ACTIVE", "subscription_plan": "STUDIO",
+            "expires_at": null, "device_id": "d", "last_sync_at": "2026-01-01T00:00:00Z",
+            "is_premium": true
+        }"#;
+        let session: super::LocalSession = serde_json::from_str(json).expect("legacy session must parse");
+        assert_eq!(session.subscription_plan, "STUDIO");
+        assert!(!serde_json::to_string(&session).unwrap().contains("is_premium"));
+    }
+
     use super::*;
 
     #[test]
