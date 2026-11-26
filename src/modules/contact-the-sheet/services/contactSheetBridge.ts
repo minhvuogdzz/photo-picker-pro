@@ -683,18 +683,21 @@ export function initContactSheetBridge(): () => void {
         async (event) => {
           const { dispatchId, action, params } = event.payload;
           try {
-            const data = await handleContactSheetBridgeRequest(
-              action,
-              params,
-              (current, total, message) => {
-                void invoke("bridge_emit_progress", {
-                  dispatchId,
-                  current,
-                  total,
-                  message,
-                }).catch(() => {});
-              }
-            );
+            const reportProgress: BridgeProgressReporter = (current, total, message) => {
+              void invoke("bridge_emit_progress", {
+                dispatchId,
+                current,
+                total,
+                message,
+              }).catch(() => {});
+            };
+            const data = action.startsWith("photo_picker.")
+              ? await (await import("../../photo-picker/services/photoPickerBridge.ts")).handlePhotoPickerBridgeRequest(
+                  action,
+                  params,
+                  reportProgress
+                )
+              : await handleContactSheetBridgeRequest(action, params, reportProgress);
             await invoke("bridge_reply", {
               dispatchId,
               ok: true,

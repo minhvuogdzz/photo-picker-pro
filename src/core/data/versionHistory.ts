@@ -18,11 +18,45 @@ export interface VersionReleaseNote {
 
 export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
   {
+    version: "v4.2.0",
+    date: "2026-11-26",
+    title: "Hệ sinh thái DH: Cầu nối Lọc ảnh Pro cho DHbox Finder",
+    titleEn: "DH Ecosystem: Photo Picker Pro bridge for DHbox Finder",
+    isCurrent: true,
+    sections: [
+      {
+        title: "Liên kết Lọc ảnh Pro (1 khách) với DHbox",
+        titleEn: "Single-Customer Photo Picker Bridge for DHbox",
+        type: "feature",
+        items: [
+          "Bổ sung nhóm lệnh cầu nối photo_picker.* để DHbox (từ v2.10.0) chuột phải một thư mục khách trong Finder -> DH Studio Pro: Lọc ảnh, chạy ngầm và dùng nguyên lõi xử lý của Lọc ảnh Pro.",
+          "Hỗ trợ quét sẵn ảnh vào RAM, dán mã tự chuẩn hóa, khớp tức thì, phân tích lỗi từng dòng, truy xuất mã đa tab Google Sheets, sao chép ảnh, cập nhật trạng thái Google Sheets (kèm thử lại) và xuất báo cáo TXT/CSV.",
+        ],
+        itemsEn: [
+          "Added photo_picker.* bridge actions so DHbox (v2.10.0+) can right-click a customer folder in Finder -> DH Studio Pro: Photo picker, running silently in the background with the full Photo Picker Pro engine.",
+          "Supports startup RAM pre-scanning, automatic paste formatting, instant matching, per-line error analysis, multi-tab Google Sheets code extraction, file copying, Google Sheets status updates with retry, and TXT/CSV reports.",
+        ],
+      },
+      {
+        title: "Hủy tức thì & Ổn định sao chép tệp RAW lớn",
+        titleEn: "Instant Cancel & Large RAW Copy Reliability",
+        type: "improvement",
+        items: [
+          "Xử lý trực tiếp photo_picker.cancel trong Rust (< 1ms) để dừng ngay quá trình quét hoặc sao chép khi người dùng hủy từ DHbox.",
+          "Đổi timeout cầu nối sang theo dõi hoạt động tiến độ (inactivity timeout) giúp các tác vụ sao chép hàng nghìn file RAW không bị ngắt timeout oan.",
+        ],
+        itemsEn: [
+          "Handled photo_picker.cancel directly in Rust (< 1ms) to immediately halt active scans or copies triggered from DHbox.",
+          "Switched bridge WebView forwarding to an inactivity timeout reset on every progress event so large RAW copies never time out prematurely.",
+        ],
+      },
+    ],
+  },
+  {
     version: "v4.1.0",
     date: "2026-11-26",
     title: "Giao diện tối đen sâu & Đồng bộ hoàn thiện Lọc ảnh Pro",
     titleEn: "Deep obsidian black dark theme & unified Photo Picker Pro UI",
-    isCurrent: true,
     sections: [
       {
         title: "Chế độ tối đen sâu (Obsidian Black)",

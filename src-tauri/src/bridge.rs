@@ -595,7 +595,17 @@ fn handle_client(
             });
         }
 
-        action if action.starts_with("contact_sheet.") => {
+        "photo_picker.cancel" => {
+            if let Some(cancel_flag) = app.try_state::<Arc<AtomicBool>>() {
+                cancel_flag.store(true, Ordering::SeqCst);
+            }
+            let _ = write_envelope(
+                &mut stream,
+                &BridgeResponseEnvelope::result(&req.id, json!({ "cancelled": true })),
+            );
+        }
+
+        action if action.starts_with("contact_sheet.") || action.starts_with("photo_picker.") => {
             forward_to_webview(&mut stream, &app, &state, &req);
         }
 
@@ -724,7 +734,9 @@ fn forward_to_webview(
         return;
     }
 
-    let deadline = Instant::now() + REQUEST_TIMEOUT;
+    // Reset inactivity deadline whenever progress streams in (so large RAW copies
+    // with continuous progress updates never falsely hit timeout while stalled calls still do).
+    let mut deadline = Instant::now() + REQUEST_TIMEOUT;
     loop {
         let remaining = deadline.saturating_duration_since(Instant::now());
         if remaining.is_zero() {
@@ -742,6 +754,7 @@ fn forward_to_webview(
 
         match rx.recv_timeout(remaining) {
             Ok(OutboundEvent::Progress(progress)) => {
+                deadline = Instant::now() + REQUEST_TIMEOUT;
                 if !write_envelope(stream, &BridgeResponseEnvelope::progress(&req.id, progress)) {
                     state.remove_pending(&dispatch_id);
                     return;
@@ -798,6 +811,11 @@ mod tests {
         assert_eq!(req.id, "req-1");
         assert_eq!(req.action, "contact_sheet.scan");
         assert_eq!(req.params["replaceExisting"], true);
+
+        let raw_pp = r#"{"protocolVersion":1,"id":"req-pp-1","action":"photo_picker.set_folder","params":{"folderPath":"/tmp/customer"}}"#;
+        let req_pp: BridgeRequest = serde_json::from_str(raw_pp).expect("valid photo_picker request");
+        assert_eq!(req_pp.action, "photo_picker.set_folder");
+        assert_eq!(req_pp.params["folderPath"], "/tmp/customer");
     }
 
     #[test]

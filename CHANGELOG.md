@@ -2,6 +2,18 @@
 
 Tất cả các bản phát hành của **DH Studio Pro** (phát triển & thuộc sở hữu bản quyền của **Devhouse Software**) đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
 
+## [v4.2.0] - 2026-11-26
+
+**Hệ sinh thái DH: Cầu nối Lọc ảnh Pro (lọc 1 khách) cho DHbox Finder**
+
+- **Cầu nối Photo Picker Pro cho DHbox (`photo_picker.*`):** Mở rộng cầu nối Unix domain socket để DHbox (từ v2.10.0) có thể chuột phải một thư mục khách trong Finder và chọn **DH Studio Pro: Lọc ảnh** (`DH Studio Pro: Photo picker`), tận dụng toàn bộ lõi xử lý của DH Studio Pro (kiểm tra bản quyền, quét ảnh vào RAM, chuẩn hóa mã dán, khớp tức thì, phân tích lỗi từng dòng, truy xuất mã đa tab Google Sheets, sao chép đa luồng/APFS, tự động cập nhật trạng thái `"Đã lọc"` và xuất báo cáo TXT/CSV) ở chế độ lọc 1 khách.
+- **Hủy thao tác tức thì & chống timeout khi sao chép tệp lớn:** Xử lý trực tiếp `photo_picker.cancel` trong Rust (< 1ms) cho cả quét ảnh và sao chép; đổi timeout chuyển tiếp WebView sang inactivity timeout (tự gia hạn mỗi khi có sự kiện tiến độ) để sao chép lượng lớn tệp RAW qua cầu nối không bị ngắt giữa chừng.
+- **Đồng bộ tài liệu hợp đồng cầu nối:** Cập nhật đồng bộ `docs/DH_BRIDGE.md` giữa hai kho mã nguồn DH Studio Pro và DHbox.
+
+*(EN Highlights: Extended the DH Ecosystem Bridge (`photo_picker.*`) so DHbox v2.10.0+ can launch single-customer Photo Picker Pro right from Finder via **DH Studio Pro: Photo picker**, reusing the full DH Studio Pro engine—entitlement checks, pre-scan RAM cache, paste formatter, instant matching, per-line error analysis, multi-tab Google Sheets code extraction, fast copying, automatic Sheets status updates, and TXT/CSV export; added sub-millisecond direct Rust cancellation (`photo_picker.cancel`) and activity-based progress timeouts for large RAW transfers.)*
+
+---
+
 ## [v4.1.0] - 2026-11-26
 
 **Giao diện tối đen sâu (Obsidian Black) & Đồng bộ hoàn thiện Lọc ảnh Pro**

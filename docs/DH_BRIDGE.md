@@ -8,7 +8,7 @@ Bản đặc tả này được giữ đồng bộ ở cả hai kho mã:
 > Quy tắc bắt buộc cho mọi phiên phát triển (kể cả khi giao tiếp cho agent khác chỉ mở một kho mã):
 > 1. **Không tự ý đổi tên, xóa hoặc đổi kiểu dữ liệu** của `socketPath`, `protocolVersion`, tên `action`, mã lỗi, hoặc bất kỳ khóa JSON nào đã công bố trong tài liệu này nếu không cập nhật đồng thời cả hai kho mã và tăng `protocolVersion` khi phá vỡ tương thích ngược.
 > 2. **Trường mới phải là tùy chọn (optional)** để hai phiên bản lệch nhẹ vẫn nói chuyện được.
-> 3. **Không sao chép logic nghiệp vụ** của Contact the Sheet sang DHbox. DHbox chỉ là bề mặt Finder và giao diện hiển thị gọn; toàn bộ cấu hình Sheet, Google OAuth, bản quyền, quét, đối soát và ghi Google Sheets chạy trong DH Studio Pro.
+> 3. **Không sao chép logic nghiệp vụ** của Contact the Sheet hay Photo Picker Pro sang DHbox. DHbox chỉ là bề mặt Finder và giao diện hiển thị gọn; toàn bộ cấu hình Sheet, Google OAuth, bản quyền, phân tích mã, quét, đối soát, chép ảnh và ghi Google Sheets chạy trong DH Studio Pro.
 > 4. Mỗi khi sửa hợp đồng, phải chạy test hợp đồng ở cả hai bên:
 >    - DHbox: `make test` và `make lint`
 >    - DH Studio Pro: `npm test` và `cargo test --manifest-path src-tauri/Cargo.toml`
@@ -32,7 +32,7 @@ Bản đặc tả này được giữ đồng bộ ở cả hai kho mã:
 ## 2. Cơ chế khởi chạy ngầm và đóng sạch
 
 - **Bundle ID của DH Studio Pro:** `com.minhvuong.devtool`
-- **Tùy chọn bật/tắt trong DHbox:** Mặc định tắt (`FeatureFlags.dhStudioBridgeEnabled = false`), người dùng tự bật trong `Cài đặt -> Hệ sinh thái DH` (kèm chú thích cần tải và cài đặt DH Studio Pro mới dùng được). Khi tắt, `FinderSyncExtension` ẩn mục `DH Studio Pro: Contact the Sheet` khỏi menu DHbox (qua `AgentRequest.finderBridgeEnabled` + thông báo `com.dh.DHbox.finderMenuChanged`), và `FinderServices` chặn không bật ngầm DH Studio Pro nếu gọi từ menu Dịch vụ.
+- **Tùy chọn bật/tắt trong DHbox:** Mặc định tắt (`FeatureFlags.dhStudioBridgeEnabled = false`), người dùng tự bật trong `Cài đặt -> Hệ sinh thái DH` (kèm chú thích cần tải và cài đặt DH Studio Pro mới dùng được). Khi tắt, `FinderSyncExtension` ẩn các mục `DH Studio Pro: Contact the Sheet` và `DH Studio Pro: Lọc ảnh` (`DH Studio Pro: Photo picker`) khỏi menu DHbox (qua `AgentRequest.finderBridgeEnabled` + thông báo `com.dh.DHbox.finderMenuChanged`), và `FinderServices` chặn không bật ngầm DH Studio Pro nếu gọi từ menu Dịch vụ. Riêng `DH Studio Pro: Lọc ảnh` chỉ hiển thị khi chọn đúng 1 thư mục khách (chế độ lọc 1 khách).
 - **Khởi chạy ngầm từ DHbox:**
   1. DHbox gọi `bridge.ping` trước (timeout ngắn). Nếu đang chạy, nối thẳng.
   2. Nếu chưa chạy, DHbox tìm ứng dụng theo bundle ID và chạy với tham số `--background` (`activates = false`, `addsToRecentItems = false`). **Không đặt `config.hides = true`** vì `[NSApp hide:]` làm macOS kích hoạt App Nap và tạm dừng tiến trình WebKit của cửa sổ nền ngay lập tức.
@@ -41,7 +41,7 @@ Bản đặc tả này được giữ đồng bộ ở cả hai kho mã:
      - Trên macOS chuyển `ActivationPolicy::Accessory` để không nhảy icon trên Dock.
      - Vẫn nạp WebView ngầm để khôi phục phiên đăng nhập, bản quyền, cấu hình Contact the Sheet và phiên Google OAuth, rồi báo `webviewReady = true`.
      - Mở socket cầu nối ngay trong `setup`.
-  4. **Chống treo WebKit khi chạy ngầm trên macOS (`HiddenWakeGuard`):** Khi nhận yêu cầu `contact_sheet.*` trong lúc cửa sổ `main` đang ẩn, `src-tauri/src/bridge.rs` (kết hợp `src-tauri/src/dock_icon.m`) bật `NSProcessInfo` activity (`NSActivityUserInitiatedAllowingIdleSystemSleep | NSActivityLatencyCritical`) và tạm đưa cửa sổ `main` sang trạng thái không bị che khuất nhưng vô hình, xuyên chuột, không chiếm focus (`alphaValue = 0.001`, `ignoresMouseEvents = YES`, `hasShadow = NO`, `excludedFromWindowsMenu = YES`, `Transient | IgnoresCycle`, `orderFrontRegardless`) trong đúng thời gian yêu cầu đang chạy, sau đó `orderOut` ngay khi `Drop`. Do đó `bridge.ping` và `bridge.shutdown` bắt buộc đọc cờ `BridgeState::main_window_visible` thay vì `window.is_visible()`.
+  4. **Chống treo WebKit khi chạy ngầm trên macOS (`HiddenWakeGuard`):** Khi nhận yêu cầu `contact_sheet.*` hoặc `photo_picker.*` trong lúc cửa sổ `main` đang ẩn, `src-tauri/src/bridge.rs` (kết hợp `src-tauri/src/dock_icon.m`) bật `NSProcessInfo` activity (`NSActivityUserInitiatedAllowingIdleSystemSleep | NSActivityLatencyCritical`) và tạm đưa cửa sổ `main` sang trạng thái không bị che khuất nhưng vô hình, xuyên chuột, không chiếm focus (`alphaValue = 0.001`, `ignoresMouseEvents = YES`, `hasShadow = NO`, `excludedFromWindowsMenu = YES`, `Transient | IgnoresCycle`, `orderFrontRegardless`) trong đúng thời gian yêu cầu đang chạy, sau đó `orderOut` ngay khi `Drop`. Do đó `bridge.ping` và `bridge.shutdown` bắt buộc đọc cờ `BridgeState::main_window_visible` thay vì `window.is_visible()`. Hạn chờ 180 giây của `forward_to_webview` tự đặt lại mỗi khi nhận sự kiện `progress`, giúp sao chép lô ảnh RAW lớn không bị ngắt oan trong khi vẫn bắt được yêu cầu bị treo.
   5. **Vòng đời đóng/mở lại cửa sổ trên macOS (`lib.rs`, `tray.rs`):**
      - Không bao giờ để `"main"` bị hủy trong khi `"tray-panel"` giữ tiến trình sống thành trạng thái ma (icon Menu Bar còn nhưng không mở lại được cửa sổ chính). Khi đóng `"main"` (`X` / `Cmd+W`): nếu `close_to_tray == true` thì ẩn `"main"` và `prevent_close()`; nếu `close_to_tray == false` thì dọn socket và gọi `app.exit(0)`. Cửa sổ `"tray-panel"` luôn chỉ ẩn (`prevent_close()`).
      - Khi người dùng mở trực tiếp DH Studio Pro (Dock `RunEvent::Reopen`, Menu Bar, Control Hub) hoặc DHbox gọi `bridge.show_window`, `tray::show_main_window` luôn chỉ thao tác cửa sổ `"main"`, khôi phục `ActivationPolicy::Regular`, trả lại alpha/mouseEvents/shadow và gọi `[NSApp unhide:]` + `[NSApp activateIgnoringOtherApps:YES]`.
@@ -272,3 +272,63 @@ Bản đặc tả này được giữ đồng bộ ở cả hai kho mã:
     "plans": {}
   }
   ```
+
+### 4.3 Photo Picker Pro — Lọc 1 khách (chuyển tiếp sang `src/modules/photo-picker/services/photoPickerBridge.ts`, riêng `photo_picker.cancel` xử lý trực tiếp trong `bridge.rs`)
+
+Mọi thao tác ở nhóm này luôn ép `pickerMode = "single"` (không dùng hàng đợi nhiều khách, Check TT, Auto Find chuyển khách tự động hay Mini Trash Bin). Khi mở từ chuột phải Finder trên 1 thư mục khách, DHbox gọi `photo_picker.get_context` -> `photo_picker.set_folder` -> tự động gọi `photo_picker.scan_and_match` (với danh sách mã rỗng) để quét sẵn toàn bộ ảnh trong thư mục vào RAM; ngay khi người dùng dán mã hoặc truy xuất mã từ Google Sheet, `photo_picker.set_codes` đối chiếu tức thì trong RAM.
+
+#### `photo_picker.get_context`
+- `params`: `{}`
+- `data`: `PhotoPickerBridgeContext` (trạng thái đăng nhập, bản quyền `photo-picker`, kết nối Google, hồ sơ Sheet rút gọn, `folderPath`, `folderName`, `rawCodeInput`, `parsedCodeCount`, `scannedFilesCount`, `phase`, `matchMode`, `regexPattern`, `scanOptions`, `inheritExtensionEnabled`, `inheritedExtensions`, `outputMode`, `outputFolder`, `sheetFilterContext`, `sheetUpdateStatus`, `matchResult`, `lineAnalysis`, `copyResult`).
+
+#### `photo_picker.set_folder`
+- `params`: `{ "folderPath": "/path/to/customer" }`
+- `data`: `PhotoPickerBridgeContext` (đặt `pickerMode = "single"`, nạp thư mục khách mới và dọn trạng thái phiên khách cũ nếu đổi thư mục).
+
+#### `photo_picker.format_codes`
+- `params`: `{ "text": "IMG_1001-1002, 1005" }`
+- `data`: `{ "formatted": "IMG_1001\n1002\n1005" }` (dùng nguyên `formatPastedCodes` của DH Studio Pro).
+
+#### `photo_picker.set_codes`
+- `params`: `{ "rawCodeInput": "1001\n1002" }`
+- `data`: `{ "rawCodeInput", "parsedCodeCount", "phase", "matchResult", "lineAnalysis" }` (chạy `parse_customer_codes`, nếu thư mục đã quét trong RAM thì khớp tức thì bằng `match_photos` và phân tích từng dòng bằng `analyzeCodeInputLines`).
+
+#### `photo_picker.set_options`
+- `params`: các trường tùy chọn `{ "matchMode", "regexPattern", "scanOptions", "inheritExtensionEnabled", "inheritedExtensions", "outputMode", "outputFolder", "autoRescan" }`. Khi đổi `outputFolder`, đồng bộ lưu ngược vào `default_output` của `settings.json` trong DH Studio Pro. Khi đổi `scanOptions` trong lúc đã có kết quả quét và `autoRescan !== false`, tự quét lại và stream `progress`.
+- `data`: `PhotoPickerBridgeContext`.
+
+#### `photo_picker.scan_and_match`
+- `params`: `{ "forceRescan": false }` (tùy chọn)
+- Streams `progress` (`scan-progress` và `match-progress`).
+- `data`: `PhotoPickerBridgeContext` kèm `elapsedMs`.
+
+#### `photo_picker.sheet_tabs`
+- `params`: `{}`
+- `data`: `{ "sheetProfile", "availableTabs", "checkedTabs", "completedStatusValue" }`.
+
+#### `photo_picker.sheet_extract`
+- `params`: `{ "folderName"?, "tabTitles"?, "preferredRow"?: { "tabTitle", "row" }, "forceFresh"? }`
+- Streams `progress`.
+- `data`: kết quả `extractCodesAcrossTabs` (`status`, `matchedRow`, `matchedTabTitle`, `customerName`, `jobFolderName`, `confidence`, `reason`, `candidateColumns`, `defaultSelectedColumns`, `candidateRows`, `sameFileRows`, `searchedTabs`, `failedTabs`, `totalLoadedRows`, `statusColumnLetter`, `statusColumnWritable`, `completedStatusValue`).
+
+#### `photo_picker.sheet_apply_codes`
+- `params`: `{ "columnLetters": ["I"], "mode": "replace" | "append", "updateStatusOnCopy": true, "tabTitle"?, "matchedRow"?, "statusColumnLetter"?, "statusValue"?, "candidateColumns"? }`
+- `data`: `PhotoPickerBridgeContext` sau khi nạp mã, lưu `sheetFilterContext` và khớp lại tức thì trong RAM.
+
+#### `photo_picker.copy`
+- `params`: `{ "operation": "Copy" | "Move", "outputMode"?, "outputFolder"?, "updateSheetStatus": true }`
+- Streams `progress` từ `copy-progress` (gồm số tệp, tốc độ, ETA) và cập nhật trạng thái `"Đã lọc"` trên Google Sheet nếu bật.
+- `data`: `{ "copyResult", "sheetUpdateStatus", "destinationFolder", "context" }`.
+
+#### `photo_picker.retry_sheet_status`
+- `params`: `{}`
+- `data`: `{ "sheetUpdateStatus" }`.
+
+#### `photo_picker.cancel`
+- Xử lý trực tiếp trong Rust (`bridge.rs`), bật cờ hủy chung `Arc<AtomicBool>` tức thì (< 1ms) cho cả `scan_folders` và `copy_files`.
+- `params`: `{}`
+- `data`: `{ "cancelled": true }`.
+
+#### `photo_picker.export_report`
+- `params`: `{ "format": "txt" | "csv" | "json", "outputPath": "/path/to/report.csv" }`
+- `data`: `{ "outputPath" }`.
