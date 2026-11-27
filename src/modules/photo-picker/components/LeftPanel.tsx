@@ -393,10 +393,10 @@ export function LeftPanel({
       >
         {/* Header */}
         <div className="h-10 px-3 flex justify-between items-center border-b border-border">
-          <span className="flex items-center gap-2 text-xs font-medium text-foreground">
-            <FolderOpen size={13} strokeWidth={1.75} className="text-muted-foreground shrink-0" />
+          <span className="flex items-center gap-2 text-sm font-semibold text-foreground tracking-tight">
+            <FolderOpen size={14} strokeWidth={1.75} className="text-primary shrink-0" />
             <span>{pickerMode === "multi" ? tr("Hàng đợi khách", "Customer Queue") : t("input_folders")}</span>
-            <span className="text-muted-foreground tabular-nums font-normal">
+            <span className="px-1.5 py-0.5 rounded-full bg-secondary text-[11px] font-medium text-muted-foreground tabular-nums">
               {inputFolders.length}
             </span>
           </span>
@@ -406,7 +406,7 @@ export function LeftPanel({
               <button
                 type="button"
                 onClick={clearInputFolders}
-                className="w-7 h-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                className="w-7 h-7 inline-flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
                 title={tr("Xoá tất cả khách khỏi hàng đợi", "Clear all customers from queue")} aria-label={tr("Xoá tất cả khách khỏi hàng đợi", "Clear all customers from queue")}
               >
                 <Trash2 size={14} strokeWidth={1.75} />
@@ -416,7 +416,7 @@ export function LeftPanel({
             <button
               type="button"
               onClick={handleAddFolder}
-              className="w-7 h-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-foreground/[0.07] transition-colors cursor-pointer"
+              className="btn-macos w-7 h-7 inline-flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
               title={pickerMode === "multi" ? tr("Thêm thư mục Tháng, Ngày hoặc Khách", "Add Month, Day, or Customer folder") : t("add_folder")} aria-label={pickerMode === "multi" ? tr("Thêm thư mục Tháng, Ngày hoặc Khách", "Add Month, Day, or Customer folder") : t("add_folder")}
             >
               <FolderPlus size={14} strokeWidth={1.75} />
@@ -425,7 +425,7 @@ export function LeftPanel({
             <button
               type="button"
               onClick={() => setIsCollapsed(true)}
-              className="w-7 h-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-foreground/[0.07] transition-colors cursor-pointer"
+              className="w-7 h-7 inline-flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-foreground/[0.06] transition-colors cursor-pointer"
               title={tr("Thu gọn", "Collapse")} aria-label={tr("Thu gọn", "Collapse")}
             >
               <ChevronLeft size={14} strokeWidth={1.75} />
@@ -435,14 +435,14 @@ export function LeftPanel({
 
         {/* Mode Switcher: Lọc 1 khách vs Lọc nhiều khách */}
         <div className="px-2.5 py-2 border-b border-border">
-          <div className="p-0.5 rounded-md bg-foreground/[0.05] border border-border grid grid-cols-2 gap-0.5">
+          <div className="macos-segmented p-0.5 rounded-[9px] grid grid-cols-2 gap-0.5">
             <button
               type="button"
               onClick={() => setPickerMode("single")}
-              className={`h-7 rounded-[5px] text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+              className={`h-7 rounded-[6.5px] text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                 pickerMode === "single"
-                  ? "bg-background text-foreground font-medium shadow-xs dark:bg-white/[0.11]"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "macos-segment-active"
+                  : "text-foreground/75 hover:text-foreground font-medium"
               }`}
             >
               <User size={12} strokeWidth={1.75} />
@@ -451,10 +451,10 @@ export function LeftPanel({
             <button
               type="button"
               onClick={() => setPickerMode("multi")}
-              className={`h-7 px-1 rounded-[5px] text-xs flex items-center justify-center gap-1.5 transition-colors select-none cursor-pointer ${
+              className={`h-7 px-1 rounded-[6.5px] text-xs flex items-center justify-center gap-1.5 transition-all select-none cursor-pointer ${
                 pickerMode === "multi"
-                  ? "bg-background text-foreground font-medium shadow-xs dark:bg-white/[0.11]"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "macos-segment-active"
+                  : "text-foreground/75 hover:text-foreground font-medium"
               }`}
               title={tr("Lọc nhiều khách cùng lúc", "Batch filter multiple customers")}
             >
@@ -475,7 +475,7 @@ export function LeftPanel({
                 placeholder={tr("Tìm tên khách cần lọc trước...", "Search customer name...")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-7 pl-7 pr-7 text-xs rounded-md bg-foreground/[0.03] border border-border text-foreground placeholder:text-muted-foreground/80 focus:outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/30"
+                className="w-full h-7.5 pl-7 pr-7 text-xs rounded-lg bg-input border border-border text-foreground placeholder:text-muted-foreground/80 focus:outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/25"
               />
               {searchQuery && (
                 <button aria-label={tr("Xoá", "Clear")}
@@ -672,16 +672,18 @@ export function LeftPanel({
       {/* SECTION 2: Found Files */}
       <div className="flex flex-col flex-1 min-h-[140px] bg-card border border-border shadow-sm rounded-2xl overflow-hidden">
         <div className="h-10 px-3 flex justify-between items-center border-b border-border">
-          <span className="flex items-center gap-2 text-xs font-medium text-foreground">
+          <span className="flex items-center gap-2 text-sm font-semibold text-foreground tracking-tight">
             <span className="w-1.5 h-1.5 rounded-full bg-success shrink-0" />
             {tr("Đã tìm thấy", "Found")}
-            <span className="text-muted-foreground tabular-nums font-normal">{matchResult?.found_count ?? 0}</span>
+            <span className="px-1.5 py-0.5 rounded-full bg-secondary text-[11px] font-medium text-muted-foreground tabular-nums">
+              {matchResult?.found_count ?? 0}
+            </span>
           </span>
           {foundMatches.length > 0 && (
             <button
               type="button"
               onClick={() => handleOpenFoundPreview(0)}
-              className="inline-flex items-center gap-1 h-6 px-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-foreground/[0.07] transition-colors"
+              className="btn-macos inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs"
               title={tr("Xem trước tất cả các ảnh đã tìm thấy", "Preview all found photos")}
             >
               <Eye size={13} strokeWidth={1.75} />
@@ -729,10 +731,10 @@ export function LeftPanel({
       {/* SECTION 3: Error Files — click a row to jump to its line (copy actions live in the dashboard) */}
       <div className="flex flex-col flex-1 min-h-[140px] bg-card border border-border shadow-sm rounded-2xl overflow-hidden">
         <div className="h-10 px-3 flex justify-between items-center border-b border-border">
-          <span className="flex items-center gap-2 text-xs font-medium text-foreground">
+          <span className="flex items-center gap-2 text-sm font-semibold text-foreground tracking-tight">
             <span className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" />
             {tr("Các file lỗi", "Errors")}
-            <span className="text-muted-foreground tabular-nums font-normal">
+            <span className="px-1.5 py-0.5 rounded-full bg-secondary text-[11px] font-medium text-muted-foreground tabular-nums">
               {(matchResult?.missing_count ?? 0) + (matchResult?.duplicate_count ?? 0)}
             </span>
           </span>
@@ -740,7 +742,7 @@ export function LeftPanel({
             <button
               type="button"
               onClick={handleCopyAllErrors}
-              className="inline-flex items-center gap-1 h-6 px-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-foreground/[0.07] transition-colors"
+              className="btn-macos inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs"
               title={tr("Sao chép tất cả mã lỗi", "Copy all issues")}
             >
               {copiedAll ? <ClipboardCheck size={12} /> : <Clipboard size={12} />}

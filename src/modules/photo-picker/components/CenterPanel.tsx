@@ -55,27 +55,25 @@ const EXTENSION_BRANCH_OPTIONS = [
 ] as const;
 
 const TOOLBAR_BUTTON_CLASS =
-  "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-xs font-medium text-foreground/90 border border-border bg-foreground/[0.03] hover:bg-foreground/[0.07] transition-colors whitespace-nowrap shrink-0";
+  "btn-macos inline-flex items-center gap-1.5 h-7.5 px-2.5 rounded-lg text-xs whitespace-nowrap shrink-0";
 const ICON_BUTTON_CLASS =
-  "inline-flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-foreground/[0.07] transition-colors shrink-0";
+  "btn-macos inline-flex items-center justify-center w-7.5 h-7.5 rounded-lg text-muted-foreground hover:text-foreground shrink-0";
 const STATUS_CHIP_CLASS =
-  "inline-flex items-center gap-1.5 h-7 px-2 rounded-md text-xs text-foreground/80 hover:text-foreground hover:bg-foreground/[0.06] tabular-nums transition-colors whitespace-nowrap shrink-0";
+  "inline-flex items-center gap-1.5 h-7 px-2 rounded-lg text-xs font-medium text-foreground/85 hover:text-foreground hover:bg-foreground/[0.06] tabular-nums transition-colors whitespace-nowrap shrink-0";
 const SEGMENTED_CLASS =
-  "inline-flex items-center gap-0.5 p-0.5 rounded-md bg-foreground/[0.05] border border-border";
+  "macos-segmented inline-flex items-center gap-0.5 p-0.5 rounded-[9px]";
 
 function segmentClass(active: boolean): string {
-  return `h-6 px-2.5 rounded-[5px] text-xs whitespace-nowrap transition-colors disabled:opacity-50 ${
+  return `h-6.5 px-2.5 rounded-[6.5px] text-xs whitespace-nowrap transition-all disabled:opacity-50 ${
     active
-      ? "bg-background text-foreground font-medium shadow-xs dark:bg-white/[0.11]"
-      : "text-muted-foreground hover:text-foreground"
+      ? "macos-segment-active"
+      : "text-foreground/75 hover:text-foreground font-medium"
   }`;
 }
 
 function toggleChipClass(active: boolean): string {
-  return `h-6 px-2 rounded-md text-xs border transition-colors whitespace-nowrap disabled:opacity-50 ${
-    active
-      ? "border-primary/50 bg-primary/10 text-foreground font-medium"
-      : "border-border text-muted-foreground hover:text-foreground hover:bg-foreground/[0.04]"
+  return `h-6.5 px-2.5 rounded-md text-xs whitespace-nowrap disabled:opacity-50 ${
+    active ? "chip-macos-active" : "chip-macos"
   }`;
 }
 
@@ -534,7 +532,7 @@ export function CenterPanel() {
         <div className="panel-header min-h-11 py-1.5 px-3 gap-3 min-w-0">
           <div className="flex items-center gap-2 min-w-0">
             <span className="panel-title whitespace-nowrap">{t("customer_codes")}</span>
-            <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
+            <span className="px-2 py-0.5 rounded-full bg-secondary text-xs font-medium text-muted-foreground tabular-nums whitespace-nowrap">
               {parsedCodes.length} {t("codes_count")}
             </span>
             {isParsingDebounced && (
@@ -646,15 +644,13 @@ export function CenterPanel() {
             aria-expanded={optionsOpen}
             aria-controls="photo-picker-filter-options"
             onClick={() => setOptionsOpen((v) => !v)}
-            className={`inline-flex items-center gap-2 h-7 pl-2 pr-2 rounded-md text-xs border transition-colors min-w-0 ${
-              optionsOpen
-                ? "border-border-strong bg-foreground/[0.06] text-foreground"
-                : "border-border bg-foreground/[0.03] text-foreground/90 hover:bg-foreground/[0.06]"
+            className={`btn-macos inline-flex items-center gap-2 h-8 px-2.5 rounded-lg text-xs min-w-0 ${
+              optionsOpen ? "border-primary/40" : ""
             }`}
           >
             <SlidersHorizontal size={13} strokeWidth={1.75} className="text-muted-foreground shrink-0" />
-            <span className="font-medium whitespace-nowrap">{tr("Tùy chọn lọc", "Filter options")}</span>
-            <span className="text-muted-foreground truncate min-w-0">{optionsSummary}</span>
+            <span className="font-semibold text-foreground whitespace-nowrap">{tr("Tùy chọn lọc", "Filter options")}</span>
+            <span className="text-muted-foreground font-normal truncate min-w-0">{optionsSummary}</span>
             <ChevronDown
               size={13}
               strokeWidth={2}
@@ -668,7 +664,7 @@ export function CenterPanel() {
         {optionsOpen && (
           <div
             id="photo-picker-filter-options"
-            className="mx-3 mt-2 rounded-lg border border-border bg-foreground/[0.02] px-3 py-2.5 flex flex-col gap-2.5 animate-fade-in"
+            className="mx-3 mt-2 rounded-xl border border-border bg-[#f8f9fb] dark:bg-foreground/[0.025] px-3 py-2.5 flex flex-col gap-2.5 animate-fade-in"
           >
             <OptionRow label={t("mode")} labelId="match-mode-label">
               <div role="radiogroup" aria-labelledby="match-mode-label" className={SEGMENTED_CLASS}>
@@ -891,10 +887,10 @@ export function CenterPanel() {
 
         {/* Code Input Textarea with Synchronized Line-Level Error Highlighting */}
         <div className="flex-1 px-3 py-3 min-h-0 flex flex-col relative">
-          <div className="relative w-full h-full rounded-lg bg-foreground/[0.02] border border-border transition-colors overflow-hidden focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/25">
+          <div className="relative w-full h-full rounded-xl bg-white dark:bg-foreground/[0.02] border border-border shadow-2xs transition-colors overflow-hidden focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20">
             {/* Left Line-Number Gutter Background Strip */}
             <div
-              className="absolute top-0 bottom-0 left-0 bg-muted/25 border-r border-border/40 pointer-events-none select-none z-0"
+              className="absolute top-0 bottom-0 left-0 bg-[#fafbfc] dark:bg-muted/25 border-r border-border/60 pointer-events-none select-none z-0"
               style={{ width: `${CODE_GUTTER_WIDTH_PX}px` }}
             />
 

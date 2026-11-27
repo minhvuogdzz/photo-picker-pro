@@ -2,6 +2,18 @@
 
 Tất cả các bản phát hành của **DH Studio Pro** (phát triển & thuộc sở hữu bản quyền của **Devhouse Software**) đều được ghi lại chi tiết tại đây. Mỗi bản cập nhật đều mang sứ mệnh nâng cao hiệu năng, ổn định hệ thống và mang lại trải nghiệm tối ưu nhất cho Studio & Photographer.
 
+## [v4.2.1] - 2026-11-27
+
+**Giao diện sáng trắng trong chuẩn macOS, font chữ sắc nét & hệ nút Liquid Glass xanh dương**
+
+- **Theme sáng trắng tinh khiết:** Làm sạch chế độ Sáng với nền xám lạnh thoáng (`#f4f5f7`), thẻ nội dung và ô nhập trắng tinh (`#ffffff`) cùng viền mảnh sắc nét, loại bỏ cảm giác đục xám giữa các lớp; giữ nguyên Dark Mode đen sâu obsidian.
+- **Font chữ chuẩn macOS rõ nét hơn:** Nâng nhẹ cỡ chữ nền (`13.5px`), giữ độ dày nét gốc CoreText trên nền sáng (`-webkit-font-smoothing: auto`) và ưu tiên `ui-monospace` (`SF Mono`) cho cột mã số ảnh.
+- **Hệ nút & Segmented Control Liquid Glass:** Nâng cấp toàn bộ nút chính (`.btn-primary`), nút phụ kiểu macOS (`.btn-secondary` / `.btn-macos`), thanh chuyển tab (`.macos-segmented`) và chip tùy chọn với hiệu ứng kính Liquid Glass cùng tông màu xanh dương chủ đạo quen thuộc; nút hành động ở Lọc ảnh Pro dạng pill nổi bật đúng bước thao tác (tự chuyển nổi bật sang **Sao chép** ngay khi khớp ảnh xong).
+
+*(EN Highlights: Crisp pure-white macOS Light theme (`#f4f5f7` canvas, `#ffffff` cards and crisp hairline borders) while keeping the deep obsidian Dark theme; sharper native macOS typography (`13.5px` base scale, native CoreText weight on light surfaces, `ui-monospace` / SF Mono code editor); Liquid Glass blue primary buttons, tactile macOS secondary push buttons, high-contrast segmented controls, and pill action buttons across Photo Picker Pro.)*
+
+---
+
 ## [v4.2.0] - 2026-11-26
 
 **Hệ sinh thái DH: Cầu nối Lọc ảnh Pro (lọc 1 khách) cho DHbox Finder**

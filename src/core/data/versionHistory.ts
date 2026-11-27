@@ -18,11 +18,45 @@ export interface VersionReleaseNote {
 
 export const RECENT_7_VERSIONS: VersionReleaseNote[] = [
   {
+    version: "v4.2.1",
+    date: "2026-11-27",
+    title: "Theme sáng chuẩn macOS, font sắc nét & hệ nút Liquid Glass xanh dương",
+    titleEn: "Crisp macOS Light theme, sharper typography & blue Liquid Glass buttons",
+    isCurrent: true,
+    sections: [
+      {
+        title: "Chế độ sáng trắng trong & Font chữ chuẩn macOS",
+        titleEn: "Crisp Light Theme & Native macOS Typography",
+        type: "design",
+        items: [
+          "Làm mới chế độ Sáng với nền xám lạnh thoáng, thẻ nội dung và ô nhập trắng tinh cùng viền mảnh sắc nét (vẫn giữ nguyên chế độ Tối đen sâu obsidian).",
+          "Nâng nhẹ tỷ lệ chữ và giữ độ dày nét gốc của macOS trên nền sáng, ưu tiên SF Mono cho khung mã ảnh giúp đọc lâu dễ chịu và rõ nét hơn.",
+        ],
+        itemsEn: [
+          "Refined Light Mode with an airy cool-grey canvas, pure white cards/inputs and crisp hairline borders while preserving the deep obsidian Dark Mode.",
+          "Adjusted desktop typography scale and native CoreText font weight on light surfaces, prioritizing SF Mono in the code editor for sharper readability.",
+        ],
+      },
+      {
+        title: "Hệ thống nút & Thanh chuyển tab Liquid Glass",
+        titleEn: "Liquid Glass Buttons & Segmented Controls",
+        type: "improvement",
+        items: [
+          "Thiết kế lại hệ nút chính, nút phụ kiểu macOS và thanh chuyển tab theo phong cách Liquid Glass với tông màu xanh dương chủ đạo của DH Studio Pro.",
+          "Cập nhật nút Quét file / Sao chép ở Lọc ảnh Pro dạng pill nổi bật rõ ràng theo đúng bước làm việc, đồng bộ nút Truy xuất trang tính, Xem trước và liên kết xuất TXT/CSV.",
+        ],
+        itemsEn: [
+          "Redesigned primary buttons, tactile macOS secondary buttons and high-contrast segmented controls in a Liquid Glass style with DH Studio Pro's signature blue accent.",
+          "Updated Photo Picker Pro's Scan & Match / Copy pill buttons to highlight the active step cleanly alongside Sheet Extract, Preview and TXT/CSV export controls.",
+        ],
+      },
+    ],
+  },
+  {
     version: "v4.2.0",
     date: "2026-11-26",
     title: "Hệ sinh thái DH: Cầu nối Lọc ảnh Pro cho DHbox Finder",
     titleEn: "DH Ecosystem: Photo Picker Pro bridge for DHbox Finder",
-    isCurrent: true,
     sections: [
       {
         title: "Liên kết Lọc ảnh Pro (1 khách) với DHbox",

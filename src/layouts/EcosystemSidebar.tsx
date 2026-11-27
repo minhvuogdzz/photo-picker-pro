@@ -348,7 +348,7 @@ export function EcosystemSidebar() {
               <div
                 role="radiogroup"
                 aria-label={t("theme")}
-                className="mt-1 grid grid-cols-3 p-0.5 rounded-[11px] bg-foreground/[0.05] text-[11.5px] gap-0.5"
+                className="macos-segmented mt-1 grid grid-cols-3 p-0.5 rounded-[11px] text-[12px] gap-0.5"
               >
                 {themeOptions.map((opt) => {
                   const ThemeIcon = opt.icon;
@@ -360,10 +360,10 @@ export function EcosystemSidebar() {
                       role="radio"
                       aria-checked={selected}
                       onClick={() => updateSetting("theme", opt.value)}
-                      className={`h-7 rounded-[9px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer border ${
+                      className={`h-7 rounded-[8px] flex items-center justify-center gap-1.5 transition-all cursor-pointer border ${
                         selected
-                          ? "glass-pill text-foreground font-medium"
-                          : "border-transparent text-muted-foreground hover:text-foreground"
+                          ? "glass-pill text-foreground font-semibold"
+                          : "border-transparent text-muted-foreground hover:text-foreground font-medium"
                       }`}
                       title={opt.title}
                     >

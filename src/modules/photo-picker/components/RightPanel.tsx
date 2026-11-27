@@ -186,11 +186,11 @@ export function RightPanel({ width = 288 }: RightPanelProps = {}) {
 
       <div className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-2.5">
         {/* Stats */}
-        <div className="grid grid-cols-2 rounded-lg border border-border overflow-hidden">
+        <div className="grid grid-cols-2 rounded-xl border border-border bg-[#fafbfc] dark:bg-foreground/[0.02] overflow-hidden">
           <StatCell value={matchResult?.found_count ?? 0} label={t("found")} dotClass="bg-success" />
           <StatCell value={matchResult?.missing_count ?? 0} label={t("missing")} dotClass="bg-destructive" border="left" />
           <StatCell value={matchResult?.duplicate_count ?? 0} label={t("duplicate")} dotClass="bg-warning" border="top" />
-          <StatCell value={scannedFiles.length} label={t("scanned")} dotClass="bg-muted-foreground/60" border="both" />
+          <StatCell value={scannedFiles.length} label={t("scanned")} dotClass="bg-muted-foreground/70" border="both" />
         </div>
 
         {/* Code issues (collapsible) */}
@@ -204,7 +204,7 @@ export function RightPanel({ width = 288 }: RightPanelProps = {}) {
                 <button
                   type="button"
                   onClick={handleCopyAllErrors}
-                  className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-foreground/[0.07] transition-colors"
+                  className="btn-macos inline-flex items-center gap-1 h-6.5 px-2 rounded-md text-xs"
                   title={tr("Sao chép tất cả mã lỗi", "Copy all issues")}
                 >
                   {copiedAll ? <ClipboardCheck size={12} /> : <Clipboard size={12} />}
@@ -395,7 +395,7 @@ export function RightPanel({ width = 288 }: RightPanelProps = {}) {
           summary={outputSummary}
         >
           <div className="flex flex-col gap-2">
-            <div role="radiogroup" aria-label={t("output_destination")} className="grid grid-cols-2 gap-0.5 p-0.5 rounded-md bg-foreground/[0.05] border border-border">
+            <div role="radiogroup" aria-label={t("output_destination")} className="macos-segmented grid grid-cols-2 gap-0.5 p-0.5 rounded-[9px]">
               <button
                 type="button"
                 role="radio"
@@ -420,18 +420,18 @@ export function RightPanel({ width = 288 }: RightPanelProps = {}) {
               <button
                 type="button"
                 onClick={handleSelectOutput}
-                className="w-full flex items-center gap-2 h-9 px-2.5 rounded-md border border-border bg-foreground/[0.03] hover:bg-foreground/[0.07] transition-colors text-left"
+                className="btn-macos w-full flex items-center gap-2 min-h-10 px-2.5 py-1.5 rounded-lg text-left"
                 title={outputFolder || t("select_output_folder")}
               >
-                <FolderOutput size={14} strokeWidth={1.75} className="text-muted-foreground shrink-0" />
+                <FolderOutput size={14} strokeWidth={1.75} className="text-primary shrink-0" />
                 <span className="flex-1 min-w-0 flex flex-col">
                   {outputFolder ? (
                     <>
-                      <span className="text-xs font-medium text-foreground truncate">{getFolderName(outputFolder)}</span>
-                      <span className="text-[10.5px] text-muted-foreground truncate">{outputFolder}</span>
+                      <span className="text-xs font-semibold text-foreground truncate">{getFolderName(outputFolder)}</span>
+                      <span className="text-[11px] font-normal text-muted-foreground truncate">{outputFolder}</span>
                     </>
                   ) : (
-                    <span className="text-xs text-muted-foreground">{t("select_output_folder")}</span>
+                    <span className="text-xs font-normal text-muted-foreground">{t("select_output_folder")}</span>
                   )}
                 </span>
               </button>
@@ -450,7 +450,7 @@ export function RightPanel({ width = 288 }: RightPanelProps = {}) {
             <button
               type="button"
               onClick={handleCancel}
-              className="btn-destructive w-full h-9 rounded-md text-xs font-medium flex justify-center items-center gap-2"
+              className="btn-destructive w-full h-9 rounded-full text-sm flex justify-center items-center gap-2"
             >
               <Ban size={14} strokeWidth={1.75} />
               {t("cancel")}
@@ -461,7 +461,7 @@ export function RightPanel({ width = 288 }: RightPanelProps = {}) {
                 type="button"
                 onClick={handleScanAndMatch}
                 disabled={!canScan}
-                className={`btn-primary h-9 rounded-md text-xs font-medium flex justify-center items-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                className={`${canCopy ? "btn-secondary" : "btn-primary"} h-9 rounded-full text-sm flex justify-center items-center gap-1.5 transition-all disabled:opacity-45 disabled:cursor-not-allowed ${
                   autoFindStatus?.state === "success" && !matchResult
                     ? "ring-2 ring-primary/60 ring-offset-2 ring-offset-background"
                     : ""
@@ -484,7 +484,7 @@ export function RightPanel({ width = 288 }: RightPanelProps = {}) {
                 type="button"
                 onClick={() => handleCopy("Copy")}
                 disabled={!canCopy}
-                className="btn-secondary h-9 rounded-md text-xs font-medium flex justify-center items-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`${canCopy ? "btn-primary" : "btn-secondary"} h-9 rounded-full text-sm flex justify-center items-center gap-1.5 transition-all disabled:opacity-45 disabled:cursor-not-allowed`}
               >
                 <Copy size={14} strokeWidth={1.75} />
                 {t("copy")}
@@ -498,7 +498,7 @@ export function RightPanel({ width = 288 }: RightPanelProps = {}) {
               <button
                 type="button"
                 onClick={() => handleExport("txt")}
-                className="px-1.5 py-0.5 rounded text-foreground/80 hover:text-foreground hover:bg-foreground/[0.07] transition-colors"
+                className="px-1.5 py-0.5 rounded font-medium text-primary hover:bg-primary/10 transition-colors"
               >
                 TXT
               </button>
@@ -506,7 +506,7 @@ export function RightPanel({ width = 288 }: RightPanelProps = {}) {
               <button
                 type="button"
                 onClick={() => handleExport("csv")}
-                className="px-1.5 py-0.5 rounded text-foreground/80 hover:text-foreground hover:bg-foreground/[0.07] transition-colors"
+                className="px-1.5 py-0.5 rounded font-medium text-primary hover:bg-primary/10 transition-colors"
               >
                 CSV
               </button>
@@ -519,10 +519,10 @@ export function RightPanel({ width = 288 }: RightPanelProps = {}) {
 }
 
 function outputSegmentClass(active: boolean): string {
-  return `h-7 px-2 rounded-[5px] text-xs truncate transition-colors ${
+  return `h-7 px-2 rounded-[6.5px] text-xs truncate transition-all ${
     active
-      ? "bg-background text-foreground font-medium shadow-xs dark:bg-white/[0.11]"
-      : "text-muted-foreground hover:text-foreground"
+      ? "macos-segment-active"
+      : "text-foreground/75 hover:text-foreground font-medium"
   }`;
 }
 
@@ -546,8 +546,8 @@ function StatCell({
           ? "border-l border-t border-border"
           : "";
   return (
-    <div className={`flex flex-col gap-0.5 px-3 py-2 ${borderClass}`}>
-      <span className="text-base font-semibold tabular-nums text-foreground leading-tight">
+    <div className={`flex flex-col gap-1 px-3 py-2.5 ${borderClass}`}>
+      <span className="text-[18px] font-semibold tabular-nums text-foreground leading-tight tracking-tight">
         {value.toLocaleString()}
       </span>
       <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -585,7 +585,7 @@ function IssueGroup({
         <button
           type="button"
           onClick={onCopy}
-          className="inline-flex items-center gap-1 h-6 px-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-foreground/[0.07] transition-colors"
+          className="btn-macos inline-flex items-center gap-1 h-6.5 px-2 rounded-md text-xs"
         >
           {copied ? <ClipboardCheck size={12} /> : <Clipboard size={12} />}
           {copied ? copiedLabel : copyLabel}

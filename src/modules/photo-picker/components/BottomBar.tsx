@@ -20,7 +20,7 @@ export function BottomBar() {
         <button
           type="button"
           onClick={() => setIsDonateModalOpen(true)}
-          className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-xs font-medium text-foreground/85 border border-border bg-foreground/[0.03] hover:bg-foreground/[0.07] hover:text-foreground transition-colors cursor-pointer group shrink-0 active:scale-[0.97]"
+          className="btn-macos inline-flex items-center gap-1.5 h-7.5 px-3 rounded-full text-xs cursor-pointer group shrink-0"
           title={tr("Ủng hộ tác giả một ly cafe", "Buy the author a coffee")}
         >
           <CoffeeSteamIcon

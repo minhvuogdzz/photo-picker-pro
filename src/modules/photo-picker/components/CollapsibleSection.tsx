@@ -61,14 +61,14 @@ export function CollapsibleSection({
   const contentId = useId();
 
   return (
-    <section className={`rounded-lg border border-border bg-foreground/[0.02] ${className}`}>
+    <section className={`rounded-xl border border-border bg-[#f8f9fb] dark:bg-foreground/[0.025] ${className}`}>
       <div className="flex items-center gap-2 pr-2">
         <button
           type="button"
           aria-expanded={open}
           aria-controls={contentId}
           onClick={() => setOpen((v) => !v)}
-          className="flex flex-1 min-w-0 items-center gap-2 h-8 pl-2.5 text-left rounded-lg hover:bg-foreground/[0.03] transition-colors"
+          className="flex flex-1 min-w-0 items-center gap-2 h-8.5 pl-2.5 text-left rounded-xl hover:bg-foreground/[0.03] transition-colors"
         >
           <ChevronRight
             size={13}
@@ -76,7 +76,7 @@ export function CollapsibleSection({
             className={`shrink-0 text-muted-foreground transition-transform duration-150 ${open ? "rotate-90" : ""}`}
           />
           {icon && <span className="shrink-0 text-muted-foreground flex">{icon}</span>}
-          <span className="text-xs font-medium text-foreground whitespace-nowrap">{title}</span>
+          <span className="text-[13px] font-semibold text-foreground tracking-tight whitespace-nowrap">{title}</span>
           {!open && summary && (
             <span className="text-xs text-muted-foreground truncate min-w-0">{summary}</span>
           )}

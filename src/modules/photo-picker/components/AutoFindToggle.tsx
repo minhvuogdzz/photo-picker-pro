@@ -59,8 +59,8 @@ export function AutoFindToggle() {
         role="switch"
         aria-checked={autoFindEnabled}
         onClick={handleToggle}
-        className={`inline-flex items-center gap-2 h-7 px-2.5 rounded-md text-xs font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 border border-border bg-foreground/[0.03] hover:bg-foreground/[0.07] ${
-          autoFindEnabled ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+        className={`btn-macos inline-flex items-center gap-2 h-8 px-2.5 rounded-lg text-xs cursor-pointer whitespace-nowrap shrink-0 ${
+          autoFindEnabled ? "text-foreground border-primary/40" : "text-muted-foreground hover:text-foreground"
         }`}
         title={tr(
           "Bật/Tắt Auto Find: Tự động nạp mã khách từ Google Sheet và chuyển khách tiếp theo khi lọc xong",
